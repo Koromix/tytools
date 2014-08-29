@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include "config.h"
+#include "compat.h"
 
 #ifdef __cplusplus
     #define TY_C_BEGIN extern "C" {
@@ -69,11 +71,6 @@
 #define TY_CONCAT(a, b) TY_CONCAT_HELPER(a, b)
 
 #define TY_UNIQUE_ID(prefix) TY_CONCAT(prefix, __LINE__)
-
-#ifdef TY_COMPAT
-#include "config.h"
-#include "compat.h"
-#endif
 
 TY_C_BEGIN
 

@@ -28,7 +28,6 @@ if(CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 include_directories(lib "${CMAKE_CURRENT_BINARY_DIR}/lib")
-add_definitions(-DTY_COMPAT)
 
 if(WIN32)
     add_definitions(-DWINVER=0x0600 -D_WIN32_WINNT=0x0600)
