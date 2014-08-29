@@ -32,7 +32,7 @@
 
 enum {
     OPTION_HELP = 0x100,
-    OPTION_NO_RESET,
+    OPTION_NORESET,
     OPTION_TIMEOUT_EOF
 };
 
@@ -42,7 +42,7 @@ static const struct option long_options[] = {
     {"databits",    required_argument, NULL, 'd'},
     {"flow",        required_argument, NULL, 'f'},
     {"help",        no_argument,       NULL, OPTION_HELP},
-    {"no-reset",    no_argument,       NULL, OPTION_NO_RESET},
+    {"noreset",     no_argument,       NULL, OPTION_NORESET},
     {"parity",      required_argument, NULL, 'p'},
     {"raw",         no_argument,       NULL, 'r'},
     {"reconnect",   no_argument,       NULL, 'R'},
@@ -264,7 +264,7 @@ int monitor(int argc, char *argv[])
                                 "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
             }
             break;
-        case OPTION_NO_RESET:
+        case OPTION_NORESET:
             device_flags |= TY_SERIAL_NOHUP_CLOSE;
             break;
         case 'p':

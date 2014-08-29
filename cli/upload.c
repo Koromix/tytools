@@ -29,14 +29,14 @@
 
 enum {
     OPTION_HELP = 0x100,
-    OPTION_NO_RESET
+    OPTION_NORESET
 };
 
 static const char *short_options = "w";
 static const struct option long_options[] = {
-    {"help",     no_argument,       NULL, OPTION_HELP},
-    {"no-reset", no_argument,       NULL, OPTION_NO_RESET},
-    {"wait",     no_argument,       NULL, 'w'},
+    {"help",    no_argument, NULL, OPTION_HELP},
+    {"noreset", no_argument, NULL, OPTION_NORESET},
+    {"wait",    no_argument, NULL, 'w'},
     {0}
 };
 
@@ -118,7 +118,7 @@ int upload(int argc, char *argv[])
             print_upload_usage();
             return 0;
 
-        case OPTION_NO_RESET:
+        case OPTION_NORESET:
             reset_after = false;
             break;
         case 'w':
