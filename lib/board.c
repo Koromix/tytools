@@ -41,14 +41,7 @@ static const ty_board_model teensypp10 = {
     .usage = 0x1A,
     .halfkay_version = 0,
     .code_size = 64512,
-    .block_size = 256,
-
-    .toolchain = TY_TOOLCHAIN_AVR,
-    .core = "teensy",
-    .frequencies = {16000000, 8000000, 4000000, 2000000, 1000000},
-    .cflags = "-mmcu=at90usb646",
-    .cxxflags = "-mmcu=at90usb646",
-    .ldflags = "-mmcu=at90usb646"
+    .block_size = 256
 };
 
 static const ty_board_model teensy20 = {
@@ -59,14 +52,7 @@ static const ty_board_model teensy20 = {
     .usage = 0x1B,
     .halfkay_version = 0,
     .code_size = 32256,
-    .block_size = 128,
-
-    .toolchain = TY_TOOLCHAIN_AVR,
-    .core = "teensy",
-    .frequencies = {16000000, 8000000, 4000000, 2000000, 1000000},
-    .cflags = "-mmcu=atmega32u4",
-    .cxxflags = "-mmcu=atmega32u4",
-    .ldflags = "-mmcu=atmega32u4"
+    .block_size = 128
 };
 
 static const ty_board_model teensypp20 = {
@@ -77,14 +63,7 @@ static const ty_board_model teensypp20 = {
     .usage = 0x1C,
     .halfkay_version = 1,
     .code_size = 130048,
-    .block_size = 256,
-
-    .toolchain = TY_TOOLCHAIN_AVR,
-    .core = "teensy",
-    .frequencies = {16000000, 8000000, 4000000, 2000000, 1000000},
-    .cflags = "-mmcu=at90usb1286",
-    .cxxflags = "-mmcu=at90usb1286",
-    .ldflags = "-mmcu=at90usb1286"
+    .block_size = 256
 };
 
 static const ty_board_model teensy30 = {
@@ -95,14 +74,7 @@ static const ty_board_model teensy30 = {
     .usage = 0x1D,
     .halfkay_version = 2,
     .code_size = 131072,
-    .block_size = 1024,
-
-    .toolchain = TY_TOOLCHAIN_ARM,
-    .core = "teensy3",
-    .frequencies = {96000000, 48000000, 24000000},
-    .cflags = "-mcpu=cortex-m4 -mthumb -D__MK20DX128__",
-    .cxxflags = "-mcpu=cortex-m4 -mthumb -D__MK20DX128__",
-    .ldflags = "-mcpu=cortex-m4 -mthumb -T\"$teensyduino/mk20dx128.ld\""
+    .block_size = 1024
 };
 
 static const ty_board_model teensy31 = {
@@ -113,14 +85,7 @@ static const ty_board_model teensy31 = {
     .usage = 0x1E,
     .halfkay_version = 2,
     .code_size = 262144,
-    .block_size = 1024,
-
-    .toolchain = TY_TOOLCHAIN_ARM,
-    .core = "teensy3",
-    .frequencies = {96000000, 48000000, 24000000},
-    .cflags = "-mcpu=cortex-m4 -mthumb -D__MK20DX256__",
-    .cxxflags = "-mcpu=cortex-m4 -mthumb -D__MK20DX256__",
-    .ldflags = "-mcpu=cortex-m4 -mthumb -T\"$teensyduino/mk20dx256.ld\""
+    .block_size = 1024
 };
 
 static const struct firmware_signature signatures[] = {

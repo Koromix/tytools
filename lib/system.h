@@ -86,11 +86,7 @@ uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
 int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
-
 int ty_stat(const char *path, ty_file_info *info, bool follow_symlink);
-
-int ty_find_config(char **rpath, const char *filename);
-int ty_user_config(char **rpath, const char *filename, bool make_parents);
 
 int ty_terminal_change(uint32_t flags);
 
