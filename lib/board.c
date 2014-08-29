@@ -657,7 +657,7 @@ static int halfkay_send(ty_board *board, size_t addr, void *data, size_t size, u
     return 0;
 }
 
-int ty_board_upload(ty_board *board, ty_firmware *f)
+int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
 {
     assert(board);
     assert(board->h);
@@ -667,14 +667,26 @@ int ty_board_upload(ty_board *board, ty_firmware *f)
 
     const ty_board_model *model = board->model;
 
+    int r;
+
     if (f->size > model->code_size)
         return ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", model->desc);
+
+    if (!(flags & TY_BOARD_UPLOAD_NOCHECK)) {
+        const ty_board_model *guess = ty_board_test_firmware(f);
+
+        if (!guess) {
+            return ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a Teensy device");
+        } else if (guess != model) {
+            return ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->desc);
+        }
+    }
 
     for (size_t addr = 0; addr < f->size; addr += model->block_size) {
         size_t size = TY_MIN(model->block_size, (size_t)(f->size - addr));
 
         // Writing to the first block triggers flash erasure hence the longer timeout
-        int r = halfkay_send(board, addr, f->image + addr, size, addr ? 300 : 3000);
+        r = halfkay_send(board, addr, f->image + addr, size, addr ? 300 : 3000);
         if (r < 0)
             return r;
 

@@ -108,7 +108,6 @@ int upload(int argc, char *argv[])
 {
     ty_board *board;
     ty_firmware *firmware = NULL;
-    const ty_board_model *guess;
     uint64_t mtime = 0;
     int r;
 
@@ -190,22 +189,11 @@ int upload(int argc, char *argv[])
     printf("Model: %s\n", board->model->desc);
     printf("Firmware: %s\n", image_filename);
 
-    guess = ty_board_test_firmware(firmware);
-    if (!guess) {
-        r = ty_error(TY_ERROR_FIRMWARE, "Firmware was not compiled for a Teensy device");
-        goto cleanup;
-    }
-
-    if (guess != board->model) {
-        r = ty_error(TY_ERROR_FIRMWARE, "Firmware is compiled for %s", guess->desc);
-        goto cleanup;
-    }
-
     printf("Usage: %.1f%% (%zu bytes)\n",
            (double)firmware->size / (double)board->model->code_size * 100.0, firmware->size);
 
     printf("Uploading firmware...\n");
-    r = ty_board_upload(board, firmware);
+    r = ty_board_upload(board, firmware, 0);
     if (r < 0)
         goto cleanup;
 
