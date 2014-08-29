@@ -93,7 +93,7 @@ typedef struct ty_hid_descriptor {
     uint16_t usage_page;
 } ty_hid_descriptor;
 
-int ty_usb_list_devices(ty_device_type type, ty_device_walker *f, void *udata);
+int ty_device_list(ty_device_type type, ty_device_walker *f, void *udata);
 
 ty_device *ty_device_ref(ty_device *dev);
 void ty_device_unref(ty_device *dev);

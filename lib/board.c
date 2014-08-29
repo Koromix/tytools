@@ -344,10 +344,10 @@ int ty_board_list(ty_board_walker *f, void *udata)
     ctx.f = f;
     ctx.udata = udata;
 
-    r = ty_usb_list_devices(TY_DEVICE_HID, list_walker, &ctx);
+    r = ty_device_list(TY_DEVICE_HID, list_walker, &ctx);
     if (r <= 0)
         return r;
-    r = ty_usb_list_devices(TY_DEVICE_SERIAL, list_walker, &ctx);
+    r = ty_device_list(TY_DEVICE_SERIAL, list_walker, &ctx);
     if (r <= 0)
         return r;
 

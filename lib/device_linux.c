@@ -193,7 +193,7 @@ cleanup:
     return r;
 }
 
-int ty_usb_list_devices(ty_device_type type, ty_device_walker *f, void *udata)
+int ty_device_list(ty_device_type type, ty_device_walker *f, void *udata)
 {
     const char *subsystem = NULL;
     struct udev_enumerate *enumerate;
