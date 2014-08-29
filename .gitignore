@@ -1,0 +1,4 @@
+build
+*.hex
+.tags*
+CMakeLists.txt.*

@@ -1,0 +1,32 @@
+# Maintainer: Niels Martignène <niels.martignene@gmail.com>
+
+pkgname=ty-git
+pkgver=
+pkgrel=1
+pkgdesc="Command-line program to manage Teensy devices"
+arch=('x86_64' 'i686')
+url="http://github.com/Koromix/ty"
+license=('GPL3')
+depends=('libudev.so' 'ninja')
+makedepends=('git')
+source=('git+https://github.com/Koromix/ty.git')
+md5sums=('SKIP')
+
+pkgver() {
+  cd ty
+
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd ty
+
+  cmake -DCMAKE_INSTALL_PREFIX=/usr
+  make
+}
+
+package() {
+  cd ty
+
+  make install DESTDIR="$pkgdir"
+}
