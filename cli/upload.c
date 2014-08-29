@@ -155,16 +155,8 @@ int upload(int argc, char *argv[])
             if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT)) {
                 printf("Triggering board reboot\n");
                 r = ty_board_reboot(board);
-                if (r < 0) {
-                    switch (r) {
-                    case TY_ERROR_TIMEOUT:
-                        printf("Reboot failed, press button manually\n");
-                        break;
-
-                    default:
-                        goto cleanup;
-                    }
-                }
+                if (r < 0)
+                    goto cleanup;
             } else {
                 // We can't reboot either :/
                 r = ty_error(TY_ERROR_MODE, "Cannot reboot the board");
