@@ -26,6 +26,11 @@ To install the dependencies on Debian or Ubuntu execute:
 sudo apt-get install git build-essential cmake libudev-dev
 ```
 
+On Arch Linux you can do so (as root):
+```bash
+pacman -S --needed git base-devel cmake udev
+```
+
 <a name="build_linux_compile"/>
 ### Compile
 
@@ -58,9 +63,14 @@ You will need to install CMake and MinGW (with make) to build ty under Windows. 
 
 An easier option is to cross-compile the windows binary from Linux. You need to install MinGW-w64 first.
 
-For Debian and Ubuntu, execute:
+On Debian and Ubuntu, install the mingw-w64 package:
 ```bash
 sudo apt-get install mingw-w64
+```
+
+If you use Arch Linux, execute as root:
+```
+pacman -S --needed mingw-w64-toolchain
 ```
 
 You can then use the appropriate toolchain file provided in the contrib/cmake directory:
