@@ -21,11 +21,9 @@ ty can be built using GCC or Clang. Building it results in a single command-line
 <a name="build_linux_dependencies"/>
 ### Dependencies
 
-cmake and libudev are the only dependencies needed at the moment.
-
-To install these on Ubuntu:
+To install the dependencies on Debian or Ubuntu execute:
 ```bash
-sudo apt-get install cmake libudev-dev
+sudo apt-get install git build-essential cmake libudev-dev
 ```
 
 <a name="build_linux_compile"/>
