@@ -1,6 +1,6 @@
 # Introduction
 
-ty is a command-line tool to manage Teensy devices (or teensies). it currently runs on Linux and Windows only.
+ty is a command-line tool to manage Teensy devices (or teensies). It currently runs on Linux and Windows only.
 
 - [Build instructions](#build)
   - [Linux](#build_linux)
