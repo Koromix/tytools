@@ -39,9 +39,14 @@ git clone https://github.com/Koromix/ty.git
 You can then build ty:
 ```bash
 cd ty
-mkdir build && cd build
-cmake ..
+mkdir -p build/linux && cd build/linux
+cmake ../..
 make
+```
+
+If you want to build a debug binary, you have to specify the build type:
+```bash
+cmake -DCMAKE_BUILD_TYPE=Debug ../..
 ```
 
 <a name="build_windows"/>
@@ -50,6 +55,23 @@ make
 Pre-built binaries are provided in the releases section.
 
 You will need to install CMake and MinGW (with make) to build ty under Windows. Visual Studio is not supported at the moment.
+
+### Cross-compilation
+
+An easier option is to cross-compile the windows binary from Linux. You need to install MinGW-w64 first.
+
+For Debian and Ubuntu, execute:
+```bash
+sudo apt-get install mingw-w64
+```
+
+You can then use the appropriate toolchain file provided in the contrib/cmake directory:
+```bash
+cd ty
+mkdir -p build/win32 && cd build/win32
+cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/i686-w64-mingw32.cmake ../..
+make
+```
 
 <a name="usage"/>
 # Usage
