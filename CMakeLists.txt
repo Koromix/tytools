@@ -18,7 +18,17 @@
 cmake_minimum_required(VERSION 2.8)
 project(ty C)
 
-include(CheckSymbolExists)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBUDEV REQUIRED libudev)
+
+    include_directories(${LIBUDEV_INCLUDE_DIRS})
+    list(APPEND LIBRARIES ${LIBUDEV_LIBRARIES})
+endif()
+
+if(WIN32)
+    list(APPEND LIBRARIES setupapi hid)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAGS "-std=gnu99 -D_GNU_SOURCE -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
@@ -27,15 +37,16 @@ if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_C_FLAG_RELEASE "-O2 -fno-omit-frame-pointer -s -D_FORTIFY_SOURCE=2")
 endif()
 
-include_directories(lib "${CMAKE_CURRENT_BINARY_DIR}/lib")
-
 if(WIN32)
     add_definitions(-DWINVER=0x0600 -D_WIN32_WINNT=0x0600)
 endif()
 
+include(CheckSymbolExists)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
 
 configure_file(lib/config.h.in lib/config.h)
+
+include_directories(lib "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
 set(SOURCES lib/board.c
             lib/common.c
@@ -50,7 +61,6 @@ set(SOURCES lib/board.c
             cli/monitor.c
             cli/reset.c
             cli/upload.c)
-
 if(WIN32)
     list(APPEND SOURCES lib/system_win32.c
                         lib/device_win32.c)
@@ -58,12 +68,6 @@ else()
     list(APPEND SOURCES lib/system_unix.c
                         lib/device_linux.c
                         lib/device_unix.c)
-endif()
-
-if(WIN32)
-    list(APPEND LIBRARIES setupapi hid)
-else()
-    list(APPEND LIBRARIES udev)
 endif()
 
 add_executable(ty ${SOURCES})
