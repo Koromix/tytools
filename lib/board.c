@@ -116,9 +116,7 @@ static const ty_board_mode disk_mode = {
     .type = TY_DEVICE_HID,
     .pid = 0x484,
     .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_DISK"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const ty_board_mode flightsim_mode = {
@@ -128,9 +126,7 @@ static const ty_board_mode flightsim_mode = {
     .type = TY_DEVICE_HID,
     .pid = 0x488,
     .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_FLIGHTSIM"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const ty_board_mode hid_mode = {
@@ -140,9 +136,7 @@ static const ty_board_mode hid_mode = {
     .type = TY_DEVICE_HID,
     .pid = 0x482,
     .iface = 2,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_HID"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const ty_board_mode midi_mode = {
@@ -152,9 +146,7 @@ static const ty_board_mode midi_mode = {
     .type = TY_DEVICE_HID,
     .pid = 0x485,
     .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_MIDI"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const ty_board_mode rawhid_mode = {
@@ -164,9 +156,7 @@ static const ty_board_mode rawhid_mode = {
     .type = TY_DEVICE_HID,
     .pid = 0x486,
     .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_RAWHID"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const ty_board_mode serial_mode = {
@@ -176,9 +166,7 @@ static const ty_board_mode serial_mode = {
     .type = TY_DEVICE_SERIAL,
     .pid = 0x483,
     .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_SERIAL"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const ty_board_mode serial_hid_mode = {
@@ -188,9 +176,7 @@ static const ty_board_mode serial_hid_mode = {
     .type = TY_DEVICE_SERIAL,
     .pid = 0x487,
     .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_SERIAL_HID"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 const ty_board_mode *ty_board_modes[] = {
