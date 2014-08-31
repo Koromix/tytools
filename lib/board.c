@@ -420,8 +420,6 @@ int ty_board_probe(ty_board *board, int timeout)
     if (timeout >= 0)
         end = ty_millis() + (uint64_t)timeout;
 
-
-
     do {
         r = ty_board_find(&newboard, board->dev->path, 0);
         if (r < 0)
