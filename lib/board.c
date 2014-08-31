@@ -227,18 +227,31 @@ const ty_board_mode *ty_board_find_mode(const char *name)
     return NULL;
 }
 
-// Teensy Bootloader shows the serial number as hexadecimal with
-// prefixed zeros (which would suggest octal to stroull).
+// Two quirks have to be accounted for.
+//
+// The bootloader returns the serial number as hexadecimal with prefixed zeros
+// (which would suggest octal to stroull).
+//
+// In other modes a decimal value is used, but Teensyduino 1.19 added a workaround
+// for a Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
+// See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194d
 static uint64_t parse_serial_number(const char *s)
 {
     if (!s)
         return 0;
 
     int base = 10;
+    uint64_t serial;
+
     if (*s == '0')
         base = 16;
 
-    return strtoull(s, NULL, base);
+    serial = strtoull(s, NULL, base);
+
+    if (base == 16 && serial < 10000000)
+        serial *= 10;
+
+    return serial;
 }
 
 struct list_context {
