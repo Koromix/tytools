@@ -59,6 +59,7 @@ set(SOURCES lib/board.c
             lib/device.c
             lib/firmware.c
             lib/firmware_ihex.c
+            lib/list.h
             lib/system.c
 
             cli/list.c
