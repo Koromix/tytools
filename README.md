@@ -15,6 +15,8 @@ ty is a command-line tool to manage Teensy devices (or teensies). It currently r
 
 ty can be built using GCC or Clang. Building it results in a single command-line binary that can be moved around.
 
+Experimental features are disabled by default, enable them by turning ON the EXPERIMENTAL option in cmake with `-DEXPERIMENTAL=1`.
+
 <a name="build_linux"/>
 ## Linux
 
