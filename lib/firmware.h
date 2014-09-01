@@ -31,7 +31,7 @@ typedef struct ty_firmware {
 
 extern const size_t ty_firmware_max_size;
 
-int ty_firmware_load_ihex(ty_firmware **rfirmware, const char *filename);
+int ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware);
 void ty_firmware_free(ty_firmware *f);
 
 TY_C_END

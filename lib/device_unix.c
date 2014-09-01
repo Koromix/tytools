@@ -27,7 +27,7 @@
 #include "system.h"
 #include "device.h"
 
-int ty_device_open(ty_handle **rh, ty_device *dev, bool block)
+int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
 {
     assert(rh);
     assert(dev);

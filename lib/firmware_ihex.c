@@ -134,7 +134,7 @@ static int parse_line(struct parser_context *ctx, const char *line)
     return 1;
 }
 
-int ty_firmware_load_ihex(ty_firmware **rfirmware, const char *filename)
+int ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware)
 {
     assert(rfirmware);
     assert(filename);

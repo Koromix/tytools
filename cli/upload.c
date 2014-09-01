@@ -66,7 +66,7 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
         return r;
 
     if (!*rfirmware || info.mtime != *rmtime) {
-        r = ty_firmware_load_ihex(&firmware, filename);
+        r = ty_firmware_load_ihex(filename, &firmware);
         if (r < 0)
             return r;
 

@@ -101,7 +101,7 @@ const ty_board_model *ty_board_find_model(const char *name);
 const ty_board_mode *ty_board_find_mode(const char *name);
 
 int ty_board_list(ty_board_walker *f, void *udata);
-int ty_board_find(ty_board **rboard, const char *path, uint64_t serial);
+int ty_board_find(const char *path, uint64_t serial, ty_board **rboard);
 
 ty_board *ty_board_ref(ty_board *teensy);
 void ty_board_unref(ty_board *teensy);

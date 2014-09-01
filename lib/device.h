@@ -99,7 +99,7 @@ ty_device *ty_device_ref(ty_device *dev);
 void ty_device_unref(ty_device *dev);
 int ty_device_dup(ty_device *dev, ty_device **rdev);
 
-int ty_device_open(ty_handle **rh, ty_device *dev, bool block);
+int ty_device_open(ty_device *dev, bool block, ty_handle **rh);
 void ty_device_close(ty_handle *h);
 
 int ty_serial_set_control(ty_handle *h, uint32_t rate, uint16_t flags);

@@ -346,7 +346,7 @@ static int find_walker(ty_board *board, void *udata)
     return 0;
 }
 
-int ty_board_find(ty_board **rboard, const char *path, uint64_t serial)
+int ty_board_find(const char *path, uint64_t serial, ty_board **rboard)
 {
     assert(rboard);
 
@@ -440,7 +440,7 @@ int ty_board_probe(ty_board *board, int timeout)
         end = ty_millis() + (uint64_t)timeout;
 
     do {
-        r = ty_board_find(&newboard, board->dev->path, 0);
+        r = ty_board_find(board->dev->path, 0, &newboard);
         if (r < 0)
             return r;
 
@@ -454,7 +454,7 @@ int ty_board_probe(ty_board *board, int timeout)
     board->fail_at = 0;
 
     ty_error_mask(TY_ERROR_NOT_FOUND);
-    r = ty_device_open(&newboard->h, newboard->dev, false);
+    r = ty_device_open(newboard->dev, false, &newboard->h);
     ty_error_unmask();
     if (r < 0) {
         if (r == TY_ERROR_NOT_FOUND)

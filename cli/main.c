@@ -157,7 +157,7 @@ int get_board(ty_board **rboard)
 
     int r;
 
-    r = ty_board_find(&board, device_path, device_serial);
+    r = ty_board_find(device_path, device_serial, &board);
     if (r < 0) {
         return r;
     } else if (!r) {
