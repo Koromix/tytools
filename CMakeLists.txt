@@ -41,6 +41,11 @@ if(WIN32)
     add_definitions(-DWINVER=0x0600 -D_WIN32_WINNT=0x0600)
 endif()
 
+set(EXPERIMENTAL OFF CACHE BOOL "Build experimental and unsafe features")
+if(EXPERIMENTAL)
+    add_definitions(-DTY_EXPERIMENTAL=1)
+endif()
+
 include(CheckSymbolExists)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
 

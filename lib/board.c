@@ -33,6 +33,8 @@ static const uint16_t teensy_vid = 0x16C0;
 static const size_t seremu_packet_size = 32;
 static const uint64_t probe_fail_delay = 8000;
 
+#ifdef TY_EXPERIMENTAL
+
 static const ty_board_model teensypp10 = {
     .name = "teensy++10",
     .mcu = "at90usb646",
@@ -66,6 +68,8 @@ static const ty_board_model teensypp20 = {
     .block_size = 256
 };
 
+#endif
+
 static const ty_board_model teensy30 = {
     .name = "teensy30",
     .mcu = "mk20dx128",
@@ -76,6 +80,8 @@ static const ty_board_model teensy30 = {
     .code_size = 131072,
     .block_size = 1024
 };
+
+#ifdef TY_EXPERIMENTAL
 
 static const ty_board_model teensy31 = {
     .name = "teensy31",
@@ -88,12 +94,18 @@ static const ty_board_model teensy31 = {
     .block_size = 1024
 };
 
+#endif
+
 static const struct firmware_signature signatures[] = {
+#ifdef TY_EXPERIMENTAL
     {&teensypp10, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
     {&teensy20,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
     {&teensypp20, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
+#endif
     {&teensy30,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+#ifdef TY_EXPERIMENTAL
     {&teensy31,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+#endif
 
     {0}
 };
@@ -192,11 +204,15 @@ const ty_board_mode *ty_board_modes[] = {
 };
 
 const ty_board_model *ty_board_models[] = {
+#ifdef TY_EXPERIMENTAL
     &teensypp10,
     &teensy20,
     &teensypp20,
+#endif
     &teensy30,
+#ifdef TY_EXPERIMENTAL
     &teensy31,
+#endif
 
     NULL
 };
