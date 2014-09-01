@@ -121,16 +121,6 @@ static const ty_board_mode bootloader_mode = {
                     TY_BOARD_CAPABILITY_RESET
 };
 
-static const ty_board_mode disk_mode = {
-    .name = "disk",
-    .desc = "Disk",
-
-    .type = TY_DEVICE_HID,
-    .pid = 0x484,
-    .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
-
 static const ty_board_mode flightsim_mode = {
     .name = "flightsim",
     .desc = "FlightSim",
