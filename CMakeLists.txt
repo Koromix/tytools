@@ -30,11 +30,19 @@ if(WIN32)
     list(APPEND LIBRARIES setupapi hid)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCC)
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_COMPILER_IS_CLANG 1)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set(CMAKE_C_FLAGS "-std=gnu99 -D_GNU_SOURCE -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
 
-    set(CMAKE_C_FLAGS_DEBUG "-Og -fno-omit-frame-pointer -ggdb -D_FORTIFY_SOURCE=2")
-    set(CMAKE_C_FLAG_RELEASE "-O2 -fno-omit-frame-pointer -s -D_FORTIFY_SOURCE=2")
+    if(CMAKE_COMPILER_IS_GNUCC)
+        set(CMAKE_C_FLAGS_DEBUG "-Og -ggdb -D_FORTIFY_SOURCE=2")
+    else()
+        set(CMAKE_C_FLAGS_DEBUG "-O1 -g -D_FORTIFY_SOURCE=2")
+    endif()
+    set(CMAKE_C_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2")
 endif()
 
 if(WIN32)
