@@ -81,15 +81,10 @@ bool ty_win32_test_version(ty_win32_version version)
 
 uint64_t ty_millis(void)
 {
-    FILETIME ft;
-    uint64_t millis;
+    if (!ty_win32_test_version(TY_WIN32_VISTA))
+        return GetTickCount();
 
-    GetSystemTimeAsFileTime(&ft);
-
-    millis = ((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime;
-    millis = (millis / 10000) - delta_epoch;
-
-    return millis;
+    return GetTickCount64();
 }
 
 void ty_delay(unsigned int ms)

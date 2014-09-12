@@ -33,11 +33,18 @@ static struct termios orig_tio;
 
 uint64_t ty_millis(void)
 {
-    struct timeval tv;
+    struct timespec spec;
     uint64_t millis;
+    int r;
 
-    gettimeofday(&tv, NULL);
-    millis = (uint64_t)tv.tv_sec * 1000 + (uint64_t)tv.tv_usec / 1000;
+#ifdef CLOCK_MONOTONIC_RAW
+    r = clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+#else
+    r = clock_gettime(CLOCK_MONOTONIC, &spec);
+#endif
+    assert(!r);
+
+    millis = (uint64_t)spec.tv_sec * 1000 + (uint64_t)spec.tv_nsec / 10000000;
 
     return millis;
 }
