@@ -30,12 +30,6 @@
 
 TY_C_BEGIN
 
-enum {
-    TY_MKDIR_MAKE_PARENTS  = 1,
-    TY_MKDIR_IGNORE_EXISTS = 2,
-    TY_MKDIR_OMIT_LAST     = 4
-};
-
 typedef enum ty_file_type {
     TY_FILE_UNKNOWN,
 
@@ -85,7 +79,6 @@ bool ty_win32_test_version(ty_win32_version version);
 uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
-int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
 int ty_stat(const char *path, ty_file_info *info, bool follow_symlink);
 
 int ty_terminal_change(uint32_t flags);
