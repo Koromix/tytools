@@ -40,7 +40,7 @@ static const struct option long_options[] = {
     {0}
 };
 
-static const uint64_t manual_reboot_delay = 4000;
+static const int manual_reboot_delay = 4000;
 
 static bool reset_after = true;
 static bool wait_device = false;
@@ -81,32 +81,9 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
     return 0;
 }
 
-static int wait_board(ty_board *board, bool warn)
-{
-    uint64_t warn_at = 0;
-    int r;
-
-    if (warn)
-        warn_at = ty_millis() + manual_reboot_delay;
-
-    r = 0;
-    while (!r || !ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
-        if (r && warn_at && ty_millis() >= warn_at) {
-            printf("Reboot didn't work, press button manually\n");
-            warn_at = 0;
-        }
-
-        r = ty_board_probe(board, 500);
-        if (r < 0)
-            return r;
-    }
-
-    return 0;
-}
-
 int upload(int argc, char *argv[])
 {
-    ty_board *board;
+    ty_board *board = NULL;
     ty_firmware *firmware = NULL;
     uint64_t mtime = 0;
     int r;
@@ -150,25 +127,27 @@ int upload(int argc, char *argv[])
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
         if (wait_device) {
             printf("Waiting for device...\n"
-                   "     (hint: press button to reboot)\n");
+                   "  (hint: press button to reboot)\n");
         } else {
-            if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT)) {
-                printf("Triggering board reboot\n");
-                r = ty_board_reboot(board);
-                if (r < 0)
-                    goto cleanup;
-            } else {
-                // We can't reboot either :/
-                r = ty_error(TY_ERROR_MODE, "Cannot reboot the board");
+            printf("Triggering board reboot\n");
+            r = ty_board_reboot(board);
+            if (r < 0)
                 goto cleanup;
-            }
         }
-
-        r = wait_board(board, !wait_device);
-        if (r < 0)
-            goto cleanup;
     }
 
+wait:
+    r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_UPLOAD, wait_device ? -1 : manual_reboot_delay);
+    if (r < 0)
+        goto cleanup;
+    if (!r) {
+        printf("Reboot didn't work, press button manually\n");
+        wait_device = true;
+
+        goto wait;
+    }
+
+    // Maybe it changed?
     r = reload_firmware(&firmware, image_filename, &mtime);
     if (r < 0)
         goto cleanup;
@@ -201,6 +180,7 @@ int upload(int argc, char *argv[])
     r = 0;
 cleanup:
     ty_firmware_free(firmware);
+    ty_board_unref(board);
     return r;
 
 usage:

@@ -52,8 +52,6 @@ static const char *generic_message(int err)
         return "Wrong mode";
     case TY_ERROR_RANGE:
         return "Out of range error";
-    case TY_ERROR_TIMEOUT:
-        return "Timeout";
     case TY_ERROR_SYSTEM:
         return "System error";
     case TY_ERROR_PARSE:

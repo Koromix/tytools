@@ -24,10 +24,12 @@
 
 TY_C_BEGIN
 
+struct ty_board_manager;
 struct ty_board;
 
 void print_supported_models(void);
 
+int get_manager(struct ty_board_manager **rmanager);
 int get_board(struct ty_board **rboard);
 
 TY_C_END

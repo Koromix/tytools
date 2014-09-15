@@ -20,6 +20,148 @@
 #include "common.h"
 #include <unistd.h>
 #include "device.h"
+#include "list.h"
+
+struct callback {
+    ty_list_head list;
+    int id;
+
+    ty_device_callback_func *f;
+    void *udata;
+};
+
+int _ty_device_monitor_init(ty_device_monitor *monitor)
+{
+    ty_list_init(&monitor->callbacks);
+    ty_list_init(&monitor->devices);
+
+    return 0;
+}
+
+void _ty_device_monitor_release(ty_device_monitor *monitor)
+{
+    ty_list_foreach(cur, &monitor->callbacks) {
+        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        free(callback);
+    }
+
+    ty_list_foreach(cur, &monitor->devices) {
+        ty_device *dev = ty_list_entry(cur, ty_device, list);
+        ty_device_unref(dev);
+    }
+}
+
+int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata)
+{
+    assert(monitor);
+    assert(f);
+
+    struct callback *callback = calloc(1, sizeof(*callback));
+    if (!callback)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    callback->id = monitor->callback_id++;
+    callback->f = f;
+    callback->udata = udata;
+
+    ty_list_append(&monitor->callbacks, &callback->list);
+
+    return callback->id;
+}
+
+static void drop_callback(struct callback *callback)
+{
+    ty_list_remove(&callback->list);
+    free(callback);
+}
+
+void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
+{
+    assert(monitor);
+    assert(id >= 0);
+
+    ty_list_foreach(cur, &monitor->callbacks) {
+        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        if (callback->id == id) {
+            drop_callback(callback);
+            break;
+        }
+    }
+}
+
+static ty_device *find_device(ty_device_monitor *monitor, const char *key)
+{
+    ty_list_foreach(cur, &monitor->devices) {
+        ty_device *dev = ty_list_entry(cur, ty_device, list);
+
+        if (strcmp(dev->key, key) == 0)
+            return dev;
+    }
+
+    return NULL;
+}
+
+static int trigger_callbacks(ty_device *dev, ty_device_event event)
+{
+    ty_list_foreach(cur, &dev->monitor->callbacks) {
+        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        int r;
+
+        r = (*callback->f)(dev, event, callback->udata);
+        if (r < 0)
+            return r;
+        if (r) {
+            ty_list_remove(&callback->list);
+            free(callback);
+        }
+    }
+
+    return 0;
+}
+
+int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev)
+{
+    if (find_device(monitor, dev->key))
+        return 0;
+
+    ty_device_ref(dev);
+
+    dev->monitor = monitor;
+    ty_list_append(&monitor->devices, &dev->list);
+
+    return trigger_callbacks(dev, TY_DEVICE_EVENT_ADDED);
+}
+
+void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key)
+{
+    ty_device *dev;
+
+    dev = find_device(monitor, key);
+    if (!dev)
+        return;
+
+    trigger_callbacks(dev, TY_DEVICE_EVENT_REMOVED);
+
+    ty_list_remove(&dev->list);
+    ty_device_unref(dev);
+}
+
+int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata)
+{
+    assert(monitor);
+    assert(f);
+
+    ty_list_foreach(cur, &monitor->devices) {
+        ty_device *dev = ty_list_entry(cur, ty_device, list);
+        int r;
+
+        r = (*f)(dev, TY_DEVICE_EVENT_ADDED, udata);
+        if (r)
+            return r;
+    }
+
+    return 0;
+}
 
 ty_device *ty_device_ref(ty_device *dev)
 {
@@ -32,59 +174,11 @@ ty_device *ty_device_ref(ty_device *dev)
 void ty_device_unref(ty_device *dev)
 {
     if (dev && !--dev->refcount) {
-        free(dev->node);
-        free(dev->path);
-        free(dev->serial);
-
-#ifdef _WIN32
         free(dev->key);
-        free(dev->id);
-#endif
+        free(dev->path);
+        free(dev->node);
+        free(dev->serial);
 
         free(dev);
     }
-}
-
-int ty_device_dup(ty_device *dev, ty_device **rdev)
-{
-    ty_device *copy;
-    int r;
-
-#define STRDUP(s,dest) \
-        do { \
-            if (s) { \
-                dest = strdup(s); \
-                if (!dest) { \
-                    r = ty_error(TY_ERROR_MEMORY, NULL); \
-                    goto error; \
-                } \
-            } \
-        } while (false)
-
-    copy = calloc(1, sizeof(*copy));
-    if (!copy)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-    copy->refcount = 1;
-
-    copy->type = dev->type;
-    STRDUP(dev->node, copy->node);
-    STRDUP(dev->path, copy->path);
-    copy->iface = dev->iface;
-    copy->vid = dev->vid;
-    copy->pid = dev->pid;
-    STRDUP(dev->serial, copy->serial);
-
-#ifdef _WIN32
-    STRDUP(dev->key, copy->key);
-    STRDUP(dev->id, copy->id);
-#endif
-
-#undef STRDUP
-
-    *rdev = copy;
-    return 0;
-
-error:
-    ty_device_unref(copy);
-    return r;
 }

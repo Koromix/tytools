@@ -20,6 +20,7 @@
 #include "common.h"
 #include <libudev.h>
 #include <linux/hidraw.h>
+#include <poll.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "device.h"
@@ -32,46 +33,21 @@ struct udev_aggregate {
 
 static struct udev *udev = NULL;
 
-static void free_udev(void)
+static int compute_device_path(char **rpath, const char *key)
 {
-    udev_unref(udev);
-}
-
-static int init_udev(void)
-{
-    if (udev)
-        return 0;
-
-    // Quick inspection of libudev reveals it fails with malloc only
-    udev = udev_new();
-    if (!udev)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    // Avoid noise in valgrind (suppression file may be better?)
-    atexit(free_udev);
-
-    return 0;
-}
-
-static int get_device_path(char **rpath, struct udev_aggregate *agg)
-{
-    const char *path, *end;
+    const char *end;
     uint8_t buf;
     int r, len;
 
-    path = udev_device_get_devpath(agg->dev);
-    if (!path)
+    key = strstr(key, "/usb");
+    if (!key || strlen(key) < 5)
         return 0;
+    key += 5;
 
-    path = strstr(path, "/usb");
-    if (!path || strlen(path) < 5)
-        return 0;
-    path += 5;
-
-    r = sscanf(path, "/%hhu%n", &buf, &len);
+    r = sscanf(key, "/%hhu%n", &buf, &len);
     if (r < 1)
         return 0;
-    end = path + len;
+    end = key + len;
 
     do {
         len = 0;
@@ -82,15 +58,15 @@ static int get_device_path(char **rpath, struct udev_aggregate *agg)
     if (*end != '/')
         return 0;
 
-    path++;
+    key++;
 
     // Account for 'usb-' prefix and NUL byte
-    *rpath = malloc((size_t)(end - path) + 5);
+    *rpath = malloc((size_t)(end - key) + 5);
     if (!*rpath)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
     strcpy(*rpath, "usb-");
-    strncat(*rpath, path, (size_t)(end - path));
+    strncat(*rpath, key, (size_t)(end - key));
 
     return 1;
 }
@@ -100,14 +76,30 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
     const char *buf;
     int r;
 
+    buf = udev_device_get_subsystem(agg->dev);
+    if (!buf)
+        return 0;
+
+    if (strcmp(buf, "hidraw") == 0) {
+        dev->type = TY_DEVICE_HID;
+    } else if (strcmp(buf, "tty") == 0) {
+        dev->type = TY_DEVICE_SERIAL;
+    } else {
+        return 0;
+    }
+
     buf = udev_device_get_devnode(agg->dev);
     if (!buf || access(buf, F_OK) != 0)
         return 0;
     dev->node = strdup(buf);
-    if (!buf)
+    if (!dev->node)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    r = get_device_path(&dev->path, agg);
+    dev->key = strdup(udev_device_get_devpath(agg->dev));
+    if (!dev->key)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    r = compute_device_path(&dev->path, dev->key);
     if (r <= 0)
         return r;
 
@@ -128,16 +120,14 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
         return 0;
 
     buf = udev_device_get_property_value(agg->usb, "ID_SERIAL_SHORT");
-    if (!buf)
-        return 0;
-    dev->serial = strdup(buf);
-    if (!buf)
-        return ty_error(TY_ERROR_MEMORY, NULL);
+    if (buf) {
+        dev->serial = strdup(buf);
+        if (!dev->serial)
+            return ty_error(TY_ERROR_MEMORY, NULL);
+    }
 
     errno = 0;
     buf = udev_device_get_devpath(agg->iface);
-    if (!buf)
-        return 0;
     buf += strlen(buf) - 1;
     dev->iface = (uint8_t)strtoul(buf, NULL, 10);
     if (errno)
@@ -146,22 +136,13 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
     return 1;
 }
 
-static int read_device_information(ty_device **rdev, struct udev_list_entry *entry,
-                                   ty_device_type type)
+static int read_device_information(struct udev_device *udev_dev, ty_device **rdev)
 {
-    const char *name;
     struct udev_aggregate agg;
     ty_device *dev = NULL;
     int r;
 
-    name = udev_list_entry_get_name(entry);
-    if (!name)
-        return 0;
-
-    agg.dev = udev_device_new_from_syspath(udev, name);
-    if (!agg.dev)
-        return 0;
-
+    agg.dev = udev_dev;
     agg.usb = udev_device_get_parent_with_subsystem_devtype(agg.dev, "usb", "usb_device");
     agg.iface = udev_device_get_parent_with_subsystem_devtype(agg.dev, "usb", "usb_interface");
     if (!agg.usb || !agg.iface) {
@@ -176,8 +157,6 @@ static int read_device_information(ty_device **rdev, struct udev_list_entry *ent
     }
     dev->refcount = 1;
 
-    dev->type = type;
-
     r = fill_device_details(dev, &agg);
     if (r <= 0)
         goto cleanup;
@@ -188,67 +167,175 @@ static int read_device_information(ty_device **rdev, struct udev_list_entry *ent
     r = 1;
 cleanup:
     ty_device_unref(dev);
-    if (agg.dev)
-        udev_device_unref(agg.dev);
     return r;
 }
 
-int ty_device_list(ty_device_type type, ty_device_walker *f, void *udata)
+static int list_devices(ty_device_monitor *monitor)
 {
-    const char *subsystem = NULL;
-    struct udev_enumerate *enumerate;
-    struct udev_list_entry *entries;
+    assert(monitor);
+
     int r;
 
-    switch (type) {
-    case TY_DEVICE_HID:
-        subsystem = "hidraw";
-        break;
-    case TY_DEVICE_SERIAL:
-        subsystem = "tty";
-        break;
-    };
+    r = udev_enumerate_scan_devices(monitor->enumerate);
+    if (r < 0)
+        return TY_ERROR_SYSTEM;
 
-    if (!udev) {
-        r = init_udev();
+    struct udev_list_entry *cur;
+    udev_list_entry_foreach(cur, udev_enumerate_get_list_entry(monitor->enumerate)) {
+        struct udev_device *udev_dev;
+        ty_device *dev;
+
+        udev_dev = udev_device_new_from_syspath(udev, udev_list_entry_get_name(cur));
+        if (!udev_dev) {
+            switch (errno) {
+            case ENOMEM:
+                return ty_error(TY_ERROR_MEMORY, NULL);
+            default:
+                break;
+            }
+            continue;
+        }
+
+        r = read_device_information(udev_dev, &dev);
+        udev_device_unref(udev_dev);
+        if (r < 0)
+            return r;
+        if (!r)
+            continue;
+
+        r = _ty_device_monitor_add(monitor, dev);
+        ty_device_unref(dev);
+
         if (r < 0)
             return r;
     }
 
-    // Fails only for memory reasons
-    enumerate = udev_enumerate_new(udev);
-    if (!enumerate)
+    return 0;
+}
+
+static void free_udev(void)
+{
+    udev_unref(udev);
+}
+
+int ty_device_monitor_new(ty_device_monitor **rmonitor)
+{
+    assert(rmonitor);
+
+    ty_device_monitor *monitor;
+    int r;
+
+    if (!udev) {
+        // Quick inspection of libudev reveals it fails with malloc only
+        udev = udev_new();
+        if (!udev)
+            return ty_error(TY_ERROR_MEMORY, NULL);
+
+        // valgrind compliance ;)
+        atexit(free_udev);
+    }
+
+    monitor = calloc(1, sizeof(*monitor));
+    if (!monitor)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    udev_enumerate_add_match_subsystem(enumerate, subsystem);
+    monitor->enumerate = udev_enumerate_new(udev);
+    if (!monitor->enumerate) {
+        // udev prints its own error messages
+        r = TY_ERROR_SYSTEM;
+        goto error;
+    }
+    udev_enumerate_add_match_is_initialized(monitor->enumerate);
 
-    r = udev_enumerate_scan_devices(enumerate);
+    monitor->monitor = udev_monitor_new_from_netlink(udev, "udev");
+    if (!monitor->monitor) {
+        r = TY_ERROR_SYSTEM;
+        goto error;
+    }
+
+    r = udev_monitor_enable_receiving(monitor->monitor);
     if (r < 0) {
-        r = ty_error(TY_ERROR_SYSTEM, "Unable to enumerate devices: %s", strerror(errno));
-        goto cleanup;
-    }
-    entries = udev_enumerate_get_list_entry(enumerate);
-
-    struct udev_list_entry *cur;
-    udev_list_entry_foreach(cur, entries) {
-        ty_device *dev = NULL;
-
-        r = read_device_information(&dev, cur, type);
-        if (r < 0)
-            goto cleanup;
-        if (!r)
-            continue;
-
-        r = (*f)(dev, udata);
-        ty_device_unref(dev);
-        if (r <= 0)
-            goto cleanup;
+        r = TY_ERROR_SYSTEM;
+        goto error;
     }
 
-    r = 1;
-cleanup:
-    udev_enumerate_unref(enumerate);
+    r = _ty_device_monitor_init(monitor);
+    if (r < 0)
+        goto error;
+
+    r = list_devices(monitor);
+    if (r < 0)
+        goto error;
+
+    *rmonitor = monitor;
+    return 0;
+
+error:
+    ty_device_monitor_free(monitor);
     return r;
+}
+
+void ty_device_monitor_free(ty_device_monitor *monitor)
+{
+    if (monitor) {
+        _ty_device_monitor_release(monitor);
+
+        udev_enumerate_unref(monitor->enumerate);
+        udev_monitor_unref(monitor->monitor);
+    }
+
+    free(monitor);
+}
+
+void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, ty_descriptor_set *set, int id)
+{
+    assert(monitor);
+    assert(set);
+
+    ty_descriptor_set_add(set, udev_monitor_get_fd(monitor->monitor), id);
+}
+
+int ty_device_monitor_refresh(ty_device_monitor *monitor)
+{
+    assert(monitor);
+
+    struct udev_device *udev_dev;
+    int r;
+
+    errno = 0;
+    while ((udev_dev = udev_monitor_receive_device(monitor->monitor))) {
+        const char *action = udev_device_get_action(udev_dev);
+
+        r = 0;
+        if (strcmp(action, "add") == 0) {
+            ty_device *dev = NULL;
+
+            r = read_device_information(udev_dev, &dev);
+            if (r > 0)
+                r = _ty_device_monitor_add(monitor, dev);
+
+            ty_device_unref(dev);
+        } else if (strcmp(action, "remove") == 0) {
+            _ty_device_monitor_remove(monitor, udev_device_get_devpath(udev_dev));
+        }
+
+        udev_device_unref(udev_dev);
+
+        if (r < 0)
+            return r;
+
+        errno = 0;
+    }
+    if (errno) {
+        switch (errno) {
+        case ENOMEM:
+            return ty_error(TY_ERROR_MEMORY, NULL);
+        default:
+            break;
+        }
+    }
+
+    return 1;
 }
 
 static void parse_descriptor(ty_hid_descriptor *desc, struct hidraw_report_descriptor *report)

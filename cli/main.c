@@ -67,10 +67,11 @@ static const struct command commands[] = {
     {0}
 };
 
+static ty_board_manager *board_manager;
+static ty_board *main_board;
+
 static const char *device_path = NULL;
 static uint64_t device_serial = 0;
-
-static ty_board *board = NULL;
 
 static void print_version(void)
 {
@@ -148,29 +149,61 @@ static int parse_device_path(char *device, const char **rpath, uint64_t *rserial
     return 0;
 }
 
+static bool test_board(ty_board *board)
+{
+    if (device_path && strcmp(board->dev->path, device_path) != 0)
+        return false;
+    if (device_serial && board->serial != device_serial)
+        return false;
+
+    return true;
+}
+
+static int board_callback(ty_board *board, ty_board_event event, void *udata)
+{
+    TY_UNUSED(udata);
+
+    switch (event) {
+    case TY_BOARD_EVENT_ADDED:
+        if (!main_board && test_board(board))
+            main_board = ty_board_ref(board);
+        break;
+
+    case TY_BOARD_EVENT_CHANGED:
+    case TY_BOARD_EVENT_CLOSED:
+        break;
+
+    case TY_BOARD_EVENT_DROPPED:
+        if (main_board == board) {
+            ty_board_unref(main_board);
+            main_board = NULL;
+        }
+        break;
+    }
+
+    return 0;
+}
+
+int get_manager(ty_board_manager **rmanager)
+{
+    *rmanager = board_manager;
+    return 0;
+}
+
 int get_board(ty_board **rboard)
 {
-    if (board) {
-        *rboard = board;
-        return 0;
-    }
-
-    int r;
-
-    r = ty_board_find(device_path, device_serial, &board);
-    if (r < 0) {
-        return r;
-    } else if (!r) {
+    if (!main_board)
         return ty_error(TY_ERROR_NOT_FOUND, "Board not found");
+
+    static ty_board *previous_board = NULL;
+    if (main_board != previous_board) {
+        if (main_board->mode)
+            printf("Board at '%s#%"PRIu64"' (%s)\n", main_board->dev->path, main_board->serial,
+                   main_board->mode->desc);
+        previous_board = main_board;
     }
 
-    r = ty_board_probe(board, 0);
-    if (r < 0)
-        return r;
-
-    printf("Board at '%s#%"PRIu64"' (%s)\n", board->dev->path, board->serial, board->mode->desc);
-
-    *rboard = board;
+    *rboard = ty_board_ref(main_board);
     return 0;
 }
 
@@ -240,6 +273,18 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    r = ty_board_manager_new(&board_manager);
+    if (r < 0)
+        return -r;
+
+    r = ty_board_manager_register_callback(board_manager, board_callback, NULL);
+    if (r < 0)
+        return -r;
+
+    r = ty_board_manager_refresh(board_manager);
+    if (r < 0)
+        return -r;
+
     r = 0;
     while (optind < argc) {
         const char *cmd_name = argv[optind];
@@ -264,7 +309,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    ty_board_unref(board);
+    ty_board_unref(main_board);
+    ty_board_manager_free(board_manager);
 
     return -r;
 

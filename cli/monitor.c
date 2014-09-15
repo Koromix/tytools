@@ -95,81 +95,59 @@ static int redirect_stdout(int *routfd)
     return 0;
 }
 
+static void fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
+{
+    ty_descriptor_set_clear(set);
+
+    ty_board_manager_get_descriptors(board->manager, set, 1);
 #ifdef _WIN32
-static ssize_t wait_descriptor(HANDLE *handles, size_t count, int timeout)
-{
-    DWORD ret = WaitForMultipleObjects(count, handles, FALSE,
-                                       timeout < 0 ? INFINITE : (DWORD)timeout);
-    switch (ret) {
-    case WAIT_FAILED:
-        return ty_error(TY_ERROR_SYSTEM, "WaitForMultipleObjects() failed: %s",
-                        ty_win32_strerror(0));
-    case WAIT_TIMEOUT:
-        return TY_ERROR_TIMEOUT;
-    }
-
-    return (ssize_t)(ret - WAIT_OBJECT_0);
-}
+    ty_descriptor_set_add(set, board->h->ov->hEvent, 2);
+    ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
 #else
-static ssize_t wait_descriptor(struct pollfd *pfd, size_t count, int timeout)
-{
-    int r;
-
-    if (timeout < 0)
-        timeout = -1;
-
-restart:
-    r = poll(pfd, count, timeout);
-    if (r < 0) {
-        if (errno == EINTR)
-            goto restart;
-        return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
-    }
-    if (!r)
-        return TY_ERROR_TIMEOUT;
-
-    for (size_t i = 0; i < count; i++) {
-        if (pfd[i].revents & (POLLIN | POLLERR | POLLHUP))
-            return (ssize_t)i;
-    }
-    assert(false);
-}
+    ty_descriptor_set_add(set, board->h->fd, 2);
+    ty_descriptor_set_add(set, STDIN_FILENO, 3);
 #endif
+}
 
 static int loop(ty_board *board, int outfd)
 {
-#ifdef _WIN32
-    HANDLE desc[2] = {NULL};
-#else
-    struct pollfd desc[2] = {{0}};
-#endif
-    size_t count = TY_COUNTOF(desc);
+    ty_descriptor_set set = {0};
     int timeout = -1;
     char buf[64];
     ssize_t r;
 
-#ifdef _WIN32
-    desc[0] = board->h->ov->hEvent;
-    desc[1] = GetStdHandle(STD_INPUT_HANDLE);
-#else
-    desc[0].events = POLLIN;
-    desc[0].fd = board->h->fd;
-    desc[1].events = POLLIN;
-    desc[1].fd = STDIN_FILENO;
-#endif
+    fill_descriptor_set(&set, board);
 
     while (true) {
         memset(buf, 0, sizeof(buf));
 
-        r = wait_descriptor(desc, count, timeout);
-        if (r < 0) {
-            if (r == TY_ERROR_TIMEOUT)
-                return 0;
+        r = ty_poll(&set, timeout);
+        if (r < 0)
             return (int)r;
-        }
 
         switch (r) {
         case 0:
+            return 0;
+
+        case 1:
+            r = ty_board_manager_refresh(board->manager);
+            if (r < 0)
+                return (int)r;
+
+            if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL)) {
+                printf("Waiting for device...\n");
+                r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, -1);
+                if (r < 0)
+                    return (int)r;
+
+                fill_descriptor_set(&set, board);
+
+                printf("Connection ready\n");
+            }
+
+            break;
+
+        case 2:
             r = ty_board_read_serial(board, buf, sizeof(buf));
             if (r < 0)
                 return (int)r;
@@ -184,7 +162,7 @@ static int loop(ty_board *board, int outfd)
 
             break;
 
-        case 1:
+        case 3:
             r = read(STDIN_FILENO, buf, sizeof(buf));
             if (r < 0) {
                 if (errno == EIO)
@@ -196,7 +174,7 @@ static int loop(ty_board *board, int outfd)
                 // EOF reached, don't listen to stdin anymore, and start timeout to give some
                 // time for the device to send any data before closing down
                 timeout = timeout_eof;
-                count--;
+                set.count--;
                 break;
             }
 
@@ -312,7 +290,8 @@ int monitor(int argc, char *argv[])
     ty_error_unmask();
     if (r < 0) {
         if (r != TY_ERROR_UNSUPPORTED)
-            return r;
+            goto cleanup;
+
 #ifdef _WIN32
         // We're not in a console, don't echo
         fake_echo = false;
@@ -321,37 +300,20 @@ int monitor(int argc, char *argv[])
 
     r = redirect_stdout(&outfd);
     if (r < 0)
-        return r;
+        goto cleanup;
 
-reconnect:
-    if (!board) {
-        r = get_board(&board);
-        if (r < 0)
-            return r;
-    } else {
-        printf("Waiting for serial connection...\n");
-        do {
-            r = ty_board_probe(board, 500);
-        } while (!r);
-        if (r < 0)
-            return r;
-    }
+    r = get_board(&board);
+    if (r < 0)
+        goto cleanup;
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
-        return ty_error(TY_ERROR_MODE, "Serial connection is not available in this mode");
-
-    printf("Connection ready\n");
-
-    if (board->dev->type == TY_DEVICE_SERIAL) {
-        r = ty_serial_set_control(board->h, device_rate, device_flags);
-        if (r < 0)
-            return r;
-    }
+    r = ty_board_control_serial(board, device_rate, device_flags);
+    if (r < 0)
+        goto cleanup;
 
     r = loop(board, outfd);
-    if (reconnect && r == TY_ERROR_IO)
-        goto reconnect;
 
+cleanup:
+    ty_board_unref(board);
     return r;
 
 usage:

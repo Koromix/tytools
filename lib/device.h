@@ -17,12 +17,94 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TY_USB_H
-#define TY_USB_H
+#ifndef TY_DEVICE_H
+#define TY_DEVICE_H
 
 #include "common.h"
+#ifdef _WIN32
+// FIXME: avoid this
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+#include "list.h"
+#include "system.h"
 
 TY_C_BEGIN
+
+typedef struct ty_device_monitor {
+    ty_list_head callbacks;
+    int callback_id;
+
+    ty_list_head devices;
+
+#if defined(_WIN32)
+    ty_list_head controllers;
+
+    CRITICAL_SECTION mutex;
+    int ret;
+    ty_list_head notifications;
+    void *event; // HANDLE
+
+    void *thread; // HANDLE
+    void *hwnd; // HANDLE
+#elif defined(__linux__)
+    struct udev_enumerate *enumerate;
+    struct udev_monitor *monitor;
+#endif
+} ty_device_monitor;
+
+typedef enum ty_device_type {
+    TY_DEVICE_HID,
+    TY_DEVICE_SERIAL
+} ty_device_type;
+
+typedef struct ty_device {
+    struct ty_device_monitor *monitor;
+    ty_list_head list;
+    size_t seqnum;
+
+    unsigned int refcount;
+
+    char *key;
+
+    ty_device_type type;
+
+    char *path;
+    char *node;
+
+    uint16_t vid;
+    uint16_t pid;
+    char *serial;
+
+    uint8_t iface;
+} ty_device;
+
+typedef struct ty_handle {
+    ty_device *dev;
+
+#ifdef _WIN32
+    bool block;
+    void *handle; // HANDLE
+    struct _OVERLAPPED *ov;
+    uint8_t *buf;
+    uint8_t *ptr;
+    size_t len;
+#else
+    int fd;
+#endif
+} ty_handle;
+
+typedef enum ty_device_event {
+    TY_DEVICE_EVENT_ADDED,
+    TY_DEVICE_EVENT_REMOVED
+} ty_device_event;
+
+typedef int ty_device_callback_func(ty_device *dev, ty_device_event event, void *udata);
+
+typedef struct ty_hid_descriptor {
+    uint16_t usage;
+    uint16_t usage_page;
+} ty_hid_descriptor;
 
 enum {
     TY_SERIAL_CSIZE_MASK   = 0x3,
@@ -45,59 +127,26 @@ enum {
     TY_SERIAL_NOHUP_CLOSE  = 0x80,
 };
 
-typedef enum ty_device_type {
-    TY_DEVICE_HID,
-    TY_DEVICE_SERIAL
-} ty_device_type;
+int ty_device_monitor_new(ty_device_monitor **rmonitor);
+void ty_device_monitor_free(ty_device_monitor *monitor);
 
-typedef struct ty_device {
-    unsigned int refcount;
+int _ty_device_monitor_init(ty_device_monitor *monitor);
+void _ty_device_monitor_release(ty_device_monitor *monitor);
 
-    char *node;
+void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, ty_descriptor_set *set, int id);
 
-    ty_device_type type;
+int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
+void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id);
 
-    char *path;
+int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev);
+void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key);
 
-    uint16_t vid;
-    uint16_t pid;
-    char *serial;
+int ty_device_monitor_refresh(ty_device_monitor *monitor);
 
-    uint8_t iface;
-
-#ifdef _WIN32
-    char *key;
-    char *id;
-#endif
-} ty_device;
-
-typedef struct ty_handle {
-    ty_device *dev;
-
-#ifdef _WIN32
-    bool block;
-    void *handle; // HANDLE
-    struct _OVERLAPPED *ov;
-    uint8_t *buf;
-    uint8_t *ptr;
-    size_t len;
-#else
-    int fd;
-#endif
-} ty_handle;
-
-typedef int ty_device_walker(ty_device *dev, void *udata);
-
-typedef struct ty_hid_descriptor {
-    uint16_t usage;
-    uint16_t usage_page;
-} ty_hid_descriptor;
-
-int ty_device_list(ty_device_type type, ty_device_walker *f, void *udata);
+int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
 
 ty_device *ty_device_ref(ty_device *dev);
 void ty_device_unref(ty_device *dev);
-int ty_device_dup(ty_device *dev, ty_device **rdev);
 
 int ty_device_open(ty_device *dev, bool block, ty_handle **rh);
 void ty_device_close(ty_handle *h);

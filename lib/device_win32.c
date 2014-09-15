@@ -21,51 +21,35 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <cfgmgr32.h>
-#include <devioctl.h>
-#include <fcntl.h>
-#include <io.h>
+#include <dbt.h>
 #include <hidpi.h>
 #include <hidsdi.h>
-#include <initguid.h>
+#include <process.h>
 #include <setupapi.h>
 #include <usb.h>
-#include <usbioctl.h>
-#include <usbiodef.h>
 #include <usbuser.h>
-#include <winioctl.h>
 #include "device.h"
 #include "system.h"
 
-struct usb_map {
-    ty_device **devices;
-    size_t count;
-};
-
-struct usb_context {
-    struct usb_map *map;
-
-    uint8_t ports[16];
-    size_t depth;
-};
-
-struct didev_aggregate {
-    const GUID* guid;
-    HDEVINFO set;
-    DWORD i;
-
-    SP_DEVINFO_DATA dev;
-    SP_DEVICE_INTERFACE_DATA iface;
-    SP_DEVICE_INTERFACE_DETAIL_DATA *detail;
-};
-
-struct list_context {
-    ty_device_walker *f;
-    void *udata;
-
+struct device_type {
+    char *prefix;
+    const GUID *guid;
     ty_device_type type;
 };
 
-typedef int enumerate_func(struct didev_aggregate *agg, struct usb_map *map, void *udata);
+struct usb_controller {
+    ty_list_head list;
+
+    uint8_t index;
+    char *id;
+};
+
+struct device_event {
+    ty_list_head list;
+
+    ty_device_event event;
+    char *key;
+};
 
 #ifdef __MINGW32__
 // MinGW may miss these
@@ -75,222 +59,64 @@ HIDAPI BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject, PHIDP_PREPARS
 HIDAPI BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
 #endif
 
+static const char *monitor_class_name = "ty_device_monitor";
 static const size_t read_buffer_size = 1024;
 
-static int map_add(struct usb_map *map, ty_device *dev)
-{
-    if (map->count % 32 == 0) {
-        ty_device **tmp = realloc(map->devices, (map->count + 32) * sizeof(*tmp));
-        if (!tmp)
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        map->devices = tmp;
-    }
+static GUID hid_guid;
+static const struct device_type device_types[] = {
+    {"HID", &hid_guid, TY_DEVICE_HID},
+    {NULL}
+};
 
-    map->devices[map->count++] = ty_device_ref(dev);
+static void free_controller(struct usb_controller *controller)
+{
+    if (controller)
+        free(controller->id);
+
+    free(controller);
+}
+
+static void free_notification(struct device_event *notification)
+{
+    if (notification)
+        free(notification->key);
+
+    free(notification);
+}
+
+static uint8_t find_controller_index(ty_list_head *controllers, const char *id)
+{
+    ty_list_foreach(cur, controllers) {
+        struct usb_controller *usb_controller = ty_list_entry(cur, struct usb_controller, list);
+
+        if (strcmp(usb_controller->id, id) == 0)
+            return usb_controller->index;
+    }
 
     return 0;
 }
 
-static void map_free(struct usb_map *map)
+static uint8_t find_device_port(DEVINST inst)
 {
-    for (size_t i = 0; i < map->count; i++)
-        ty_device_unref(map->devices[i]);
-
-    free(map->devices);
-}
-
-static int enumerate(const GUID *guid, enumerate_func *f, struct usb_map *map, void *udata)
-{
-    struct didev_aggregate agg = {0};
+    char buf[256];
     DWORD len;
-    BOOL success;
-    int r;
+    CONFIGRET cret;
+    uint8_t port;
 
-    agg.set = SetupDiGetClassDevs(guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
-    if (!agg.set)
-        return ty_error(TY_ERROR_SYSTEM, "SetupDiGetClassDevs() failed: %s",
-                        ty_win32_strerror(0));
+    len = sizeof(buf);
+    cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_LOCATION_INFORMATION, NULL, buf, &len, 0);
+    if (cret != CR_SUCCESS)
+        return 0;
 
-    agg.dev.cbSize = sizeof(agg.dev);
-    agg.iface.cbSize = sizeof(agg.iface);
+    port = 0;
+    sscanf(buf, "Port_#%04hhu", &port);
 
-    for (agg.i = 0; SetupDiEnumDeviceInfo(agg.set, agg.i, &agg.dev); agg.i++) {
-        success = SetupDiEnumDeviceInterfaces(agg.set, NULL, guid, agg.i, &agg.iface);
-        if (!success)
-            return ty_error(TY_ERROR_SYSTEM, "SetupDiEnumDeviceInterfaces() failed: %s",
-                            ty_win32_strerror(0));
-
-        success = SetupDiGetDeviceInterfaceDetail(agg.set, &agg.iface, NULL, 0, &len, NULL);
-        if (!success && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-            return ty_error(TY_ERROR_SYSTEM, "SetupDiGetDeviceInterfaceDetail() failed: %s",
-                            ty_win32_strerror(0));
-
-        agg.detail = malloc(len);
-        if (!agg.detail)
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        agg.detail->cbSize = sizeof(*agg.detail);
-
-        success = SetupDiGetDeviceInterfaceDetail(agg.set, &agg.iface, agg.detail, len, NULL, NULL);
-        if (!success) {
-            r = ty_error(TY_ERROR_SYSTEM, "SetupDiGetDeviceInterfaceDetail() failed: %s",
-                         ty_win32_strerror(0));
-            goto cleanup;
-        }
-
-        r = (*f)(&agg, map, udata);
-        if (r <= 0)
-            goto cleanup;
-
-        free(agg.detail);
-        agg.detail = NULL;
-    }
-
-    r = 1;
-cleanup:
-    free(agg.detail);
-    SetupDiDestroyDeviceInfoList(agg.set);
-    return r;
+    return port;
 }
 
-static int wide_to_cstring(wchar_t *wide, size_t size, char **rs)
+static int build_location_string(uint8_t ports[], size_t depth, char **rpath)
 {
-    wchar_t *tmp = NULL;
-    char *s = NULL;
-    int len, r;
-
-    tmp = calloc(1, size + sizeof(wchar_t));
-    if (!tmp)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    memcpy(tmp, wide, size);
-
-    if (ty_win32_test_version(TY_WIN32_VISTA)) {
-        len = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, tmp, -1, NULL, 0, NULL, NULL);
-    } else {
-        len = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, tmp, -1, NULL, 0, NULL, NULL);
-    }
-    if (!len) {
-        r = ty_error(TY_ERROR_PARSE, "Failed to convert UTF-16 string to UTF-8: %s",
-                     ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    s = malloc((size_t)len);
-    if (!s) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
-
-    if (ty_win32_test_version(TY_WIN32_VISTA)) {
-        len = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, tmp, -1, s, len, NULL, NULL);
-    } else {
-        len = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, tmp, -1, s, len, NULL, NULL);
-    }
-    if (!len) {
-        r = ty_error(TY_ERROR_PARSE, "Failed to convert UTF-16 string to UTF-8: %s",
-                     ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    *rs = s;
-    s = NULL;
-
-    r = 0;
-cleanup:
-    free(s);
-    free(tmp);
-    return r;
-}
-
-// read_hub needs this
-static int enumerate_hub(const char *path, struct usb_context *ctx);
-
-static int read_hub(HANDLE h, USB_NODE_CONNECTION_INFORMATION_EX *node,
-                    struct usb_context *ctx)
-{
-    USB_NODE_CONNECTION_NAME pseudo = {0};
-    USB_NODE_CONNECTION_NAME *wide;
-    DWORD len;
-    char *name;
-    BOOL success;
-    int r;
-
-    pseudo.ConnectionIndex = node->ConnectionIndex;
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_NAME, &pseudo, sizeof(pseudo),
-                              &pseudo, sizeof(pseudo), &len, NULL);
-    if (!success)
-        return ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-
-    wide = calloc(1, pseudo.ActualLength);
-    if (!wide)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    wide->ConnectionIndex = node->ConnectionIndex;
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_NAME, wide, pseudo.ActualLength,
-                              wide, pseudo.ActualLength, &len, NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    r = wide_to_cstring(wide->NodeName, len - sizeof(pseudo) + 1, &name);
-    if (r < 0)
-        goto cleanup;
-
-    r = enumerate_hub(name, ctx);
-    free(name);
-    if (r < 0)
-        goto cleanup;
-
-    r = 0;
-cleanup:
-    free(wide);
-    return r;
-}
-
-static int get_string_descriptor(HANDLE h, USB_NODE_CONNECTION_INFORMATION_EX *node, uint8_t i,
-                                 char **rs)
-{
-    struct {
-        USB_DESCRIPTOR_REQUEST req;
-        struct {
-            UCHAR bLength;
-            UCHAR bDescriptorType;
-            WCHAR bString[MAXIMUM_USB_STRING_LENGTH];
-        } desc;
-    } string = {{0}};
-    DWORD len = 0;
-    char *s;
-    BOOL success;
-    int r;
-
-    string.req.ConnectionIndex = node->ConnectionIndex;
-    string.req.SetupPacket.wValue = (USHORT)((USB_STRING_DESCRIPTOR_TYPE << 8) | i);
-    string.req.SetupPacket.wIndex = 0x409;
-    string.req.SetupPacket.wLength = sizeof(string.desc);
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION, &string, sizeof(string),
-                              &string, sizeof(string), &len, NULL);
-    if (!success)
-        return ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-
-    if (len < 2 || string.desc.bDescriptorType != USB_STRING_DESCRIPTOR_TYPE ||
-            string.desc.bLength != len - sizeof(string.req) || string.desc.bLength % 2 != 0)
-        return ty_error(TY_ERROR_IO, "Failed to retrieve string descriptor, got incorrect data");
-
-    r = wide_to_cstring(string.desc.bString, len - sizeof(USB_DESCRIPTOR_REQUEST), &s);
-    if (r < 0)
-        return r;
-
-    *rs = s;
-    return 0;
-}
-
-static int make_string_location(uint8_t ports[], size_t depth, char **rpath)
-{
-    char buf[128];
+    char buf[256];
     char *ptr;
     size_t size;
     char *path;
@@ -319,482 +145,668 @@ static int make_string_location(uint8_t ports[], size_t depth, char **rpath)
     return 0;
 }
 
-static int add_device(HANDLE h, USB_NODE_CONNECTION_INFORMATION_EX *node,
-                      struct usb_context *ctx)
+static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char **rpath)
 {
-    ty_device *dev;
-    USB_NODE_CONNECTION_DRIVERKEY_NAME pseudo = {0};
-    USB_NODE_CONNECTION_DRIVERKEY_NAME *wide = NULL;
-    DWORD len;
-    BOOL success;
+    char buf[256];
+    uint8_t ports[16];
+    size_t depth;
     int r;
 
-    dev = calloc(1, sizeof(*dev));
-    if (!dev)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-    dev->refcount = 1;
+    depth = 0;
 
-    pseudo.ConnectionIndex = node->ConnectionIndex;
+    CONFIGRET cret;
+    do {
+        assert(depth < TY_COUNTOF(ports));
 
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_DRIVERKEY_NAME,
-                              &pseudo, sizeof(pseudo), &pseudo, sizeof(pseudo), &len, NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
+        cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+        if (cret != CR_SUCCESS)
+            return 0;
+
+        if (depth && strncmp(buf, "USB\\", 4) != 0) {
+            ports[depth++] = find_controller_index(controllers, buf);
+            break;
+        }
+
+        ports[depth] = find_device_port(inst);
+        if (ports[depth])
+            depth++;
+
+        cret = CM_Get_Parent(&inst, inst, 0);
+    } while (cret == CR_SUCCESS);
+    if (cret != CR_SUCCESS)
+        return 0;
+
+    for (size_t i = 0; i < depth / 2; i++) {
+        uint8_t tmp = ports[i];
+
+        ports[i] = ports[depth - i - 1];
+        ports[depth - i - 1] = tmp;
     }
 
-    wide = calloc(1, pseudo.ActualLength);
-    if (!wide) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
-
-    wide->ConnectionIndex = node->ConnectionIndex;
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_DRIVERKEY_NAME,
-                              wide, pseudo.ActualLength, wide, pseudo.ActualLength, &len, NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    r = wide_to_cstring(wide->DriverKeyName, len - sizeof(pseudo) + 1, &dev->key);
+    r = build_location_string(ports, depth, rpath);
     if (r < 0)
-        goto cleanup;
+        return r;
 
-    r = make_string_location(ctx->ports, ctx->depth, &dev->path);
-    if (r < 0)
-        goto cleanup;
-
-    dev->vid = node->DeviceDescriptor.idVendor;
-    dev->pid = node->DeviceDescriptor.idProduct;
-
-    if (node->DeviceDescriptor.iSerialNumber) {
-        r = get_string_descriptor(h, node, node->DeviceDescriptor.iSerialNumber, &dev->serial);
-        if (r < 0)
-            goto cleanup;
-    }
-
-    r = map_add(ctx->map, dev);
-    if (r < 0)
-       goto cleanup;
-
-    r = 0;
-cleanup:
-    ty_device_unref(dev);
-    free(wide);
-    return r;
+    return 1;
 }
 
-static int read_port(HANDLE h, uint8_t port, struct usb_context *ctx)
+static int extract_device_info(DEVINST inst, ty_device *dev)
 {
-    assert(ctx->depth < TY_COUNTOF(ctx->ports));
-
-    USB_NODE_CONNECTION_INFORMATION_EX *node;
-    DWORD len;
-    BOOL success;
-    int r;
-
-    len = sizeof(node) + (sizeof(USB_PIPE_INFO) * 30);
-    node = calloc(1, len);
-    if (!node)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    node->ConnectionIndex = port;
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, node, len,
-                              node, len, &len, NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    if (node->ConnectionStatus != DeviceConnected) {
-        r = 0;
-        goto cleanup;
-    }
-
-    ctx->ports[ctx->depth - 1] = port;
-    if (node->DeviceIsHub) {
-        r = read_hub(h, node, ctx);
-    } else {
-        r = add_device(h, node, ctx);
-    }
-    if (r < 0)
-        goto cleanup;
-
-    r = 0;
-cleanup:
-    free(node);
-    return r;
-}
-
-static int enumerate_hub(const char *name, struct usb_context *ctx)
-{
-    char *path;
-    HANDLE h = NULL;
-    USB_NODE_INFORMATION node;
-    DWORD len;
-    BOOL success;
-    int r;
-
-    ctx->depth++;
-
-    r = asprintf(&path, "\\\\.\\%s", name);
-    if (r < 0) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
-    h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-    free(path);
-    if (!h) {
-        r = ty_error(TY_ERROR_SYSTEM, "Failed to open USB hub device: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, NULL, 0, &node, sizeof(node),
-                              &len, NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-    assert(node.NodeType == UsbHub);
-
-    for (uint8_t i = 1; i <= node.u.HubInformation.HubDescriptor.bNumberOfPorts; i++) {
-        r = read_port(h, i, ctx);
-        if (r < 0 && r != TY_ERROR_IO)
-            goto cleanup;
-    }
-
-    r = 0;
-cleanup:
-    if (h)
-        CloseHandle(h);
-    ctx->depth--;
-    return r;
-}
-
-static int read_controller(struct didev_aggregate *agg, struct usb_map *map, void *udata)
-{
-    TY_UNUSED(udata);
-
-    struct usb_context ctx;
-    HANDLE h = NULL;
-    DWORD len;
-    USB_ROOT_HUB_NAME pseudo = {0};
-    USB_ROOT_HUB_NAME *wide = NULL;
-    char *name;
-    BOOL success;
-    int r;
-
-    ctx.map = map;
-    ctx.ports[0] = (uint8_t)(agg->i + 1);
-    ctx.depth = 1;
-
-    h = CreateFile(agg->detail->DevicePath, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-                   0, NULL);
-    if (h == INVALID_HANDLE_VALUE) {
-        r = ty_error(TY_ERROR_SYSTEM, "Failed to open USB host controller: %s",
-                     ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_ROOT_HUB_NAME, NULL, 0, &pseudo, sizeof(pseudo), &len,
-                        NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    wide = calloc(1, pseudo.ActualLength);
-    if (!wide) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
-
-    success = DeviceIoControl(h, IOCTL_USB_GET_ROOT_HUB_NAME, NULL, 0, wide, pseudo.ActualLength, &len,
-                        NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_IO, "DeviceIoControl() failed: %s", ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    r = wide_to_cstring(wide->RootHubName, len - sizeof(pseudo) + 1, &name);
-    if (r < 0)
-        goto cleanup;
-    r = enumerate_hub(name, &ctx);
-    free(name);
-    if (r < 0)
-        goto cleanup;
-
-    r = 1;
-cleanup:
-    free(wide);
-    if (h)
-        CloseHandle(h);
-    return r;
-}
-
-static int get_device_id(DEVINST inst, char **rid)
-{
-    DWORD len;
-    char *id = NULL;
+    char buf[256];
+    ULONG type, len;
+    DWORD capabilities;
     CONFIGRET cret;
     int r;
 
-    cret = CM_Get_Device_ID_Size(&len, inst, 0);
+    do {
+        cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+        if (cret != CR_SUCCESS)
+            return 0;
+
+        if (strncmp(buf, "USB\\", 4) == 0)
+            break;
+
+        cret = CM_Get_Parent(&inst, inst, 0);
+    } while (cret == CR_SUCCESS);
     if (cret != CR_SUCCESS)
-        return ty_error(TY_ERROR_SYSTEM, "CM_Get_Device_ID_Size() failed");
+        return 0;
 
-    // NULL terminator is not accounted for by CM_Get_Device_ID_Size()
-    id = malloc(++len);
-    if (!id)
-        return ty_error(TY_ERROR_MEMORY, NULL);
+    dev->iface = 0;
+    r = sscanf(buf, "USB\\VID_%04hx&PID_%04hx&MI_%02hhu", &dev->vid, &dev->pid, &dev->iface);
+    if (r < 2)
+        return 0;
 
-    cret = CM_Get_Device_ID(inst, id, len, 0);
-    if (cret != CR_SUCCESS) {
-        r = ty_error(TY_ERROR_SYSTEM, "CM_Get_Device_ID() failed");
-        goto error;
+    // We need the USB device for the serial number, not the interface
+    if (r == 3) {
+        cret = CM_Get_Parent(&inst, inst, 0);
+        if (cret != CR_SUCCESS)
+            return 1;
+
+        cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+        if (cret != CR_SUCCESS)
+            return 1;
+
+        if (strncmp(buf, "USB\\", 4) != 0)
+            return 1;
     }
 
-    *rid = id;
-    return 0;
+    len = sizeof(capabilities);
+    cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_CAPABILITIES, &type, &capabilities, &len, 0);
+    if (cret != CR_SUCCESS)
+        return 1;
 
-error:
-    free(id);
-    return r;
-}
-
-static int update_device_details(struct didev_aggregate *agg, struct usb_map *map, void *udata)
-{
-    ty_device_type type = *(ty_device_type *)udata;
-
-    char *key = NULL, *id = NULL;
-    DWORD len;
-    BOOL success;
-    int r;
-
-    success = SetupDiGetDeviceRegistryProperty(agg->set, &agg->dev, SPDRP_DRIVER, NULL, NULL, 0,
-                                               &len);
-    if (!success && GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-        r = ty_error(TY_ERROR_SYSTEM, "SetupDiGetDeviceRegistryProperty() failed: %s",
-                     ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    key = malloc(len);
-    if (!key) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
-
-    success = SetupDiGetDeviceRegistryProperty(agg->set, &agg->dev, SPDRP_DRIVER, NULL, (BYTE *)key,
-                                               len, NULL);
-    if (!success) {
-        r = ty_error(TY_ERROR_SYSTEM, "SetupDiGetDeviceRegistryProperty() failed: %s",
-                     ty_win32_strerror(0));
-        goto cleanup;
-    }
-
-    r = get_device_id(agg->dev.DevInst, &id);
-    if (r < 0)
-        goto cleanup;
-
-    // If a new device is enumerated by Windows between enumerate_devices() and here,
-    // we won't find anything. But that's okay, users will just have to enumerate
-    // again to see it.
-    for (size_t i = 0; i < map->count; i++) {
-        ty_device *dev = map->devices[i];
-        if (!dev->id && strcmp(dev->key, key) == 0) {
-            dev->type = type;
-            dev->id = strdup(id);
-            if (!dev->id) {
-                r = ty_error(TY_ERROR_MEMORY, NULL);
-                goto cleanup;
-            }
+    if (capabilities & CM_DEVCAP_UNIQUEID) {
+        char *ptr = strrchr(buf, '\\');
+        if (ptr) {
+            dev->serial = strdup(ptr + 1);
+            if (!dev->serial)
+                return ty_error(TY_ERROR_MEMORY, NULL);
         }
     }
 
-    r = 1;
-cleanup:
-    free(id);
-    free(key);
-    return r;
+    return 1;
 }
 
-static int find_serial_node(struct didev_aggregate* agg, char **rnode)
+static int get_device_comport(DEVINST inst, char **rnode)
 {
     HKEY key;
     char buf[32];
     DWORD type, len;
     char *node;
+    CONFIGRET cret;
     LONG ret;
     int r;
 
-    key = SetupDiOpenDevRegKey(agg->set, &agg->dev, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ);
-    if (key == INVALID_HANDLE_VALUE)
-        return ty_error(TY_ERROR_SYSTEM, "SetupDiOpenDevRegKey() failed: %s",
-                        ty_win32_strerror(0));
+    cret = CM_Open_DevNode_Key(inst, KEY_READ, 0, RegDisposition_OpenExisting, &key, CM_REGISTRY_HARDWARE);
+    if (cret != CR_SUCCESS)
+        return 0;
 
     len = (DWORD)sizeof(buf);
     ret = RegQueryValueEx(key, "PortName", NULL, &type, (BYTE *)buf, &len);
-    if (ret != ERROR_SUCCESS) {
-        if (ret == ERROR_FILE_NOT_FOUND) {
-            r = 0;
-        } else {
-            r = ty_error(TY_ERROR_SYSTEM, "RegQueryValueEx() failed: %s",
-                         ty_win32_strerror((DWORD)ret));
-        }
-        goto cleanup;
-    }
-    node = strdup(buf);
-    if (!node)
+    RegCloseKey(key);
+    if (ret != ERROR_SUCCESS)
+        return 0;
+
+    r = asprintf(&node, "\\\\.\\%s", buf);
+    if (r < 0)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
     *rnode = node;
-
-    r = 1;
-cleanup:
-    RegCloseKey(key);
-    return r;
+    return 1;
 }
 
-static int trigger_device(ty_device *dev, struct didev_aggregate *agg, uint8_t iface,
-                          struct list_context *ctx)
+static int build_device_path(const char *id, const GUID *guid, char **rpath)
+{
+    char *path, *ptr;
+
+    path = malloc(4 + strlen(id) + 41);
+    if (!path)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    ptr = stpcpy(path, "\\\\.\\");
+    while (*id) {
+        if (*id == '\\') {
+            *ptr++ = '#';
+            id++;
+        } else {
+            *ptr++ = *id++;
+        }
+    }
+
+    sprintf(ptr, "#{%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            guid->Data1, guid->Data2, guid->Data3, guid->Data4[0], guid->Data4[1],
+            guid->Data4[2], guid->Data4[3], guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
+
+    *rpath = path;
+    return 0;
+}
+
+static int find_device_node(DEVINST inst, ty_device *dev)
 {
     int r;
 
-    r = ty_device_dup(dev, &dev);
+    // GUID_DEVINTERFACE_COMPORT only works for real COM ports... Haven't found any way to
+    // list virtual (USB) serial device interfaces, so instead list USB devices and consider
+    // them serial if registry key "PortName" is available (and use its value as device node).
+    if (strncmp(dev->key, "USB\\", 4) == 0) {
+        r = get_device_comport(inst, &dev->node);
+        if (r <= 0)
+            return r;
+
+        dev->type = TY_DEVICE_SERIAL;
+        return 1;
+    }
+
+    for (const struct device_type *type = device_types; type->prefix; type++) {
+        if (strncmp(type->prefix, dev->key, strlen(type->prefix)) == 0) {
+            r = build_device_path(dev->key, type->guid, &dev->node);
+            if (r < 0)
+                return r;
+
+            dev->type = type->type;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int extract_device_id(const char *key, char **rid)
+{
+    char *id, *ptr;
+
+    if (strncmp(key, "\\\\?\\", 4) == 0
+            || strncmp(key, "\\\\.\\", 4) == 0
+            || strncmp(key, "##.#", 4) == 0
+            || strncmp(key, "##?#", 4) == 0)
+        key += 4;
+
+    id = strdup(key);
+    if (!id)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    ptr = strrpbrk(id, "\\#");
+    if (ptr && ptr[1] == '{')
+        *ptr = 0;
+
+    for (ptr = id; *ptr; ptr++) {
+        *ptr = (char)toupper(*ptr);
+        if (*ptr == '#')
+            *ptr = '\\';
+    }
+
+    *rid = id;
+    return 0;
+}
+
+static int create_device(ty_device_monitor *monitor, const char *key, DEVINST inst, uint8_t ports[], size_t depth)
+{
+    ty_device *dev;
+    CONFIGRET cret;
+    int r;
+
+    dev = calloc(1, sizeof(*dev));
+    if (!dev) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto cleanup;
+    }
+    dev->refcount = 1;
+
+    if (!key) {
+        char buf[256];
+
+        cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+        if (cret != CR_SUCCESS) {
+            r = 0;
+            goto cleanup;
+        }
+
+        r = extract_device_id(buf, &dev->key);
+    } else {
+        r = extract_device_id(key, &dev->key);
+    }
     if (r < 0)
         return r;
 
-    free(dev->node);
-
-    switch (ctx->type) {
-    case TY_DEVICE_SERIAL:
-        r = find_serial_node(agg, &dev->node);
-        if (r < 0)
-            goto cleanup;
-        if (!r) {
-            r = 1;
+    if (!inst) {
+        cret = CM_Locate_DevNode(&inst, dev->key, CM_LOCATE_DEVNODE_NORMAL);
+        if (cret != CR_SUCCESS) {
+            r = 0;
             goto cleanup;
         }
-        break;
-
-    default:
-        dev->node = strdup(agg->detail->DevicePath);
-        if (!dev->node) {
-            r = ty_error(TY_ERROR_MEMORY, NULL);
-            goto cleanup;
-        }
-        break;
     }
 
-    dev->iface = iface;
+    cret = CM_Locate_DevNode(&inst, dev->key, CM_LOCATE_DEVNODE_NORMAL);
+    if (cret != CR_SUCCESS) {
+        r = 0;
+        goto cleanup;
+    }
 
-    r = (*ctx->f)(dev, ctx->udata);
+    r = extract_device_info(inst, dev);
+    if (r < 0)
+        goto cleanup;
+
+    r = find_device_node(inst, dev);
     if (r <= 0)
         goto cleanup;
 
-    r = 1;
+    if (ports) {
+        r = build_location_string(ports, depth, &dev->path);
+        if (r < 0)
+            goto cleanup;
+    } else {
+        r = resolve_device_location(inst, &monitor->controllers, &dev->path);
+        if (r <= 0)
+            goto cleanup;
+    }
+
+    r = _ty_device_monitor_add(monitor, dev);
 cleanup:
     ty_device_unref(dev);
     return r;
 }
 
-static int find_device_and_trigger(struct didev_aggregate *agg, struct usb_map *map, void *udata)
+static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t ports[], size_t depth)
 {
-    struct list_context *ctx = udata;
-
-    char *ptr;
-    uint8_t iface = 0;
-    char *id = NULL;
+    uint8_t port;
+    DEVINST child;
+    CONFIGRET cret;
     int r;
 
-    ptr = strstr(agg->detail->DevicePath, "&mi_");
-    if (ptr)
-        sscanf(ptr, "&mi_%hhu", &iface);
+    port = find_device_port(inst);
+    if (port) {
+        assert(depth < 16);
+        ports[depth++] = port;
+    }
 
-    DEVINST inst = agg->dev.DevInst;
+    cret = CM_Get_Child(&child, inst, 0);
+    if (cret != CR_SUCCESS)
+        return create_device(monitor, NULL, inst, ports, depth);
+
     do {
-        r = get_device_id(inst, &id);
+        r = recurse_devices(monitor, child, ports, depth);
         if (r < 0)
-            goto cleanup;
+            return r;
 
-        for (size_t i = 0; i < map->count; i++) {
-            ty_device *dev = map->devices[i];
-            if (dev->id && strcmp(dev->id, id) == 0) {
-                if (iface < dev->iface) {
-                    r = 1;
-                    goto cleanup;
-                }
+        cret = CM_Get_Sibling(&child, child, 0);
+    } while (cret == CR_SUCCESS);
 
-                // Don't trigger anything for this interface again
-                dev->iface = (uint8_t)(iface + 1);
+    return 0;
+}
 
-                r = trigger_device(dev, agg, iface, ctx);
-                goto cleanup;
-            }
-        }
+static int browse_controller_tree(ty_device_monitor *monitor, DEVINST inst, DWORD index)
+{
+    struct usb_controller *controller;
+    char buf[256];
+    uint8_t ports[16];
+    CONFIGRET cret;
+    int r;
 
-        free(id);
-        id = NULL;
-    } while (CM_Get_Parent(&inst, inst, 0) == CR_SUCCESS);
+    controller = calloc(1, sizeof(*controller));
+    if (!controller) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
 
-    r = 1;
-cleanup:
-    free(id);
+    // should we worry about having more than 255 controllers?
+    controller->index = (uint8_t)(index + 1);
+
+    cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+    if (cret != CR_SUCCESS) {
+        r = 0;
+        goto error;
+    }
+    controller->id = strdup(buf);
+    if (!controller->id) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
+    ports[0] = controller->index;
+    r = recurse_devices(monitor, inst, ports, 1);
+    if (r < 0)
+        goto error;
+
+    ty_list_append(&monitor->controllers, &controller->list);
+
+    return 0;
+
+error:
+    free_controller(controller);
     return r;
 }
 
-int ty_device_list(ty_device_type type, ty_device_walker *f, void *udata)
+static int list_devices(ty_device_monitor *monitor)
 {
-    static GUID hid_guid;
-
-    const GUID* guid = NULL;
-    struct usb_map map = {0};
-    struct list_context ctx;
+    HDEVINFO set;
+    SP_DEVINFO_DATA dev;
     int r;
 
     if (!hid_guid.Data4[0])
         HidD_GetHidGuid(&hid_guid);
 
-    switch (type) {
-    case TY_DEVICE_HID:
-        guid = &hid_guid;
-        break;
-    case TY_DEVICE_SERIAL:
-        // GUID_DEVINTERFACE_COMPORT only works for real COM ports... Haven't found any way to
-        // list virtual (USB) serial devices, so instead list USB devices and consider them
-        // as serial if registry key "PortName" is available (and use its value as device node).
-        guid = &GUID_DEVINTERFACE_USB_DEVICE;
-        break;
-    };
-    assert(guid);
+    ty_list_foreach(cur, &monitor->controllers) {
+        struct usb_controller *controller = ty_list_entry(cur, struct usb_controller, list);
 
-    ctx.f = f;
-    ctx.udata = udata;
-    ctx.type = type;
+        ty_list_remove(&controller->list);
+        free(controller);
+    }
 
-    // enumerate devices by recursing through host controllers and hubs, which seems
-    // to be the best/easiest way to calculate each device's location on Windows.
-    ty_error_mask(TY_ERROR_IO);
-    r = enumerate(&GUID_CLASS_USB_HOST_CONTROLLER, read_controller, &map, NULL);
-    ty_error_unmask();
-    if (r < 0 && r != TY_ERROR_IO)
+    set = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_HOST_CONTROLLER, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    if (!set) {
+        r = ty_error(TY_ERROR_SYSTEM, "SetupDiGetClassDevs() failed: %s", ty_win32_strerror(0));
         goto cleanup;
+    }
 
-    // use the SetupAPI to list USB devices and find their instance ID, and use the
-    // driver key to map them to the devices found previously by enumerate_devices.
-    r = enumerate(&GUID_CLASS_USB_DEVICE, update_device_details, &map, &type);
-    if (r < 0)
-        goto cleanup;
+    dev.cbSize = sizeof(dev);
+    for (DWORD i = 0; SetupDiEnumDeviceInfo(set, i, &dev); i++) {
+        r = browse_controller_tree(monitor, dev.DevInst, i);
+        if (r < 0)
+            goto cleanup;
+    }
 
-    // now we have to resolve specific device interfaces, and trigger them when found
-    r = enumerate(guid, find_device_and_trigger, &map, &ctx);
-
+    r = 0;
 cleanup:
-    map_free(&map);
+    SetupDiDestroyDeviceInfoList(set);
+    return 0;
+}
+
+static int post_device_event(ty_device_monitor *monitor, ty_device_event event, DEV_BROADCAST_DEVICEINTERFACE *data)
+{
+    struct device_event *notification;
+    int r;
+
+    notification = calloc(1, sizeof(*notification));
+    if (!notification)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    notification->event = event;
+    r = extract_device_id(data->dbcc_name, &notification->key);
+    if (r < 0)
+        goto error;
+
+    EnterCriticalSection(&monitor->mutex);
+
+    ty_list_append(&monitor->notifications, &notification->list);
+    SetEvent(monitor->event);
+
+    LeaveCriticalSection(&monitor->mutex);
+
+    return 0;
+
+error:
+    free_notification(notification);
+    return r;
+}
+
+static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    ty_device_monitor *monitor = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+    int r;
+
+    switch (msg) {
+    case WM_DEVICECHANGE:
+        r = 0;
+        switch (wparam) {
+        case DBT_DEVICEARRIVAL:
+            r = post_device_event(monitor, TY_DEVICE_EVENT_ADDED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+            break;
+        case DBT_DEVICEREMOVECOMPLETE:
+            r = post_device_event(monitor, TY_DEVICE_EVENT_REMOVED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+            break;
+        }
+        if (r < 0) {
+            monitor->ret = r;
+            SetEvent(monitor->event);
+        }
+
+        break;
+
+    case WM_CLOSE:
+        PostQuitMessage(0);
+        break;
+    }
+
+    return DefWindowProc(hwnd, msg, wparam, lparam);
+}
+
+static unsigned int __stdcall monitor_thread(void *udata)
+{
+    TY_UNUSED(udata);
+
+    ty_device_monitor *monitor = udata;
+
+    WNDCLASSEX cls = {0};
+    DEV_BROADCAST_DEVICEINTERFACE filter = {0};
+    HDEVNOTIFY notify = NULL;
+    MSG msg;
+    ATOM atom;
+    BOOL ret;
+    int r;
+
+    cls.cbSize = sizeof(cls);
+    cls.hInstance = GetModuleHandle(NULL);
+    cls.lpszClassName = monitor_class_name;
+    cls.lpfnWndProc = window_proc;
+
+    atom = RegisterClassEx(&cls);
+    if (!atom) {
+        r = ty_error(TY_ERROR_SYSTEM, "RegisterClass() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    monitor->hwnd = CreateWindow(monitor_class_name, monitor_class_name, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL);
+    if (!monitor->hwnd) {
+        r = ty_error(TY_ERROR_SYSTEM, "CreateWindow() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    SetLastError(0);
+    SetWindowLongPtr(monitor->hwnd, GWLP_USERDATA, (LONG_PTR)monitor);
+    if (GetLastError()) {
+        r = ty_error(TY_ERROR_SYSTEM, "SetWindowLongPtr() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    filter.dbcc_size = sizeof(filter);
+    filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+
+    notify = RegisterDeviceNotification(monitor->hwnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
+    if (!notify) {
+        r = ty_error(TY_ERROR_SYSTEM, "RegisterDeviceNotification() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    SetEvent(monitor->event);
+
+    while((ret = GetMessage(&msg, NULL, 0, 0)) != 0) {
+        if(ret < 0) {
+            r = ty_error(TY_ERROR_SYSTEM, "GetMessage() failed: %s", ty_win32_strerror(0));
+            goto cleanup;
+        }
+
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    r = 0;
+cleanup:
+    if (notify)
+        UnregisterDeviceNotification(notify);
+    if (monitor->hwnd)
+        DestroyWindow(monitor->hwnd);
+    UnregisterClass(monitor_class_name, NULL);
+    if (r < 0) {
+        monitor->ret = r;
+        SetEvent(monitor->event);
+    }
+    return 0;
+}
+
+static int wait_event(HANDLE event)
+{
+    DWORD ret;
+
+    ret = WaitForSingleObject(event, INFINITE);
+    if (ret != WAIT_OBJECT_0)
+        return ty_error(TY_ERROR_SYSTEM, "WaitForSingleObject() failed: %s", ty_win32_strerror(0));
+
+    return 0;
+}
+
+int ty_device_monitor_new(ty_device_monitor **rmonitor)
+{
+    assert(rmonitor);
+
+    ty_device_monitor *monitor;
+    int r;
+
+    if (!ty_win32_test_version(TY_WIN32_VISTA))
+        return ty_error(TY_ERROR_UNSUPPORTED, "Device monitor requires at least Windows Vista to work");
+
+    monitor = calloc(1, sizeof(*monitor));
+    if (!monitor)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    ty_list_init(&monitor->controllers);
+
+    ty_list_init(&monitor->notifications);
+    InitializeCriticalSection(&monitor->mutex);
+    monitor->event = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!monitor->event) {
+        r = ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
+        goto error;
+    }
+
+    r = _ty_device_monitor_init(monitor);
+    if (r < 0)
+        goto error;
+
+    r = list_devices(monitor);
+    if (r < 0)
+        goto error;
+
+    monitor->thread = (HANDLE)_beginthreadex(NULL, 0, monitor_thread, monitor, 0, NULL);
+    if (!monitor->thread)
+        return ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
+
+    r = wait_event(monitor->event);
+    if (r < 0)
+        goto error;
+    if (monitor->ret < 0) {
+        r = monitor->ret;
+        goto error;
+    }
+
+    ResetEvent(monitor->event);
+
+    *rmonitor = monitor;
+    return 0;
+
+error:
+    ty_device_monitor_free(monitor);
+    return r;
+}
+
+void ty_device_monitor_free(ty_device_monitor *monitor)
+{
+    if (monitor) {
+        _ty_device_monitor_release(monitor);
+
+        if (monitor->thread) {
+            if (monitor->hwnd) {
+                PostMessage(monitor->hwnd, WM_CLOSE, 0, 0);
+                WaitForSingleObject(monitor->thread, INFINITE);
+            }
+            CloseHandle(monitor->thread);
+        }
+
+        if (monitor->event)
+            CloseHandle(monitor->event);
+
+        ty_list_foreach(cur, &monitor->controllers) {
+            struct usb_controller *controller = ty_list_entry(cur, struct usb_controller, list);
+            free_controller(controller);
+        }
+
+        ty_list_foreach(cur, &monitor->notifications) {
+            struct device_event *notification = ty_list_entry(cur, struct device_event, list);
+            free_notification(notification);
+        }
+    }
+
+    free(monitor);
+}
+
+void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, ty_descriptor_set *set, int id)
+{
+    assert(monitor);
+    assert(set);
+
+    ty_descriptor_set_add(set, monitor->event, id);
+}
+
+int ty_device_monitor_refresh(ty_device_monitor *monitor)
+{
+    assert(monitor);
+
+    int r;
+
+    EnterCriticalSection(&monitor->mutex);
+
+    if (monitor->ret < 0) {
+        r = monitor->ret;
+        goto cleanup;
+    }
+
+    ty_list_foreach(cur, &monitor->notifications) {
+        struct device_event *notification = ty_list_entry(cur, struct device_event, list);
+
+        r = 0;
+        switch (notification->event) {
+        case TY_DEVICE_EVENT_ADDED:
+            r = create_device(monitor, notification->key, 0, NULL, 0);
+            break;
+
+        case TY_DEVICE_EVENT_REMOVED:
+            _ty_device_monitor_remove(monitor, notification->key);
+            r = 0;
+            break;
+        }
+
+        ty_list_remove(&notification->list);
+        free_notification(notification);
+
+        if (r < 0)
+            goto cleanup;
+    }
+
+    r = 0;
+cleanup:
+    if (ty_list_empty(&monitor->notifications))
+        ResetEvent(monitor->event);
+    LeaveCriticalSection(&monitor->mutex);
     return r;
 }
 
@@ -883,15 +895,15 @@ error:
 
 void ty_device_close(ty_handle *h)
 {
-    assert(h);
-
-    if (h->handle)
-        CloseHandle(h->handle);
-    if (h->ov && h->ov->hEvent)
-        CloseHandle(h->ov->hEvent);
-    free(h->ov);
-    free(h->buf);
-    ty_device_unref(h->dev);
+    if (h) {
+        if (h->handle)
+            CloseHandle(h->handle);
+        if (h->ov && h->ov->hEvent)
+            CloseHandle(h->ov->hEvent);
+        free(h->ov);
+        free(h->buf);
+        ty_device_unref(h->dev);
+    }
 
     free(h);
 }
@@ -1125,7 +1137,6 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
 
     DWORD len, ret;
 
-    printf("read\n");
     if (!h->len) {
         ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, h->block);
         if (!ret) {

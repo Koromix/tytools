@@ -58,26 +58,31 @@ int reset(int argc, char *argv[])
     if (r < 0)
         return r;
 
-    if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT)) {
+    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
         printf("Triggering board reboot\n");
         r = ty_board_reboot(board);
         if (r < 0)
-            return r;
+            goto cleanup;
 
-        r = ty_board_probe(board, -1);
+        r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RESET, -1);
         if (r < 0)
-            return r;
+            goto cleanup;
     }
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET))
-        return ty_error(TY_ERROR_MODE, "No way to trigger reset for this board");
+    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
+        r = ty_error(TY_ERROR_MODE, "No way to trigger reset for this board");
+        goto cleanup;
+    }
 
     printf("Sending reset command\n");
     r = ty_board_reset(board);
     if (r < 0)
-        return r;
+        goto cleanup;
 
-    return 0;
+    r = 0;
+cleanup:
+    ty_board_unref(board);
+    return r;
 
 usage:
     print_reset_usage();

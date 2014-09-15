@@ -20,6 +20,7 @@
 #include "common.h"
 #include <getopt.h>
 #include "board.h"
+#include "main.h"
 
 struct list_context {
     bool verbose;
@@ -34,10 +35,11 @@ enum {
     OPTION_HELP = 0x100
 };
 
-static const char *short_options = "v";
+static const char *short_options = "vw";
 static const struct option long_options[] = {
     {"help",    no_argument, NULL, OPTION_HELP},
     {"verbose", no_argument, NULL, 'v'},
+    {"watch",   no_argument, NULL, 'w'},
     {0}
 };
 
@@ -51,6 +53,7 @@ static const struct capability_description capabilities[] = {
 };
 
 static bool list_verbose = false;
+static bool watch = false;
 
 void print_list_usage(void)
 {
@@ -71,45 +74,38 @@ static void print_capabilities(ty_board *board)
     printf("\n");
 }
 
-static const char *read_model(ty_board *board)
+static int list_callback(ty_board *board, ty_board_event event, void *udata)
 {
-    const ty_board_model *model;
-    int r;
-
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_IDENTIFY))
-        return "(unknown)";
-
-    r = ty_board_probe(board, 0);
-    if (r < 0)
-        return "(error)";
-
-    model = board->model;
-    ty_board_close(board);
-
-    // May happen if the device has changed mode since enumeration
-    if (!model)
-        return "(unknown)";
-
-    return model->desc;
-}
-
-static int list_walker(ty_board *board, void *udata)
-{
+    TY_UNUSED(event);
     TY_UNUSED(udata);
 
-    printf("%s#%"PRIu64" (%s)\n", board->dev->path, board->serial, board->mode->desc);
-    if (list_verbose) {
-        printf("  - node: %s\n", board->dev->node);
-        printf("  - model: %s\n", read_model(board));
-        printf("  - capabilities: ");
-        print_capabilities(board);
+    switch (event) {
+    case TY_BOARD_EVENT_ADDED:
+    case TY_BOARD_EVENT_CHANGED:
+        printf("%c %s#%"PRIu64" (%s)\n", event == TY_BOARD_EVENT_ADDED ? '+' : '=',
+               board->dev->path, board->serial, board->mode->desc);
+
+        if (list_verbose) {
+            printf("  - node: %s\n", board->dev->node);
+            printf("  - model: %s\n", board->model ? board->model->desc : "(unknown)");
+            printf("  - capabilities: ");
+            print_capabilities(board);
+        }
+
+        break;
+    case TY_BOARD_EVENT_DROPPED:
+        printf("- %s#%"PRIu64"\n", board->dev->path, board->serial);
+        break;
+    default:
+        break;
     }
 
-    return 1;
+    return 0;
 }
 
 int list(int argc, char *argv[])
 {
+    ty_board_manager *manager;
     int r;
 
     int c;
@@ -123,14 +119,32 @@ int list(int argc, char *argv[])
             list_verbose = true;
             break;
 
+        case 'w':
+            watch = true;
+            break;
+
         default:
             goto usage;
         }
     }
 
-    r = ty_board_list(list_walker, NULL);
+    r = get_manager(&manager);
     if (r < 0)
         return r;
+
+    r = ty_board_manager_list(manager, list_callback, NULL);
+    if (r < 0)
+        return r;
+
+    if (watch) {
+        r = ty_board_manager_register_callback(manager, list_callback, NULL);
+        if (r < 0)
+            return r;
+
+        r = ty_board_manager_wait(manager, NULL, NULL, -1);
+        if (r < 0)
+            return r;
+    }
 
     return 0;
 
