@@ -24,12 +24,10 @@
 
 TY_C_BEGIN
 
-struct ty_project;
 struct ty_board;
 
 void print_supported_models(void);
 
-int get_project(struct ty_project **rproject);
 int get_board(struct ty_board **rboard);
 
 TY_C_END

@@ -63,7 +63,7 @@ static const struct command commands[] = {
     {"list",    list,    print_list_usage,    "list available boards"},
     {"monitor", monitor, print_monitor_usage, "open serial (or emulated) connection with device"},
     {"reset",   reset,   print_reset_usage,   "reset device"},
-    {"upload",  upload,  print_upload_usage,  "upload firmware (either local project or specific file)"},
+    {"upload",  upload,  print_upload_usage,  "upload new firmware"},
     {0}
 };
 

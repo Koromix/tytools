@@ -27,10 +27,6 @@ TY_C_BEGIN
 
 struct ty_firmware;
 
-typedef enum ty_toolchain {
-    TY_TOOLCHAIN_AVR,
-    TY_TOOLCHAIN_ARM
-} ty_toolchain;
 
 typedef enum ty_board_capability {
     TY_BOARD_CAPABILITY_IDENTIFY = 1,
@@ -49,19 +45,10 @@ typedef struct ty_board_model {
     const char *mcu;
     const char *desc;
 
-    // Bootloader settings
     uint8_t usage;
     uint8_t halfkay_version;
     size_t code_size;
     size_t block_size;
-
-    // Build settings
-    ty_toolchain toolchain;
-    const char *core;
-    uint32_t frequencies[8];
-    const char *cflags;
-    const char *cxxflags;
-    const char *ldflags;
 } ty_board_model;
 
 typedef struct ty_board_mode {
@@ -74,9 +61,6 @@ typedef struct ty_board_mode {
     uint8_t iface;
 
     uint16_t capabilities;
-
-    // Build settings
-    const char *flags;
 } ty_board_mode;
 
 typedef struct ty_board {
