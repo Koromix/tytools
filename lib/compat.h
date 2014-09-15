@@ -24,6 +24,10 @@
 
 char *strrpbrk(const char *s, const char *accept);
 
+#ifndef HAVE_STPCPY
+char *stpcpy(char *restrict dest, const char *restrict src);
+#endif
+
 #ifndef HAVE_ASPRINTF
 int asprintf(char **strp, const char *fmt, ...);
 int vasprintf(char **strp, const char *fmt, va_list ap);

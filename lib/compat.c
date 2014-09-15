@@ -37,6 +37,15 @@ char *strrpbrk(const char *s, const char *accept)
     return NULL;
 }
 
+#ifndef HAVE_STPCPY
+char *stpcpy(char *restrict dest, const char *restrict src)
+{
+    while ((*dest++ = *src++))
+        continue;
+    return dest - 1;
+}
+#endif
+
 #ifndef HAVE_ASPRINTF
 int asprintf(char **strp, const char *fmt, ...)
 {

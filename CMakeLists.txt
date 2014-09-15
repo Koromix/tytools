@@ -55,6 +55,7 @@ if(EXPERIMENTAL)
 endif()
 
 include(CheckSymbolExists)
+check_symbol_exists(stpcpy string.h HAVE_STPCPY)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
 
 configure_file(lib/config.h.in lib/config.h)
