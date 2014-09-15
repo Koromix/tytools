@@ -92,6 +92,25 @@ void ty_delay(unsigned int ms)
     Sleep(ms);
 }
 
+int ty_poll(const ty_descriptor_set *set, int timeout)
+{
+    assert(set);
+    assert(set->count);
+    assert(set->count <= 64);
+
+    DWORD ret = WaitForMultipleObjects(set->count, set->desc, FALSE,
+                                       timeout < 0 ? INFINITE : (DWORD)timeout);
+    switch (ret) {
+    case WAIT_FAILED:
+        return ty_error(TY_ERROR_SYSTEM, "WaitForMultipleObjects() failed: %s",
+                        ty_win32_strerror(0));
+    case WAIT_TIMEOUT:
+        return 0;
+    }
+
+    return set->id[ret - WAIT_OBJECT_0];
+}
+
 static void restore_terminal(void)
 {
     SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_mode);

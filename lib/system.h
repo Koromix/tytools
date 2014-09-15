@@ -58,6 +58,18 @@ typedef struct ty_file_info {
 #define TY_PATH_SEPARATORS "/"
 #endif
 
+#ifdef _WIN32
+typedef void *ty_descriptor; // HANDLE
+#else
+typedef int ty_descriptor;
+#endif
+
+typedef struct ty_descriptor_set {
+    size_t count;
+    ty_descriptor desc[64];
+    int id[64];
+} ty_descriptor_set;
+
 enum {
     TY_TERMINAL_RAW = 0x1,
     TY_TERMINAL_SILENT = 0x2
@@ -80,6 +92,11 @@ uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
 int ty_stat(const char *path, ty_file_info *info, bool follow_symlink);
+
+void ty_descriptor_set_clear(ty_descriptor_set *set);
+void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
+
+int ty_poll(const ty_descriptor_set *set, int timeout);
 
 int ty_terminal_change(uint32_t flags);
 

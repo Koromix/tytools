@@ -89,3 +89,26 @@ int ty_stat(const char *path, ty_file_info *info, bool follow_symlink)
 
     return 0;
 }
+
+void ty_descriptor_set_clear(ty_descriptor_set *set)
+{
+    assert(set);
+
+    set->count = 0;
+}
+
+void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id)
+{
+    assert(set);
+    assert(set->count < TY_COUNTOF(set->desc));
+#ifdef _WIN32
+    assert(desc);
+#else
+    assert(desc >= 0);
+#endif
+
+    set->desc[set->count] = desc;
+    set->id[set->count] = id;
+
+    set->count++;
+}

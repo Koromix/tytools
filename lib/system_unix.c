@@ -20,6 +20,7 @@
 #include "common.h"
 #include <dirent.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -68,6 +69,41 @@ void ty_delay(unsigned int ms)
             t = rem;
         }
     } while (r);
+}
+
+int ty_poll(const ty_descriptor_set *set, int timeout)
+{
+    assert(set);
+    assert(set->count);
+    assert(set->count <= 64);
+
+    struct pollfd pfd[64];
+    int r;
+
+    for (size_t i = 0; i < set->count; i++) {
+        pfd[i].events = POLLIN;
+        pfd[i].fd = set->desc[i];
+    }
+
+    if (timeout < 0)
+        timeout = -1;
+
+restart:
+    r = poll(pfd, set->count, timeout);
+    if (r < 0) {
+        if (errno == EINTR)
+            goto restart;
+        return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
+    }
+    if (!r)
+        return 0;
+
+    for (size_t i = 0; i < set->count; i++) {
+        if (pfd[i].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL)) {
+            return set->id[i];
+        }
+    }
+    assert(false);
 }
 
 static void restore_terminal(void)
