@@ -81,6 +81,7 @@ if(WIN32)
                         lib/device_win32.c)
 else()
     list(APPEND SOURCES lib/system_unix.c
+                        lib/system_linux.c
                         lib/device_linux.c
                         lib/device_unix.c)
 endif()

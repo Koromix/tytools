@@ -70,6 +70,8 @@ typedef struct ty_descriptor_set {
     int id[64];
 } ty_descriptor_set;
 
+typedef struct ty_timer ty_timer;
+
 enum {
     TY_TERMINAL_RAW = 0x1,
     TY_TERMINAL_SILENT = 0x2
@@ -92,6 +94,14 @@ uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
 int ty_stat(const char *path, ty_file_info *info, bool follow_symlink);
+
+int ty_timer_new(ty_timer **rtimer);
+void ty_timer_free(ty_timer *timer);
+
+void ty_timer_get_descriptors(ty_timer *timer, ty_descriptor_set *set, int id);
+
+int ty_timer_set(ty_timer *timer, int value, unsigned int period);
+uint64_t ty_timer_rearm(ty_timer *timer);
 
 void ty_descriptor_set_clear(ty_descriptor_set *set);
 void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
