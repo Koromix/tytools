@@ -742,13 +742,14 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
             CloseHandle(monitor->thread);
         }
 
-        if (monitor->event)
-            CloseHandle(monitor->event);
-
         ty_list_foreach(cur, &monitor->controllers) {
             struct usb_controller *controller = ty_list_entry(cur, struct usb_controller, list);
             free_controller(controller);
         }
+
+        DeleteCriticalSection(&monitor->mutex);
+        if (monitor->event)
+            CloseHandle(monitor->event);
 
         ty_list_foreach(cur, &monitor->notifications) {
             struct device_event *notification = ty_list_entry(cur, struct device_event, list);
