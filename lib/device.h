@@ -61,7 +61,6 @@ typedef enum ty_device_type {
 typedef struct ty_device {
     struct ty_device_monitor *monitor;
     ty_list_head list;
-    size_t seqnum;
 
     unsigned int refcount;
 
