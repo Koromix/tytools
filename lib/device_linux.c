@@ -24,6 +24,23 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "device.h"
+#include "device_priv.h"
+
+struct ty_device_monitor {
+    ty_list_head callbacks;
+    int callback_id;
+
+    ty_list_head devices;
+
+    struct udev_enumerate *enumerate;
+    struct udev_monitor *monitor;
+};
+
+// Keep in sync with device_unix.c
+struct ty_handle {
+    ty_device *dev;
+    int fd;
+};
 
 struct udev_aggregate {
     struct udev_device *dev;
@@ -33,10 +50,11 @@ struct udev_aggregate {
 
 static struct udev *udev = NULL;
 
-static int compute_device_path(char **rpath, const char *key)
+static int compute_device_location(const char *key, char **rlocation)
 {
     const char *end;
     uint8_t buf;
+    char *location;
     int r, len;
 
     key = strstr(key, "/usb");
@@ -61,13 +79,14 @@ static int compute_device_path(char **rpath, const char *key)
     key++;
 
     // Account for 'usb-' prefix and NUL byte
-    *rpath = malloc((size_t)(end - key) + 5);
-    if (!*rpath)
+    location = malloc((size_t)(end - key) + 5);
+    if (!location)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    strcpy(*rpath, "usb-");
-    strncat(*rpath, key, (size_t)(end - key));
+    strcpy(location, "usb-");
+    strncat(location, key, (size_t)(end - key));
 
+    *rlocation = location;
     return 1;
 }
 
@@ -91,15 +110,15 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
     buf = udev_device_get_devnode(agg->dev);
     if (!buf || access(buf, F_OK) != 0)
         return 0;
-    dev->node = strdup(buf);
-    if (!dev->node)
+    dev->path = strdup(buf);
+    if (!dev->path)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
     dev->key = strdup(udev_device_get_devpath(agg->dev));
     if (!dev->key)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    r = compute_device_path(&dev->path, dev->key);
+    r = compute_device_location(dev->key, &dev->location);
     if (r <= 0)
         return r;
 
@@ -401,12 +420,12 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     r = ioctl(h->fd, HIDIOCGRDESCSIZE, &size);
     if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESCSIZE) failed: %s",
-                        h->dev->node, strerror(errno));
+                        h->dev->path, strerror(errno));
 
     report.size = (uint32_t)size;
     r = ioctl(h->fd, HIDIOCGRDESC, &report);
     if (r < 0)
-        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESC) failed: %s", h->dev->node,
+        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESC) failed: %s", h->dev->path,
                         strerror(errno));
 
     memset(desc, 0, sizeof(*desc));
@@ -437,9 +456,9 @@ restart:
             return 0;
         case EIO:
         case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
         }
-        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->node, strerror(errno));
+        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->path, strerror(errno));
     }
 
     return r;
@@ -470,9 +489,9 @@ restart:
             return 0;
         case EIO:
         case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
-        return ty_error(TY_ERROR_SYSTEM, "write('%s') failed: %s", h->dev->node, strerror(errno));
+        return ty_error(TY_ERROR_SYSTEM, "write('%s') failed: %s", h->dev->path, strerror(errno));
     }
 
     return r;
@@ -502,9 +521,9 @@ restart:
             return 0;
         case EIO:
         case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
-        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCSFEATURE) failed: %s", h->dev->node,
+        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCSFEATURE) failed: %s", h->dev->path,
                         strerror(errno));
     }
 

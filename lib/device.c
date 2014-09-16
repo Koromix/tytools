@@ -20,7 +20,12 @@
 #include "common.h"
 #include <unistd.h>
 #include "device.h"
+#include "device_priv.h"
 #include "list.h"
+
+struct ty_device_monitor {
+    struct ty_device_monitor_ base;
+};
 
 struct callback {
     ty_list_head list;
@@ -32,20 +37,20 @@ struct callback {
 
 int _ty_device_monitor_init(ty_device_monitor *monitor)
 {
-    ty_list_init(&monitor->callbacks);
-    ty_list_init(&monitor->devices);
+    ty_list_init(&monitor->base.callbacks);
+    ty_list_init(&monitor->base.devices);
 
     return 0;
 }
 
 void _ty_device_monitor_release(ty_device_monitor *monitor)
 {
-    ty_list_foreach(cur, &monitor->callbacks) {
+    ty_list_foreach(cur, &monitor->base.callbacks) {
         struct callback *callback = ty_list_entry(cur, struct callback, list);
         free(callback);
     }
 
-    ty_list_foreach(cur, &monitor->devices) {
+    ty_list_foreach(cur, &monitor->base.devices) {
         ty_device *dev = ty_list_entry(cur, ty_device, list);
         ty_device_unref(dev);
     }
@@ -60,11 +65,11 @@ int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_ca
     if (!callback)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    callback->id = monitor->callback_id++;
+    callback->id = monitor->base.callback_id++;
     callback->f = f;
     callback->udata = udata;
 
-    ty_list_append(&monitor->callbacks, &callback->list);
+    ty_list_append(&monitor->base.callbacks, &callback->list);
 
     return callback->id;
 }
@@ -80,7 +85,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
     assert(monitor);
     assert(id >= 0);
 
-    ty_list_foreach(cur, &monitor->callbacks) {
+    ty_list_foreach(cur, &monitor->base.callbacks) {
         struct callback *callback = ty_list_entry(cur, struct callback, list);
         if (callback->id == id) {
             drop_callback(callback);
@@ -91,7 +96,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
 
 static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 {
-    ty_list_foreach(cur, &monitor->devices) {
+    ty_list_foreach(cur, &monitor->base.devices) {
         ty_device *dev = ty_list_entry(cur, ty_device, list);
 
         if (strcmp(dev->key, key) == 0)
@@ -103,7 +108,7 @@ static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 
 static int trigger_callbacks(ty_device *dev, ty_device_event event)
 {
-    ty_list_foreach(cur, &dev->monitor->callbacks) {
+    ty_list_foreach(cur, &dev->monitor->base.callbacks) {
         struct callback *callback = ty_list_entry(cur, struct callback, list);
         int r;
 
@@ -127,7 +132,7 @@ int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev)
     ty_device_ref(dev);
 
     dev->monitor = monitor;
-    ty_list_append(&monitor->devices, &dev->list);
+    ty_list_append(&monitor->base.devices, &dev->list);
 
     return trigger_callbacks(dev, TY_DEVICE_EVENT_ADDED);
 }
@@ -151,7 +156,7 @@ int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *
     assert(monitor);
     assert(f);
 
-    ty_list_foreach(cur, &monitor->devices) {
+    ty_list_foreach(cur, &monitor->base.devices) {
         ty_device *dev = ty_list_entry(cur, ty_device, list);
         int r;
 
@@ -175,10 +180,52 @@ void ty_device_unref(ty_device *dev)
 {
     if (dev && !--dev->refcount) {
         free(dev->key);
+        free(dev->location);
         free(dev->path);
-        free(dev->node);
         free(dev->serial);
 
         free(dev);
     }
+}
+
+ty_device_type ty_device_get_type(ty_device *dev)
+{
+    assert(dev);
+    return dev->type;
+}
+
+const char *ty_device_get_location(ty_device *dev)
+{
+    assert(dev);
+    return dev->location;
+}
+
+const char *ty_device_get_path(ty_device *dev)
+{
+    assert(dev);
+    return dev->path;
+}
+
+uint16_t ty_device_get_vid(ty_device *dev)
+{
+    assert(dev);
+    return dev->vid;
+}
+
+uint16_t ty_device_get_pid(ty_device *dev)
+{
+    assert(dev);
+    return dev->pid;
+}
+
+const char *ty_device_get_serial_number(ty_device *dev)
+{
+    assert(dev);
+    return dev->serial;
+}
+
+uint8_t ty_device_get_interface_number(ty_device *dev)
+{
+    assert(dev);
+    return dev->iface;
 }

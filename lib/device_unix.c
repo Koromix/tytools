@@ -26,6 +26,13 @@
 #include <unistd.h>
 #include "system.h"
 #include "device.h"
+#include "device_priv.h"
+
+// FIXME: keep in sync with device_linux.c
+struct ty_handle {
+    ty_device *dev;
+    int fd;
+};
 
 int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
 {
@@ -44,26 +51,26 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
         flags |= O_NONBLOCK;
 
 restart:
-    h->fd = open(dev->node, flags);
+    h->fd = open(dev->path, flags);
     if (h->fd < 0) {
         switch (errno) {
         case EINTR:
             goto restart;
         case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for device '%s'", dev->node);
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
             break;
         case EIO:
         case ENXIO:
         case ENODEV:
-            r = ty_error(TY_ERROR_IO, "I/O while opening device '%s'", dev->node);
+            r = ty_error(TY_ERROR_IO, "I/O while opening device '%s'", dev->path);
             break;
         case ENOENT:
         case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "Device '%s' not found", dev->node);
+            r = ty_error(TY_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
             break;
 
         default:
-            r = ty_error(TY_ERROR_SYSTEM, "open('%s') failed: %s", dev->node, strerror(errno));
+            r = ty_error(TY_ERROR_SYSTEM, "open('%s') failed: %s", dev->path, strerror(errno));
             break;
         }
         goto error;
@@ -88,6 +95,14 @@ void ty_device_close(ty_handle *h)
     }
 
     free(h);
+}
+
+void ty_device_get_descriptors(ty_handle *h, ty_descriptor_set *set, int id)
+{
+    assert(h);
+    assert(set);
+
+    ty_descriptor_set_add(set, h->fd, id);
 }
 
 int ty_serial_set_control(ty_handle *h, uint32_t rate, uint16_t flags)
@@ -257,9 +272,9 @@ restart:
             return 0;
         case EIO:
         case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
         }
-        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->node,
+        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->path,
                         strerror(errno));
     }
 
@@ -293,9 +308,9 @@ restart:
             return 0;
         case EIO:
         case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
-        return ty_error(TY_ERROR_SYSTEM, "write('%s') failed: %s", h->dev->node,
+        return ty_error(TY_ERROR_SYSTEM, "write('%s') failed: %s", h->dev->path,
                         strerror(errno));
     }
 

@@ -152,16 +152,16 @@ wait:
     if (r < 0)
         goto cleanup;
 
-    if (!board->model) {
+    if (!ty_board_get_model(board)) {
         r = ty_error(TY_ERROR_MODE, "Unknown board model");
         goto cleanup;
     }
 
-    printf("Model: %s\n", board->model->desc);
+    printf("Model: %s\n", ty_board_get_model(board)->desc);
     printf("Firmware: %s\n", image_filename);
 
-    printf("Usage: %.1f%% (%zu bytes)\n",
-           (double)firmware->size / (double)board->model->code_size * 100.0, firmware->size);
+    printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)ty_board_get_model(board)->code_size * 100.0,
+           firmware->size);
 
     printf("Uploading firmware...\n");
     r = ty_board_upload(board, firmware, 0);

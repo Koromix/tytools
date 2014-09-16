@@ -99,12 +99,12 @@ static void fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
 {
     ty_descriptor_set_clear(set);
 
-    ty_board_manager_get_descriptors(board->manager, set, 1);
+    ty_board_manager_get_descriptors(ty_board_get_manager(board), set, 1);
+    ty_device_get_descriptors(ty_board_get_handle(board), set, 2);
 #ifdef _WIN32
-    ty_descriptor_set_add(set, board->h->ov->hEvent, 2);
+    //ty_descriptor_set_add(set, ty_board_get_handle(board)->ov->hEvent, 2);
     ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
 #else
-    ty_descriptor_set_add(set, board->h->fd, 2);
     ty_descriptor_set_add(set, STDIN_FILENO, 3);
 #endif
 }
@@ -130,7 +130,7 @@ static int loop(ty_board *board, int outfd)
             return 0;
 
         case 1:
-            r = ty_board_manager_refresh(board->manager);
+            r = ty_board_manager_refresh(ty_board_get_manager(board));
             if (r < 0)
                 return (int)r;
 

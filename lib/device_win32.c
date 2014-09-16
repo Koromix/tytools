@@ -29,7 +29,33 @@
 #include <usb.h>
 #include <usbuser.h>
 #include "device.h"
+#include "device_priv.h"
 #include "system.h"
+
+struct ty_device_monitor {
+    struct ty_device_monitor_ base;
+
+    ty_list_head controllers;
+
+    CRITICAL_SECTION mutex;
+    int ret;
+    ty_list_head notifications;
+    HANDLE event;
+
+    HANDLE thread;
+    HANDLE hwnd;
+};
+
+struct ty_handle {
+    ty_device *dev;
+
+    bool block;
+    HANDLE handle;
+    struct _OVERLAPPED *ov;
+    uint8_t *buf;
+    uint8_t *ptr;
+    size_t len;
+};
 
 struct device_type {
     char *prefix;
@@ -309,7 +335,7 @@ static int find_device_node(DEVINST inst, ty_device *dev)
     // list virtual (USB) serial device interfaces, so instead list USB devices and consider
     // them serial if registry key "PortName" is available (and use its value as device node).
     if (strncmp(dev->key, "USB\\", 4) == 0) {
-        r = get_device_comport(inst, &dev->node);
+        r = get_device_comport(inst, &dev->path);
         if (r <= 0)
             return r;
 
@@ -319,7 +345,7 @@ static int find_device_node(DEVINST inst, ty_device *dev)
 
     for (const struct device_type *type = device_types; type->prefix; type++) {
         if (strncmp(type->prefix, dev->key, strlen(type->prefix)) == 0) {
-            r = build_device_path(dev->key, type->guid, &dev->node);
+            r = build_device_path(dev->key, type->guid, &dev->path);
             if (r < 0)
                 return r;
 
@@ -411,11 +437,11 @@ static int create_device(ty_device_monitor *monitor, const char *key, DEVINST in
         goto cleanup;
 
     if (ports) {
-        r = build_location_string(ports, depth, &dev->path);
+        r = build_location_string(ports, depth, &dev->location);
         if (r < 0)
             goto cleanup;
     } else {
-        r = resolve_device_location(inst, &monitor->controllers, &dev->path);
+        r = resolve_device_location(inst, &monitor->controllers, &dev->location);
         if (r <= 0)
             goto cleanup;
     }
@@ -825,24 +851,24 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
     if (!h)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    h->handle = CreateFile(dev->node, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+    h->handle = CreateFile(dev->path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                            NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (h->handle == INVALID_HANDLE_VALUE) {
         switch (GetLastError()) {
         case ERROR_FILE_NOT_FOUND:
         case ERROR_PATH_NOT_FOUND:
-            r = ty_error(TY_ERROR_NOT_FOUND, "Device '%s' not found", dev->node);
+            r = ty_error(TY_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
             break;
         case ERROR_NOT_ENOUGH_MEMORY:
         case ERROR_OUTOFMEMORY:
             r = ty_error(TY_ERROR_MEMORY, NULL);
             break;
         case ERROR_ACCESS_DENIED:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for device '%s'", dev->node);
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
             break;
 
         default:
-            r = ty_error(TY_ERROR_SYSTEM, "CreateFile('%s') failed: %s", dev->node,
+            r = ty_error(TY_ERROR_SYSTEM, "CreateFile('%s') failed: %s", dev->path,
                          ty_win32_strerror(0));
             break;
         }
@@ -909,6 +935,14 @@ void ty_device_close(ty_handle *h)
     free(h);
 }
 
+void ty_device_get_descriptors(ty_handle *h, ty_descriptor_set *set, int id)
+{
+    assert(h);
+    assert(set);
+
+    ty_descriptor_set_add(set, h->ov->hEvent, id);
+}
+
 int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
 {
     assert(h);
@@ -949,7 +983,7 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
     if (!ret) {
         if (GetLastError() == ERROR_IO_PENDING)
             return 0;
-        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->node);
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
 
     if (len) {
@@ -970,7 +1004,7 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
     ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(h->handle);
-        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->node);
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
 
     return (ssize_t)size;
@@ -993,12 +1027,12 @@ ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
     if (!r) {
         if (GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
 
         r = GetOverlappedResult(h->handle, &ov, &len, TRUE);
         if (!r)
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
     }
 
     return (ssize_t)len;
@@ -1016,7 +1050,7 @@ int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
     // Timeout behavior?
     BOOL r = HidD_SetFeature(h->handle, (char *)buf, (DWORD)size);
     if (!r)
-        return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+        return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
 
     return 1;
 }
@@ -1143,7 +1177,7 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
         if (!ret) {
             if (GetLastError() == ERROR_IO_PENDING)
                 return 0;
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
         }
 
         h->ptr = h->buf;
@@ -1153,7 +1187,7 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
         ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
         if (!ret && GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
         }
     }
 
@@ -1186,12 +1220,12 @@ ssize_t ty_serial_write(ty_handle *h, const char *buf, ssize_t size)
     if (!r) {
         if (GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
 
         r = GetOverlappedResult(h->handle, &ov, &len, TRUE);
         if (!r)
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->node);
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
     }
 
     return (ssize_t)len;

@@ -70,7 +70,7 @@ static const struct command commands[] = {
 static ty_board_manager *board_manager;
 static ty_board *main_board;
 
-static const char *device_path = NULL;
+static const char *device_location = NULL;
 static uint64_t device_serial = 0;
 
 static void print_version(void)
@@ -151,9 +151,9 @@ static int parse_device_path(char *device, const char **rpath, uint64_t *rserial
 
 static bool test_board(ty_board *board)
 {
-    if (device_path && strcmp(board->dev->path, device_path) != 0)
+    if (device_location && strcmp(ty_board_get_location(board), device_location) != 0)
         return false;
-    if (device_serial && board->serial != device_serial)
+    if (device_serial && ty_board_get_serial_number(board) != device_serial)
         return false;
 
     return true;
@@ -197,9 +197,8 @@ int get_board(ty_board **rboard)
 
     static ty_board *previous_board = NULL;
     if (main_board != previous_board) {
-        if (main_board->mode)
-            printf("Board at '%s#%"PRIu64"' (%s)\n", main_board->dev->path, main_board->serial,
-                   main_board->mode->desc);
+        printf("Board at '%s#%"PRIu64"' (%s)\n", ty_board_get_location(main_board),
+               ty_board_get_serial_number(main_board), ty_board_get_mode(main_board)->desc);
         previous_board = main_board;
     }
 
@@ -250,7 +249,7 @@ int main(int argc, char *argv[])
             return 0;
 
         case 'd':
-            r = parse_device_path(optarg, &device_path, &device_serial);
+            r = parse_device_path(optarg, &device_location, &device_serial);
             break;
 
         default:

@@ -20,11 +20,41 @@
 #include "common.h"
 #include "board.h"
 #include "firmware.h"
+#include "list.h"
 #include "system.h"
 #include "device.h"
 
-struct callback
-{
+struct ty_board_manager {
+    ty_device_monitor *monitor;
+    ty_timer *timer;
+
+    ty_list_head callbacks;
+    int callback_id;
+
+    ty_list_head boards;
+    ty_list_head missing_boards;
+};
+
+struct ty_board {
+    ty_board_manager *manager;
+    ty_list_head list;
+
+    unsigned int refcount;
+
+    ty_board_state state;
+
+    ty_device *dev;
+    ty_handle *h;
+
+    ty_list_head missing;
+    uint64_t missing_since;
+
+    const ty_board_mode *mode;
+    const ty_board_model *model;
+    uint64_t serial;
+};
+
+struct callback {
     ty_list_head list;
     int id;
 
@@ -407,21 +437,23 @@ static int open_board(ty_board *board)
 static int load_board(ty_board *board, ty_device *dev, ty_board **rboard)
 {
     const ty_board_mode *mode = NULL;
+    uint16_t pid;
     uint64_t serial;
     int r;
 
-    if (dev->vid != teensy_vid)
+    if (ty_device_get_vid(dev) != teensy_vid)
         return 0;
 
+    pid = ty_device_get_pid(dev);
     for (const ty_board_mode **cur = ty_board_modes; *cur; cur++) {
         mode = *cur;
-        if (mode->pid == dev->pid)
+        if (mode->pid == pid)
             break;
     }
     if (!mode->pid)
         return 0;
 
-    if (dev->iface != mode->iface)
+    if (ty_device_get_interface_number(dev) != mode->iface)
         return 0;
 
     if (!board) {
@@ -434,7 +466,7 @@ static int load_board(ty_board *board, ty_device *dev, ty_board **rboard)
     ty_device_unref(board->dev);
     board->dev = ty_device_ref(dev);
 
-    serial = parse_serial_number(dev->serial);
+    serial = parse_serial_number(ty_device_get_serial_number(dev));
     if (board->serial != serial)
         board->model = NULL;
     board->serial = serial;
@@ -492,15 +524,18 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
 {
     ty_board_manager *manager = udata;
 
+    const char *location;
     ty_board *board;
     int r;
+
+    location = ty_device_get_location(dev);
 
     switch (event) {
     case TY_DEVICE_EVENT_ADDED:
         ty_list_foreach(cur, &manager->boards) {
             board = ty_list_entry(cur, ty_board, list);
 
-            if (strcmp(board->dev->path, dev->path) == 0) {
+            if (strcmp(ty_device_get_location(board->dev), location) == 0) {
                 r = load_board(board, dev, NULL);
                 if (r <= 0)
                     return r;
@@ -695,6 +730,42 @@ void ty_board_unref(ty_board *board)
     }
 }
 
+ty_board_manager *ty_board_get_manager(ty_board *board)
+{
+    assert(board);
+    return board->manager;
+}
+
+ty_board_state ty_board_get_state(ty_board *board)
+{
+    assert(board);
+    return board->state;
+}
+
+ty_device *ty_board_get_device(ty_board *board)
+{
+    assert(board);
+    return board->dev;
+}
+
+ty_handle *ty_board_get_handle(ty_board *board)
+{
+    assert(board);
+    return board->h;
+}
+
+const ty_board_mode *ty_board_get_mode(ty_board *board)
+{
+    assert(board);
+    return board->mode;
+}
+
+const ty_board_model *ty_board_get_model(ty_board *board)
+{
+    assert(board);
+    return board->model;
+}
+
 uint32_t ty_board_get_capabilities(ty_board *board)
 {
     assert(board);
@@ -703,6 +774,12 @@ uint32_t ty_board_get_capabilities(ty_board *board)
         return 0;
 
     return board->mode->capabilities;
+}
+
+uint64_t ty_board_get_serial_number(ty_board *board)
+{
+    assert(board);
+    return board->serial;
 }
 
 struct wait_for_context {
@@ -744,7 +821,7 @@ int ty_board_control_serial(ty_board *board, uint32_t rate, uint16_t flags)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    if (board->dev->type != TY_DEVICE_SERIAL)
+    if (ty_device_get_type(board->dev) != TY_DEVICE_SERIAL)
         return 0;
 
     r = ty_serial_set_control(board->h, rate, flags);
@@ -765,7 +842,7 @@ ssize_t ty_board_read_serial(ty_board *board, char *buf, size_t size)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    switch (board->dev->type) {
+    switch (ty_device_get_type(board->dev)) {
     case TY_DEVICE_SERIAL:
         return ty_serial_read(board->h, buf, size);
 
@@ -797,7 +874,7 @@ ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
     if (!size)
         size = strlen(buf);
 
-    switch (board->dev->type) {
+    switch (ty_device_get_type(board->dev)) {
     case TY_DEVICE_SERIAL:
         return ty_serial_write(board->h, buf, (ssize_t)size);
 
@@ -950,7 +1027,7 @@ int ty_board_reboot(ty_board *board)
         return ty_error(TY_ERROR_MODE, "Cannot reboot in this mode");
 
     r = TY_ERROR_UNSUPPORTED;
-    switch (board->dev->type) {
+    switch (ty_device_get_type(board->dev)) {
     case TY_DEVICE_SERIAL:
         r = ty_serial_set_control(board->h, 134, 0);
         break;

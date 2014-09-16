@@ -66,6 +66,7 @@ set(SOURCES lib/board.c
             lib/common.c
             lib/compat.c
             lib/device.c
+            lib/device_priv.h
             lib/firmware.c
             lib/firmware_ihex.c
             lib/list.h
