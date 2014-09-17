@@ -89,12 +89,38 @@ bool ty_win32_test_version(ty_win32_version version)
     return VerifyVersionInfo(&info, VER_MAJORVERSION | VER_MINORVERSION, cond);
 }
 
+typedef ULONGLONG WINAPI gtc64_func(void);
+
+static ULONGLONG WINAPI gtc64_fallback(void)
+{
+    static LARGE_INTEGER freq;
+
+    LARGE_INTEGER now;
+    BOOL ret;
+
+    if (!freq.QuadPart) {
+        ret = QueryPerformanceFrequency(&freq);
+        assert(ret);
+    }
+
+    ret = QueryPerformanceCounter(&now);
+    assert(ret);
+
+    return (ULONGLONG)now.QuadPart * 1000 / (ULONGLONG)freq.QuadPart;
+}
+
 uint64_t ty_millis(void)
 {
-    if (!ty_win32_test_version(TY_WIN32_VISTA))
-        return GetTickCount();
+    static gtc64_func *gtc64;
 
-    return GetTickCount64();
+    if (!gtc64) {
+        HANDLE h = GetModuleHandle("kernel32.dll");
+        gtc64 = (gtc64_func *)GetProcAddress(h, "GetTickCount64");
+        if (!gtc64)
+            gtc64 = gtc64_fallback;
+    }
+
+    return gtc64();
 }
 
 void ty_delay(unsigned int ms)
