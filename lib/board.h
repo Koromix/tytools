@@ -87,7 +87,7 @@ extern const ty_board_mode *ty_board_modes[];
 int ty_board_manager_new(ty_board_manager **rmanager);
 void ty_board_manager_free(ty_board_manager *manager);
 
-void ty_board_manager_get_descriptors(ty_board_manager *manager, ty_descriptor_set *set, int id);
+void ty_board_manager_get_descriptors(ty_board_manager *manager, struct ty_descriptor_set *set, int id);
 
 int ty_board_manager_register_callback(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata);
 void ty_board_manager_deregister_callback(ty_board_manager *manager, int id);

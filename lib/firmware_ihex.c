@@ -18,6 +18,7 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include "firmware.h"
 
 struct parser_context {

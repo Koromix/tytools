@@ -18,13 +18,14 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include <libudev.h>
 #include <linux/hidraw.h>
-#include <poll.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "device.h"
 #include "device_priv.h"
+#include "system.h"
 
 struct ty_device_monitor {
     ty_list_head callbacks;

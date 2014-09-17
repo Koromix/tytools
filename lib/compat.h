@@ -21,6 +21,7 @@
 #define TY_COMPAT_H
 
 #include "common.h"
+#include "config.h"
 
 char *strrpbrk(const char *s, const char *accept);
 

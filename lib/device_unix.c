@@ -18,15 +18,15 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include <fcntl.h>
-#include <poll.h>
 #include <termios.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "system.h"
 #include "device.h"
 #include "device_priv.h"
+#include "system.h"
 
 // FIXME: keep in sync with device_linux.c
 struct ty_handle {

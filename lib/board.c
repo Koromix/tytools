@@ -18,11 +18,11 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include "board.h"
 #include "firmware.h"
 #include "list.h"
 #include "system.h"
-#include "device.h"
 
 struct ty_board_manager {
     ty_device_monitor *monitor;

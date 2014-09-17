@@ -19,9 +19,6 @@
 
 #include "common.h"
 #include <getopt.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include "board.h"
 #include "firmware.h"
 #include "main.h"

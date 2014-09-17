@@ -37,8 +37,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include "config.h"
-#include "compat.h"
 
 #ifdef __cplusplus
     #define TY_C_BEGIN extern "C" {

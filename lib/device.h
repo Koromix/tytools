@@ -21,9 +21,10 @@
 #define TY_DEVICE_H
 
 #include "common.h"
-#include "system.h"
 
 TY_C_BEGIN
+
+struct ty_descriptor_set;
 
 typedef struct ty_device_monitor ty_device_monitor;
 typedef struct ty_device ty_device;
@@ -73,7 +74,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor);
 int _ty_device_monitor_init(ty_device_monitor *monitor);
 void _ty_device_monitor_release(ty_device_monitor *monitor);
 
-void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, ty_descriptor_set *set, int id);
+void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, struct ty_descriptor_set *set, int id);
 
 int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
 void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id);
@@ -91,7 +92,7 @@ void ty_device_unref(ty_device *dev);
 int ty_device_open(ty_device *dev, bool block, ty_handle **rh);
 void ty_device_close(ty_handle *h);
 
-void ty_device_get_descriptors(ty_handle *h, ty_descriptor_set *set, int id);
+void ty_device_get_descriptors(ty_handle *h, struct ty_descriptor_set *set, int id);
 
 ty_device_type ty_device_get_type(ty_device *dev);
 

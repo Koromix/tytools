@@ -18,10 +18,10 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include <unistd.h>
 #include "device.h"
 #include "device_priv.h"
-#include "list.h"
 
 struct ty_device_monitor {
     struct ty_device_monitor_ base;

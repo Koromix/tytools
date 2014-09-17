@@ -18,6 +18,7 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include "firmware.h"
 
 const size_t ty_firmware_max_size = 1024 * 1024;

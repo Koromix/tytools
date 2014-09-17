@@ -18,6 +18,7 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include <stdarg.h>
 
 char *strrpbrk(const char *s, const char *accept)

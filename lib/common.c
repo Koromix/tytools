@@ -18,6 +18,7 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include <stdarg.h>
 
 static void default_handler(ty_err err, const char *msg, void *udata);

@@ -22,11 +22,6 @@
 
 #include "common.h"
 #include <sys/types.h>
-#ifdef _WIN32
-#include <io.h>
-#else
-#include <dirent.h>
-#endif
 
 TY_C_BEGIN
 

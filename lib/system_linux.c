@@ -18,6 +18,7 @@
  */
 
 #include "common.h"
+#include "compat.h"
 #include <sys/timerfd.h>
 #include <unistd.h>
 #include "system.h"
