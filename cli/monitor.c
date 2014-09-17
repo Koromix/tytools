@@ -51,6 +51,8 @@ static const struct option long_options[] = {
     {0}
 };
 
+static const int error_io_timeout = 6000;
+
 static uint16_t terminal_flags = 0;
 #ifdef _WIN32
 static bool fake_echo = false;
@@ -148,8 +150,15 @@ static int loop(ty_board *board, int outfd)
 
         case 2:
             r = ty_board_read_serial(board, buf, sizeof(buf));
-            if (r < 0)
+            if (r < 0) {
+                if (r == TY_ERROR_IO && reconnect) {
+                    timeout = error_io_timeout;
+                    ty_descriptor_set_remove(&set, 2);
+                    ty_descriptor_set_remove(&set, 3);
+                    break;
+                }
                 return (int)r;
+            }
 
             r = write(outfd, buf, (size_t)r);
             if (r < 0) {
@@ -173,7 +182,7 @@ static int loop(ty_board *board, int outfd)
                 // EOF reached, don't listen to stdin anymore, and start timeout to give some
                 // time for the device to send any data before closing down
                 timeout = timeout_eof;
-                set.count--;
+                ty_descriptor_set_remove(&set, 3);
                 break;
             }
 
@@ -186,8 +195,15 @@ static int loop(ty_board *board, int outfd)
 #endif
 
             r = ty_board_write_serial(board, buf, (size_t)r);
-            if (r < 0)
+            if (r < 0) {
+                if (r == TY_ERROR_IO && reconnect) {
+                    timeout = error_io_timeout;
+                    ty_descriptor_set_remove(&set, 2);
+                    ty_descriptor_set_remove(&set, 3);
+                    break;
+                }
                 return (int)r;
+            }
 
             break;
         }
