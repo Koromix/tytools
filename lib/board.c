@@ -903,7 +903,7 @@ ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
 static int halfkay_send(ty_board *board, size_t addr, void *data, size_t size, unsigned int timeout)
 {
     uint8_t buf[2048] = {0};
-    uint64_t end;
+    uint64_t start;
 
     const ty_board_model *model = board->model;
     ty_handle *h = board->h;
@@ -946,17 +946,17 @@ static int halfkay_send(ty_board *board, size_t addr, void *data, size_t size, u
         assert(false);
     }
 
-    end = ty_millis() + timeout;
+    start = ty_millis();
 
     // We may get errors along the way (while the bootloader works)
     // so try again until timeout expires.
-    while (ty_millis() < end) {
+    do {
         r = ty_hid_write(h, buf, size);
         if (r >= 0)
             return 0;
 
         ty_delay(10);
-    }
+    } while (ty_millis() - start <= timeout);
     if (r < 0)
         return (int)r;
 
