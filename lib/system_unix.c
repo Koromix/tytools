@@ -99,9 +99,8 @@ restart:
         return 0;
 
     for (size_t i = 0; i < set->count; i++) {
-        if (pfd[i].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL)) {
+        if (pfd[i].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL))
             return set->id[i];
-        }
     }
     assert(false);
 }
