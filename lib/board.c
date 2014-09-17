@@ -890,7 +890,7 @@ ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
             else if (!r)
                 break;
 
-            i += (size_t)r;
+            i += (size_t)r - 1;
             total += (size_t)r - 1;
         }
         return (ssize_t)total;
