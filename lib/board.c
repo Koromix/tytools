@@ -645,7 +645,7 @@ int ty_board_manager_wait(ty_board_manager *manager, ty_board_manager_wait_func 
 
     ty_descriptor_set set = {0};
     uint64_t start;
-    ssize_t r;
+    int r;
 
     ty_board_manager_get_descriptors(manager, &set, 1);
 
@@ -664,7 +664,7 @@ int ty_board_manager_wait(ty_board_manager *manager, ty_board_manager_wait_func 
         r = ty_poll(&set, adjust_timeout(timeout, start));
     } while (r > 0);
 
-    return (int)r;
+    return r;
 }
 
 int ty_board_manager_list(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata)
