@@ -60,16 +60,22 @@ check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
 
 configure_file(src/config.h.in src/config.h)
 
-include_directories(src "${CMAKE_CURRENT_BINARY_DIR}/src")
+include_directories(include "${CMAKE_CURRENT_BINARY_DIR}/src")
 
-set(SOURCES src/board.c
+set(SOURCES include/board.h
+            include/common.h
+            include/device.h
+            include/firmware.h
+            include/list.h
+            include/system.h
+
+            src/board.c
             src/common.c
             src/compat.c
             src/device.c
             src/device_priv.h
             src/firmware.c
             src/firmware_ihex.c
-            src/list.h
             src/system.c
 
             cli/list.c
