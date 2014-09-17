@@ -58,19 +58,19 @@ include(CheckSymbolExists)
 check_symbol_exists(stpcpy string.h HAVE_STPCPY)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
 
-configure_file(lib/config.h.in lib/config.h)
+configure_file(src/config.h.in src/config.h)
 
-include_directories(lib "${CMAKE_CURRENT_BINARY_DIR}/lib")
+include_directories(src "${CMAKE_CURRENT_BINARY_DIR}/src")
 
-set(SOURCES lib/board.c
-            lib/common.c
-            lib/compat.c
-            lib/device.c
-            lib/device_priv.h
-            lib/firmware.c
-            lib/firmware_ihex.c
-            lib/list.h
-            lib/system.c
+set(SOURCES src/board.c
+            src/common.c
+            src/compat.c
+            src/device.c
+            src/device_priv.h
+            src/firmware.c
+            src/firmware_ihex.c
+            src/list.h
+            src/system.c
 
             cli/list.c
             cli/main.c
@@ -78,13 +78,13 @@ set(SOURCES lib/board.c
             cli/reset.c
             cli/upload.c)
 if(WIN32)
-    list(APPEND SOURCES lib/system_win32.c
-                        lib/device_win32.c)
+    list(APPEND SOURCES src/system_win32.c
+                        src/device_win32.c)
 else()
-    list(APPEND SOURCES lib/system_unix.c
-                        lib/system_linux.c
-                        lib/device_linux.c
-                        lib/device_unix.c)
+    list(APPEND SOURCES src/system_unix.c
+                        src/system_linux.c
+                        src/device_linux.c
+                        src/device_unix.c)
 endif()
 
 add_executable(ty ${SOURCES})
