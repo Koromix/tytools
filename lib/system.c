@@ -112,3 +112,19 @@ void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id)
 
     set->count++;
 }
+
+void ty_descriptor_set_remove(ty_descriptor_set *set, int id)
+{
+    assert(set);
+
+    size_t delta = 0;
+    for (size_t i = 0; i < set->count; i++) {
+        set->desc[i - delta] = set->desc[i];
+        set->id[i - delta] = set->id[i];
+
+        if (set->id[i] == id)
+            delta++;
+    }
+
+    set->count -= delta;
+}

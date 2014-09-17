@@ -105,6 +105,7 @@ uint64_t ty_timer_rearm(ty_timer *timer);
 
 void ty_descriptor_set_clear(ty_descriptor_set *set);
 void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
+void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
 int ty_poll(const ty_descriptor_set *set, int timeout);
 
