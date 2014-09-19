@@ -52,6 +52,8 @@ void _ty_device_monitor_release(ty_device_monitor *monitor)
 
     ty_list_foreach(cur, &monitor->base.devices) {
         ty_device *dev = ty_list_entry(cur, ty_device, list);
+
+        dev->monitor = NULL;
         ty_device_unref(dev);
     }
 }
@@ -160,6 +162,8 @@ void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key)
     trigger_callbacks(dev, TY_DEVICE_EVENT_REMOVED);
 
     ty_list_remove(&dev->list);
+    dev->monitor = NULL;
+
     ty_device_unref(dev);
 }
 
@@ -190,7 +194,13 @@ ty_device *ty_device_ref(ty_device *dev)
 
 void ty_device_unref(ty_device *dev)
 {
-    if (dev && !--dev->refcount) {
+    if (!dev)
+        return;
+
+    if (dev->refcount)
+        dev->refcount--;
+
+    if (!dev->monitor && !dev->refcount) {
         free(dev->key);
         free(dev->location);
         free(dev->path);

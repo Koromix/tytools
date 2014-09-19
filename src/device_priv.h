@@ -31,6 +31,8 @@ struct ty_device_monitor_ {
     int callback_id;
 
     ty_list_head devices;
+
+    void *udata;
 };
 
 struct ty_device {
@@ -51,6 +53,8 @@ struct ty_device {
     char *serial;
 
     uint8_t iface;
+
+    void *udata;
 };
 
 TY_C_END

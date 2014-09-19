@@ -293,6 +293,8 @@ void ty_board_manager_free(ty_board_manager *manager)
 
         ty_list_foreach(cur, &manager->boards) {
             ty_board *board = ty_list_entry(cur, ty_board, list);
+
+            board->manager = NULL;
             ty_board_unref(board);
         }
     }
@@ -526,12 +528,14 @@ static void close_board(ty_board *board)
 static void drop_board(ty_board *board)
 {
     board->state = TY_BOARD_STATE_DROPPED;
-    ty_list_remove(&board->list);
 
     if (board->missing.prev)
         ty_list_remove(&board->missing);
 
     trigger_callbacks(board, TY_BOARD_EVENT_DROPPED);
+
+    ty_list_remove(&board->list);
+    board->manager = NULL;
 
     ty_board_unref(board);
 }
@@ -738,7 +742,13 @@ ty_board *ty_board_ref(ty_board *board)
 
 void ty_board_unref(ty_board *board)
 {
-    if (board && !--board->refcount) {
+    if (!board)
+        return;
+
+    if (board->refcount)
+        board->refcount--;
+
+    if (!board->manager && !board->refcount) {
         ty_device_close(board->h);
         ty_device_unref(board->dev);
 
