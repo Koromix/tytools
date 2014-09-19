@@ -66,6 +66,16 @@ static inline void ty_list_remove(ty_list_head *head)
     ty_list_init(head);
 }
 
+static inline void ty_list_replace(ty_list_head *head, ty_list_head *n)
+{
+    n->next = head->next;
+    n->next->prev = n;
+    n->prev = head->prev;
+    n->prev->next = n;
+
+    ty_list_init(head);
+}
+
 static inline bool ty_list_empty(ty_list_head *head)
 {
     return head->next == head;
