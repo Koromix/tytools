@@ -41,10 +41,6 @@ static inline void ty_list_init(ty_list_head *head)
 
 static inline void _ty_list_insert(ty_list_head *prev, ty_list_head *next, ty_list_head *head)
 {
-    assert(prev);
-    assert(next);
-    assert(head);
-
     prev->next = head;
     head->prev = prev;
 
@@ -52,33 +48,26 @@ static inline void _ty_list_insert(ty_list_head *prev, ty_list_head *next, ty_li
     head->next = next;
 }
 
-static inline void ty_list_append(ty_list_head *prev, ty_list_head *head)
+static inline void ty_list_append(ty_list_head *head, ty_list_head *n)
 {
-    _ty_list_insert(prev, prev->next, head);
+    _ty_list_insert(head->prev, head, n);
 }
 
-static inline void ty_list_prepend(ty_list_head *next, ty_list_head *head)
+static inline void ty_list_prepend(ty_list_head *head, ty_list_head *n)
 {
-    _ty_list_insert(next->prev, next, head);
+    _ty_list_insert(head, head->next, n);
 }
 
 static inline void ty_list_remove(ty_list_head *head)
 {
-    assert(head);
-    assert(head->prev);
-    assert(head->next);
-
     head->prev->next = head->next;
     head->next->prev = head->prev;
 
-    head->prev = NULL;
-    head->next = NULL;
+    ty_list_init(head);
 }
 
 static inline bool ty_list_empty(ty_list_head *head)
 {
-    assert(head);
-
     return head->next == head;
 }
 
