@@ -56,6 +56,18 @@ void _ty_device_monitor_release(ty_device_monitor *monitor)
     }
 }
 
+void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata)
+{
+    assert(monitor);
+    monitor->base.udata = udata;
+}
+
+void *ty_device_monitor_get_udata(ty_device_monitor *monitor)
+{
+    assert(monitor);
+    return monitor->base.udata;
+}
+
 int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata)
 {
     assert(monitor);
@@ -186,6 +198,18 @@ void ty_device_unref(ty_device *dev)
 
         free(dev);
     }
+}
+
+void ty_device_set_udata(ty_device *dev, void *udata)
+{
+    assert(dev);
+    dev->udata = udata;
+}
+
+void *ty_device_get_udata(ty_device *dev)
+{
+    assert(dev);
+    return dev->udata;
 }
 
 ty_device_type ty_device_get_type(ty_device *dev)

@@ -33,6 +33,8 @@ struct ty_board_manager {
 
     ty_list_head boards;
     ty_list_head missing_boards;
+
+    void *udata;
 };
 
 struct ty_board {
@@ -52,6 +54,8 @@ struct ty_board {
     const ty_board_mode *mode;
     const ty_board_model *model;
     uint64_t serial;
+
+    void *udata;
 };
 
 struct callback {
@@ -294,6 +298,18 @@ void ty_board_manager_free(ty_board_manager *manager)
     }
 
     free(manager);
+}
+
+void ty_board_manager_set_udata(ty_board_manager *manager, void *udata)
+{
+    assert(manager);
+    manager->udata = udata;
+}
+
+void *ty_board_manager_get_udata(ty_board_manager *manager)
+{
+    assert(manager);
+    return manager->udata;
 }
 
 void ty_board_manager_get_descriptors(ty_board_manager *manager, ty_descriptor_set *set, int id)
@@ -728,6 +744,18 @@ void ty_board_unref(ty_board *board)
 
         free(board);
     }
+}
+
+void ty_board_set_udata(ty_board *board, void *udata)
+{
+    assert(board);
+    board->udata = udata;
+}
+
+void *ty_board_get_udata(ty_board *board)
+{
+    assert(board);
+    return board->udata;
 }
 
 ty_board_manager *ty_board_get_manager(ty_board *board)

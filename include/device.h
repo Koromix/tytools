@@ -74,6 +74,9 @@ void ty_device_monitor_free(ty_device_monitor *monitor);
 int _ty_device_monitor_init(ty_device_monitor *monitor);
 void _ty_device_monitor_release(ty_device_monitor *monitor);
 
+void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata);
+void *ty_device_monitor_get_udata(ty_device_monitor *monitor);
+
 void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, struct ty_descriptor_set *set, int id);
 
 int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
@@ -88,6 +91,9 @@ int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *
 
 ty_device *ty_device_ref(ty_device *dev);
 void ty_device_unref(ty_device *dev);
+
+void ty_device_set_udata(ty_device *dev, void *udata);
+void *ty_device_get_udata(ty_device *dev);
 
 int ty_device_open(ty_device *dev, bool block, ty_handle **rh);
 void ty_device_close(ty_handle *h);
