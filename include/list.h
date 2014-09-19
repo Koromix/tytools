@@ -81,6 +81,30 @@ static inline bool ty_list_empty(ty_list_head *head)
     return head->next == head;
 }
 
+static inline void _ty_list_slice(ty_list_head *prev, ty_list_head *next, ty_list_head *head)
+{
+    if (ty_list_empty(head))
+        return;
+
+    head->next->prev = prev;
+    prev->next = head->next;
+
+    head->prev->next = next;
+    next->prev = head->prev;
+
+    ty_list_init(head);
+}
+
+static inline void ty_list_append_list(ty_list_head *head, ty_list_head *list)
+{
+    _ty_list_slice(head->prev, head, list);
+}
+
+static inline void ty_list_prepend_list(ty_list_head *head, ty_list_head *list)
+{
+    _ty_list_slice(head, head->next, list);
+}
+
 #define ty_list_entry(head, type, member) \
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
