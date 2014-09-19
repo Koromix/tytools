@@ -799,16 +799,20 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 {
     assert(monitor);
 
+    ty_list_head notifications;
     int r;
 
     EnterCriticalSection(&monitor->mutex);
 
-    if (monitor->ret < 0) {
-        r = monitor->ret;
-        goto cleanup;
-    }
+    ty_list_replace(&monitor->notifications, &notifications);
+    r = monitor->ret;
 
-    ty_list_foreach(cur, &monitor->notifications) {
+    LeaveCriticalSection(&monitor->mutex);
+
+    if (r < 0)
+        goto cleanup;
+
+    ty_list_foreach(cur, &notifications) {
         struct device_event *notification = ty_list_entry(cur, struct device_event, list);
 
         r = 0;
@@ -832,8 +836,12 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 
     r = 0;
 cleanup:
+    EnterCriticalSection(&monitor->mutex);
+
+    ty_list_prepend_list(&monitor->notifications, &notifications);
     if (ty_list_empty(&monitor->notifications))
         ResetEvent(monitor->event);
+
     LeaveCriticalSection(&monitor->mutex);
     return r;
 }
