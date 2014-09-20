@@ -17,12 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
 #include <getopt.h>
-#include "board.h"
-#include "firmware.h"
+#include "ty.h"
 #include "main.h"
-#include "system.h"
 
 enum {
     OPTION_HELP = 0x100,

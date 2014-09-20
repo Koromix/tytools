@@ -17,21 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef TY_H
+#define TY_H
 
-#include "ty.h"
-
-TY_C_BEGIN
-
-struct ty_board_manager;
-struct ty_board;
-
-void print_supported_models(void);
-
-int get_manager(struct ty_board_manager **rmanager);
-int get_board(struct ty_board **rboard);
-
-TY_C_END
+#include "ty/common.h"
+#include "ty/board.h"
+#include "ty/device.h"
+#include "ty/firmware.h"
+#include "ty/list.h"
+#include "ty/system.h"
 
 #endif

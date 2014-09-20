@@ -17,15 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
 #include <getopt.h>
 #ifndef _WIN32
 #include <signal.h>
 #include <sys/wait.h>
 #endif
-#include "board.h"
+#include "ty.h"
 #include "main.h"
-#include "system.h"
 
 struct command {
     const char *name;

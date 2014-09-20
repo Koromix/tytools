@@ -17,16 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
 #include <getopt.h>
 #include <unistd.h>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
-#include "board.h"
+#include "ty.h"
 #include "main.h"
-#include "system.h"
 
 enum {
     OPTION_HELP = 0x100,
