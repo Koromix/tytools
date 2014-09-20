@@ -71,7 +71,7 @@ struct usb_controller {
     char *id;
 };
 
-struct device_event {
+struct device_notification {
     ty_list_head list;
 
     ty_device_event event;
@@ -103,7 +103,7 @@ static void free_controller(struct usb_controller *controller)
     free(controller);
 }
 
-static void free_notification(struct device_event *notification)
+static void free_notification(struct device_notification *notification)
 {
     if (notification)
         free(notification->key);
@@ -560,7 +560,7 @@ cleanup:
 
 static int post_device_event(ty_device_monitor *monitor, ty_device_event event, DEV_BROADCAST_DEVICEINTERFACE *data)
 {
-    struct device_event *notification;
+    struct device_notification *notification;
     int r;
 
     notification = calloc(1, sizeof(*notification));
@@ -779,7 +779,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
             CloseHandle(monitor->event);
 
         ty_list_foreach(cur, &monitor->notifications) {
-            struct device_event *notification = ty_list_entry(cur, struct device_event, list);
+            struct device_notification *notification = ty_list_entry(cur, struct device_notification, list);
             free_notification(notification);
         }
     }
@@ -813,7 +813,7 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
         goto cleanup;
 
     ty_list_foreach(cur, &notifications) {
-        struct device_event *notification = ty_list_entry(cur, struct device_event, list);
+        struct device_notification *notification = ty_list_entry(cur, struct device_notification, list);
 
         r = 0;
         switch (notification->event) {
