@@ -98,4 +98,4 @@ add_executable(ty ${SOURCES})
 target_link_libraries(ty ${LIBRARIES})
 
 install(TARGETS ty RUNTIME DESTINATION bin)
-install(FILES data/udev/teensy.rules DESTINATION /lib/udev/rules.d RENAME 49-teensy.rules)
+install(FILES contrib/udev/teensy.rules DESTINATION /lib/udev/rules.d RENAME 49-teensy.rules)
