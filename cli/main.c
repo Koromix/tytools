@@ -98,12 +98,8 @@ static void print_usage(const char *cmd_name)
 
     fprintf(stderr, "Commands:\n");
 
-    for (const struct command *c = commands; c->name; c++) {
-        fprintf(stderr, "   %s ", c->name);
-        for (size_t i = strlen(c->name); i < 9; i++)
-            fputc(' ', stderr);
-        fprintf(stderr, "%s\n", c->description);
-    }
+    for (const struct command *c = commands; c->name; c++)
+        fprintf(stderr, "   %-24s %s\n", c->name, c->description);
 
     fputc('\n', stderr);
     print_supported_models();
@@ -115,10 +111,7 @@ void print_supported_models(void)
 
     for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
         const ty_board_model *m = *cur;
-        fprintf(stderr, "   - %s", m->name);
-        for (size_t i = strlen(m->name); i < 12; i++)
-            fputc(' ', stderr);
-        fprintf(stderr, "(%s)\n", m->mcu);
+        fprintf(stderr, "   - %-22s (%s)\n", m->name, m->mcu);
     }
 }
 
