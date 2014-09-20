@@ -206,7 +206,8 @@ int get_board(ty_board **rboard)
     return 0;
 }
 
-#ifndef _WIN32
+#ifdef __unix__
+
 static void handle_sigchld(int sig)
 {
     TY_UNUSED(sig);
@@ -224,13 +225,14 @@ static void setup_signals(void)
 {
     signal(SIGCHLD, handle_sigchld);
 }
+
 #endif
 
 int main(int argc, char *argv[])
 {
     int r;
 
-#ifndef _WIN32
+#ifdef __unix__
     setup_signals();
 #endif
 

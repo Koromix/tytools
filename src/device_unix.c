@@ -28,12 +28,6 @@
 #include "device_priv.h"
 #include "system.h"
 
-// FIXME: keep in sync with device_linux.c
-struct ty_handle {
-    ty_device *dev;
-    int fd;
-};
-
 int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
 {
     assert(rh);

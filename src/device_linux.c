@@ -37,12 +37,6 @@ struct ty_device_monitor {
     struct udev_monitor *monitor;
 };
 
-// Keep in sync with device_unix.c
-struct ty_handle {
-    ty_device *dev;
-    int fd;
-};
-
 struct udev_aggregate {
     struct udev_device *dev;
     struct udev_device *usb;

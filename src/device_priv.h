@@ -57,6 +57,15 @@ struct ty_device {
     void *udata;
 };
 
+#ifdef __unix__
+
+struct ty_handle {
+    ty_device *dev;
+    int fd;
+};
+
+#endif
+
 TY_C_END
 
 #endif
