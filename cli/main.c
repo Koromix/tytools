@@ -73,7 +73,7 @@ static uint64_t device_serial = 0;
 
 static void print_version(void)
 {
-    fprintf(stderr, "ty version "TY_VERSION"\n");
+    fprintf(stderr, "tyc version "TY_VERSION"\n");
 }
 
 static void print_usage(const char *cmd_name)
@@ -92,7 +92,7 @@ static void print_usage(const char *cmd_name)
         ty_error(TY_ERROR_PARAM, "Invalid command '%s'", cmd_name);
     }
 
-    fprintf(stderr, "usage: ty [-d <device>] <command> [options]\n\n"
+    fprintf(stderr, "usage: tyc [-d <device>] <command> [options]\n\n"
                     "Options:\n"
                     "   -C, --directory=<dir>    Change to <dir> before doing anything\n\n");
 

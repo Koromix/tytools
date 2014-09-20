@@ -42,7 +42,7 @@ static const char *image_filename = NULL;
 
 void print_upload_usage(void)
 {
-    fprintf(stderr, "usage: ty upload [options] <filename>\n\n"
+    fprintf(stderr, "usage: tyc upload [options] <filename>\n\n"
                     "Options:\n"
                     "       --noreset            Do not reset the device once the upload is finished\n"
                     "   -w, --wait               Wait for the bootloader instead of rebooting\n\n"

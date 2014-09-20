@@ -60,7 +60,7 @@ static int timeout_eof = 200;
 
 void print_monitor_usage(void)
 {
-    fprintf(stderr, "usage: ty monitor [--help] [options]\n\n"
+    fprintf(stderr, "usage: tyc monitor [--help] [options]\n\n"
                     "Options:\n"
                     "   -b, --baud <rate>        Use baudrate for serial port\n"
                     "   -d, --databits <bits>    Change number of bits for each character\n"

@@ -56,7 +56,7 @@ static bool watch = false;
 
 void print_list_usage(void)
 {
-    fprintf(stderr, "usage: ty list [--help] [options]\n\n"
+    fprintf(stderr, "usage: tyc list [--help] [options]\n\n"
                     "Options:\n"
                     "   -v, --verbose            Print detailed information about devices\n");
 }

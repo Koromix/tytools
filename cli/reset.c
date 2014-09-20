@@ -33,7 +33,7 @@ static const struct option long_options[] = {
 
 void print_reset_usage(void)
 {
-    fprintf(stderr, "usage: ty reset [--help]\n");
+    fprintf(stderr, "usage: tyc reset [--help]\n");
 }
 
 int reset(int argc, char *argv[])
