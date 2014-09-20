@@ -102,7 +102,7 @@ target_link_libraries(ty_static ${LIBRARIES})
 add_executable(tyc ${TYC_SOURCES})
 target_link_libraries(tyc ty_static)
 
-install(TARGETS ty LIBRARY DESTINATION lib)
+install(TARGETS ty DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS tyc RUNTIME DESTINATION bin)
