@@ -62,40 +62,49 @@ configure_file(src/config.h.in src/config.h)
 
 include_directories(include include/ty "${CMAKE_CURRENT_BINARY_DIR}/src")
 
-set(SOURCES include/ty.h
-            include/ty/board.h
-            include/ty/common.h
-            include/ty/device.h
-            include/ty/firmware.h
-            include/ty/list.h
-            include/ty/system.h
+set(TY_SOURCES include/ty.h
+               include/ty/board.h
+               include/ty/common.h
+               include/ty/device.h
+               include/ty/firmware.h
+               include/ty/list.h
+               include/ty/system.h
 
-            src/board.c
-            src/common.c
-            src/compat.c
-            src/device.c
-            src/device_priv.h
-            src/firmware.c
-            src/firmware_ihex.c
-            src/system.c
-
-            cli/list.c
-            cli/main.c
-            cli/monitor.c
-            cli/reset.c
-            cli/upload.c)
+               src/board.c
+               src/common.c
+               src/compat.c
+               src/device.c
+               src/device_priv.h
+               src/firmware.c
+               src/firmware_ihex.c
+               src/system.c)
 if(WIN32)
-    list(APPEND SOURCES src/system_win32.c
-                        src/device_win32.c)
+    list(APPEND TY_SOURCES src/system_win32.c
+                           src/device_win32.c)
 else()
-    list(APPEND SOURCES src/system_unix.c
-                        src/system_linux.c
-                        src/device_linux.c
-                        src/device_unix.c)
+    list(APPEND TY_SOURCES src/system_unix.c
+                           src/system_linux.c
+                           src/device_linux.c
+                           src/device_unix.c)
 endif()
 
-add_executable(ty ${SOURCES})
-target_link_libraries(ty ${LIBRARIES})
+set(TYC_SOURCES cli/list.c
+                cli/main.c
+                cli/monitor.c
+                cli/reset.c
+                cli/upload.c)
 
-install(TARGETS ty RUNTIME DESTINATION bin)
+add_library(ty SHARED ${TY_SOURCES})
+target_link_libraries(ty ${LIBRARIES})
+add_library(ty_static STATIC ${TY_SOURCES})
+target_link_libraries(ty_static ${LIBRARIES})
+
+add_executable(tyc ${TYC_SOURCES})
+target_link_libraries(tyc ty_static)
+
+install(TARGETS ty LIBRARY DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include)
+
+install(TARGETS tyc RUNTIME DESTINATION bin)
+
 install(FILES contrib/udev/teensy.rules DESTINATION /lib/udev/rules.d RENAME 49-teensy.rules)
