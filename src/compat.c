@@ -81,3 +81,73 @@ int vasprintf(char **strp, const char *fmt, va_list ap)
     return r;
 }
 #endif
+
+#ifndef HAVE_GETDELIM
+
+ssize_t getdelim(char **rbuf, size_t *rsize, int delim, FILE *fp)
+{
+    char *buf;
+    size_t size, len;
+    int c;
+
+    if (!rbuf || !rsize || !fp) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (!*rbuf)
+        *rsize = 0;
+
+    buf = *rbuf;
+    size = *rsize;
+
+    len = 0;
+    do {
+        c = fgetc(fp);
+        if (c == EOF && ferror(fp))
+            return -1;
+
+        if (size <= len + 1) {
+            if (size) {
+                if (size == SSIZE_MAX) {
+                    errno = EOVERFLOW;
+                    return -1;
+                }
+                size *= 2;
+                if (size > SSIZE_MAX)
+                    size = SSIZE_MAX;
+            } else {
+                size = 120;
+            }
+
+            buf = realloc(buf, size);
+            if (!buf)
+                return -1;
+
+            *rbuf = buf;
+            *rsize = size;
+        }
+
+        if (c != EOF) {
+            buf[len++] = (char)c;
+        } else {
+            buf[len] = 0;
+        }
+
+        if (c == delim)
+            buf[len] = 0;
+    } while (c != delim && c != EOF);
+
+    return (ssize_t)len;
+}
+
+#endif
+
+#ifndef HAVE_GETLINE
+
+ssize_t getline(char **rbuf, size_t *rsize, FILE *fp)
+{
+    return getdelim(rbuf, rsize, '\n', fp);
+}
+
+#endif

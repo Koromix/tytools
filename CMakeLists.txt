@@ -57,6 +57,8 @@ endif()
 include(CheckSymbolExists)
 check_symbol_exists(stpcpy string.h HAVE_STPCPY)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
+check_symbol_exists(getdelim stdio.h HAVE_GETDELIM)
+check_symbol_exists(getline stdio.h HAVE_GETLINE)
 
 configure_file(src/config.h.in src/config.h)
 

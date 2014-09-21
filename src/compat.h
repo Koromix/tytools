@@ -34,4 +34,12 @@ int asprintf(char **strp, const char *fmt, ...);
 int vasprintf(char **strp, const char *fmt, va_list ap);
 #endif
 
+#ifndef HAVE_GETDELIM
+ssize_t getdelim(char **rbuf, size_t *rsize, int delim, FILE *fp);
+#endif
+
+#ifndef HAVE_GETLINE
+ssize_t getline(char **rbuf, size_t *rsize, FILE *fp);
+#endif
+
 #endif
