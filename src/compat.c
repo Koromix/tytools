@@ -39,15 +39,18 @@ char *strrpbrk(const char *s, const char *accept)
 }
 
 #ifndef HAVE_STPCPY
+
 char *stpcpy(char *dest, const char *src)
 {
     while ((*dest++ = *src++))
         continue;
     return dest - 1;
 }
+
 #endif
 
 #ifndef HAVE_ASPRINTF
+
 int asprintf(char **strp, const char *fmt, ...)
 {
     va_list ap;
@@ -80,6 +83,7 @@ int vasprintf(char **strp, const char *fmt, va_list ap)
     *strp = s;
     return r;
 }
+
 #endif
 
 #ifndef HAVE_GETDELIM
