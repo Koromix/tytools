@@ -22,6 +22,7 @@
 
 #include "common.h"
 #include "device.h"
+#include "htable.h"
 #include "list.h"
 
 TY_C_BEGIN
@@ -30,14 +31,14 @@ struct ty_device_monitor_ {
     ty_list_head callbacks;
     int callback_id;
 
-    ty_list_head devices;
+    ty_htable devices;
 
     void *udata;
 };
 
 struct ty_device {
     ty_device_monitor *monitor;
-    ty_list_head list;
+    ty_htable_head table;
 
     unsigned int refcount;
 
