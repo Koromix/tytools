@@ -211,7 +211,8 @@ static int loop(ty_board *board, int outfd)
 int monitor(int argc, char *argv[])
 {
     ty_board *board = NULL;
-    int outfd, r;
+    int outfd = -1;
+    int r;
 
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
