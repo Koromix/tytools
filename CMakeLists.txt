@@ -69,6 +69,7 @@ set(TY_SOURCES include/ty.h
                include/ty/common.h
                include/ty/device.h
                include/ty/firmware.h
+               include/ty/ini.h
                include/ty/system.h
 
                src/board.c
@@ -79,6 +80,7 @@ set(TY_SOURCES include/ty.h
                src/firmware.c
                src/firmware_ihex.c
                src/htable.c
+               src/ini.c
                src/list.h
                src/system.c)
 if(WIN32)

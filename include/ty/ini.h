@@ -17,14 +17,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TY_H
-#define TY_H
+#ifndef TY_INI_H
+#define TY_INI_H
 
-#include "ty/common.h"
-#include "ty/board.h"
-#include "ty/device.h"
-#include "ty/firmware.h"
-#include "ty/ini.h"
-#include "ty/system.h"
+#include "common.h"
+
+TY_C_BEGIN
+
+typedef struct ty_ini {
+    FILE *fp;
+    char *path;
+
+    char *buf;
+    size_t size;
+    size_t line;
+
+    char *ptr;
+
+    char *section;
+} ty_ini;
+
+typedef int ty_ini_callback_func(ty_ini *ini, const char *section, char *key, char *value, void *udata);
+
+int ty_ini_open(ty_ini **rini, const char *path);
+void ty_ini_free(ty_ini *ini);
+
+int ty_ini_next(ty_ini *ini, const char **rsection, char **rkey, char **rvalue);
+
+int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata);
+
+TY_C_END
 
 #endif
