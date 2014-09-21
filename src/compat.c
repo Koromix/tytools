@@ -39,7 +39,7 @@ char *strrpbrk(const char *s, const char *accept)
 }
 
 #ifndef HAVE_STPCPY
-char *stpcpy(char *restrict dest, const char *restrict src)
+char *stpcpy(char *dest, const char *src)
 {
     while ((*dest++ = *src++))
         continue;
