@@ -166,7 +166,7 @@ int ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware)
             break;
         case ENOENT:
         case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", filename);
+            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", filename);
             break;
 
         default:
