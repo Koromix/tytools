@@ -67,7 +67,6 @@ set(TY_SOURCES include/ty.h
                include/ty/common.h
                include/ty/device.h
                include/ty/firmware.h
-               include/ty/list.h
                include/ty/system.h
 
                src/board.c
@@ -77,6 +76,7 @@ set(TY_SOURCES include/ty.h
                src/device_priv.h
                src/firmware.c
                src/firmware_ihex.c
+               src/list.h
                src/system.c)
 if(WIN32)
     list(APPEND TY_SOURCES src/system_win32.c

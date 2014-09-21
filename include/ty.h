@@ -24,7 +24,6 @@
 #include "ty/board.h"
 #include "ty/device.h"
 #include "ty/firmware.h"
-#include "ty/list.h"
 #include "ty/system.h"
 
 #endif
