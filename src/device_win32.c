@@ -54,8 +54,9 @@ struct ty_handle {
     HANDLE handle;
     struct _OVERLAPPED *ov;
     uint8_t *buf;
+
     uint8_t *ptr;
-    size_t len;
+    ssize_t len;
 };
 
 struct device_type {
@@ -901,15 +902,8 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
-    h->ptr = h->buf;
 
     h->block = block;
-
-    r = ReadFile(h->handle, h->buf, read_buffer_size, &len, h->ov);
-    if (!r && GetLastError() != ERROR_IO_PENDING) {
-        r = ty_error(TY_ERROR_SYSTEM, "ReadFile() failed: %s", ty_win32_strerror(0));
-        goto error;
-    }
 
     timeouts.ReadIntervalTimeout = 1;
     timeouts.ReadTotalTimeoutMultiplier = 0;
@@ -918,6 +912,12 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
     timeouts.WriteTotalTimeoutConstant = 1000;
 
     SetCommTimeouts(h->handle, &timeouts);
+
+    r = ReadFile(h->handle, h->buf, read_buffer_size, &len, h->ov);
+    if (!r && GetLastError() != ERROR_IO_PENDING) {
+        r = ty_error(TY_ERROR_SYSTEM, "ReadFile() failed: %s", ty_win32_strerror(0));
+        goto error;
+    }
 
     h->dev = ty_device_ref(dev);
 
@@ -996,14 +996,14 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
     }
 
     if (len) {
-        if (h->ptr[0]) {
+        if (h->buf[0]) {
             if (size > len)
                 size = (size_t)len;
-            memcpy(buf, h->ptr, size);
+            memcpy(buf, h->buf, size);
         } else {
             if (size > --len)
                 size = (size_t)len;
-            memcpy(buf, h->ptr + 1, size);
+            memcpy(buf, h->buf + 1, size);
         }
     } else {
         size = 0;
@@ -1181,6 +1181,20 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
 
     DWORD len, ret;
 
+    if (h->len < 0) {
+        h->len = 0;
+
+        // Could be a transient error, try to restart it
+        ResetEvent(h->ov->hEvent);
+        ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
+        if (!ret && GetLastError() != ERROR_IO_PENDING) {
+            CancelIo(h->handle);
+            h->len = -1;
+        }
+
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+    }
+
     if (!h->len) {
         ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, h->block);
         if (!ret) {
@@ -1190,22 +1204,24 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
         }
 
         h->ptr = h->buf;
-        h->len = (size_t)len;
+        h->len = (ssize_t)len;
+    }
 
+    if (size > (size_t)h->len)
+        size = (size_t)h->len;
+
+    memcpy(buf, h->ptr, size);
+    h->ptr += size;
+    h->len -= (ssize_t)size;
+
+    if (!h->len) {
         ResetEvent(h->ov->hEvent);
         ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
         if (!ret && GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+            h->len = -1;
         }
     }
-
-    if (size > h->len)
-        size = h->len;
-
-    memcpy(buf, h->ptr, size);
-    h->ptr += size;
-    h->len -= size;
 
     return (ssize_t)size;
 }
