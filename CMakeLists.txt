@@ -76,6 +76,7 @@ set(TY_SOURCES include/ty.h
                src/device_priv.h
                src/firmware.c
                src/firmware_ihex.c
+               src/htable.c
                src/list.h
                src/system.c)
 if(WIN32)
