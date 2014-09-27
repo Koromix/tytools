@@ -48,6 +48,10 @@
 
 #ifdef __GNUC__
     #define TY_NORETURN __attribute__((__noreturn__))
+    #define TY_INIT(name) \
+        __attribute__((constructor)) \
+        void name(void)
+
     #ifdef __MINGW_PRINTF_FORMAT
         #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
     #else
