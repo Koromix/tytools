@@ -30,7 +30,6 @@
 struct ty_device_monitor {
     struct ty_device_monitor_;
 
-    struct udev_enumerate *enumerate;
     struct udev_monitor *monitor;
 };
 
@@ -40,7 +39,14 @@ struct udev_aggregate {
     struct udev_device *iface;
 };
 
-static struct udev *udev = NULL;
+static const char *device_subsystems[] = {
+    "input",
+    "hidraw",
+    "tty",
+    NULL
+};
+
+static struct udev *udev;
 
 static int compute_device_location(const char *key, char **rlocation)
 {
@@ -185,28 +191,47 @@ static int list_devices(ty_device_monitor *monitor)
 {
     assert(monitor);
 
+    struct udev_enumerate *enumerate;
     int r;
 
-    r = udev_enumerate_scan_devices(monitor->enumerate);
-    if (r < 0)
-        return TY_ERROR_SYSTEM;
+    enumerate = udev_enumerate_new(udev);
+    if (!enumerate)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    udev_enumerate_add_match_is_initialized(enumerate);
+    for (const char **cur = device_subsystems; *cur; cur++) {
+        r = udev_enumerate_add_match_subsystem(enumerate, *cur);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            goto cleanup;
+        }
+    }
+
+    // Current implementation of udev_enumerate_scan_devices() does not fail
+    r = udev_enumerate_scan_devices(enumerate);
+    if (r < 0) {
+        r = ty_error(TY_ERROR_SYSTEM, "udev_enumerate_scan_devices() failed");
+        goto cleanup;
+    }
 
     struct udev_list_entry *cur;
-    udev_list_entry_foreach(cur, udev_enumerate_get_list_entry(monitor->enumerate)) {
+    udev_list_entry_foreach(cur, udev_enumerate_get_list_entry(enumerate)) {
         struct udev_device *udev_dev;
         ty_device *dev;
 
         udev_dev = udev_device_new_from_syspath(udev, udev_list_entry_get_name(cur));
         if (!udev_dev) {
-            if (errno == ENOMEM)
-                return ty_error(TY_ERROR_MEMORY, NULL);
+            if (errno == ENOMEM) {
+                r = ty_error(TY_ERROR_MEMORY, NULL);
+                goto cleanup;
+            }
             continue;
         }
 
         r = read_device_information(udev_dev, &dev);
         udev_device_unref(udev_dev);
         if (r < 0)
-            return r;
+            goto cleanup;
         if (!r)
             continue;
 
@@ -214,10 +239,13 @@ static int list_devices(ty_device_monitor *monitor)
         ty_device_unref(dev);
 
         if (r < 0)
-            return r;
+            goto cleanup;
     }
 
-    return 0;
+    r = 0;
+cleanup:
+    udev_enumerate_unref(enumerate);
+    return r;
 }
 
 static void free_udev(void)
@@ -246,23 +274,31 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
     if (!monitor)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    monitor->enumerate = udev_enumerate_new(udev);
-    if (!monitor->enumerate) {
-        // udev prints its own error messages
-        r = TY_ERROR_SYSTEM;
-        goto error;
-    }
-    udev_enumerate_add_match_is_initialized(monitor->enumerate);
-
     monitor->monitor = udev_monitor_new_from_netlink(udev, "udev");
     if (!monitor->monitor) {
-        r = TY_ERROR_SYSTEM;
+        if (errno == ENOMEM) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+        } else {
+            r = ty_error(TY_ERROR_SYSTEM, "udev_monitor_new_from_netlink() failed");
+        }
         goto error;
+    }
+
+    for (const char **cur = device_subsystems; *cur; cur++) {
+        r = udev_monitor_filter_add_match_subsystem_devtype(monitor->monitor, *cur, NULL);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            goto error;
+        }
     }
 
     r = udev_monitor_enable_receiving(monitor->monitor);
     if (r < 0) {
-        r = TY_ERROR_SYSTEM;
+        if (r == -ENOMEM) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+        } else {
+            r = ty_error(TY_ERROR_SYSTEM, "udev_monitor_enable_receiving() failed");
+        }
         goto error;
     }
 
@@ -286,8 +322,6 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
 {
     if (monitor) {
         _ty_device_monitor_release(monitor);
-
-        udev_enumerate_unref(monitor->enumerate);
         udev_monitor_unref(monitor->monitor);
     }
 
