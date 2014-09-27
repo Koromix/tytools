@@ -58,8 +58,7 @@
         #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
     #endif
 #else
-    #define TY_NORETURN
-    #define TY_PRINTF_FORMAT(fmt, first)
+    #error "This compiler is not supported"
 #endif
 
 #define TY_UNUSED(arg) ((void)(arg))
