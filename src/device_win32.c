@@ -34,7 +34,7 @@
 #include "ty/system.h"
 
 struct ty_device_monitor {
-    struct ty_device_monitor_ base;
+    struct ty_device_monitor_;
 
     ty_list_head controllers;
 

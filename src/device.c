@@ -24,7 +24,7 @@
 #include "device_priv.h"
 
 struct ty_device_monitor {
-    struct ty_device_monitor_ base;
+    struct ty_device_monitor_;
 };
 
 struct callback {
@@ -39,9 +39,9 @@ int _ty_device_monitor_init(ty_device_monitor *monitor)
 {
     int r;
 
-    ty_list_init(&monitor->base.callbacks);
+    ty_list_init(&monitor->callbacks);
 
-    r = ty_htable_init(&monitor->base.devices, 128);
+    r = ty_htable_init(&monitor->devices, 64);
     if (r < 0)
         return r;
 
@@ -50,30 +50,30 @@ int _ty_device_monitor_init(ty_device_monitor *monitor)
 
 void _ty_device_monitor_release(ty_device_monitor *monitor)
 {
-    ty_list_foreach(cur, &monitor->base.callbacks) {
+    ty_list_foreach(cur, &monitor->callbacks) {
         struct callback *callback = ty_list_entry(cur, struct callback, list);
         free(callback);
     }
 
-    ty_htable_foreach(cur, &monitor->base.devices) {
+    ty_htable_foreach(cur, &monitor->devices) {
         ty_device *dev = ty_htable_entry(cur, ty_device, table);
 
         dev->monitor = NULL;
         ty_device_unref(dev);
     }
-    ty_htable_release(&monitor->base.devices);
+    ty_htable_release(&monitor->devices);
 }
 
 void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata)
 {
     assert(monitor);
-    monitor->base.udata = udata;
+    monitor->udata = udata;
 }
 
 void *ty_device_monitor_get_udata(ty_device_monitor *monitor)
 {
     assert(monitor);
-    return monitor->base.udata;
+    return monitor->udata;
 }
 
 int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata)
@@ -85,11 +85,11 @@ int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_ca
     if (!callback)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    callback->id = monitor->base.callback_id++;
+    callback->id = monitor->callback_id++;
     callback->f = f;
     callback->udata = udata;
 
-    ty_list_append(&monitor->base.callbacks, &callback->list);
+    ty_list_append(&monitor->callbacks, &callback->list);
 
     return callback->id;
 }
@@ -105,7 +105,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
     assert(monitor);
     assert(id >= 0);
 
-    ty_list_foreach(cur, &monitor->base.callbacks) {
+    ty_list_foreach(cur, &monitor->callbacks) {
         struct callback *callback = ty_list_entry(cur, struct callback, list);
         if (callback->id == id) {
             drop_callback(callback);
@@ -116,7 +116,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
 
 static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 {
-    ty_htable_foreach_hash(cur, &monitor->base.devices, ty_htable_hash_str(key)) {
+    ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(key)) {
         ty_device *dev = ty_htable_entry(cur, ty_device, table);
 
         if (strcmp(dev->key, key) == 0)
@@ -128,7 +128,7 @@ static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 
 static int trigger_callbacks(ty_device *dev, ty_device_event event)
 {
-    ty_list_foreach(cur, &dev->monitor->base.callbacks) {
+    ty_list_foreach(cur, &dev->monitor->callbacks) {
         struct callback *callback = ty_list_entry(cur, struct callback, list);
         int r;
 
@@ -152,7 +152,7 @@ int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev)
     ty_device_ref(dev);
 
     dev->monitor = monitor;
-    ty_htable_add(&monitor->base.devices, ty_htable_hash_str(dev->key), &dev->table);
+    ty_htable_add(&monitor->devices, ty_htable_hash_str(dev->key), &dev->table);
 
     return trigger_callbacks(dev, TY_DEVICE_EVENT_ADDED);
 }
@@ -178,7 +178,7 @@ int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *
     assert(monitor);
     assert(f);
 
-    ty_htable_foreach(cur, &monitor->base.devices) {
+    ty_htable_foreach(cur, &monitor->devices) {
         ty_device *dev = ty_htable_entry(cur, ty_device, table);
         int r;
 

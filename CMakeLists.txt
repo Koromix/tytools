@@ -35,7 +35,7 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_C_FLAGS "-std=gnu99 -D_GNU_SOURCE -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
+    set(CMAKE_C_FLAGS "-std=gnu99 -fms-extensions -D_GNU_SOURCE -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
 
     if(CMAKE_COMPILER_IS_GNUCC)
         set(CMAKE_C_FLAGS_DEBUG "-Og -ggdb -D_FORTIFY_SOURCE=2")

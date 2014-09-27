@@ -28,10 +28,7 @@
 #include "ty/system.h"
 
 struct ty_device_monitor {
-    ty_list_head callbacks;
-    int callback_id;
-
-    ty_list_head devices;
+    struct ty_device_monitor_;
 
     struct udev_enumerate *enumerate;
     struct udev_monitor *monitor;
