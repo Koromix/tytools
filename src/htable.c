@@ -32,7 +32,7 @@ int ty_htable_init(ty_htable *table, size_t size)
     table->size = size;
 
     for (size_t i = 0; i < table->size; i++)
-        table->heads[i].next = &table->heads[i];
+        table->heads[i] = (ty_htable_head *)&table->heads[i];
 
     return 0;
 }
@@ -48,7 +48,7 @@ ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key)
 {
     assert(table);
 
-    return &table->heads[key % table->size];
+    return (ty_htable_head *)&table->heads[key % table->size];
 }
 
 void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *n)

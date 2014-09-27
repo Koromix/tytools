@@ -25,13 +25,14 @@
 TY_C_BEGIN
 
 typedef struct ty_htable_head {
+    // Keep first!
     struct ty_htable_head *next;
     uint32_t key;
 } ty_htable_head;
 
 typedef struct ty_htable {
     size_t size;
-    ty_htable_head *heads;
+    ty_htable_head **heads;
 } ty_htable;
 
 int ty_htable_init(ty_htable *table, size_t size);
@@ -48,8 +49,8 @@ uint32_t ty_htable_hash_str(const char* s);
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
 #define ty_htable_foreach(cur, table) \
-    for (ty_htable_head *TY_UNIQUE_ID(head) = (table)->heads; TY_UNIQUE_ID(head) < (table)->heads + (table)->size; TY_UNIQUE_ID(head)++) \
-        for (ty_htable_head *cur = TY_UNIQUE_ID(head)->next, *TY_UNIQUE_ID(next) = cur->next; cur != TY_UNIQUE_ID(head); \
+    for (ty_htable_head **TY_UNIQUE_ID(head) = (table)->heads; TY_UNIQUE_ID(head) < (table)->heads + (table)->size; TY_UNIQUE_ID(head)++) \
+        for (ty_htable_head *cur = *TY_UNIQUE_ID(head), *TY_UNIQUE_ID(next) = cur->next; cur != (ty_htable_head *)TY_UNIQUE_ID(head); \
              cur = TY_UNIQUE_ID(next), TY_UNIQUE_ID(next) = cur->next)
 
 #define ty_htable_foreach_hash(cur, table, k) \
