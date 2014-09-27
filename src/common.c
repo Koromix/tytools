@@ -34,7 +34,7 @@ static const char *generic_message(int err)
     if (err >= 0)
         return "Success";
 
-    switch (err) {
+    switch ((ty_err)err) {
     case TY_ERROR_MEMORY:
         return "Memory error";
     case TY_ERROR_PARAM:
@@ -60,9 +60,11 @@ static const char *generic_message(int err)
     case TY_ERROR_FIRMWARE:
         return "Firmware error";
 
-    default:
-        return "Unknown error";
+    case TY_ERROR_OTHER:
+        break;
     }
+
+    return "Unknown error";
 }
 
 static void default_handler(ty_err err, const char *msg, void *udata)
