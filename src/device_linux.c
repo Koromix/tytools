@@ -198,12 +198,8 @@ static int list_devices(ty_device_monitor *monitor)
 
         udev_dev = udev_device_new_from_syspath(udev, udev_list_entry_get_name(cur));
         if (!udev_dev) {
-            switch (errno) {
-            case ENOMEM:
+            if (errno == ENOMEM)
                 return ty_error(TY_ERROR_MEMORY, NULL);
-            default:
-                break;
-            }
             continue;
         }
 
@@ -337,14 +333,8 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 
         errno = 0;
     }
-    if (errno) {
-        switch (errno) {
-        case ENOMEM:
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        default:
-            break;
-        }
-    }
+    if (errno == ENOMEM)
+        return ty_error(TY_ERROR_MEMORY, NULL);
 
     return 1;
 }
