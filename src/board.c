@@ -17,12 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
-#include "board.h"
-#include "firmware.h"
+#include "ty/board.h"
+#include "ty/firmware.h"
 #include "list.h"
-#include "system.h"
+#include "ty/system.h"
 
 struct ty_board_manager {
     ty_device_monitor *monitor;

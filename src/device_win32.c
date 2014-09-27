@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -29,9 +29,9 @@
 #include <setupapi.h>
 #include <usb.h>
 #include <usbuser.h>
-#include "device.h"
+#include "ty/device.h"
 #include "device_priv.h"
-#include "system.h"
+#include "ty/system.h"
 
 struct ty_device_monitor {
     struct ty_device_monitor_ base;

@@ -20,7 +20,7 @@
 #ifndef TY_HTABLE_H
 #define TY_HTABLE_H
 
-#include "common.h"
+#include "ty/common.h"
 
 TY_C_BEGIN
 

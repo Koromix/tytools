@@ -17,9 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
-#include "firmware.h"
+#include "ty/firmware.h"
 
 struct parser_context {
     ty_firmware *f;

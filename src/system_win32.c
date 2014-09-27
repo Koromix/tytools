@@ -17,14 +17,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <direct.h>
 #include <io.h>
 #include <shlobj.h>
-#include "system.h"
+#include "ty/system.h"
 
 struct ty_timer {
     CRITICAL_SECTION mutex;

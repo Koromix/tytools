@@ -20,7 +20,7 @@
 #ifndef TY_LIST_H
 #define TY_LIST_H
 
-#include "common.h"
+#include "ty/common.h"
 
 TY_C_BEGIN
 

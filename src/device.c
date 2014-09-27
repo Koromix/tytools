@@ -17,10 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
 #include <unistd.h>
-#include "device.h"
+#include "ty/device.h"
 #include "device_priv.h"
 
 struct ty_device_monitor {

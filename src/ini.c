@@ -17,9 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
-#include "ini.h"
+#include "ty/ini.h"
 
 static inline bool test_eol(int c)
 {

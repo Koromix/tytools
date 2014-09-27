@@ -17,13 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
 #include <poll.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
-#include "system.h"
+#include "ty/system.h"
 
 static struct termios orig_tio;
 

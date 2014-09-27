@@ -62,7 +62,7 @@ check_symbol_exists(getline stdio.h HAVE_GETLINE)
 
 configure_file(src/config.h.in src/config.h)
 
-include_directories(include include/ty "${CMAKE_CURRENT_BINARY_DIR}/src")
+include_directories(include "${CMAKE_CURRENT_BINARY_DIR}/src")
 
 set(TY_SOURCES include/ty.h
                include/ty/board.h

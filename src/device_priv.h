@@ -20,8 +20,8 @@
 #ifndef TY_DEVICE_PRIV_H
 #define TY_DEVICE_PRIV_H
 
-#include "common.h"
-#include "device.h"
+#include "ty/common.h"
+#include "ty/device.h"
 #include "htable.h"
 #include "list.h"
 

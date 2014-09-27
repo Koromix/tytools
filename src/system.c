@@ -17,11 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "common.h"
+#include "ty/common.h"
 #include "compat.h"
 #include <sys/stat.h>
 #include <unistd.h>
-#include "system.h"
+#include "ty/system.h"
 
 int ty_stat(const char *path, ty_file_info *info, bool follow_symlink)
 {
