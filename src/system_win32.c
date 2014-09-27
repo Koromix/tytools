@@ -40,6 +40,15 @@ static const uint64_t delta_epoch = 11644473600000;
 static HANDLE timer_queue;
 static DWORD orig_mode;
 
+HANDLE _ty_win32_descriptors[3];
+
+TY_INIT(init_win32)
+{
+    _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
+    _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
+    _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
+}
+
 char *ty_win32_strerror(DWORD err)
 {
     static char buf[2048];

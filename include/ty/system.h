@@ -25,6 +25,10 @@
 
 TY_C_BEGIN
 
+#ifdef _WIN32
+extern void *_ty_win32_descriptors[3]; // HANDLE
+#endif
+
 typedef enum ty_file_type {
     TY_FILE_UNKNOWN,
 
@@ -54,9 +58,23 @@ typedef struct ty_file_info {
 #endif
 
 #ifdef _WIN32
+
 typedef void *ty_descriptor; // HANDLE
+
+#define TY_INVALID_DESCRIPTOR (NULL)
+#define TY_STDIN_DESCRIPTOR (_ty_win32_descriptors[0])
+#define TY_STDOUT_DESCRIPTOR (_ty_win32_descriptors[1])
+#define TY_STDERR_DESCRIPTOR (_ty_win32_descriptors[2])
+
 #else
+
 typedef int ty_descriptor;
+
+#define TY_INVALID_DESCRIPTOR (-1)
+#define TY_STDIN_DESCRIPTOR (0)
+#define TY_STDOUT_DESCRIPTOR (1)
+#define TY_STDERR_DESCRIPTOR (2)
+
 #endif
 
 typedef struct ty_descriptor_set {
