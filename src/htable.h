@@ -54,9 +54,10 @@ uint32_t ty_htable_hash_str(const char* s);
              cur = TY_UNIQUE_ID(next), TY_UNIQUE_ID(next) = cur->next)
 
 #define ty_htable_foreach_hash(cur, table, k) \
-    for (ty_htable_head *TY_UNIQUE_ID(head) = ty_htable_get_head((table), (k)), *cur = TY_UNIQUE_ID(head)->next, *TY_UNIQUE_ID(next) = cur->next; \
-         cur != TY_UNIQUE_ID(head); cur = TY_UNIQUE_ID(next), TY_UNIQUE_ID(next) = cur->next) \
-        if (cur->key == (k))
+    if ((table)->size) \
+        for (ty_htable_head *TY_UNIQUE_ID(head) = ty_htable_get_head((table), (k)), *cur = TY_UNIQUE_ID(head)->next, *TY_UNIQUE_ID(next) = cur->next; \
+             cur != TY_UNIQUE_ID(head); cur = TY_UNIQUE_ID(next), TY_UNIQUE_ID(next) = cur->next) \
+            if (cur->key == (k))
 
 TY_C_END
 

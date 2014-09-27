@@ -109,8 +109,9 @@ static inline void ty_list_prepend_list(ty_list_head *head, ty_list_head *list)
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
 #define ty_list_foreach(cur, head) \
-    for (ty_list_head *cur = (head)->next, *TY_UNIQUE_ID(next) = cur->next; cur != (head); \
-         cur = TY_UNIQUE_ID(next), TY_UNIQUE_ID(next) = cur->next)
+    if ((head)->next) \
+        for (ty_list_head *cur = (head)->next, *TY_UNIQUE_ID(next) = cur->next; cur != (head); \
+             cur = TY_UNIQUE_ID(next), TY_UNIQUE_ID(next) = cur->next)
 
 TY_C_END
 
