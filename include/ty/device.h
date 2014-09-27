@@ -71,9 +71,6 @@ enum {
 int ty_device_monitor_new(ty_device_monitor **rmonitor);
 void ty_device_monitor_free(ty_device_monitor *monitor);
 
-int _ty_device_monitor_init(ty_device_monitor *monitor);
-void _ty_device_monitor_release(ty_device_monitor *monitor);
-
 void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata);
 void *ty_device_monitor_get_udata(ty_device_monitor *monitor);
 
@@ -81,9 +78,6 @@ void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, struct ty_des
 
 int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
 void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id);
-
-int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev);
-void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key);
 
 int ty_device_monitor_refresh(ty_device_monitor *monitor);
 

@@ -67,6 +67,12 @@ struct ty_handle {
 
 #endif
 
+int _ty_device_monitor_init(ty_device_monitor *monitor);
+void _ty_device_monitor_release(ty_device_monitor *monitor);
+
+int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev);
+void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key);
+
 TY_C_END
 
 #endif
