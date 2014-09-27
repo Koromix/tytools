@@ -18,6 +18,7 @@
  */
 
 #cmakedefine HAVE_STPCPY
+#cmakedefine HAVE_STRNDUP
 #cmakedefine HAVE_ASPRINTF
 #cmakedefine HAVE_GETDELIM
 #cmakedefine HAVE_GETLINE

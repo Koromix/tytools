@@ -49,6 +49,29 @@ char *stpcpy(char *dest, const char *src)
 
 #endif
 
+#ifndef HAVE_STRNDUP
+
+char *strndup(const char *s, size_t n)
+{
+    char *d;
+    size_t len;
+
+    len = strlen(s);
+    if (len > n)
+        len = n;
+
+    d = malloc(len + 1);
+    if (!d)
+        return NULL;
+
+    memcpy(d, s, len);
+    d[len] = 0;
+
+    return d;
+}
+
+#endif
+
 #ifndef HAVE_ASPRINTF
 
 int asprintf(char **strp, const char *fmt, ...)
