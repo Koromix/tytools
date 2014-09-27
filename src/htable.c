@@ -51,17 +51,30 @@ ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key)
     return (ty_htable_head *)&table->heads[key % table->size];
 }
 
+static ty_htable_head *get_prev(ty_htable_head *head)
+{
+    ty_htable_head *prev = head->next;
+
+    while (prev->next != head)
+        prev = prev->next;
+
+    return prev;
+}
+
 void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *n)
 {
     assert(table);
     assert(n);
 
-    ty_htable_head *head = ty_htable_get_head(table, key);
+    ty_htable_head *head, *prev;
 
-    n->next = head->next;
+    head = ty_htable_get_head(table, key);
+    prev = get_prev(head);
+
+    n->next = head;
     n->key = key;
 
-    head->next = n;
+    prev->next = n;
 }
 
 void ty_htable_remove(ty_htable_head *head)
@@ -71,12 +84,9 @@ void ty_htable_remove(ty_htable_head *head)
     if (head == head->next || !head->next)
         return;
 
-    ty_htable_head *prev = head->next;
-    while (prev->next != head)
-        prev = prev->next;
+    ty_htable_head *prev = get_prev(head);
 
     prev->next = head->next;
-
     head->next = NULL;
 }
 
