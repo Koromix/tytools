@@ -38,15 +38,24 @@ typedef enum ty_file_type {
     TY_FILE_SPECIAL
 } ty_file_type;
 
+enum {
+    TY_FILE_HIDDEN = 1
+};
+
 typedef struct ty_file_info {
     ty_file_type type;
-    off_t size;
+    uint64_t size;
     uint64_t mtime;
 
-#ifndef _WIN32
+#ifdef _WIN32
+    uint32_t volume;
+    uint8_t fileindex[16];
+#else
     dev_t dev;
     ino_t ino;
 #endif
+
+    uint16_t flags;
 } ty_file_info;
 
 #ifdef _WIN32
@@ -105,7 +114,8 @@ bool ty_win32_test_version(ty_win32_version version);
 uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
-int ty_stat(const char *path, ty_file_info *info, bool follow_symlink);
+int ty_stat(const char *path, ty_file_info *info, bool follow);
+bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 
 int ty_timer_new(ty_timer **rtimer);
 void ty_timer_free(ty_timer *timer);

@@ -19,71 +19,8 @@
 
 #include "ty/common.h"
 #include "compat.h"
-#include <sys/stat.h>
 #include <unistd.h>
 #include "ty/system.h"
-
-int ty_stat(const char *path, ty_file_info *info, bool follow_symlink)
-{
-#ifdef _WIN32
-    TY_UNUSED(follow_symlink);
-#endif
-
-    assert(path && path[0]);
-    assert(info);
-
-    struct stat st;
-    int r;
-
-#ifdef _WIN32
-    r = stat(path, &st);
-#else
-    if (follow_symlink) {
-        r = stat(path, &st);
-    } else {
-        r = lstat(path, &st);
-    }
-#endif
-    if (r < 0) {
-        switch (errno) {
-        case EACCES:
-            return ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
-        case EIO:
-            return ty_error(TY_ERROR_IO, "I/O error while stating '%s'", path);
-        case ENOENT:
-            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
-        case ENOTDIR:
-            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "Failed to stat '%s': %s", path, strerror(errno));
-    }
-
-    if (S_ISDIR(st.st_mode)) {
-        info->type = TY_FILE_DIRECTORY;
-    } else if (S_ISREG(st.st_mode)) {
-        info->type = TY_FILE_REGULAR;
-#ifdef S_ISLNK
-    } else if (S_ISLNK(st.st_mode)) {
-        info->type = TY_FILE_LINK;
-#endif
-    } else {
-        info->type = TY_FILE_SPECIAL;
-    }
-
-    info->size = st.st_size;
-#ifdef st_mtime
-    info->mtime = (uint64_t)st.st_mtim.tv_sec * 1000 + (uint64_t)st.st_mtim.tv_nsec / 1000000;
-#else
-    info->mtime = (uint64_t)st.st_mtime * 1000;
-#endif
-
-#ifndef _WIN32
-    info->dev = st.st_dev;
-    info->ino = st.st_ino;
-#endif
-
-    return 0;
-}
 
 void ty_descriptor_set_clear(ty_descriptor_set *set)
 {

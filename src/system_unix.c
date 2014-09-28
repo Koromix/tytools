@@ -19,7 +19,9 @@
 
 #include "ty/common.h"
 #include "compat.h"
+#include <fcntl.h>
 #include <poll.h>
+#include <sys/stat.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
@@ -64,6 +66,98 @@ void ty_delay(unsigned int ms)
             t = rem;
         }
     } while (r);
+}
+
+// Unlike ty_path_split, trailing slashes are ignored, so "a/b/" returns "b/". This is unusual
+// but this way we don't have to allocate a new string or alter path itself.
+const char *get_basename(const char *path)
+{
+    assert(path);
+
+    size_t len;
+    const char *name;
+
+    len = strlen(path);
+    while (len && path[len - 1] == '/')
+        len--;
+    name = memrchr(path, '/', len);
+    if (!name++)
+        name = path;
+
+    return name;
+}
+
+int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow)
+{
+    struct stat sb;
+    int r;
+
+    if (fd >= 0) {
+        r = fstatat(fd, path, &sb, !follow ? AT_SYMLINK_NOFOLLOW : 0);
+    } else {
+        if (follow) {
+            r = stat(path, &sb);
+        } else {
+            r = lstat(path, &sb);
+        }
+    }
+    if (r < 0) {
+        switch (errno) {
+        case EACCES:
+            return ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
+        case EIO:
+            return ty_error(TY_ERROR_IO, "I/O error while stating '%s'", path);
+        case ENOENT:
+            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
+        case ENOTDIR:
+            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+        }
+        return ty_error(TY_ERROR_SYSTEM, "Failed to stat '%s': %s", path, strerror(errno));
+    }
+
+    if (S_ISDIR(sb.st_mode)) {
+        info->type = TY_FILE_DIRECTORY;
+    } else if (S_ISREG(sb.st_mode)) {
+        info->type = TY_FILE_REGULAR;
+#ifdef S_ISLNK
+    } else if (S_ISLNK(sb.st_mode)) {
+        info->type = TY_FILE_LINK;
+#endif
+    } else {
+        info->type = TY_FILE_SPECIAL;
+    }
+
+    info->size = (uint64_t)sb.st_size;
+#ifdef st_mtime
+    info->mtime = (uint64_t)sb.st_mtim.tv_sec * 1000 + (uint64_t)sb.st_mtim.tv_nsec / 1000000;
+#else
+    info->mtime = (uint64_t)sb.st_mtime * 1000;
+#endif
+
+    info->dev = sb.st_dev;
+    info->ino = sb.st_ino;
+
+    info->flags = 0;
+    if (*get_basename(path) == '.')
+        info->flags |= TY_FILE_HIDDEN;
+
+    return 0;
+}
+
+int ty_stat(const char *path, ty_file_info *info, bool follow)
+{
+    assert(path && path[0]);
+    assert(info);
+
+    return _ty_statat(-1, path, info, follow);
+}
+
+bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2)
+{
+    assert(info1);
+    assert(info2);
+
+    return info1->dev == info2->dev && info1->ino == info2->ino;
 }
 
 int ty_poll(const ty_descriptor_set *set, int timeout)

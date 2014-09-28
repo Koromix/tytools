@@ -35,6 +35,10 @@ struct ty_timer {
     uint64_t ticks;
 };
 
+typedef WINBOOL WINAPI GetFileInformationByHandleEx_func(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize);
+
+static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
+
 static const uint64_t delta_epoch = 11644473600000;
 
 static HANDLE timer_queue;
@@ -44,6 +48,11 @@ HANDLE _ty_win32_descriptors[3];
 
 TY_INIT(init_win32)
 {
+    HANDLE h = GetModuleHandle("kernel32.dll");
+    assert(h);
+
+    GetFileInformationByHandleEx_ = (GetFileInformationByHandleEx_func *)GetProcAddress(h, "GetFileInformationByHandleEx");
+
     _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
     _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
     _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
@@ -140,6 +149,84 @@ uint64_t ty_millis(void)
 void ty_delay(unsigned int ms)
 {
     Sleep(ms);
+}
+
+static uint64_t filetime_to_unix_time(FILETIME *ft)
+{
+    uint64_t time = ((uint64_t)ft->dwHighDateTime << 32) | ft->dwLowDateTime;
+
+    return time / 10000000 - 11644473600ull;
+}
+
+int ty_stat(const char *path, ty_file_info *info, bool follow)
+{
+    TY_UNUSED(follow);
+
+    assert(path && path[0]);
+    assert(info);
+
+    HANDLE h;
+    BY_HANDLE_FILE_INFORMATION attr;
+    int r;
+
+    // FIXME: check error handling
+    h = CreateFile(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+        switch (GetLastError()) {
+        case ERROR_ACCESS_DENIED:
+            return ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
+        case ERROR_NOT_READY:
+            return ty_error(TY_ERROR_IO, "I/O error while stating '%s'", path);
+        case ERROR_FILE_NOT_FOUND:
+            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
+        case ERROR_PATH_NOT_FOUND:
+            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+        }
+        // Let's lie a little, error will be clearer this way
+        return ty_error(TY_ERROR_SYSTEM, "GetFileAttributesEx('%s') failed: %s", path, ty_win32_strerror(0));
+    }
+
+    r = GetFileInformationByHandle(h, &attr);
+    if (!r)
+        return ty_error(TY_ERROR_SYSTEM, "GetFileInformationByHandle('%s') failed: %s", path, ty_win32_strerror(0));
+
+    if (attr.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        info->type = TY_FILE_DIRECTORY;
+    } else if (attr.dwFileAttributes & FILE_ATTRIBUTE_DEVICE) {
+        info->type = TY_FILE_SPECIAL;
+    } else {
+        info->type = TY_FILE_REGULAR;
+    }
+
+    info->size = ((uint64_t)attr.nFileSizeHigh << 32) | attr.nFileSizeLow;
+    info->mtime = filetime_to_unix_time(&attr.ftLastWriteTime);
+
+    info->volume = attr.dwVolumeSerialNumber;
+    if (ty_win32_test_version(TY_WIN32_EIGHT)) {
+        FILE_ID_INFO id;
+        r = GetFileInformationByHandleEx_(h, FileIdInfo, &id, sizeof(id));
+        if (!r)
+            return ty_error(TY_ERROR_SYSTEM, "GetFileInformationByHandleEx('%s') failed: %s", path, ty_win32_strerror(0));
+
+        memcpy(info->fileindex, &id, 16);
+    } else {
+        memcpy(&info->fileindex[8], &attr.nFileIndexHigh, 4);
+        memcpy(&info->fileindex[12], &attr.nFileIndexLow, 4);
+    }
+
+    info->flags = 0;
+    if (attr.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
+        info->flags |= TY_FILE_HIDDEN;
+
+    return 0;
+}
+
+bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2)
+{
+    assert(info1);
+    assert(info2);
+
+    return info1->volume == info2->volume && memcmp(info1->fileindex, info2->fileindex, sizeof(info1->fileindex)) == 0;
 }
 
 static void free_timer_queue(void)

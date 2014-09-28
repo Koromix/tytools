@@ -35,7 +35,7 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_C_FLAGS "-std=gnu99 -fms-extensions -D_GNU_SOURCE -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
+    set(CMAKE_C_FLAGS "-std=gnu99 -fms-extensions -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
 
     if(CMAKE_COMPILER_IS_GNUCC)
         set(CMAKE_C_FLAGS_DEBUG "-Og -ggdb -D_FORTIFY_SOURCE=2")
@@ -46,7 +46,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
 endif()
 
 if(WIN32)
-    add_definitions(-DWINVER=0x0600 -D_WIN32_WINNT=0x0600)
+    add_definitions(-DWINVER=0x0602 -D_WIN32_WINNT=0x0602)
 endif()
 
 set(EXPERIMENTAL OFF CACHE BOOL "Build experimental and unsafe features")
