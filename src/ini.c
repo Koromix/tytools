@@ -21,6 +21,19 @@
 #include "compat.h"
 #include "ty/ini.h"
 
+struct ty_ini {
+    FILE *fp;
+    char *path;
+
+    char *buf;
+    size_t size;
+    size_t line;
+
+    char *ptr;
+
+    char *section;
+};
+
 static inline bool test_eol(int c)
 {
     return !c || c == '\r' || c == '\n';

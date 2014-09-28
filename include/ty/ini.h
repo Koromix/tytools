@@ -24,18 +24,7 @@
 
 TY_C_BEGIN
 
-typedef struct ty_ini {
-    FILE *fp;
-    char *path;
-
-    char *buf;
-    size_t size;
-    size_t line;
-
-    char *ptr;
-
-    char *section;
-} ty_ini;
+typedef struct ty_ini ty_ini;
 
 typedef int ty_ini_callback_func(ty_ini *ini, const char *section, char *key, char *value, void *udata);
 
