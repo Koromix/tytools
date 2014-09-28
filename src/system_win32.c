@@ -35,8 +35,12 @@ struct ty_timer {
     uint64_t ticks;
 };
 
+typedef ULONGLONG WINAPI GetTickCount64_func(void);
 typedef WINBOOL WINAPI GetFileInformationByHandleEx_func(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize);
 
+static ULONGLONG WINAPI GetTickCount64_fallback(void);
+
+static GetTickCount64_func *GetTickCount64_;
 static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
 
 static const uint64_t delta_epoch = 11644473600000;
@@ -50,6 +54,10 @@ TY_INIT(init_win32)
 {
     HANDLE h = GetModuleHandle("kernel32.dll");
     assert(h);
+
+    GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(h, "GetTickCount64");
+    if (!GetTickCount64_)
+        GetTickCount64_ = GetTickCount64_fallback;
 
     GetFileInformationByHandleEx_ = (GetFileInformationByHandleEx_func *)GetProcAddress(h, "GetFileInformationByHandleEx");
 
@@ -112,9 +120,7 @@ bool ty_win32_test_version(ty_win32_version version)
     return VerifyVersionInfo(&info, VER_MAJORVERSION | VER_MINORVERSION, cond);
 }
 
-typedef ULONGLONG WINAPI gtc64_func(void);
-
-static ULONGLONG WINAPI gtc64_fallback(void)
+static ULONGLONG WINAPI GetTickCount64_fallback(void)
 {
     static LARGE_INTEGER freq;
 
@@ -134,16 +140,7 @@ static ULONGLONG WINAPI gtc64_fallback(void)
 
 uint64_t ty_millis(void)
 {
-    static gtc64_func *gtc64;
-
-    if (!gtc64) {
-        HANDLE h = GetModuleHandle("kernel32.dll");
-        gtc64 = (gtc64_func *)GetProcAddress(h, "GetTickCount64");
-        if (!gtc64)
-            gtc64 = gtc64_fallback;
-    }
-
-    return gtc64();
+    return GetTickCount64_();
 }
 
 void ty_delay(unsigned int ms)
