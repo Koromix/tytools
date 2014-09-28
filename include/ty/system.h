@@ -30,8 +30,6 @@ extern void *_ty_win32_descriptors[3]; // HANDLE
 #endif
 
 typedef enum ty_file_type {
-    TY_FILE_UNKNOWN,
-
     TY_FILE_REGULAR,
     TY_FILE_DIRECTORY,
     TY_FILE_LINK,
