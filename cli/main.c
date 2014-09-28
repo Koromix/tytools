@@ -94,7 +94,7 @@ static void print_usage(const char *cmd_name)
 
     fprintf(stderr, "usage: tyc [-d <device>] <command> [options]\n\n"
                     "Options:\n"
-                    "   -C, --directory=<dir>    Change to <dir> before doing anything\n\n");
+                    "   -d, --device=<device>    Work with <device> instead of first device found\n\n");
 
     fprintf(stderr, "Commands:\n");
 
