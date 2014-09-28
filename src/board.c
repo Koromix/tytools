@@ -20,6 +20,7 @@
 #include "ty/common.h"
 #include "compat.h"
 #include "ty/board.h"
+#include "board_priv.h"
 #include "ty/firmware.h"
 #include "list.h"
 #include "ty/system.h"
@@ -37,25 +38,12 @@ struct ty_board_manager {
     void *udata;
 };
 
-struct ty_board {
-    ty_board_manager *manager;
-    ty_list_head list;
+struct ty_board_mode {
+    struct ty_board_mode_;
+};
 
-    unsigned int refcount;
-
-    ty_board_state state;
-
-    ty_device *dev;
-    ty_handle *h;
-
-    ty_list_head missing;
-    uint64_t missing_since;
-
-    const ty_board_mode *mode;
-    const ty_board_model *model;
-    uint64_t serial;
-
-    void *udata;
+struct ty_board_model {
+    struct ty_board_model_;
 };
 
 struct callback {
@@ -71,184 +59,58 @@ struct firmware_signature {
     uint8_t magic[8];
 };
 
-static const uint16_t teensy_vid = 0x16C0;
-
-static const int drop_board_delay = 3000;
-static const size_t seremu_packet_size = 32;
-
-#ifdef TY_EXPERIMENTAL
-
-static const ty_board_model teensypp10 = {
-    .name = "teensy++10",
-    .mcu = "at90usb646",
-    .desc = "Teensy++ 1.0",
-
-    .usage = 0x1A,
-    .halfkay_version = 0,
-    .code_size = 64512,
-    .block_size = 256
-};
-
-static const ty_board_model teensy20 = {
-    .name = "teensy20",
-    .mcu = "atmega32u4",
-    .desc = "Teensy 2.0",
-
-    .usage = 0x1B,
-    .halfkay_version = 0,
-    .code_size = 32256,
-    .block_size = 128
-};
-
-static const ty_board_model teensypp20 = {
-    .name = "teensy++20",
-    .mcu = "at90usb1286",
-    .desc = "Teensy++ 2.0",
-
-    .usage = 0x1C,
-    .halfkay_version = 1,
-    .code_size = 130048,
-    .block_size = 256
-};
-
-#endif
-
-static const ty_board_model teensy30 = {
-    .name = "teensy30",
-    .mcu = "mk20dx128",
-    .desc = "Teensy 3.0",
-
-    .usage = 0x1D,
-    .halfkay_version = 2,
-    .code_size = 131072,
-    .block_size = 1024
-};
-
-#ifdef TY_EXPERIMENTAL
-
-static const ty_board_model teensy31 = {
-    .name = "teensy31",
-    .mcu = "mk20dx256",
-    .desc = "Teensy 3.1",
-
-    .usage = 0x1E,
-    .halfkay_version = 2,
-    .code_size = 262144,
-    .block_size = 1024
-};
-
-#endif
-
-static const struct firmware_signature signatures[] = {
-#ifdef TY_EXPERIMENTAL
-    {&teensypp10, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&teensy20,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&teensypp20, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
-#endif
-    {&teensy30,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
-#ifdef TY_EXPERIMENTAL
-    {&teensy31,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
-#endif
-
-    {0}
-};
-
-static const ty_board_mode bootloader_mode = {
-    .name = "bootloader",
-    .desc = "HalfKay Bootloader",
-
-    .type = TY_DEVICE_HID,
-    .pid = 0x478,
-    .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_IDENTIFY | TY_BOARD_CAPABILITY_UPLOAD |
-                    TY_BOARD_CAPABILITY_RESET
-};
-
-static const ty_board_mode flightsim_mode = {
-    .name = "flightsim",
-    .desc = "FlightSim",
-
-    .type = TY_DEVICE_HID,
-    .pid = 0x488,
-    .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
-
-static const ty_board_mode hid_mode = {
-    .name = "hid",
-    .desc = "HID",
-
-    .type = TY_DEVICE_HID,
-    .pid = 0x482,
-    .iface = 2,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
-
-static const ty_board_mode midi_mode = {
-    .name = "midi",
-    .desc = "MIDI",
-
-    .type = TY_DEVICE_HID,
-    .pid = 0x485,
-    .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
-
-static const ty_board_mode rawhid_mode = {
-    .name = "rawhid",
-    .desc = "Raw HID",
-
-    .type = TY_DEVICE_HID,
-    .pid = 0x486,
-    .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
-
-static const ty_board_mode serial_mode = {
-    .name = "serial",
-    .desc = "Serial",
-
-    .type = TY_DEVICE_SERIAL,
-    .pid = 0x483,
-    .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
-
-static const ty_board_mode serial_hid_mode = {
-    .name = "serial_hid",
-    .desc = "Serial HID",
-
-    .type = TY_DEVICE_SERIAL,
-    .pid = 0x487,
-    .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
-};
+extern const ty_board_mode teensy_bootloader_mode;
+extern const ty_board_mode teensy_flightsim_mode;
+extern const ty_board_mode teensy_hid_mode;
+extern const ty_board_mode teensy_midi_mode;
+extern const ty_board_mode teensy_rawhid_mode;
+extern const ty_board_mode teensy_serial_mode;
+extern const ty_board_mode teensy_serial_hid_mode;
 
 const ty_board_mode *ty_board_modes[] = {
-    &bootloader_mode,
-    &flightsim_mode,
-    &hid_mode,
-    &midi_mode,
-    &rawhid_mode,
-    &serial_mode,
-    &serial_hid_mode,
-
+    &teensy_bootloader_mode,
+    &teensy_flightsim_mode,
+    &teensy_hid_mode,
+    &teensy_midi_mode,
+    &teensy_rawhid_mode,
+    &teensy_serial_mode,
+    &teensy_serial_hid_mode,
     NULL
 };
+
+extern const ty_board_model teensy_pp10_model;
+extern const ty_board_model teensy_20_model;
+extern const ty_board_model teensy_pp20_model;
+extern const ty_board_model teensy_30_model;
+extern const ty_board_model teensy_31_model;
 
 const ty_board_model *ty_board_models[] = {
 #ifdef TY_EXPERIMENTAL
-    &teensypp10,
-    &teensy20,
-    &teensypp20,
+    &teensy_pp10_model,
+    &teensy_20_model,
+    &teensy_pp20_model,
 #endif
-    &teensy30,
+    &teensy_30_model,
 #ifdef TY_EXPERIMENTAL
-    &teensy31,
+    &teensy_31_model,
 #endif
-
     NULL
 };
+
+static const struct firmware_signature signatures[] = {
+#ifdef TY_EXPERIMENTAL
+    {&teensy_pp10_model, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
+    {&teensy_20_model,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
+    {&teensy_pp20_model, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
+#endif
+    {&teensy_30_model,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+#ifdef TY_EXPERIMENTAL
+    {&teensy_31_model,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+#endif
+    {0}
+};
+
+static const int drop_board_delay = 3000;
 
 int ty_board_manager_new(ty_board_manager **rmanager)
 {
@@ -404,28 +266,6 @@ static uint64_t parse_serial_number(const char *s)
     return serial;
 }
 
-static int identify_model(ty_board *board)
-{
-    ty_hid_descriptor desc;
-    int r;
-
-    r = ty_hid_parse_descriptor(board->h, &desc);
-    if (r < 0)
-        return r;
-
-    board->model = NULL;
-    for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
-        if ((*cur)->usage == desc.usage) {
-            board->model = *cur;
-            break;
-        }
-    }
-    if (!board->model)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Unknown board model");
-
-    return 0;
-}
-
 static int open_board(ty_board *board)
 {
     int r;
@@ -442,7 +282,7 @@ static int open_board(ty_board *board)
     }
 
     if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_IDENTIFY)) {
-        r = identify_model(board);
+        r = board->mode->vtable->identify(board);
         if (r < 0)
             return r;
     }
@@ -455,20 +295,20 @@ static int open_board(ty_board *board)
 static int load_board(ty_board *board, ty_device *dev, ty_board **rboard)
 {
     const ty_board_mode *mode = NULL;
-    uint16_t pid;
+    uint16_t vid, pid;
     uint64_t serial;
     int r;
 
-    if (ty_device_get_vid(dev) != teensy_vid)
-        return 0;
-
+    vid = ty_device_get_vid(dev);
     pid = ty_device_get_pid(dev);
-    for (const ty_board_mode **cur = ty_board_modes; *cur; cur++) {
+
+    const ty_board_mode **cur;
+    for (cur = ty_board_modes; *cur; cur++) {
         mode = *cur;
-        if (mode->pid == pid)
+        if (mode->vid == vid && mode->pid == pid)
             break;
     }
-    if (!mode->pid)
+    if (!*cur)
         return 0;
 
     if (ty_device_get_interface_number(dev) != mode->iface)
@@ -706,30 +546,66 @@ int ty_board_manager_list(ty_board_manager *manager, ty_board_manager_callback_f
     return 0;
 }
 
-const ty_board_model *ty_board_find_model(const char *name)
-{
-    assert(name);
-
-    for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
-        const ty_board_model *m = *cur;
-        if (strcmp(m->name, name) == 0 || strcmp(m->mcu, name) == 0)
-            return m;
-    }
-
-    return NULL;
-}
-
 const ty_board_mode *ty_board_find_mode(const char *name)
 {
     assert(name);
 
     for (const ty_board_mode **cur = ty_board_modes; *cur; cur++) {
-        const ty_board_mode *m = *cur;
-        if (strcasecmp(m->name, name) == 0)
-            return m;
+        const ty_board_mode *mode = *cur;
+        if (strcasecmp(mode->name, name) == 0)
+            return mode;
     }
 
     return NULL;
+}
+
+const ty_board_model *ty_board_find_model(const char *name)
+{
+    assert(name);
+
+    for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
+        const ty_board_model *model = *cur;
+        if (strcmp(model->name, name) == 0 || strcmp(model->mcu, name) == 0)
+            return model;
+    }
+
+    return NULL;
+}
+
+const char *ty_board_mode_get_name(const ty_board_mode *mode)
+{
+    assert(mode);
+    return mode->name;
+}
+
+const char *ty_board_mode_get_desc(const ty_board_mode *mode)
+{
+    assert(mode);
+    return mode->desc;
+}
+
+const char *ty_board_model_get_name(const ty_board_model *model)
+{
+    assert(model);
+    return model->name;
+}
+
+const char *ty_board_model_get_mcu(const ty_board_model *model)
+{
+    assert(model);
+    return model->mcu;
+}
+
+const char *ty_board_model_get_desc(const ty_board_model *model)
+{
+    assert(model);
+    return model->desc;
+}
+
+size_t ty_board_model_get_code_size(const ty_board_model *model)
+{
+    assert(model);
+    return model->code_size;
 }
 
 ty_board *ty_board_ref(ty_board *board)
@@ -875,26 +751,10 @@ ssize_t ty_board_read_serial(ty_board *board, char *buf, size_t size)
     assert(buf);
     assert(size);
 
-    ssize_t r;
-
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    switch (ty_device_get_type(board->dev)) {
-    case TY_DEVICE_SERIAL:
-        return ty_serial_read(board->h, buf, size);
-
-    case TY_DEVICE_HID:
-        r = ty_hid_read(board->h, (uint8_t *)buf, size);
-        if (r < 0)
-            return r;
-        else if (!r)
-            return 0;
-        return (ssize_t)strnlen(buf, size);
-    }
-
-    assert(false);
-    __builtin_unreachable();
+    return board->mode->vtable->read_serial(board, buf, size);
 }
 
 ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
@@ -902,103 +762,13 @@ ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
     assert(board);
     assert(buf);
 
-    uint8_t report[seremu_packet_size + 1];
-    size_t total = 0;
-    ssize_t r;
-
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
     if (!size)
         size = strlen(buf);
 
-    switch (ty_device_get_type(board->dev)) {
-    case TY_DEVICE_SERIAL:
-        return ty_serial_write(board->h, buf, (ssize_t)size);
-
-    case TY_DEVICE_HID:
-        // SEREMU expects packets of 32 bytes
-        for (size_t i = 0; i < size;) {
-            memset(report, 0, sizeof(report));
-            memcpy(report + 1, buf + i, TY_MIN(seremu_packet_size, size - i));
-
-            r = ty_hid_write(board->h, report, sizeof(report));
-            if (r < 0)
-                return r;
-            else if (!r)
-                break;
-
-            i += (size_t)r - 1;
-            total += (size_t)r - 1;
-        }
-        return (ssize_t)total;
-    }
-
-    assert(false);
-    __builtin_unreachable();
-}
-
-static int halfkay_send(ty_board *board, size_t addr, void *data, size_t size, unsigned int timeout)
-{
-    uint8_t buf[2048] = {0};
-    uint64_t start;
-
-    const ty_board_model *model = board->model;
-    ty_handle *h = board->h;
-
-    ssize_t r = TY_ERROR_OTHER;
-
-    // Update if header gets bigger than 64 bytes
-    assert(size < sizeof(buf) - 65);
-
-    switch (model->halfkay_version) {
-    case 0:
-        buf[1] = addr & 255;
-        buf[2] = (addr >> 8) & 255;
-
-        if (size)
-            memcpy(buf + 3, data, size);
-        size = model->block_size + 3;
-        break;
-
-    case 1:
-        buf[1] = (addr >> 8) & 255;
-        buf[2] = (addr >> 16) & 255;
-
-        if (size)
-            memcpy(buf + 3, data, size);
-        size = model->block_size + 3;
-        break;
-
-    case 2:
-        buf[1] = addr & 255;
-        buf[2] = (addr >> 8) & 255;
-        buf[3] = (addr >> 16) & 255;
-
-        if (size)
-            memcpy(buf + 65, data, size);
-        size = model->block_size + 65;
-        break;
-
-    default:
-        assert(false);
-    }
-
-    start = ty_millis();
-
-    // We may get errors along the way (while the bootloader works)
-    // so try again until timeout expires.
-    do {
-        r = ty_hid_write(h, buf, size);
-        if (r >= 0)
-            return 0;
-
-        ty_delay(10);
-    } while (ty_millis() - start <= timeout);
-    if (r < 0)
-        return (int)r;
-
-    return 0;
+    return board->mode->vtable->write_serial(board, buf, size);
 }
 
 int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
@@ -1006,11 +776,10 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
     assert(board);
     assert(f);
 
-    int r;
-
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD))
         return ty_error(TY_ERROR_MODE, "Firmware upload is not available in this mode");
 
+    // FIXME: detail error message (max allowed, ratio)
     if (f->size > board->model->code_size)
         return ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->desc);
 
@@ -1019,7 +788,7 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
 
         guess = ty_board_test_firmware(f);
         if (!guess)
-            return ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a Teensy device");
+            return ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
 
         // board->model may have been carried over
         if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_IDENTIFY))
@@ -1029,19 +798,7 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
             return ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->desc);
     }
 
-    for (size_t addr = 0; addr < f->size; addr += board->model->block_size) {
-        size_t size = TY_MIN(board->model->block_size, (size_t)(f->size - addr));
-
-        // Writing to the first block triggers flash erasure hence the longer timeout
-        r = halfkay_send(board, addr, f->image + addr, size, addr ? 300 : 3000);
-        if (r < 0)
-            return r;
-
-        // HalfKay generates STALL if you go too fast (translates to EPIPE on Linux)
-        ty_delay(addr ? 30 : 300);
-    }
-
-    return 0;
+    return board->mode->vtable->upload(board, f, flags);
 }
 
 int ty_board_reset(ty_board *board)
@@ -1051,34 +808,17 @@ int ty_board_reset(ty_board *board)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET))
         return ty_error(TY_ERROR_MODE, "Cannot reset in this mode");
 
-    return halfkay_send(board, 0xFFFFFF, NULL, 0, 250);
+    return board->mode->vtable->reset(board);
 }
 
 int ty_board_reboot(ty_board *board)
 {
     assert(board);
 
-    static unsigned char seremu_magic[] = {0, 0xA9, 0x45, 0xC2, 0x6B};
-    int r;
-
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT))
         return ty_error(TY_ERROR_MODE, "Cannot reboot in this mode");
 
-    r = TY_ERROR_UNSUPPORTED;
-    switch (ty_device_get_type(board->dev)) {
-    case TY_DEVICE_SERIAL:
-        r = ty_serial_set_control(board->h, 134, 0);
-        break;
-
-    case TY_DEVICE_HID:
-        r = ty_hid_send_feature_report(board->h, seremu_magic, sizeof(seremu_magic));
-        break;
-
-    default:
-        assert(false);
-    }
-
-    return r;
+    return board->mode->vtable->reboot(board);
 }
 
 const ty_board_model *ty_board_test_firmware(ty_firmware *f)

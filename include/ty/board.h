@@ -30,6 +30,9 @@ struct ty_firmware;
 typedef struct ty_board_manager ty_board_manager;
 typedef struct ty_board ty_board;
 
+typedef struct ty_board_model ty_board_model;
+typedef struct ty_board_mode ty_board_mode;
+
 typedef enum ty_board_capability {
     TY_BOARD_CAPABILITY_IDENTIFY = 1,
     TY_BOARD_CAPABILITY_UPLOAD   = 2,
@@ -51,29 +54,6 @@ typedef enum ty_board_event {
     TY_BOARD_EVENT_DROPPED
 } ty_board_event;
 
-typedef struct ty_board_model {
-    const char *name;
-    const char *mcu;
-    const char *desc;
-
-    uint8_t usage;
-    uint8_t halfkay_version;
-    size_t code_size;
-    size_t block_size;
-} ty_board_model;
-
-typedef struct ty_board_mode {
-    const char *name;
-    const char *desc;
-
-    // Identification
-    uint16_t pid;
-    ty_device_type type;
-    uint8_t iface;
-
-    uint16_t capabilities;
-} ty_board_mode;
-
 enum {
     TY_BOARD_UPLOAD_NOCHECK = 1
 };
@@ -81,8 +61,8 @@ enum {
 typedef int ty_board_manager_callback_func(ty_board *board, ty_board_event event, void *udata);
 typedef int ty_board_manager_wait_func(ty_board_manager *manager, void *udata);
 
-extern const ty_board_model *ty_board_models[];
 extern const ty_board_mode *ty_board_modes[];
+extern const ty_board_model *ty_board_models[];
 
 int ty_board_manager_new(ty_board_manager **rmanager);
 void ty_board_manager_free(ty_board_manager *manager);
@@ -100,8 +80,16 @@ int ty_board_manager_wait(ty_board_manager *manager, ty_board_manager_wait_func 
 
 int ty_board_manager_list(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata);
 
-const ty_board_model *ty_board_find_model(const char *name);
 const ty_board_mode *ty_board_find_mode(const char *name);
+const ty_board_model *ty_board_find_model(const char *name);
+
+const char *ty_board_mode_get_name(const ty_board_mode *mode);
+const char *ty_board_mode_get_desc(const ty_board_mode *mode);
+
+const char *ty_board_model_get_name(const ty_board_model *model);
+const char *ty_board_model_get_mcu(const ty_board_model *model);
+const char *ty_board_model_get_desc(const ty_board_model *model);
+size_t ty_board_model_get_code_size(const ty_board_model *model);
 
 ty_board *ty_board_ref(ty_board *teensy);
 void ty_board_unref(ty_board *teensy);

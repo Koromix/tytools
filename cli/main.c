@@ -110,8 +110,8 @@ void print_supported_models(void)
     fprintf(stderr, "Supported models:\n");
 
     for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
-        const ty_board_model *m = *cur;
-        fprintf(stderr, "   - %-22s (%s)\n", m->name, m->mcu);
+        const ty_board_model *model = *cur;
+        fprintf(stderr, "   - %-22s (%s)\n", ty_board_model_get_name(model), ty_board_model_get_mcu(model));
     }
 }
 
@@ -189,7 +189,7 @@ int get_board(ty_board **rboard)
     static ty_board *previous_board = NULL;
     if (main_board != previous_board) {
         printf("Board at '%s#%"PRIu64"' (%s)\n", ty_board_get_location(main_board),
-               ty_board_get_serial_number(main_board), ty_board_get_mode(main_board)->desc);
+               ty_board_get_serial_number(main_board), ty_board_mode_get_desc(ty_board_get_mode(main_board)));
         previous_board = main_board;
     }
 

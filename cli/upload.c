@@ -79,6 +79,7 @@ int upload(int argc, char *argv[])
 {
     ty_board *board = NULL;
     ty_firmware *firmware = NULL;
+    const ty_board_model *model;
     uint64_t mtime = 0;
     int r;
 
@@ -146,15 +147,16 @@ wait:
     if (r < 0)
         goto cleanup;
 
-    if (!ty_board_get_model(board)) {
+    model = ty_board_get_model(board);
+    if (!model) {
         r = ty_error(TY_ERROR_MODE, "Unknown board model");
         goto cleanup;
     }
 
-    printf("Model: %s\n", ty_board_get_model(board)->desc);
+    printf("Model: %s\n", ty_board_model_get_desc(model));
     printf("Firmware: %s\n", image_filename);
 
-    printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)ty_board_get_model(board)->code_size * 100.0,
+    printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)ty_board_model_get_code_size(model) * 100.0,
            firmware->size);
 
     printf("Uploading firmware...\n");

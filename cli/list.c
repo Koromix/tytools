@@ -78,15 +78,18 @@ static int list_callback(ty_board *board, ty_board_event event, void *udata)
     TY_UNUSED(event);
     TY_UNUSED(udata);
 
+    const ty_board_mode *mode = ty_board_get_mode(board);
+    const ty_board_model *model = ty_board_get_model(board);
+
     switch (event) {
     case TY_BOARD_EVENT_ADDED:
     case TY_BOARD_EVENT_CHANGED:
         printf("%c %s#%"PRIu64" (%s)\n", event == TY_BOARD_EVENT_ADDED ? '+' : '=',
-               ty_board_get_location(board), ty_board_get_serial_number(board), ty_board_get_mode(board)->desc);
+               ty_board_get_location(board), ty_board_get_serial_number(board), ty_board_mode_get_desc(mode));
 
         if (list_verbose) {
             printf("  - node: %s\n", ty_board_get_path(board));
-            printf("  - model: %s\n", ty_board_get_model(board) ? ty_board_get_model(board)->desc : "(unknown)");
+            printf("  - model: %s\n", model ? ty_board_model_get_desc(model) : "(unknown)");
             printf("  - capabilities: ");
             print_capabilities(board);
         }

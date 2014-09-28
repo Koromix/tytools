@@ -74,6 +74,8 @@ set(TY_SOURCES include/ty.h
                include/ty/system.h
 
                src/board.c
+               src/board_teensy.c
+               src/board_priv.h
                src/common.c
                src/compat.c
                src/device.c
