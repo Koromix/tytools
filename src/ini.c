@@ -127,7 +127,7 @@ static int read_value(ty_ini *ini, const char **rsection, char **rkey, char **rv
     return 1;
 }
 
-int ty_ini_open(ty_ini **rini, const char* path)
+int ty_ini_open(const char* path, ty_ini **rini)
 {
     assert(path);
 
@@ -234,7 +234,7 @@ int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata)
     char *key, *value;
     int r;
 
-    r = ty_ini_open(&ini, path);
+    r = ty_ini_open(path, &ini);
     if (r < 0)
         return r;
 

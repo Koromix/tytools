@@ -39,7 +39,7 @@ typedef struct ty_ini {
 
 typedef int ty_ini_callback_func(ty_ini *ini, const char *section, char *key, char *value, void *udata);
 
-int ty_ini_open(ty_ini **rini, const char *path);
+int ty_ini_open(const char *path, ty_ini **rini);
 void ty_ini_free(ty_ini *ini);
 
 int ty_ini_next(ty_ini *ini, const char **rsection, char **rkey, char **rvalue);
