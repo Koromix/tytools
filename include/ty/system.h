@@ -114,6 +114,11 @@ bool ty_win32_test_version(ty_win32_version version);
 uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
+bool ty_path_is_absolute(const char *path);
+
+int ty_path_split(const char *path, char **rdirectory, char **rname);
+const char *ty_path_ext(const char *path);
+
 int ty_stat(const char *path, ty_file_info *info, bool follow);
 bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 
