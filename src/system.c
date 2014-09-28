@@ -19,7 +19,8 @@
 
 #include "ty/common.h"
 #include "compat.h"
-#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "ty/system.h"
 
 bool ty_path_is_absolute(const char *path)
@@ -106,6 +107,75 @@ const char *ty_path_ext(const char *path)
         return "";
 
     return ext;
+}
+
+int make_directory(const char *path, mode_t mode, bool permissive)
+{
+#ifdef _WIN32
+    TY_UNUSED(mode);
+#endif
+
+    int r;
+
+#ifdef _WIN32
+    r = mkdir(path);
+#else
+    r = mkdir(path, mode);
+#endif
+    if (r < 0) {
+        switch (errno) {
+        case EEXIST:
+            if (permissive)
+                return 0;
+            return ty_error(TY_ERROR_EXISTS, "Directory '%s' already exists", path);
+        case EACCES:
+            return ty_error(TY_ERROR_ACCESS, "Permission denied to create '%s'", path);
+        case ENOSPC:
+            return ty_error(TY_ERROR_IO, "Failed to create directory '%s' because disk is full",
+                            path);
+        case ENOENT:
+            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' path does not exist", path);
+        case ENOTDIR:
+            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+        }
+        return ty_error(TY_ERROR_SYSTEM, "mkdir('%s') failed: %s", path, strerror(errno));
+    }
+
+    return 0;
+}
+
+int ty_mkdir(const char *path, mode_t mode, uint16_t flags)
+{
+    assert(path && path[0]);
+
+    char *parent = NULL;
+    int r;
+
+    if (flags & TY_MKDIR_PARENTS) {
+        r = ty_path_split(path, &parent, NULL);
+        if (r < 0)
+            return r;
+
+        char *ptr = parent;
+        do {
+            ptr = strpbrk(ptr + 1, TY_PATH_SEPARATORS);
+
+            if (ptr) {
+                *ptr = 0;
+                r = make_directory(parent, mode, true);
+                *ptr = *TY_PATH_SEPARATORS;
+            } else {
+                r = make_directory(parent, mode, true);
+            }
+            if (r < 0)
+                goto cleanup;
+        } while (ptr);
+    }
+
+    r = make_directory(path, mode, flags & TY_MKDIR_PERMISSIVE);
+cleanup:
+    free(parent);
+    return r;
 }
 
 void ty_descriptor_set_clear(ty_descriptor_set *set)

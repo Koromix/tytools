@@ -64,6 +64,11 @@ typedef struct ty_file_info {
 #define TY_PATH_SEPARATORS "/"
 #endif
 
+enum {
+    TY_MKDIR_PARENTS  = 1,
+    TY_MKDIR_PERMISSIVE = 2
+};
+
 #ifdef _WIN32
 
 typedef void *ty_descriptor; // HANDLE
@@ -124,6 +129,7 @@ int ty_realpath(const char *path, const char *base, char **rpath);
 int ty_stat(const char *path, ty_file_info *info, bool follow);
 bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 
+int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
 int ty_delete(const char *path, bool tolerant);
 
 int ty_timer_new(ty_timer **rtimer);
