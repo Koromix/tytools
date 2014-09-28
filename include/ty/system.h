@@ -69,6 +69,25 @@ enum {
     TY_MKDIR_PERMISSIVE = 2
 };
 
+enum {
+    TY_WALK_FOLLOW = 1,
+    TY_WALK_HIDDEN  = 2
+};
+
+typedef struct ty_walk_history {
+    struct ty_walk_history *prev;
+
+    ty_file_info info;
+
+    size_t relative;
+    size_t base;
+    size_t level;
+
+    struct _ty_walk_context *ctx;
+} ty_walk_history;
+
+typedef int ty_walk_func(const char *path, ty_walk_history *history, void *udata);
+
 #ifdef _WIN32
 
 typedef void *ty_descriptor; // HANDLE
@@ -131,6 +150,8 @@ bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 
 int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
 int ty_delete(const char *path, bool tolerant);
+
+int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags);
 
 int ty_timer_new(ty_timer **rtimer);
 void ty_timer_free(ty_timer *timer);

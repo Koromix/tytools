@@ -19,9 +19,14 @@
 
 #include "ty/common.h"
 #include "compat.h"
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "ty/system.h"
+
+#ifdef __unix__
+int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow);
+#endif
 
 bool ty_path_is_absolute(const char *path)
 {
@@ -175,6 +180,148 @@ int ty_mkdir(const char *path, mode_t mode, uint16_t flags)
     r = make_directory(path, mode, flags & TY_MKDIR_PERMISSIVE);
 cleanup:
     free(parent);
+    return r;
+}
+
+struct _ty_walk_context {
+    ty_walk_func *f;
+    void *udata;
+
+    uint32_t flags;
+};
+
+int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags)
+{
+    assert(path);
+    assert(f || history);
+
+    struct _ty_walk_context *ctx = NULL;
+    ty_walk_history newhistory;
+    DIR *dp = NULL;
+#ifdef __unix__
+    int fd;
+#endif
+    char *filename = NULL;
+    int r;
+
+    if (!history) {
+        // No, it's not evil
+        ctx = alloca(sizeof(*ctx));
+
+        ctx->f = f;
+        ctx->udata = udata;
+        ctx->flags = flags;
+
+        history = alloca(sizeof(*history));
+        history->prev = NULL;
+
+        history->relative = strlen(path) + 1;
+        history->level = 0;
+
+        r = ty_stat(path, &history->info, true);
+        if (r < 0)
+            goto cleanup;
+    } else {
+        if (history->info.type != TY_FILE_DIRECTORY) {
+            r = 0;
+            goto cleanup;
+        }
+
+        ctx = history->ctx;
+    }
+
+    newhistory.prev = history;
+    newhistory.ctx = ctx;
+
+    newhistory.relative = history->relative;
+    newhistory.base = strlen(path) + 1;
+    newhistory.level = history->level + 1;
+
+    dp = opendir(path);
+    if (!dp) {
+        switch (errno) {
+        case ENOMEM:
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            break;
+        case EACCES:
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
+            break;
+        case ENOENT:
+            if (!history->prev) {
+                r = ty_error(TY_ERROR_NOT_FOUND, "Directory '%s' does not exist", path);
+            } else {
+                r = 0;
+            }
+            break;
+        case ENOTDIR:
+            if (!history->prev) {
+                r = ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+            } else {
+                r = 0;
+            }
+            break;
+        default:
+            r = ty_error(TY_ERROR_SYSTEM, "opendir('%s') failed: %s", path, strerror(errno));
+            break;
+        }
+        goto cleanup;
+    }
+#ifdef __unix__
+    fd = dirfd(dp);
+#endif
+
+    struct dirent *ent;
+    while ((ent = readdir(dp))) {
+        // Redundant with the TY_FILE_HIDDEN check further down, but this avoids many useless stats
+        if (!(ctx->flags & TY_WALK_HIDDEN) && ent->d_name[0] == '.')
+            continue;
+
+        // Don't follow '.' and '..'
+        if (ent->d_name[0] == '.' && (!ent->d_name[1] || (ent->d_name[1] == '.' && !ent->d_name[2])))
+            continue;
+
+        r = asprintf(&filename, "%s%c%s", path, *TY_PATH_SEPARATORS, ent->d_name);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            goto cleanup;
+        }
+
+        ty_error_mask(TY_ERROR_NOT_FOUND);
+#ifdef __unix__
+        r = _ty_statat(fd, ent->d_name, &newhistory.info, ctx->flags & TY_WALK_FOLLOW);
+#else
+        r = ty_stat(filename, &newhistory.info, ctx->flags & TY_WALK_FOLLOW);
+#endif
+        ty_error_unmask();
+        if (r < 0) {
+            if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
+                goto next;
+            goto cleanup;
+        }
+
+        if (!(ctx->flags & TY_WALK_HIDDEN) && newhistory.info.flags & TY_FILE_HIDDEN)
+            continue;
+
+        if (newhistory.info.type == TY_FILE_DIRECTORY) {
+            for (ty_walk_history *cur = history; cur; cur = cur->prev) {
+                if (ty_file_unique(&cur->info, &newhistory.info))
+                    goto next;
+            }
+        }
+
+        r = (*ctx->f)(filename, &newhistory, ctx->udata);
+        if (r)
+            goto cleanup;
+
+next:
+        free(filename);
+        filename = NULL;
+    }
+
+    r = 0;
+cleanup:
+    free(filename);
+    closedir(dp);
     return r;
 }
 
