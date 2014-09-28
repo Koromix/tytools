@@ -47,6 +47,8 @@ static const char *generic_message(int err)
         return "Already exists";
     case TY_ERROR_ACCESS:
         return "Permission error";
+    case TY_ERROR_BUSY:
+        return "Busy error";
     case TY_ERROR_IO:
         return "I/O error";
     case TY_ERROR_MODE:

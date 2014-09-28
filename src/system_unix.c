@@ -213,6 +213,37 @@ cleanup:
     return r;
 }
 
+int ty_delete(const char *path, bool tolerant)
+{
+    assert(path && path[0]);
+
+    int r;
+
+    r = remove(path);
+    if (r < 0) {
+        switch (errno) {
+        case EACCES:
+        case EPERM:
+            return ty_error(TY_ERROR_ACCESS, "Permission denied to delete '%s'", path);
+        case EBUSY:
+            return ty_error(TY_ERROR_BUSY, "Failed to delete '%s' because it is busy", path);
+        case EIO:
+            return ty_error(TY_ERROR_IO, "I/O error while deleting '%s'", path);
+        case ENOENT:
+            if (tolerant)
+                return 0;
+            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
+        case ENOTDIR:
+            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+        case ENOTEMPTY:
+            return ty_error(TY_ERROR_EXISTS, "Cannot remove non-empty directory '%s", path);
+        }
+        return ty_error(TY_ERROR_SYSTEM, "remove('%s') failed: %s", path, strerror(errno));
+    }
+
+    return 0;
+}
+
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);

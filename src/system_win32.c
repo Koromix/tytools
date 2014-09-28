@@ -283,6 +283,34 @@ cleanup:
     return r;
 }
 
+int ty_delete(const char *path, bool tolerant)
+{
+    assert(path && path[0]);
+
+    int r;
+
+    if (GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY) {
+        r = _rmdir(path);
+    } else {
+        r = _unlink(path);
+    }
+    if (r < 0) {
+        switch (errno) {
+        case EACCES:
+            return ty_error(TY_ERROR_ACCESS, "Permission denied to delete '%s'", path);
+        case ENOENT:
+            if (tolerant)
+                return 0;
+            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
+        case ENOTEMPTY:
+            return ty_error(TY_ERROR_EXISTS, "Cannot remove non-empty directory '%s", path);
+        }
+        return ty_error(TY_ERROR_SYSTEM, "remove('%s') failed: %s", path, strerror(errno));
+    }
+
+    return 0;
+}
+
 static void free_timer_queue(void)
 {
     DeleteTimerQueue(timer_queue);

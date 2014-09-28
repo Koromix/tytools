@@ -82,13 +82,14 @@ typedef enum ty_err {
     TY_ERROR_NOT_FOUND     = -4,
     TY_ERROR_EXISTS        = -5,
     TY_ERROR_ACCESS        = -6,
-    TY_ERROR_IO            = -7,
-    TY_ERROR_MODE          = -8,
-    TY_ERROR_RANGE         = -9,
-    TY_ERROR_SYSTEM        = -10,
-    TY_ERROR_PARSE         = -11,
-    TY_ERROR_FIRMWARE      = -12,
-    TY_ERROR_OTHER         = -13
+    TY_ERROR_BUSY          = -7,
+    TY_ERROR_IO            = -8,
+    TY_ERROR_MODE          = -9,
+    TY_ERROR_RANGE         = -10,
+    TY_ERROR_SYSTEM        = -11,
+    TY_ERROR_PARSE         = -12,
+    TY_ERROR_FIRMWARE      = -13,
+    TY_ERROR_OTHER         = -14
 } ty_err;
 
 typedef void ty_error_func(ty_err err, const char *msg, void *udata);

@@ -124,6 +124,8 @@ int ty_realpath(const char *path, const char *base, char **rpath);
 int ty_stat(const char *path, ty_file_info *info, bool follow);
 bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 
+int ty_delete(const char *path, bool tolerant);
+
 int ty_timer_new(ty_timer **rtimer);
 void ty_timer_free(ty_timer *timer);
 
