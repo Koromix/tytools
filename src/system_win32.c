@@ -91,6 +91,10 @@ bool ty_win32_test_version(ty_win32_version version)
         info.dwMajorVersion = 6;
         info.dwMinorVersion = 1;
         break;
+    case TY_WIN32_EIGHT:
+        info.dwMajorVersion = 6;
+        info.dwMinorVersion = 2;
+        break;
     }
 
     VER_SET_CONDITION(cond, VER_MAJORVERSION, VER_GREATER_EQUAL);

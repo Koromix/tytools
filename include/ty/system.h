@@ -93,7 +93,8 @@ enum {
 typedef enum ty_win32_version {
     TY_WIN32_XP,
     TY_WIN32_VISTA,
-    TY_WIN32_SEVEN
+    TY_WIN32_SEVEN,
+    TY_WIN32_EIGHT
 } ty_win32_version;
 
 char *ty_win32_strerror(unsigned long err);
