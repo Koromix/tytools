@@ -21,11 +21,19 @@
 #include "compat.h"
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
 #include "ty/system.h"
+
+struct child_report {
+    ty_err err;
+    char msg[512];
+};
 
 static struct termios orig_tio;
 
@@ -242,6 +250,225 @@ int ty_delete(const char *path, bool tolerant)
     }
 
     return 0;
+}
+
+static void child_send_error(ty_err err, const char *msg, void *udata)
+{
+    TY_UNUSED(err);
+
+    struct child_report *report = udata;
+
+    strncpy(report->msg, msg, sizeof(report->msg));
+    report->msg[sizeof(report->msg) - 1] = 0;
+}
+
+static bool caught_sigint = false;
+
+static void catch_sigint(int sig)
+{
+    TY_UNUSED(sig);
+
+    caught_sigint = true;
+}
+
+TY_NORETURN static int child_exec(const char *path, const char *dir, const char * const args[],
+                                  const int fds[3], uint32_t flags, int cpipe)
+{
+    struct child_report report;
+    int r;
+
+    ty_error_redirect(child_send_error, &report);
+
+    if (dir) {
+        r = chdir(dir);
+        if (r < 0) {
+            switch (errno) {
+            case EACCES:
+                r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
+                break;
+            case EIO:
+            case ENXIO:
+                r = ty_error(TY_ERROR_IO, "I/O error while changing directory to '%s'", path);
+                break;
+            case ENOENT:
+                r = ty_error(TY_ERROR_NOT_FOUND, "Directory '%s' does not exist", path);
+                break;
+            case ENOTDIR:
+                r = ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+                break;
+            default:
+                r = ty_error(TY_ERROR_SYSTEM, "chdir('%s') failed: %s", path, strerror(errno));
+                break;
+            }
+            goto error;
+        }
+    }
+
+    if (fds) {
+        for (int i = 0; i < 3; i++) {
+            int fd = fds[i];
+
+            if (fd < 0) {
+                fd = open("/dev/null", O_RDWR);
+                if (fd < 0) {
+                    switch (errno) {
+                    case EACCES:
+                        r = ty_error(TY_ERROR_ACCESS, "Permission denied for '/dev/null'");
+                        break;
+                    case EIO:
+                        r = ty_error(TY_ERROR_IO, "I/O error while opening '/dev/null'");
+                        break;
+                    case ENOENT:
+                    case ENOTDIR:
+                        r = ty_error(TY_ERROR_NOT_FOUND, "Device '/dev/null' does not exist");
+                        break;
+
+                    default:
+                        r = ty_error(TY_ERROR_SYSTEM, "open('/dev/null') failed: %s", strerror(errno));
+                        break;
+                    }
+                    goto error;
+                }
+            }
+
+            if (fd != i) {
+restart:
+                r = dup2(fd, i);
+                if (r < 0 && errno == EINTR)
+                    goto restart;
+                close(fd);
+                if (r < 0) {
+                    if (errno == EIO) {
+                        r = ty_error(TY_ERROR_IO, "I/O error on file descriptor %d", i);
+                    } else {
+                        r = ty_error(TY_ERROR_SYSTEM, "dup2() failed: %s", strerror(errno));
+                    }
+                    goto error;
+                }
+            }
+        }
+    }
+
+    if (flags & TY_SPAWN_PATH) {
+        execvp(path, (char * const *)args);
+    } else {
+        execv(path, (char * const *)args);
+    }
+    switch (errno) {
+    case EACCES:
+        r = ty_error(TY_ERROR_ACCESS, "Permission denied to execute '%s'", path);
+        break;
+    case EIO:
+        r = ty_error(TY_ERROR_IO, "I/O error while trying to execute '%s'", path);
+        break;
+    case ENOENT:
+        r = ty_error(TY_ERROR_NOT_FOUND, "Executable '%s' not found", path);
+        break;
+    case ENOTDIR:
+        r = ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+        break;
+
+    default:
+        r = ty_error(TY_ERROR_SYSTEM, "exec('%s') failed: %s", path, strerror(errno));
+        break;
+    }
+
+error:
+    report.err = r;
+    (void)(write(cpipe, &report, sizeof(report)) < 0);
+    _exit(-r);
+}
+
+int ty_spawn(const char *path, const char *dir, const char * const *args,
+             const ty_descriptor desc[3], int *rcode, uint32_t flags)
+{
+    assert(path && path[0]);
+    assert(args && args[0]);
+
+    int cpipe[2];
+    struct sigaction sa, oldsa;
+    sigset_t mask, oldmask;
+    pid_t pid;
+    struct child_report report = {0};
+    int status;
+    ssize_t r;
+
+    // If the pipe gets closed, the parent notices it (EOF) and knows the exec was successful
+    r = pipe2(cpipe, O_CLOEXEC);
+    if (r < 0)
+        return ty_error(TY_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGCHLD);
+    sigaddset(&mask, SIGINT);
+    sigprocmask(SIG_BLOCK, &mask, &oldmask);
+
+    pid = fork();
+    if (pid < 0) {
+        r = ty_error(TY_ERROR_SYSTEM, "fork() failed: %s", strerror(errno));
+        goto cleanup;
+    }
+
+    if (!pid) {
+        close(cpipe[0]);
+
+        sigemptyset(&mask);
+        sigprocmask(SIG_SETMASK, &mask, NULL);
+
+        child_exec(path, dir, args, desc, flags, cpipe[1]);
+        abort();
+    }
+
+    close(cpipe[1]);
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = catch_sigint;
+    sigaction(SIGINT, &sa, &oldsa);
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+
+    r = read(cpipe[0], &report, sizeof(report));
+    close(cpipe[0]);
+    if (r < 0) {
+        r = ty_error(TY_ERROR_SYSTEM, "Unable to report from child: %s", strerror(errno));
+        goto cleanup;
+    } else if (r > 0) {
+        // Don't trust the child too much
+        report.msg[sizeof(report.msg) - 1] = 0;
+        r = ty_error(report.err, "%s", report.msg);
+        goto cleanup;
+    }
+
+restart:
+    pid = waitpid(pid, &status, flags & TY_SPAWN_ASYNC ? WNOHANG : 0);
+    if (pid < 0) {
+        if (errno == EINTR)
+            goto restart;
+
+        r = ty_error(TY_ERROR_SYSTEM, "waitpid() failed: %s", strerror(errno));
+        goto cleanup;
+    }
+
+    if (WIFEXITED(status)) {
+        if (rcode)
+            *rcode = WEXITSTATUS(status);
+
+        r = 0;
+    } else if (WIFSIGNALED(status)) {
+        r = WTERMSIG(status);
+    } else {
+        // FIXME: better error message
+        r = ty_error(TY_ERROR_SYSTEM, "Process failed");
+    }
+
+cleanup:
+    sigaction(SIGINT, &oldsa, NULL);
+    sigprocmask(SIG_SETMASK, &oldmask, NULL);
+    if (r == SIGINT || caught_sigint)
+        kill(getpid(), SIGINT);
+    return (int)r;
 }
 
 int ty_poll(const ty_descriptor_set *set, int timeout)
