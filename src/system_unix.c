@@ -160,6 +160,59 @@ bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2)
     return info1->dev == info2->dev && info1->ino == info2->ino;
 }
 
+int ty_realpath(const char *path, const char *base, char **rpath)
+{
+    assert(path && path[0]);
+
+    char *tmp = NULL, *real = NULL;
+    int r;
+
+    if (base && !ty_path_is_absolute(path)) {
+        r = asprintf(&tmp, "%s/%s", base, path);
+        if (r < 0)
+            goto cleanup;
+
+        path = tmp;
+    }
+
+    real = realpath(path, NULL);
+    if (!real) {
+        switch (errno) {
+        case ENOMEM:
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            break;
+        case EACCES:
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
+            break;
+        case EIO:
+            r = ty_error(TY_ERROR_IO, "I/O error while resolving path '%s'", path);
+            break;
+        case ENOENT:
+            r = ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
+            break;
+        case ENOTDIR:
+            r = ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
+            break;
+
+        default:
+            r = ty_error(TY_ERROR_SYSTEM, "realpath('%s') failed: %s", path, strerror(errno));
+            break;
+        }
+        goto cleanup;
+    }
+
+    if (rpath) {
+        *rpath = real;
+        real = NULL;
+    }
+
+    r = 0;
+cleanup:
+    free(real);
+    free(tmp);
+    return r;
+}
+
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);

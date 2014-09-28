@@ -119,6 +119,8 @@ bool ty_path_is_absolute(const char *path);
 int ty_path_split(const char *path, char **rdirectory, char **rname);
 const char *ty_path_ext(const char *path);
 
+int ty_realpath(const char *path, const char *base, char **rpath);
+
 int ty_stat(const char *path, ty_file_info *info, bool follow);
 bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 

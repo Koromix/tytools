@@ -226,6 +226,63 @@ bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2)
     return info1->volume == info2->volume && memcmp(info1->fileindex, info2->fileindex, sizeof(info1->fileindex)) == 0;
 }
 
+int ty_realpath(const char *path, const char *base, char **rpath)
+{
+    assert(path && path[0]);
+
+    char *tmp = NULL, *real = NULL;
+    int r;
+
+    if (base && !ty_path_is_absolute(path)) {
+        r = asprintf(&tmp, "%s\\%s", base, path);
+        if (r < 0)
+            goto cleanup;
+
+        path = tmp;
+    }
+
+    real = _fullpath(NULL, path, 0);
+    if (!real) {
+        if (errno == ENOMEM) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+        } else {
+            r = ty_error(TY_ERROR_SYSTEM, "_fullpath('%s') failed: %s", path, strerror(errno));
+        }
+        goto cleanup;
+    }
+
+    r = _access(real, 0);
+    if (r < 0) {
+        switch (errno) {
+        case EACCES:
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
+            break;
+        case EIO:
+            r = ty_error(TY_ERROR_IO, "I/O error while resolving path '%s'", path);
+            break;
+        case ENOENT:
+            r = ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
+            break;
+
+        default:
+            r = ty_error(TY_ERROR_SYSTEM, "_access('%s') failed: %s", real, strerror(errno));
+            break;
+        }
+        goto cleanup;
+    }
+
+    if (rpath) {
+        *rpath = real;
+        real = NULL;
+    }
+
+    r = 0;
+cleanup:
+    free(real);
+    free(tmp);
+    return r;
+}
+
 static void free_timer_queue(void)
 {
     DeleteTimerQueue(timer_queue);
