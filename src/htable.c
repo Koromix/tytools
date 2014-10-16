@@ -51,29 +51,27 @@ ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key)
     return (ty_htable_head *)&table->heads[key % table->size];
 }
 
-static ty_htable_head *get_prev(ty_htable_head *head)
-{
-    ty_htable_head *prev = head->next;
-
-    while (prev->next != head)
-        prev = prev->next;
-
-    return prev;
-}
-
 void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *n)
 {
     assert(table);
     assert(n);
 
-    ty_htable_head *head, *prev;
+    ty_htable_head *head = ty_htable_get_head(table, key);
 
-    head = ty_htable_get_head(table, key);
-    prev = get_prev(head);
-
-    n->next = head;
     n->key = key;
 
+    n->next = head;
+    head->next = n;
+}
+
+void ty_htable_insert(ty_htable_head *prev, ty_htable_head *n)
+{
+    assert(prev);
+    assert(n);
+
+    n->key = prev->key;
+
+    n->next = prev->next;
     prev->next = n;
 }
 
@@ -81,22 +79,12 @@ void ty_htable_remove(ty_htable_head *head)
 {
     assert(head);
 
-    if (head == head->next || !head->next)
-        return;
+    for (ty_htable_head *prev = head->next; prev != head; prev = prev->next) {
+        if (prev->next == head) {
+            prev->next = head->next;
+            head->next = NULL;
 
-    ty_htable_head *prev = get_prev(head);
-
-    prev->next = head->next;
-    head->next = NULL;
-}
-
-uint32_t ty_htable_hash_str(const char *s)
-{
-    assert(s);
-
-    uint32_t hash = 0;
-    while (*s)
-        hash = hash * 101 + (unsigned char)*s++;
-
-    return hash;
+            break;
+        }
+    }
 }

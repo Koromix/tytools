@@ -41,9 +41,20 @@ void ty_htable_release(ty_htable *table);
 ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key);
 
 void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *head);
+void ty_htable_insert(ty_htable_head *prev, ty_htable_head *head);
+
 void ty_htable_remove(ty_htable_head *head);
 
-uint32_t ty_htable_hash_str(const char* s);
+static inline uint32_t ty_htable_hash_str(const char *s)
+{
+    assert(s);
+
+    uint32_t hash = 0;
+    while (*s)
+        hash = hash * 101 + (unsigned char)*s++;
+
+    return hash;
+}
 
 #define ty_htable_entry(head, type, member) \
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
