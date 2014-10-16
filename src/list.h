@@ -105,9 +105,6 @@ static inline void ty_list_prepend_list(ty_list_head *head, ty_list_head *list)
     _ty_list_slice(head, head->next, list);
 }
 
-#define ty_list_entry(head, type, member) \
-    ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
-
 #define ty_list_foreach(cur, head) \
     if ((head)->next) \
         for (ty_list_head *cur = (head)->next, *TY_UNIQUE_ID(next) = cur->next; cur != (head); \

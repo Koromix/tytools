@@ -115,7 +115,7 @@ static void free_notification(struct device_notification *notification)
 static uint8_t find_controller_index(ty_list_head *controllers, const char *id)
 {
     ty_list_foreach(cur, controllers) {
-        struct usb_controller *usb_controller = ty_list_entry(cur, struct usb_controller, list);
+        struct usb_controller *usb_controller = ty_container_of(cur, struct usb_controller, list);
 
         if (strcmp(usb_controller->id, id) == 0)
             return usb_controller->index;
@@ -534,7 +534,7 @@ static int list_devices(ty_device_monitor *monitor)
         HidD_GetHidGuid(&hid_guid);
 
     ty_list_foreach(cur, &monitor->controllers) {
-        struct usb_controller *controller = ty_list_entry(cur, struct usb_controller, list);
+        struct usb_controller *controller = ty_container_of(cur, struct usb_controller, list);
 
         ty_list_remove(&controller->list);
         free(controller);
@@ -771,7 +771,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
         }
 
         ty_list_foreach(cur, &monitor->controllers) {
-            struct usb_controller *controller = ty_list_entry(cur, struct usb_controller, list);
+            struct usb_controller *controller = ty_container_of(cur, struct usb_controller, list);
             free_controller(controller);
         }
 
@@ -780,7 +780,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
             CloseHandle(monitor->event);
 
         ty_list_foreach(cur, &monitor->notifications) {
-            struct device_notification *notification = ty_list_entry(cur, struct device_notification, list);
+            struct device_notification *notification = ty_container_of(cur, struct device_notification, list);
             free_notification(notification);
         }
     }
@@ -814,7 +814,7 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
         goto cleanup;
 
     ty_list_foreach(cur, &notifications) {
-        struct device_notification *notification = ty_list_entry(cur, struct device_notification, list);
+        struct device_notification *notification = ty_container_of(cur, struct device_notification, list);
 
         r = 0;
         switch (notification->event) {

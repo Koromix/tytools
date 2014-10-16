@@ -149,12 +149,12 @@ void ty_board_manager_free(ty_board_manager *manager)
         ty_timer_free(manager->timer);
 
         ty_list_foreach(cur, &manager->callbacks) {
-            struct callback *callback = ty_list_entry(cur, struct callback, list);
+            struct callback *callback = ty_container_of(cur, struct callback, list);
             free(callback);
         }
 
         ty_list_foreach(cur, &manager->boards) {
-            ty_board *board = ty_list_entry(cur, ty_board, list);
+            ty_board *board = ty_container_of(cur, ty_board, list);
 
             board->manager = NULL;
             ty_board_unref(board);
@@ -215,7 +215,7 @@ void ty_board_manager_deregister_callback(ty_board_manager *manager, int id)
     assert(id >= 0);
 
     ty_list_foreach(cur, &manager->callbacks) {
-        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, list);
         if (callback->id == id) {
             drop_callback(callback);
             break;
@@ -226,7 +226,7 @@ void ty_board_manager_deregister_callback(ty_board_manager *manager, int id)
 static int trigger_callbacks(ty_board *board, ty_board_event event)
 {
     ty_list_foreach(cur, &board->manager->callbacks) {
-        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, list);
         int r;
 
         r = (*callback->f)(board, event, callback->udata);
@@ -393,7 +393,7 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
     switch (event) {
     case TY_DEVICE_EVENT_ADDED:
         ty_list_foreach(cur, &manager->boards) {
-            board = ty_list_entry(cur, ty_board, list);
+            board = ty_container_of(cur, ty_board, list);
 
             if (strcmp(ty_device_get_location(board->dev), location) == 0) {
                 r = load_board(board, dev, NULL);
@@ -412,13 +412,13 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
             return r;
 
         board->manager = manager;
-        ty_list_append(&manager->boards, &board->list);
+        ty_list_add_tail(&manager->boards, &board->list);
 
         return trigger_callbacks(board, TY_BOARD_EVENT_ADDED);
 
     case TY_DEVICE_EVENT_REMOVED:
         ty_list_foreach(cur, &manager->boards) {
-            board = ty_list_entry(cur, ty_board, list);
+            board = ty_container_of(cur, ty_board, list);
 
             if (board->dev == dev) {
                 close_board(board);
@@ -458,7 +458,7 @@ int ty_board_manager_refresh(ty_board_manager *manager)
 
     if (ty_timer_rearm(manager->timer)) {
         ty_list_foreach(cur, &manager->missing_boards) {
-            ty_board *board = ty_list_entry(cur, ty_board, missing);
+            ty_board *board = ty_container_of(cur, ty_board, missing);
             int timeout;
 
             if (board->state != TY_BOARD_STATE_CLOSED)
@@ -533,7 +533,7 @@ int ty_board_manager_list(ty_board_manager *manager, ty_board_manager_callback_f
     assert(f);
 
     ty_list_foreach(cur, &manager->boards) {
-        ty_board *board = ty_list_entry(cur, ty_board, list);
+        ty_board *board = ty_container_of(cur, ty_board, list);
         int r;
 
         if (board->state == TY_BOARD_STATE_ONLINE) {

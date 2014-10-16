@@ -51,12 +51,12 @@ int _ty_device_monitor_init(ty_device_monitor *monitor)
 void _ty_device_monitor_release(ty_device_monitor *monitor)
 {
     ty_list_foreach(cur, &monitor->callbacks) {
-        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, list);
         free(callback);
     }
 
     ty_htable_foreach(cur, &monitor->devices) {
-        ty_device *dev = ty_htable_entry(cur, ty_device, table);
+        ty_device *dev = ty_container_of(cur, ty_device, table);
 
         dev->monitor = NULL;
         ty_device_unref(dev);
@@ -106,7 +106,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
     assert(id >= 0);
 
     ty_list_foreach(cur, &monitor->callbacks) {
-        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, list);
         if (callback->id == id) {
             drop_callback(callback);
             break;
@@ -117,7 +117,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
 static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 {
     ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(key)) {
-        ty_device *dev = ty_htable_entry(cur, ty_device, table);
+        ty_device *dev = ty_container_of(cur, ty_device, table);
 
         if (strcmp(dev->key, key) == 0)
             return dev;
@@ -129,7 +129,7 @@ static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 static int trigger_callbacks(ty_device *dev, ty_device_event event)
 {
     ty_list_foreach(cur, &dev->monitor->callbacks) {
-        struct callback *callback = ty_list_entry(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, list);
         int r;
 
         r = (*callback->f)(dev, event, callback->udata);
@@ -179,7 +179,7 @@ int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *
     assert(f);
 
     ty_htable_foreach(cur, &monitor->devices) {
-        ty_device *dev = ty_htable_entry(cur, ty_device, table);
+        ty_device *dev = ty_container_of(cur, ty_device, table);
         int r;
 
         r = (*f)(dev, TY_DEVICE_EVENT_ADDED, udata);

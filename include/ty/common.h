@@ -73,6 +73,9 @@
 
 #define TY_UNIQUE_ID(prefix) TY_CONCAT(prefix, __LINE__)
 
+#define ty_container_of(head, type, member) \
+    ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
+
 TY_C_BEGIN
 
 typedef enum ty_err {

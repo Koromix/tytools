@@ -56,9 +56,6 @@ static inline uint32_t ty_htable_hash_str(const char *s)
     return hash;
 }
 
-#define ty_htable_entry(head, type, member) \
-    ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
-
 #define ty_htable_foreach(cur, table) \
     for (ty_htable_head **TY_UNIQUE_ID(head) = (table)->heads; TY_UNIQUE_ID(head) < (table)->heads + (table)->size; TY_UNIQUE_ID(head)++) \
         for (ty_htable_head *cur = *TY_UNIQUE_ID(head), *TY_UNIQUE_ID(next) = cur->next; cur != (ty_htable_head *)TY_UNIQUE_ID(head); \
