@@ -271,8 +271,8 @@ static void catch_sigint(int sig)
     caught_sigint = true;
 }
 
-TY_NORETURN static int child_exec(const char *path, const char *dir, const char * const args[],
-                                  const int fds[3], uint32_t flags, int cpipe)
+TY_FUNC_NORETURN static int child_exec(const char *path, const char *dir, const char * const args[],
+                                       const int fds[3], uint32_t flags, int cpipe)
 {
     struct child_report report;
     int r;
