@@ -48,14 +48,14 @@ static inline void _ty_list_insert(ty_list_head *prev, ty_list_head *next, ty_li
     head->next = next;
 }
 
-static inline void ty_list_append(ty_list_head *head, ty_list_head *n)
-{
-    _ty_list_insert(head->prev, head, n);
-}
-
-static inline void ty_list_prepend(ty_list_head *head, ty_list_head *n)
+static inline void ty_list_add(ty_list_head *head, ty_list_head *n)
 {
     _ty_list_insert(head, head->next, n);
+}
+
+static inline void ty_list_add_tail(ty_list_head *head, ty_list_head *n)
+{
+    _ty_list_insert(head->prev, head, n);
 }
 
 static inline void ty_list_remove(ty_list_head *head)
@@ -81,7 +81,7 @@ static inline bool ty_list_empty(ty_list_head *head)
     return head->next == head;
 }
 
-static inline void _ty_list_slice(ty_list_head *prev, ty_list_head *next, ty_list_head *head)
+static inline void _ty_list_splice(ty_list_head *prev, ty_list_head *next, ty_list_head *head)
 {
     if (ty_list_empty(head))
         return;
@@ -95,14 +95,14 @@ static inline void _ty_list_slice(ty_list_head *prev, ty_list_head *next, ty_lis
     ty_list_init(head);
 }
 
-static inline void ty_list_append_list(ty_list_head *head, ty_list_head *list)
+static inline void ty_list_splice(ty_list_head *head, ty_list_head *list)
 {
-    _ty_list_slice(head->prev, head, list);
+    _ty_list_splice(head, head->next, list);
 }
 
-static inline void ty_list_prepend_list(ty_list_head *head, ty_list_head *list)
+static inline void ty_list_splice_tail(ty_list_head *head, ty_list_head *list)
 {
-    _ty_list_slice(head, head->next, list);
+    _ty_list_splice(head->prev, head, list);
 }
 
 #define ty_list_foreach(cur, head) \

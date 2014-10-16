@@ -515,7 +515,7 @@ static int browse_controller_tree(ty_device_monitor *monitor, DEVINST inst, DWOR
     if (r < 0)
         goto error;
 
-    ty_list_append(&monitor->controllers, &controller->list);
+    ty_list_add_tail(&monitor->controllers, &controller->list);
 
     return 0;
 
@@ -575,7 +575,7 @@ static int post_device_event(ty_device_monitor *monitor, ty_device_event event, 
 
     EnterCriticalSection(&monitor->mutex);
 
-    ty_list_append(&monitor->notifications, &notification->list);
+    ty_list_add_tail(&monitor->notifications, &notification->list);
     SetEvent(monitor->event);
 
     LeaveCriticalSection(&monitor->mutex);
@@ -839,7 +839,7 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 cleanup:
     EnterCriticalSection(&monitor->mutex);
 
-    ty_list_prepend_list(&monitor->notifications, &notifications);
+    ty_list_splice(&monitor->notifications, &notifications);
     if (ty_list_empty(&monitor->notifications))
         ResetEvent(monitor->event);
 

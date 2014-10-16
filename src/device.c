@@ -89,7 +89,7 @@ int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_ca
     callback->f = f;
     callback->udata = udata;
 
-    ty_list_append(&monitor->callbacks, &callback->list);
+    ty_list_add_tail(&monitor->callbacks, &callback->list);
 
     return callback->id;
 }

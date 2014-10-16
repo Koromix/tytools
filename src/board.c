@@ -198,7 +198,7 @@ int ty_board_manager_register_callback(ty_board_manager *manager, ty_board_manag
     callback->f = f;
     callback->udata = udata;
 
-    ty_list_append(&manager->callbacks, &callback->list);
+    ty_list_add_tail(&manager->callbacks, &callback->list);
 
     return callback->id;
 }
@@ -357,7 +357,7 @@ static void close_board(ty_board *board)
 
     if (board->missing.prev)
         ty_list_remove(&board->missing);
-    ty_list_append(&board->manager->missing_boards, &board->missing);
+    ty_list_add_tail(&board->manager->missing_boards, &board->missing);
     board->missing_since = ty_millis();
 
     board->mode = NULL;
