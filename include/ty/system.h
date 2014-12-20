@@ -88,11 +88,6 @@ typedef struct ty_walk_history {
 
 typedef int ty_walk_func(const char *path, ty_walk_history *history, void *udata);
 
-enum {
-    TY_SPAWN_PATH = 1,
-    TY_SPAWN_ASYNC = 2
-};
-
 #ifdef _WIN32
 
 typedef void *ty_descriptor; // HANDLE
@@ -159,9 +154,6 @@ int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
 int ty_delete(const char *path, bool tolerant);
 
 int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags);
-
-int ty_spawn(const char *path, const char *dir, const char * const *args,
-             const ty_descriptor fds[3], int *rcode, uint32_t flags);
 
 int ty_timer_new(ty_timer **rtimer);
 void ty_timer_free(ty_timer *timer);

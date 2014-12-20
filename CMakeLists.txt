@@ -18,6 +18,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(ty C)
 
+find_package(Threads)
+list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUDEV REQUIRED libudev)
@@ -71,6 +74,7 @@ set(TY_SOURCES include/ty.h
                include/ty/device.h
                include/ty/firmware.h
                include/ty/ini.h
+               include/ty/process.h
                include/ty/system.h
 
                src/board.c
@@ -87,10 +91,12 @@ set(TY_SOURCES include/ty.h
                src/list.h
                src/system.c)
 if(WIN32)
-    list(APPEND TY_SOURCES src/system_win32.c
+    list(APPEND TY_SOURCES src/process_win32.c
+                           src/system_win32.c
                            src/device_win32.c)
 else()
-    list(APPEND TY_SOURCES src/system_unix.c
+    list(APPEND TY_SOURCES src/process_unix.c
+                           src/system_unix.c
                            src/system_linux.c
                            src/device_linux.c
                            src/device_unix.c)
