@@ -478,6 +478,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     assert(set->count <= 64);
 
     struct pollfd pfd[64];
+    uint64_t start;
     int r;
 
     for (size_t i = 0; i < set->count; i++) {
@@ -488,11 +489,17 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     if (timeout < 0)
         timeout = -1;
 
+    start = ty_millis();
+
 restart:
-    r = poll(pfd, set->count, timeout);
+    r = poll(pfd, set->count, ty_adjust_timeout(timeout, start));
     if (r < 0) {
-        if (errno == EINTR)
+        switch (errno) {
+        case EINTR:
             goto restart;
+        case ENOMEM:
+            return ty_error(TY_ERROR_MEMORY, NULL);
+        }
         return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
     }
     if (!r)
