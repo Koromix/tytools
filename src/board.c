@@ -438,18 +438,6 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
     __builtin_unreachable();
 }
 
-static int adjust_timeout(int timeout, uint64_t start)
-{
-    if (timeout < 0)
-        return -1;
-
-    uint64_t now = ty_millis();
-
-    if (now > start + (uint64_t)timeout)
-        return 0;
-    return (int)(start + (uint64_t)timeout - now);
-}
-
 int ty_board_manager_refresh(ty_board_manager *manager)
 {
     assert(manager);
@@ -464,7 +452,7 @@ int ty_board_manager_refresh(ty_board_manager *manager)
             if (board->state != TY_BOARD_STATE_CLOSED)
                 continue;
 
-            timeout = adjust_timeout(drop_board_delay, board->missing_since);
+            timeout = ty_adjust_timeout(drop_board_delay, board->missing_since);
             if (timeout) {
                 r = ty_timer_set(manager->timer, timeout, 0);
                 if (r < 0)
@@ -521,7 +509,7 @@ int ty_board_manager_wait(ty_board_manager *manager, ty_board_manager_wait_func 
                 return (int)r;
         }
 
-        r = ty_poll(&set, adjust_timeout(timeout, start));
+        r = ty_poll(&set, ty_adjust_timeout(timeout, start));
     } while (r > 0);
 
     return r;

@@ -28,6 +28,18 @@
 int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow);
 #endif
 
+int ty_adjust_timeout(int timeout, uint64_t start)
+{
+    if (timeout < 0)
+        return -1;
+
+    uint64_t now = ty_millis();
+
+    if (now > start + (uint64_t)timeout)
+        return 0;
+    return (int)(start + (uint64_t)timeout - now);
+}
+
 bool ty_path_is_absolute(const char *path)
 {
     assert(path);

@@ -143,6 +143,8 @@ bool ty_win32_test_version(ty_win32_version version);
 uint64_t ty_millis(void);
 void ty_delay(unsigned int ms);
 
+int ty_adjust_timeout(int timeout, uint64_t start);
+
 bool ty_path_is_absolute(const char *path);
 
 int ty_path_split(const char *path, char **rdirectory, char **rname);
