@@ -263,7 +263,12 @@ static int teensy_identify(ty_board *board)
 
     board->model = NULL;
     for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
-        if ((*cur)->usage == desc.usage) {
+        const ty_board_model *model = *cur;
+
+        if (model->vtable != &teensy_model_vtable)
+            continue;
+
+        if (model->usage == desc.usage) {
             board->model = *cur;
             break;
         }
