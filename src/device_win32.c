@@ -23,8 +23,8 @@
 #include <windows.h>
 #include <cfgmgr32.h>
 #include <dbt.h>
-#include <hidpi.h>
 #include <hidsdi.h>
+#include <hidpi.h>
 #include <process.h>
 #include <setupapi.h>
 #include <usb.h>
@@ -81,10 +81,10 @@ struct device_notification {
 
 #ifdef __MINGW32__
 // MinGW may miss these
-HIDAPI void NTAPI HidD_GetHidGuid(LPGUID HidGuid);
-HIDAPI BOOLEAN NTAPI HidD_GetSerialNumberString(HANDLE device, PVOID buffer, ULONG buffer_len);
-HIDAPI BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject, PHIDP_PREPARSED_DATA *PreparsedData);
-HIDAPI BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
+__declspec(dllimport) void NTAPI HidD_GetHidGuid(LPGUID HidGuid);
+__declspec(dllimport) BOOLEAN NTAPI HidD_GetSerialNumberString(HANDLE device, PVOID buffer, ULONG buffer_len);
+__declspec(dllimport) BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject, PHIDP_PREPARSED_DATA *PreparsedData);
+__declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
 #endif
 
 static const char *monitor_class_name = "ty_device_monitor";
