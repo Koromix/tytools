@@ -73,10 +73,15 @@ struct ty_board_mode_ {
     uint16_t capabilities;
 };
 
+struct _ty_board_model_vtable {
+};
+
 struct ty_board_model_ {
     const char *name;
     const char *mcu;
     const char *desc;
+
+    const struct _ty_board_model_vtable *vtable;
 
     size_t code_size;
 };

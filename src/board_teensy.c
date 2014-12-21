@@ -47,13 +47,13 @@ struct ty_board_mode {
     const char *flags;
 };
 
-static const struct _ty_board_mode_vtable teensy_vtable;
+static const struct _ty_board_mode_vtable teensy_mode_vtable;
 
 const ty_board_mode teensy_bootloader_mode = {
     .name = "bootloader",
     .desc = "HalfKay Bootloader",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_HID,
     .vid = 0x16C0,
@@ -66,7 +66,7 @@ const ty_board_mode teensy_flightsim_mode = {
     .name = "flightsim",
     .desc = "FlightSim",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_HID,
     .vid = 0x16C0,
@@ -82,7 +82,7 @@ const ty_board_mode teensy_hid_mode = {
     .name = "hid",
     .desc = "HID",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_HID,
     .vid = 0x16C0,
@@ -97,7 +97,7 @@ const ty_board_mode teensy_midi_mode = {
     .name = "midi",
     .desc = "MIDI",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_HID,
     .vid = 0x16C0,
@@ -112,7 +112,7 @@ const ty_board_mode teensy_rawhid_mode = {
     .name = "rawhid",
     .desc = "Raw HID",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_HID,
     .vid = 0x16C0,
@@ -127,7 +127,7 @@ const ty_board_mode teensy_serial_mode = {
     .name = "serial",
     .desc = "Serial",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_SERIAL,
     .vid = 0x16C0,
@@ -142,7 +142,7 @@ const ty_board_mode teensy_serial_hid_mode = {
     .name = "serial_hid",
     .desc = "Serial HID",
 
-    .vtable = &teensy_vtable,
+    .vtable = &teensy_mode_vtable,
 
     .type = TY_DEVICE_SERIAL,
     .vid = 0x16C0,
@@ -153,10 +153,14 @@ const ty_board_mode teensy_serial_hid_mode = {
     .flags = "-DUSB_SERIAL_HID -DLAYOUT_US_ENGLISH"
 };
 
+static const struct _ty_board_model_vtable teensy_model_vtable;
+
 const ty_board_model teensy_pp10_model = {
     .name = "teensy++10",
     .mcu = "at90usb646",
     .desc = "Teensy++ 1.0",
+
+    .vtable = &teensy_model_vtable,
 
     .usage = 0x1A,
     .halfkay_version = 0,
@@ -175,6 +179,8 @@ const ty_board_model teensy_20_model = {
     .mcu = "atmega32u4",
     .desc = "Teensy 2.0",
 
+    .vtable = &teensy_model_vtable,
+
     .usage = 0x1B,
     .halfkay_version = 0,
     .code_size = 32256,
@@ -191,6 +197,8 @@ const ty_board_model teensy_pp20_model = {
     .name = "teensy++20",
     .mcu = "at90usb1286",
     .desc = "Teensy++ 2.0",
+
+    .vtable = &teensy_model_vtable,
 
     .usage = 0x1C,
     .halfkay_version = 1,
@@ -209,6 +217,8 @@ const ty_board_model teensy_30_model = {
     .mcu = "mk20dx128",
     .desc = "Teensy 3.0",
 
+    .vtable = &teensy_model_vtable,
+
     .usage = 0x1D,
     .halfkay_version = 2,
     .code_size = 131072,
@@ -225,6 +235,8 @@ const ty_board_model teensy_31_model = {
     .name = "teensy31",
     .mcu = "mk20dx256",
     .desc = "Teensy 3.1",
+
+    .vtable = &teensy_model_vtable,
 
     .usage = 0x1E,
     .halfkay_version = 2,
@@ -427,11 +439,14 @@ static int teensy_reboot(ty_board *board)
     return r;
 }
 
-static const struct _ty_board_mode_vtable teensy_vtable = {
+static const struct _ty_board_mode_vtable teensy_mode_vtable = {
     .identify = teensy_identify,
     .read_serial = teensy_read_serial,
     .write_serial = teensy_write_serial,
     .upload = teensy_upload,
     .reset = teensy_reset,
     .reboot = teensy_reboot
+};
+
+static const struct _ty_board_model_vtable teensy_model_vtable = {
 };
