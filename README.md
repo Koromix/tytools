@@ -69,14 +69,14 @@ You will need to install CMake and MinGW (with make) to build ty under Windows. 
 
 An easier option is to cross-compile the windows binary from Linux. You need to install MinGW-w64 first.
 
-On Debian and Ubuntu, install the mingw-w64 package:
+On Debian and Ubuntu, install cmake and mingw-w64:
 ```bash
-sudo apt-get install mingw-w64
+sudo apt-get install cmake mingw-w64
 ```
 
 If you use Arch Linux, execute as root:
-```
-pacman -S --needed mingw-w64-toolchain
+```bash
+pacman -S --needed cmake mingw-w64-toolchain
 ```
 
 You can then use the appropriate toolchain file provided in the contrib/cmake directory:
