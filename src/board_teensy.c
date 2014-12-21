@@ -102,7 +102,7 @@ const ty_board_mode teensy_midi_mode = {
     .type = TY_DEVICE_HID,
     .vid = 0x16C0,
     .pid = 0x485,
-    .iface = 0,
+    .iface = 1,
     .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
 
     .flags = "-DUSB_MIDI -DLAYOUT_US_ENGLISH"
