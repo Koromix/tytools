@@ -26,15 +26,6 @@
 #include <shlobj.h>
 #include "ty/system.h"
 
-struct ty_timer {
-    CRITICAL_SECTION mutex;
-
-    HANDLE h;
-
-    HANDLE event;
-    uint64_t ticks;
-};
-
 typedef ULONGLONG WINAPI GetTickCount64_func(void);
 typedef WINBOOL WINAPI GetFileInformationByHandleEx_func(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize);
 
@@ -45,7 +36,6 @@ static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
 
 static const uint64_t delta_epoch = 11644473600000;
 
-static HANDLE timer_queue;
 static DWORD orig_mode;
 
 HANDLE _ty_win32_descriptors[3];
@@ -309,124 +299,6 @@ int ty_delete(const char *path, bool tolerant)
     }
 
     return 0;
-}
-
-static void free_timer_queue(void)
-{
-    DeleteTimerQueue(timer_queue);
-}
-
-int ty_timer_new(ty_timer **rtimer)
-{
-    assert(rtimer);
-
-    ty_timer *timer;
-    int r;
-
-    if (!timer_queue) {
-        timer_queue = CreateTimerQueue();
-        if (!timer_queue)
-            return ty_error(TY_ERROR_SYSTEM, "CreateTimerQueue() failed: %s", ty_win32_strerror(0));
-
-        atexit(free_timer_queue);
-    }
-
-    timer = calloc(1, sizeof(*timer));
-    if (!timer)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    // Must be done first because ty_timer_free can't check if mutex is initialized
-    // (without an annoying mutex_initialized variable anyway).
-    InitializeCriticalSection(&timer->mutex);
-
-    timer->event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (!timer->event) {
-        r = ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
-        goto error;
-    }
-
-    *rtimer = timer;
-    return 0;
-
-error:
-    ty_timer_free(timer);
-    return r;
-}
-
-void ty_timer_free(ty_timer *timer)
-{
-    if (timer) {
-        if (timer->h)
-            DeleteTimerQueueTimer(timer_queue, timer->h, NULL);
-
-        if (timer->event)
-            CloseHandle(timer->event);
-        DeleteCriticalSection(&timer->mutex);
-    }
-
-    free(timer);
-}
-
-void ty_timer_get_descriptors(ty_timer *timer, ty_descriptor_set *set, int id)
-{
-    assert(timer);
-    assert(set);
-
-    ty_descriptor_set_add(set, timer->event, id);
-}
-
-static void __stdcall timer_callback(void *udata, BOOLEAN timer_or_wait)
-{
-    TY_UNUSED(timer_or_wait);
-
-    ty_timer *timer = udata;
-
-    EnterCriticalSection(&timer->mutex);
-
-    timer->ticks++;
-    SetEvent(timer->event);
-
-    LeaveCriticalSection(&timer->mutex);
-}
-
-int ty_timer_set(ty_timer *timer, int value, unsigned int period)
-{
-    assert(timer);
-
-    if (timer->h) {
-        DeleteTimerQueueTimer(timer_queue, timer->h, NULL);
-        timer->h = NULL;
-    }
-
-    ty_timer_rearm(timer);
-
-    if (!value)
-        value = 1;
-    if (value > 0) {
-        BOOL ret = CreateTimerQueueTimer(&timer->h, timer_queue, timer_callback, timer, (DWORD)value, period, 0);
-        if (!ret)
-            return ty_error(TY_ERROR_SYSTEM, "CreateTimerQueueTimer() failed: %s", ty_win32_strerror(0));
-    }
-
-    return 0;
-}
-
-uint64_t ty_timer_rearm(ty_timer *timer)
-{
-    assert(timer);
-
-    uint64_t ticks;
-
-    EnterCriticalSection(&timer->mutex);
-
-    ticks = timer->ticks;
-
-    timer->ticks = 0;
-    ResetEvent(timer->event);
-
-    LeaveCriticalSection(&timer->mutex);
-
-    return ticks;
 }
 
 int ty_poll(const ty_descriptor_set *set, int timeout)

@@ -21,6 +21,7 @@
 #include "compat.h"
 #include <sys/timerfd.h>
 #include <unistd.h>
+#include "ty/timer.h"
 #include "ty/system.h"
 
 struct ty_timer {

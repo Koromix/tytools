@@ -24,6 +24,7 @@
 #include "ty/firmware.h"
 #include "list.h"
 #include "ty/system.h"
+#include "ty/timer.h"
 
 struct ty_board_manager {
     ty_device_monitor *monitor;

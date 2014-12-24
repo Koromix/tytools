@@ -76,6 +76,7 @@ set(TY_SOURCES include/ty.h
                include/ty/ini.h
                include/ty/process.h
                include/ty/system.h
+               include/ty/timer.h
 
                src/board.c
                src/board_teensy.c
@@ -93,13 +94,14 @@ set(TY_SOURCES include/ty.h
 if(WIN32)
     list(APPEND TY_SOURCES src/process_win32.c
                            src/system_win32.c
-                           src/device_win32.c)
+                           src/device_win32.c
+                           src/timer_win32.c)
 else()
     list(APPEND TY_SOURCES src/process_unix.c
                            src/system_unix.c
-                           src/system_linux.c
                            src/device_linux.c
-                           src/device_unix.c)
+                           src/device_unix.c
+                           src/timer_linux.c)
 endif()
 
 set(TYC_SOURCES cli/list.c

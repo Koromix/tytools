@@ -114,8 +114,6 @@ typedef struct ty_descriptor_set {
     int id[64];
 } ty_descriptor_set;
 
-typedef struct ty_timer ty_timer;
-
 enum {
     TY_TERMINAL_RAW = 0x1,
     TY_TERMINAL_SILENT = 0x2
@@ -154,14 +152,6 @@ int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
 int ty_delete(const char *path, bool tolerant);
 
 int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags);
-
-int ty_timer_new(ty_timer **rtimer);
-void ty_timer_free(ty_timer *timer);
-
-void ty_timer_get_descriptors(ty_timer *timer, ty_descriptor_set *set, int id);
-
-int ty_timer_set(ty_timer *timer, int value, unsigned int period);
-uint64_t ty_timer_rearm(ty_timer *timer);
 
 void ty_descriptor_set_clear(ty_descriptor_set *set);
 void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
