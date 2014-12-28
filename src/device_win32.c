@@ -840,7 +840,7 @@ cleanup:
     EnterCriticalSection(&monitor->mutex);
 
     ty_list_splice(&monitor->notifications, &notifications);
-    if (ty_list_empty(&monitor->notifications))
+    if (ty_list_is_empty(&monitor->notifications))
         ResetEvent(monitor->event);
 
     LeaveCriticalSection(&monitor->mutex);

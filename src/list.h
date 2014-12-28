@@ -76,14 +76,14 @@ static inline void ty_list_replace(ty_list_head *head, ty_list_head *n)
     ty_list_init(head);
 }
 
-static inline bool ty_list_empty(const ty_list_head *head)
+static inline bool ty_list_is_empty(const ty_list_head *head)
 {
     return head->next == head;
 }
 
 static inline void _ty_list_splice(ty_list_head *prev, ty_list_head *next, ty_list_head *head)
 {
-    if (ty_list_empty(head))
+    if (ty_list_is_empty(head))
         return;
 
     head->next->prev = prev;

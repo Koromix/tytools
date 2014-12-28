@@ -395,7 +395,7 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
                 if (r <= 0)
                     return r;
 
-                if (ty_list_empty(&manager->missing_boards))
+                if (ty_list_is_empty(&manager->missing_boards))
                     ty_timer_set(manager->timer, -1, 0);
 
                 return trigger_callbacks(board, TY_BOARD_EVENT_CHANGED);
