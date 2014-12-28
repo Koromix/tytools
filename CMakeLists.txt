@@ -37,6 +37,12 @@ if(LINUX)
     list(APPEND LIBRARIES ${LIBUDEV_LIBRARIES})
 endif()
 
+if(APPLE)
+    if(POLICY CMP0042)
+        cmake_policy(SET CMP0042 NEW)
+    endif()
+endif()
+
 if(WIN32)
     list(APPEND LIBRARIES setupapi hid)
 endif()
