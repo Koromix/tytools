@@ -118,7 +118,8 @@ int ty_timer_set(ty_timer *timer, int value, unsigned int period)
     assert(timer);
 
     if (timer->h) {
-        DeleteTimerQueueTimer(timer_queue, timer->h, NULL);
+        // INVALID_HANDLE_VALUE = wait for any running callback to complete (NULL does not wait)
+        DeleteTimerQueueTimer(timer_queue, timer->h, INVALID_HANDLE_VALUE);
         timer->h = NULL;
     }
 
