@@ -240,8 +240,7 @@ int ty_process_spawn(const char *path, const char *dir, const char * const args[
     struct child_report report;
     int r;
 
-    if (rdesc) {assert(path);
-        assert(args);
+    if (rdesc) {
         r = init_process_table();
         if (r < 0)
             goto cleanup;
