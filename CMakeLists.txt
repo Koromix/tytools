@@ -97,11 +97,16 @@ if(WIN32)
                            src/device_win32.c
                            src/timer_win32.c)
 else()
-    list(APPEND TY_SOURCES src/process_unix.c
-                           src/system_unix.c
-                           src/device_linux.c
-                           src/device_unix.c
-                           src/timer_linux.c)
+    list(APPEND TY_SOURCES src/device_posix.c
+                           src/process_posix.c
+                           src/system_posix.c)
+
+    if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+        list(APPEND TY_SOURCES src/device_linux.c
+                               src/timer_linux.c)
+    else()
+        message(FATAL_ERROR "Unsupported platform")
+    endif()
 endif()
 
 set(TYC_SOURCES cli/list.c
