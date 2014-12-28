@@ -78,7 +78,7 @@ void ty_delay(unsigned int ms)
 
 // Unlike ty_path_split, trailing slashes are ignored, so "a/b/" returns "b/". This is unusual
 // but this way we don't have to allocate a new string or alter path itself.
-const char *get_basename(const char *path)
+static const char *get_basename(const char *path)
 {
     assert(path);
 
