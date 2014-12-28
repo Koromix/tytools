@@ -49,7 +49,7 @@ struct ty_board_mode {
 
 static const struct _ty_board_mode_vtable teensy_mode_vtable;
 
-const ty_board_mode teensy_bootloader_mode = {
+const ty_board_mode _ty_teensy_bootloader_mode = {
     .name = "bootloader",
     .desc = "HalfKay Bootloader",
 
@@ -62,7 +62,7 @@ const ty_board_mode teensy_bootloader_mode = {
     .capabilities = TY_BOARD_CAPABILITY_IDENTIFY | TY_BOARD_CAPABILITY_UPLOAD | TY_BOARD_CAPABILITY_RESET
 };
 
-const ty_board_mode teensy_flightsim_mode = {
+const ty_board_mode _ty_teensy_flightsim_mode = {
     .name = "flightsim",
     .desc = "FlightSim",
 
@@ -78,7 +78,7 @@ const ty_board_mode teensy_flightsim_mode = {
     .flags = "-DUSB_FLIGHTSIM -DLAYOUT_US_ENGLISH"
 };
 
-const ty_board_mode teensy_hid_mode = {
+const ty_board_mode _ty_teensy_hid_mode = {
     .name = "hid",
     .desc = "HID",
 
@@ -93,7 +93,7 @@ const ty_board_mode teensy_hid_mode = {
     .flags = "-DUSB_HID -DLAYOUT_US_ENGLISH"
 };
 
-const ty_board_mode teensy_midi_mode = {
+const ty_board_mode _ty_teensy_midi_mode = {
     .name = "midi",
     .desc = "MIDI",
 
@@ -108,7 +108,7 @@ const ty_board_mode teensy_midi_mode = {
     .flags = "-DUSB_MIDI -DLAYOUT_US_ENGLISH"
 };
 
-const ty_board_mode teensy_rawhid_mode = {
+const ty_board_mode _ty_teensy_rawhid_mode = {
     .name = "rawhid",
     .desc = "Raw HID",
 
@@ -123,7 +123,7 @@ const ty_board_mode teensy_rawhid_mode = {
     .flags = "-DUSB_RAWHID -DLAYOUT_US_ENGLISH"
 };
 
-const ty_board_mode teensy_serial_mode = {
+const ty_board_mode _ty_teensy_serial_mode = {
     .name = "serial",
     .desc = "Serial",
 
@@ -138,7 +138,7 @@ const ty_board_mode teensy_serial_mode = {
     .flags = "-DUSB_SERIAL -DLAYOUT_US_ENGLISH"
 };
 
-const ty_board_mode teensy_serial_hid_mode = {
+const ty_board_mode _ty_teensy_serial_hid_mode = {
     .name = "serial_hid",
     .desc = "Serial HID",
 
@@ -155,7 +155,7 @@ const ty_board_mode teensy_serial_hid_mode = {
 
 static const struct _ty_board_model_vtable teensy_model_vtable;
 
-const ty_board_model teensy_pp10_model = {
+const ty_board_model _ty_teensy_pp10_model = {
     .name = "teensy++10",
     .mcu = "at90usb646",
     .desc = "Teensy++ 1.0",
@@ -174,7 +174,7 @@ const ty_board_model teensy_pp10_model = {
     .ldflags = "-mmcu=at90usb646"
 };
 
-const ty_board_model teensy_20_model = {
+const ty_board_model _ty_teensy_20_model = {
     .name = "teensy20",
     .mcu = "atmega32u4",
     .desc = "Teensy 2.0",
@@ -193,7 +193,7 @@ const ty_board_model teensy_20_model = {
     .ldflags = "-mmcu=atmega32u4"
 };
 
-const ty_board_model teensy_pp20_model = {
+const ty_board_model _ty_teensy_pp20_model = {
     .name = "teensy++20",
     .mcu = "at90usb1286",
     .desc = "Teensy++ 2.0",
@@ -212,7 +212,7 @@ const ty_board_model teensy_pp20_model = {
     .ldflags = "-mmcu=at90usb1286"
 };
 
-const ty_board_model teensy_30_model = {
+const ty_board_model _ty_teensy_30_model = {
     .name = "teensy30",
     .mcu = "mk20dx128",
     .desc = "Teensy 3.0",
@@ -231,7 +231,7 @@ const ty_board_model teensy_30_model = {
     .ldflags = "-mcpu=cortex-m4 -mthumb -T\"$arduino/hardware/teensy/cores/teensy3/mk20dx128.ld\""
 };
 
-const ty_board_model teensy_31_model = {
+const ty_board_model _ty_teensy_31_model = {
     .name = "teensy31",
     .mcu = "mk20dx256",
     .desc = "Teensy 3.1",

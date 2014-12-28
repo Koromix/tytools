@@ -60,48 +60,48 @@ struct firmware_signature {
     uint8_t magic[8];
 };
 
-extern const ty_board_mode teensy_bootloader_mode;
-extern const ty_board_mode teensy_flightsim_mode;
-extern const ty_board_mode teensy_hid_mode;
-extern const ty_board_mode teensy_midi_mode;
-extern const ty_board_mode teensy_rawhid_mode;
-extern const ty_board_mode teensy_serial_mode;
-extern const ty_board_mode teensy_serial_hid_mode;
+extern const ty_board_mode _ty_teensy_bootloader_mode;
+extern const ty_board_mode _ty_teensy_flightsim_mode;
+extern const ty_board_mode _ty_teensy_hid_mode;
+extern const ty_board_mode _ty_teensy_midi_mode;
+extern const ty_board_mode _ty_teensy_rawhid_mode;
+extern const ty_board_mode _ty_teensy_serial_mode;
+extern const ty_board_mode _ty_teensy_serial_hid_mode;
 
 const ty_board_mode *ty_board_modes[] = {
-    &teensy_bootloader_mode,
-    &teensy_flightsim_mode,
-    &teensy_hid_mode,
-    &teensy_midi_mode,
-    &teensy_rawhid_mode,
-    &teensy_serial_mode,
-    &teensy_serial_hid_mode,
+    &_ty_teensy_bootloader_mode,
+    &_ty_teensy_flightsim_mode,
+    &_ty_teensy_hid_mode,
+    &_ty_teensy_midi_mode,
+    &_ty_teensy_rawhid_mode,
+    &_ty_teensy_serial_mode,
+    &_ty_teensy_serial_hid_mode,
     NULL
 };
 
-extern const ty_board_model teensy_pp10_model;
-extern const ty_board_model teensy_20_model;
-extern const ty_board_model teensy_pp20_model;
-extern const ty_board_model teensy_30_model;
-extern const ty_board_model teensy_31_model;
+extern const ty_board_model _ty_teensy_pp10_model;
+extern const ty_board_model _ty_teensy_20_model;
+extern const ty_board_model _ty_teensy_pp20_model;
+extern const ty_board_model _ty_teensy_30_model;
+extern const ty_board_model _ty_teensy_31_model;
 
 const ty_board_model *ty_board_models[] = {
 #ifdef TY_EXPERIMENTAL
-    &teensy_pp10_model,
-    &teensy_20_model,
-    &teensy_pp20_model,
+    &_ty_teensy_pp10_model,
+    &_ty_teensy_20_model,
+    &_ty_teensy_pp20_model,
 #endif
-    &teensy_30_model,
-    &teensy_31_model,
+    &_ty_teensy_30_model,
+    &_ty_teensy_31_model,
     NULL
 };
 
 static const struct firmware_signature signatures[] = {
-    {&teensy_pp10_model, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&teensy_20_model,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&teensy_pp20_model, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&teensy_30_model,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
-    {&teensy_31_model,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+    {&_ty_teensy_pp10_model, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
+    {&_ty_teensy_20_model,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
+    {&_ty_teensy_pp20_model, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
+    {&_ty_teensy_30_model,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+    {&_ty_teensy_31_model,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
     {0}
 };
 
