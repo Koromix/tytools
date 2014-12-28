@@ -118,6 +118,8 @@ else()
     if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         list(APPEND TY_SOURCES src/device_linux.c
                                src/timer_linux.c)
+    elseif(APPLE)
+        list(APPEND TY_SOURCES src/timer_kqueue.c)
     else()
         message(FATAL_ERROR "Unsupported platform")
     endif()
