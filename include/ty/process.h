@@ -38,7 +38,7 @@ enum {
 int ty_process_spawn(const char *name, const char *dir, const char * const args[], const ty_descriptor desc[3], uint32_t flags, ty_descriptor *rdesc);
 int ty_process_wait(ty_descriptor desc, int timeout);
 
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
 void ty_process_handle_sigchld(int signum);
 #endif
 

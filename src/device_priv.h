@@ -58,7 +58,7 @@ struct ty_device {
     void *udata;
 };
 
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
 
 struct ty_handle {
     ty_device *dev;

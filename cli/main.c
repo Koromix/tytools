@@ -197,7 +197,7 @@ int get_board(ty_board **rboard)
     return 0;
 }
 
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
 
 static void handle_sigchld(int sig)
 {
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 {
     int r;
 
-#ifdef __unix__
+#if defined(__unix__) || defined(__APPLE__)
     setup_signals();
 #endif
 
