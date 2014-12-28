@@ -112,6 +112,73 @@ static struct process *find_process(pid_t pid)
     return NULL;
 }
 
+#ifdef HAVE_PIPE2
+
+static int create_pipe(int pfd[2], int flags)
+{
+    int r = pipe2(pfd, flags);
+    if (r < 0)
+        return ty_error(TY_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
+
+    return 0;
+}
+
+#else
+
+// Racy alternative, not having CLOEXEC by default (and explictely disabled
+// for standard descriptors) is one of the most pervasive design defects ever.
+static int create_pipe(int pfd[2], int flags)
+{
+    int fds[2], r;
+
+    r = pipe(fds);
+    if (r < 0)
+        return ty_error(TY_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
+
+    if (flags & O_CLOEXEC) {
+        r = fcntl(fds[0], F_GETFD, 0);
+        r = fcntl(fds[0], F_SETFD, r | FD_CLOEXEC);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_SYSTEM, "fcntl() failed: %s", strerror(errno));
+            goto error;
+        }
+
+        r = fcntl(fds[1], F_GETFD, 0);
+        r = fcntl(fds[1], F_SETFD, r | FD_CLOEXEC);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_SYSTEM, "fcntl() failed: %s", strerror(errno));
+            goto error;
+        }
+    }
+
+    if (flags & O_NONBLOCK) {
+        r = fcntl(fds[0], F_GETFL, 0);
+        r = fcntl(fds[0], F_SETFL, r | O_NONBLOCK);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_SYSTEM, "fcntl() failed: %s", strerror(errno));
+            goto error;
+        }
+
+        r = fcntl(fds[1], F_GETFL, 0);
+        r = fcntl(fds[1], F_SETFL, r | O_NONBLOCK);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_SYSTEM, "fcntl() failed: %s", strerror(errno));
+            goto error;
+        }
+    }
+
+    pfd[0] = fds[0];
+    pfd[1] = fds[1];
+    return 0;
+
+error:
+    close(fds[0]);
+    close(fds[1]);
+    return r;
+}
+
+#endif
+
 static void child_send_error(ty_err err, const char *msg, void *udata)
 {
     TY_UNUSED(err);
@@ -253,18 +320,14 @@ int ty_process_spawn(const char *path, const char *dir, const char * const args[
         proc->pipe[0] = -1;
         proc->pipe[1] = -1;
 
-        r = pipe2(proc->pipe, O_CLOEXEC | O_NONBLOCK);
-        if (r < 0) {
-            r = ty_error(TY_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
+        r = create_pipe(proc->pipe, O_CLOEXEC | O_NONBLOCK);
+        if (r < 0)
             goto cleanup;
-        }
     }
 
-    r = pipe2(cpipe, O_CLOEXEC);
-    if (r < 0) {
-        r = ty_error(TY_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
+    r = create_pipe(cpipe, O_CLOEXEC);
+    if (r < 0)
         goto cleanup;
-    }
 
     r = fork();
     if (r < 0) {

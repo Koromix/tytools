@@ -24,6 +24,7 @@
 #cmakedefine HAVE_GETDELIM
 #cmakedefine HAVE_GETLINE
 #cmakedefine HAVE_FSTATAT
+#cmakedefine HAVE_PIPE2
 
 #cmakedefine HAVE_STAT_MTIM
 #cmakedefine HAVE_STAT_MTIMESPEC
