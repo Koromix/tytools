@@ -35,11 +35,11 @@ enum {
     TY_PROCESS_FAILURE
 };
 
-int ty_process_spawn(const char *name, const char *dir, const char * const args[], const ty_descriptor desc[3], uint32_t flags, ty_descriptor *rdesc);
-int ty_process_wait(ty_descriptor desc, int timeout);
+TY_PUBLIC int ty_process_spawn(const char *name, const char *dir, const char * const args[], const ty_descriptor desc[3], uint32_t flags, ty_descriptor *rdesc);
+TY_PUBLIC int ty_process_wait(ty_descriptor desc, int timeout);
 
 #if defined(__unix__) || defined(__APPLE__)
-void ty_process_handle_sigchld(int signum);
+TY_PUBLIC void ty_process_handle_sigchld(int signum);
 #endif
 
 TY_C_END

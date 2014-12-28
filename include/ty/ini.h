@@ -28,12 +28,12 @@ typedef struct ty_ini ty_ini;
 
 typedef int ty_ini_callback_func(ty_ini *ini, const char *section, char *key, char *value, void *udata);
 
-int ty_ini_open(const char *path, ty_ini **rini);
-void ty_ini_free(ty_ini *ini);
+TY_PUBLIC int ty_ini_open(const char *path, ty_ini **rini);
+TY_PUBLIC void ty_ini_free(ty_ini *ini);
 
-int ty_ini_next(ty_ini *ini, const char **rsection, char **rkey, char **rvalue);
+TY_PUBLIC int ty_ini_next(ty_ini *ini, const char **rsection, char **rkey, char **rvalue);
 
-int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata);
+TY_PUBLIC int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata);
 
 TY_C_END
 

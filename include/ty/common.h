@@ -47,6 +47,7 @@
 #endif
 
 #ifdef __GNUC__
+    #define TY_PUBLIC __attribute__((__visibility__("default")))
     #define TY_FUNC_NORETURN __attribute__((__noreturn__))
 
     #define TY_INIT(name) \
@@ -98,11 +99,11 @@ typedef enum ty_err {
 
 typedef void ty_error_func(ty_err err, const char *msg, void *udata);
 
-void ty_error_redirect(ty_error_func *f, void *udata);
-void ty_error_mask(ty_err err);
-void ty_error_unmask(void);
+TY_PUBLIC void ty_error_redirect(ty_error_func *f, void *udata);
+TY_PUBLIC void ty_error_mask(ty_err err);
+TY_PUBLIC void ty_error_unmask(void);
 
-int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
+TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 
 TY_C_END
 

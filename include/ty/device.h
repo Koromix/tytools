@@ -68,54 +68,54 @@ enum {
     TY_SERIAL_NOHUP_CLOSE  = 0x80,
 };
 
-int ty_device_monitor_new(ty_device_monitor **rmonitor);
-void ty_device_monitor_free(ty_device_monitor *monitor);
+TY_PUBLIC int ty_device_monitor_new(ty_device_monitor **rmonitor);
+TY_PUBLIC void ty_device_monitor_free(ty_device_monitor *monitor);
 
-void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata);
-void *ty_device_monitor_get_udata(const ty_device_monitor *monitor);
+TY_PUBLIC void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata);
+TY_PUBLIC void *ty_device_monitor_get_udata(const ty_device_monitor *monitor);
 
-void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, struct ty_descriptor_set *set, int id);
+TY_PUBLIC void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, struct ty_descriptor_set *set, int id);
 
-int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
-void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id);
+TY_PUBLIC int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
+TY_PUBLIC void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id);
 
-int ty_device_monitor_refresh(ty_device_monitor *monitor);
+TY_PUBLIC int ty_device_monitor_refresh(ty_device_monitor *monitor);
 
-int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
+TY_PUBLIC int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata);
 
-ty_device *ty_device_ref(ty_device *dev);
-void ty_device_unref(ty_device *dev);
+TY_PUBLIC ty_device *ty_device_ref(ty_device *dev);
+TY_PUBLIC void ty_device_unref(ty_device *dev);
 
-void ty_device_set_udata(ty_device *dev, void *udata);
-void *ty_device_get_udata(const ty_device *dev);
+TY_PUBLIC void ty_device_set_udata(ty_device *dev, void *udata);
+TY_PUBLIC void *ty_device_get_udata(const ty_device *dev);
 
-int ty_device_open(ty_device *dev, bool block, ty_handle **rh);
-void ty_device_close(ty_handle *h);
+TY_PUBLIC int ty_device_open(ty_device *dev, bool block, ty_handle **rh);
+TY_PUBLIC void ty_device_close(ty_handle *h);
 
-void ty_device_get_descriptors(const ty_handle *h, struct ty_descriptor_set *set, int id);
+TY_PUBLIC void ty_device_get_descriptors(const ty_handle *h, struct ty_descriptor_set *set, int id);
 
-ty_device_type ty_device_get_type(const ty_device *dev);
+TY_PUBLIC ty_device_type ty_device_get_type(const ty_device *dev);
 
-const char *ty_device_get_location(const ty_device *dev);
-const char *ty_device_get_path(const ty_device *dev);
+TY_PUBLIC const char *ty_device_get_location(const ty_device *dev);
+TY_PUBLIC const char *ty_device_get_path(const ty_device *dev);
 
-uint16_t ty_device_get_vid(const ty_device *dev);
-uint16_t ty_device_get_pid(const ty_device *dev);
-const char *ty_device_get_serial_number(const ty_device *dev);
+TY_PUBLIC uint16_t ty_device_get_vid(const ty_device *dev);
+TY_PUBLIC uint16_t ty_device_get_pid(const ty_device *dev);
+TY_PUBLIC const char *ty_device_get_serial_number(const ty_device *dev);
 
-uint8_t ty_device_get_interface_number(const ty_device *dev);
+TY_PUBLIC uint8_t ty_device_get_interface_number(const ty_device *dev);
 
-int ty_serial_set_control(ty_handle *h, uint32_t rate, uint16_t flags);
+TY_PUBLIC int ty_serial_set_control(ty_handle *h, uint32_t rate, uint16_t flags);
 
-ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size);
-ssize_t ty_serial_write(ty_handle *h, const char *buf, ssize_t size);
+TY_PUBLIC ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size);
+TY_PUBLIC ssize_t ty_serial_write(ty_handle *h, const char *buf, ssize_t size);
 
-int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc);
+TY_PUBLIC int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc);
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size);
-ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size);
+TY_PUBLIC ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size);
+TY_PUBLIC ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size);
 
-int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size);
+TY_PUBLIC int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size);
 
 TY_C_END
 

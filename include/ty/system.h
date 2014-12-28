@@ -128,38 +128,38 @@ typedef enum ty_win32_version {
     TY_WIN32_EIGHT
 } ty_win32_version;
 
-char *ty_win32_strerror(unsigned long err);
-bool ty_win32_test_version(ty_win32_version version);
+TY_PUBLIC char *ty_win32_strerror(unsigned long err);
+TY_PUBLIC bool ty_win32_test_version(ty_win32_version version);
 
 #endif
 
-uint64_t ty_millis(void);
-void ty_delay(unsigned int ms);
+TY_PUBLIC uint64_t ty_millis(void);
+TY_PUBLIC void ty_delay(unsigned int ms);
 
-int ty_adjust_timeout(int timeout, uint64_t start);
+TY_PUBLIC int ty_adjust_timeout(int timeout, uint64_t start);
 
-bool ty_path_is_absolute(const char *path);
+TY_PUBLIC bool ty_path_is_absolute(const char *path);
 
-int ty_path_split(const char *path, char **rdirectory, char **rname);
-const char *ty_path_ext(const char *path);
+TY_PUBLIC int ty_path_split(const char *path, char **rdirectory, char **rname);
+TY_PUBLIC const char *ty_path_ext(const char *path);
 
-int ty_realpath(const char *path, const char *base, char **rpath);
+TY_PUBLIC int ty_realpath(const char *path, const char *base, char **rpath);
 
-int ty_stat(const char *path, ty_file_info *info, bool follow);
-bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
+TY_PUBLIC int ty_stat(const char *path, ty_file_info *info, bool follow);
+TY_PUBLIC bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
 
-int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
-int ty_delete(const char *path, bool tolerant);
+TY_PUBLIC int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
+TY_PUBLIC int ty_delete(const char *path, bool tolerant);
 
-int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags);
+TY_PUBLIC int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags);
 
-void ty_descriptor_set_clear(ty_descriptor_set *set);
-void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
-void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
+TY_PUBLIC void ty_descriptor_set_clear(ty_descriptor_set *set);
+TY_PUBLIC void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
+TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
-int ty_poll(const ty_descriptor_set *set, int timeout);
+TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
 
-int ty_terminal_change(uint32_t flags);
+TY_PUBLIC int ty_terminal_change(uint32_t flags);
 
 TY_C_END
 

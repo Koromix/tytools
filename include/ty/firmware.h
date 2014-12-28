@@ -29,10 +29,10 @@ typedef struct ty_firmware {
     uint8_t image[];
 } ty_firmware;
 
-extern const size_t ty_firmware_max_size;
+TY_PUBLIC extern const size_t ty_firmware_max_size;
 
-int ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware);
-void ty_firmware_free(ty_firmware *f);
+TY_PUBLIC int ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware);
+TY_PUBLIC void ty_firmware_free(ty_firmware *f);
 
 TY_C_END
 
