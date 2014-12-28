@@ -95,20 +95,20 @@ static const char *get_basename(const char *path)
     return name;
 }
 
-int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow)
+static int do_stat(int fd, const char *path, ty_file_info *info, bool follow)
 {
     struct stat sb;
     int r;
 
-    if (fd >= 0) {
-        r = fstatat(fd, path, &sb, !follow ? AT_SYMLINK_NOFOLLOW : 0);
+#ifdef HAVE_FSTATAT
+    r = fstatat(fd, path, &sb, !follow ? AT_SYMLINK_NOFOLLOW : 0);
+#else
+    if (follow) {
+        r = stat(path, &sb);
     } else {
-        if (follow) {
-            r = stat(path, &sb);
-        } else {
-            r = lstat(path, &sb);
-        }
+        r = lstat(path, &sb);
     }
+#endif
     if (r < 0) {
         switch (errno) {
         case EACCES:
@@ -152,12 +152,27 @@ int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow)
     return 0;
 }
 
+#ifdef HAVE_FSTATAT
+
+int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow)
+{
+    assert(path && path[0]);
+    assert(info);
+
+    if (fd < 0)
+        fd = AT_FDCWD;
+
+    return do_stat(fd, path, info, follow);
+}
+
+#endif
+
 int ty_stat(const char *path, ty_file_info *info, bool follow)
 {
     assert(path && path[0]);
     assert(info);
 
-    return _ty_statat(-1, path, info, follow);
+    return do_stat(AT_FDCWD, path, info, follow);
 }
 
 bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2)

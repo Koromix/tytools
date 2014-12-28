@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include "ty/system.h"
 
-#ifdef __unix__
+#ifdef HAVE_FSTATAT
 int _ty_statat(int fd, const char *path, ty_file_info *info, bool follow);
 #endif
 
@@ -210,7 +210,7 @@ int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *u
     struct _ty_walk_context *ctx = NULL;
     ty_walk_history newhistory;
     DIR *dp = NULL;
-#ifdef __unix__
+#ifdef HAVE_FSTATAT
     int fd;
 #endif
     char *filename = NULL;
@@ -278,7 +278,7 @@ int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *u
         }
         goto cleanup;
     }
-#ifdef __unix__
+#ifdef HAVE_FSTATAT
     fd = dirfd(dp);
 #endif
 
@@ -299,7 +299,7 @@ int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *u
         }
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
-#ifdef __unix__
+#ifdef HAVE_FSTATAT
         r = _ty_statat(fd, ent->d_name, &newhistory.info, ctx->flags & TY_WALK_FOLLOW);
 #else
         r = ty_stat(filename, &newhistory.info, ctx->flags & TY_WALK_FOLLOW);
