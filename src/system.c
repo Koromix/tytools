@@ -126,7 +126,7 @@ const char *ty_path_ext(const char *path)
     return ext;
 }
 
-int make_directory(const char *path, mode_t mode, bool permissive)
+static int make_directory(const char *path, mode_t mode, bool permissive)
 {
 #ifdef _WIN32
     TY_UNUSED(mode);
