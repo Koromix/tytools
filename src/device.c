@@ -70,7 +70,7 @@ void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata)
     monitor->udata = udata;
 }
 
-void *ty_device_monitor_get_udata(ty_device_monitor *monitor)
+void *ty_device_monitor_get_udata(const ty_device_monitor *monitor)
 {
     assert(monitor);
     return monitor->udata;
@@ -222,49 +222,49 @@ void ty_device_set_udata(ty_device *dev, void *udata)
     dev->udata = udata;
 }
 
-void *ty_device_get_udata(ty_device *dev)
+void *ty_device_get_udata(const ty_device *dev)
 {
     assert(dev);
     return dev->udata;
 }
 
-ty_device_type ty_device_get_type(ty_device *dev)
+ty_device_type ty_device_get_type(const ty_device *dev)
 {
     assert(dev);
     return dev->type;
 }
 
-const char *ty_device_get_location(ty_device *dev)
+const char *ty_device_get_location(const ty_device *dev)
 {
     assert(dev);
     return dev->location;
 }
 
-const char *ty_device_get_path(ty_device *dev)
+const char *ty_device_get_path(const ty_device *dev)
 {
     assert(dev);
     return dev->path;
 }
 
-uint16_t ty_device_get_vid(ty_device *dev)
+uint16_t ty_device_get_vid(const ty_device *dev)
 {
     assert(dev);
     return dev->vid;
 }
 
-uint16_t ty_device_get_pid(ty_device *dev)
+uint16_t ty_device_get_pid(const ty_device *dev)
 {
     assert(dev);
     return dev->pid;
 }
 
-const char *ty_device_get_serial_number(ty_device *dev)
+const char *ty_device_get_serial_number(const ty_device *dev)
 {
     assert(dev);
     return dev->serial;
 }
 
-uint8_t ty_device_get_interface_number(ty_device *dev)
+uint8_t ty_device_get_interface_number(const ty_device *dev)
 {
     assert(dev);
     return dev->iface;

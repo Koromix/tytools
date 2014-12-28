@@ -31,7 +31,7 @@ typedef struct ty_timer ty_timer;
 int ty_timer_new(ty_timer **rtimer);
 void ty_timer_free(ty_timer *timer);
 
-void ty_timer_get_descriptors(ty_timer *timer, struct ty_descriptor_set *set, int id);
+void ty_timer_get_descriptors(const ty_timer *timer, struct ty_descriptor_set *set, int id);
 
 int ty_timer_set(ty_timer *timer, int value, unsigned int period);
 uint64_t ty_timer_rearm(ty_timer *timer);

@@ -68,9 +68,9 @@ int ty_board_manager_new(ty_board_manager **rmanager);
 void ty_board_manager_free(ty_board_manager *manager);
 
 void ty_board_manager_set_udata(ty_board_manager *manager, void *udata);
-void *ty_board_manager_get_udata(ty_board_manager *manager);
+void *ty_board_manager_get_udata(const ty_board_manager *manager);
 
-void ty_board_manager_get_descriptors(ty_board_manager *manager, struct ty_descriptor_set *set, int id);
+void ty_board_manager_get_descriptors(const ty_board_manager *manager, struct ty_descriptor_set *set, int id);
 
 int ty_board_manager_register_callback(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata);
 void ty_board_manager_deregister_callback(ty_board_manager *manager, int id);
@@ -95,30 +95,30 @@ ty_board *ty_board_ref(ty_board *teensy);
 void ty_board_unref(ty_board *teensy);
 
 void ty_board_set_udata(ty_board *board, void *udata);
-void *ty_board_get_udata(ty_board *board);
+void *ty_board_get_udata(const ty_board *board);
 
-ty_board_manager *ty_board_get_manager(ty_board *board);
+ty_board_manager *ty_board_get_manager(const ty_board *board);
 
-ty_board_state ty_board_get_state(ty_board *board);
+ty_board_state ty_board_get_state(const ty_board *board);
 
-ty_device *ty_board_get_device(ty_board *board);
-static inline const char *ty_board_get_location(ty_board *board)
+ty_device *ty_board_get_device(const ty_board *board);
+static inline const char *ty_board_get_location(const ty_board *board)
 {
     return ty_device_get_location(ty_board_get_device(board));
 }
-static inline const char *ty_board_get_path(ty_board *board)
+static inline const char *ty_board_get_path(const ty_board *board)
 {
     return ty_device_get_path(ty_board_get_device(board));
 }
-ty_handle *ty_board_get_handle(ty_board *board);
+ty_handle *ty_board_get_handle(const ty_board *board);
 
-const ty_board_mode *ty_board_get_mode(ty_board *board);
-const ty_board_model *ty_board_get_model(ty_board *board);
+const ty_board_mode *ty_board_get_mode(const ty_board *board);
+const ty_board_model *ty_board_get_model(const ty_board *board);
 
-uint64_t ty_board_get_serial_number(ty_board *board);
+uint64_t ty_board_get_serial_number(const ty_board *board);
 
-uint32_t ty_board_get_capabilities(ty_board *board);
-static inline bool ty_board_has_capability(ty_board *board, ty_board_capability cap)
+uint32_t ty_board_get_capabilities(const ty_board *board);
+static inline bool ty_board_has_capability(const ty_board *board, ty_board_capability cap)
 {
     return ty_board_get_capabilities(board) & cap;
 }
@@ -135,7 +135,7 @@ int ty_board_reset(ty_board *board);
 
 int ty_board_reboot(ty_board *board);
 
-const ty_board_model *ty_board_test_firmware(struct ty_firmware *f);
+const ty_board_model *ty_board_test_firmware(const struct ty_firmware *f);
 
 TY_C_END
 

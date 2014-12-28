@@ -165,13 +165,13 @@ void ty_board_manager_set_udata(ty_board_manager *manager, void *udata)
     manager->udata = udata;
 }
 
-void *ty_board_manager_get_udata(ty_board_manager *manager)
+void *ty_board_manager_get_udata(const ty_board_manager *manager)
 {
     assert(manager);
     return manager->udata;
 }
 
-void ty_board_manager_get_descriptors(ty_board_manager *manager, ty_descriptor_set *set, int id)
+void ty_board_manager_get_descriptors(const ty_board_manager *manager, ty_descriptor_set *set, int id)
 {
     assert(manager);
     assert(set);
@@ -621,49 +621,49 @@ void ty_board_set_udata(ty_board *board, void *udata)
     board->udata = udata;
 }
 
-void *ty_board_get_udata(ty_board *board)
+void *ty_board_get_udata(const ty_board *board)
 {
     assert(board);
     return board->udata;
 }
 
-ty_board_manager *ty_board_get_manager(ty_board *board)
+ty_board_manager *ty_board_get_manager(const ty_board *board)
 {
     assert(board);
     return board->manager;
 }
 
-ty_board_state ty_board_get_state(ty_board *board)
+ty_board_state ty_board_get_state(const ty_board *board)
 {
     assert(board);
     return board->state;
 }
 
-ty_device *ty_board_get_device(ty_board *board)
+ty_device *ty_board_get_device(const ty_board *board)
 {
     assert(board);
     return board->dev;
 }
 
-ty_handle *ty_board_get_handle(ty_board *board)
+ty_handle *ty_board_get_handle(const ty_board *board)
 {
     assert(board);
     return board->h;
 }
 
-const ty_board_mode *ty_board_get_mode(ty_board *board)
+const ty_board_mode *ty_board_get_mode(const ty_board *board)
 {
     assert(board);
     return board->mode;
 }
 
-const ty_board_model *ty_board_get_model(ty_board *board)
+const ty_board_model *ty_board_get_model(const ty_board *board)
 {
     assert(board);
     return board->model;
 }
 
-uint32_t ty_board_get_capabilities(ty_board *board)
+uint32_t ty_board_get_capabilities(const ty_board *board)
 {
     assert(board);
 
@@ -673,7 +673,7 @@ uint32_t ty_board_get_capabilities(ty_board *board)
     return board->mode->capabilities;
 }
 
-uint64_t ty_board_get_serial_number(ty_board *board)
+uint64_t ty_board_get_serial_number(const ty_board *board)
 {
     assert(board);
     return board->serial;
@@ -804,7 +804,7 @@ int ty_board_reboot(ty_board *board)
     return board->mode->vtable->reboot(board);
 }
 
-const ty_board_model *ty_board_test_firmware(ty_firmware *f)
+const ty_board_model *ty_board_test_firmware(const ty_firmware *f)
 {
     assert(f);
 

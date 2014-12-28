@@ -76,7 +76,7 @@ static inline void ty_list_replace(ty_list_head *head, ty_list_head *n)
     ty_list_init(head);
 }
 
-static inline bool ty_list_empty(ty_list_head *head)
+static inline bool ty_list_empty(const ty_list_head *head)
 {
     return head->next == head;
 }

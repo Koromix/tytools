@@ -788,7 +788,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
     free(monitor);
 }
 
-void ty_device_monitor_get_descriptors(ty_device_monitor *monitor, ty_descriptor_set *set, int id)
+void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, ty_descriptor_set *set, int id)
 {
     assert(monitor);
     assert(set);
@@ -944,7 +944,7 @@ void ty_device_close(ty_handle *h)
     free(h);
 }
 
-void ty_device_get_descriptors(ty_handle *h, ty_descriptor_set *set, int id)
+void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
 {
     assert(h);
     assert(set);

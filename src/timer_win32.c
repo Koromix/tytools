@@ -91,7 +91,7 @@ void ty_timer_free(ty_timer *timer)
     free(timer);
 }
 
-void ty_timer_get_descriptors(ty_timer *timer, ty_descriptor_set *set, int id)
+void ty_timer_get_descriptors(const ty_timer *timer, ty_descriptor_set *set, int id)
 {
     assert(timer);
     assert(set);
