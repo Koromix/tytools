@@ -21,7 +21,15 @@ project(ty C)
 find_package(Threads)
 list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
+if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+    set(CMAKE_COMPILER_IS_CLANG 1)
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    set(LINUX 1)
+endif()
+
+if(LINUX)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUDEV REQUIRED libudev)
 
@@ -31,10 +39,6 @@ endif()
 
 if(WIN32)
     list(APPEND LIBRARIES setupapi hid)
-endif()
-
-if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_COMPILER_IS_CLANG 1)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
