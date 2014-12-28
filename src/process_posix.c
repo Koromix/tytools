@@ -21,6 +21,7 @@
 #include "compat.h"
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include "htable.h"
