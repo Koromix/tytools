@@ -113,7 +113,7 @@ static void __stdcall timer_callback(void *udata, BOOLEAN timer_or_wait)
     LeaveCriticalSection(&timer->mutex);
 }
 
-int ty_timer_set(ty_timer *timer, int value, unsigned int period)
+int ty_timer_set(ty_timer *timer, int value, uint16_t flags)
 {
     assert(timer);
 
@@ -125,10 +125,17 @@ int ty_timer_set(ty_timer *timer, int value, unsigned int period)
 
     ty_timer_rearm(timer);
 
-    if (!value)
-        value = 1;
-    if (value > 0) {
-        BOOL ret = CreateTimerQueueTimer(&timer->h, timer_queue, timer_callback, timer, (DWORD)value, period, 0);
+    if (value >= 0) {
+        DWORD period = 0;
+        BOOL ret;
+
+        if (!(flags & TY_TIMER_ONESHOT))
+            period = (DWORD)value;
+
+        if (!value)
+            value = 1;
+
+        ret = CreateTimerQueueTimer(&timer->h, timer_queue, timer_callback, timer, (DWORD)value, period, 0);
         if (!ret)
             return ty_error(TY_ERROR_SYSTEM, "CreateTimerQueueTimer() failed: %s", ty_win32_strerror(0));
     }

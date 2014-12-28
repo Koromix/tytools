@@ -28,12 +28,16 @@ TY_C_BEGIN
 
 typedef struct ty_timer ty_timer;
 
+enum {
+    TY_TIMER_ONESHOT = 1
+};
+
 int ty_timer_new(ty_timer **rtimer);
 void ty_timer_free(ty_timer *timer);
 
 void ty_timer_get_descriptors(const ty_timer *timer, struct ty_descriptor_set *set, int id);
 
-int ty_timer_set(ty_timer *timer, int value, unsigned int period);
+int ty_timer_set(ty_timer *timer, int value, uint16_t flags);
 uint64_t ty_timer_rearm(ty_timer *timer);
 
 TY_C_END

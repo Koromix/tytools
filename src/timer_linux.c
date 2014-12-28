@@ -72,7 +72,7 @@ void ty_timer_get_descriptors(const ty_timer *timer, ty_descriptor_set *set, int
     ty_descriptor_set_add(set, timer->fd, id);
 }
 
-int ty_timer_set(ty_timer *timer, int value, unsigned int period)
+int ty_timer_set(ty_timer *timer, int value, uint16_t flags)
 {
     assert(timer);
 
@@ -82,12 +82,12 @@ int ty_timer_set(ty_timer *timer, int value, unsigned int period)
     if (value > 0) {
         ispec.it_value.tv_sec = (int)value / 1000;
         ispec.it_value.tv_nsec = (int)((value % 1000) * 1000000);
-    } else if (!value && !period) {
+
+        if (!(flags & TY_TIMER_ONESHOT))
+            ispec.it_interval = ispec.it_value;
+    } else if (!value) {
         ispec.it_value.tv_nsec = 1;
     }
-
-    ispec.it_interval.tv_sec = (int)period / 1000;
-    ispec.it_interval.tv_nsec = (int)((period % 1000) * 1000000);
 
     r = timerfd_settime(timer->fd, 0, &ispec, NULL);
     if (r < 0)
