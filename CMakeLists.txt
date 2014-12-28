@@ -149,7 +149,12 @@ set_target_properties(ty_static PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON
 target_link_libraries(ty_static ${LIBRARIES})
 
 add_executable(tyc ${TYC_SOURCES})
-target_link_libraries(tyc ty_static)
+set(STATIC_BINARIES OFF CACHE BOOL "Build statically linked binaries")
+if(STATIC_BINARIES)
+    target_link_libraries(tyc ty_static)
+else()
+    target_link_libraries(tyc ty_shared)
+endif()
 
 install(TARGETS ty_shared DESTINATION lib)
 install(TARGETS ty_static DESTINATION lib)
