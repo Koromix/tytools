@@ -72,6 +72,25 @@ char *strndup(const char *s, size_t n)
 
 #endif
 
+#ifndef HAVE_MEMRCHR
+
+void *memrchr(const void *s, int c, size_t n)
+{
+    if (!n)
+        return NULL;
+
+    unsigned char *p = (unsigned char *)s + n;
+
+    while (--p >= (unsigned char *)s) {
+        if (*p == c)
+            return p;
+    }
+
+    return NULL;
+}
+
+#endif
+
 #ifndef HAVE_ASPRINTF
 
 int asprintf(char **strp, const char *fmt, ...)
