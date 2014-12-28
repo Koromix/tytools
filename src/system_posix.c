@@ -136,8 +136,10 @@ static int do_stat(int fd, const char *path, ty_file_info *info, bool follow)
     }
 
     info->size = (uint64_t)sb.st_size;
-#ifdef st_mtime
+#if defined(HAVE_STAT_MTIM)
     info->mtime = (uint64_t)sb.st_mtim.tv_sec * 1000 + (uint64_t)sb.st_mtim.tv_nsec / 1000000;
+#elif defined(HAVE_STAT_MTIMESPEC)
+    info->mtime = (uint64_t)sb.st_mtimespec.tv_sec * 1000 + (uint64_t)sb.st_mtimespec.tv_nsec / 1000000;
 #else
     info->mtime = (uint64_t)sb.st_mtime * 1000;
 #endif

@@ -71,6 +71,12 @@ check_symbol_exists(getdelim stdio.h HAVE_GETDELIM)
 check_symbol_exists(getline stdio.h HAVE_GETLINE)
 check_symbol_exists(fstatat sys/stat.h HAVE_FSTATAT)
 
+include(CheckStructHasMember)
+check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_MTIM)
+if(NOT HAVE_STAT_MTIM)
+  check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
+endif()
+
 configure_file(src/config.h.in src/config.h)
 
 include_directories(include "${CMAKE_CURRENT_BINARY_DIR}/src")
