@@ -323,6 +323,14 @@ int ty_process_spawn(const char *path, const char *dir, const char * const args[
         r = create_pipe(proc->pipe, O_CLOEXEC | O_NONBLOCK);
         if (r < 0)
             goto cleanup;
+
+#ifdef F_SETNOSIGPIPE
+        r = fcntl(proc->pipe[1], F_SETNOSIGPIPE, 1);
+        if (r < 0) {
+            r = ty_error(TY_ERROR_SYSTEM, "fcntl(F_SETNOSIGPIPE) failed: %s", strerror(errno));
+            goto cleanup;
+        }
+#endif
     }
 
     r = create_pipe(cpipe, O_CLOEXEC);
@@ -422,16 +430,20 @@ cleanup:
 
 static void signal_process(const siginfo_t *si)
 {
+#ifndef F_SETNOSIGPIPE
     sigset_t pending, block, oldmask;
+#endif
     struct process *proc;
     int status[2], r;
 
+#ifndef F_SETNOSIGPIPE
     sigemptyset(&pending);
     sigpending(&pending);
 
     sigemptyset(&block);
     sigaddset(&block, SIGPIPE);
     pthread_sigmask(SIG_BLOCK, &block, &oldmask);
+#endif
 
     proc = find_process(si->si_pid);
     if (!proc)
@@ -444,6 +456,7 @@ static void signal_process(const siginfo_t *si)
     r = (int)write(proc->pipe[1], status, sizeof(status));
     assert(r == EPIPE || r == sizeof(status));
 
+#ifndef F_SETNOSIGPIPE
     if (!sigismember(&pending, SIGPIPE)) {
         sigemptyset(&pending);
         sigpending(&pending);
@@ -455,6 +468,7 @@ static void signal_process(const siginfo_t *si)
     }
 
     pthread_sigmask(SIG_SETMASK, &oldmask, NULL);
+#endif
 
     remove_process(proc);
     free_process(proc);
