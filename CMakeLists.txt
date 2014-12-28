@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.9)
 project(ty C)
 
 find_package(Threads)
@@ -138,15 +138,21 @@ set(TYC_SOURCES cli/list.c
                 cli/reset.c
                 cli/upload.c)
 
-add_library(ty SHARED ${TY_SOURCES})
-target_link_libraries(ty ${LIBRARIES})
-add_library(ty_static STATIC ${TY_SOURCES})
+add_library(ty OBJECT ${TY_SOURCES})
+set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+add_library(ty_shared SHARED $<TARGET_OBJECTS:ty>)
+set_target_properties(ty_shared PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON)
+target_link_libraries(ty_shared ${LIBRARIES})
+add_library(ty_static STATIC $<TARGET_OBJECTS:ty>)
+set_target_properties(ty_static PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON)
 target_link_libraries(ty_static ${LIBRARIES})
 
 add_executable(tyc ${TYC_SOURCES})
 target_link_libraries(tyc ty_static)
 
-install(TARGETS ty DESTINATION lib)
+install(TARGETS ty_shared DESTINATION lib)
+install(TARGETS ty_static DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS tyc RUNTIME DESTINATION bin)
