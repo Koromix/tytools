@@ -27,6 +27,9 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+#ifdef __APPLE__
+#include <mach/mach_time.h>
+#endif
 #include "ty/system.h"
 
 struct child_report {
@@ -35,6 +38,19 @@ struct child_report {
 };
 
 static struct termios orig_tio;
+
+#ifdef __APPLE__
+
+uint64_t ty_millis(void)
+{
+    static mach_timebase_info_data_t tb;
+    if (!tb.numer)
+        mach_timebase_info(&tb);
+
+    return (uint64_t)mach_absolute_time() * tb.numer / tb.denom / 1000000;
+}
+
+#else
 
 uint64_t ty_millis(void)
 {
@@ -53,6 +69,8 @@ uint64_t ty_millis(void)
 
     return millis;
 }
+
+#endif
 
 void ty_delay(unsigned int ms)
 {
