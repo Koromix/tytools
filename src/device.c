@@ -27,6 +27,10 @@ struct ty_device_monitor {
     struct ty_device_monitor_;
 };
 
+struct ty_handle {
+    struct ty_handle_;
+};
+
 struct callback {
     ty_list_head list;
     int id;
@@ -226,6 +230,22 @@ void *ty_device_get_udata(const ty_device *dev)
 {
     assert(dev);
     return dev->udata;
+}
+
+int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
+{
+    assert(dev);
+    assert(rh);
+
+    return dev->vtable->open(dev, block, rh);
+}
+
+void ty_device_close(ty_handle *h)
+{
+    if (!h)
+        return;
+
+    h->dev->vtable->close(h);
 }
 
 ty_device_type ty_device_get_type(const ty_device *dev)

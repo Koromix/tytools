@@ -48,7 +48,7 @@ struct ty_device_monitor {
 };
 
 struct ty_handle {
-    ty_device *dev;
+    struct ty_handle_;
 
     bool block;
     HANDLE handle;
@@ -95,6 +95,8 @@ static const struct device_type device_types[] = {
     {"HID", &hid_guid, TY_DEVICE_HID},
     {NULL}
 };
+
+static const struct _ty_device_vtable win32_device_vtable;
 
 static void free_controller(struct usb_controller *controller)
 {
@@ -447,6 +449,8 @@ static int create_device(ty_device_monitor *monitor, const char *key, DEVINST in
         if (r <= 0)
             goto cleanup;
     }
+
+    dev->vtable = &win32_device_vtable;
 
     r = _ty_device_monitor_add(monitor, dev);
 cleanup:
@@ -847,11 +851,8 @@ cleanup:
     return r;
 }
 
-int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
+static int open_win32_device(ty_device *dev, bool block, ty_handle **rh)
 {
-    assert(rh);
-    assert(dev);
-
     ty_handle *h = NULL;
     DWORD len;
     COMMTIMEOUTS timeouts;
@@ -860,6 +861,7 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
     h = calloc(1, sizeof(*h));
     if (!h)
         return ty_error(TY_ERROR_MEMORY, NULL);
+    h->dev = ty_device_ref(dev);
 
     h->handle = CreateFile(dev->path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                            NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
@@ -919,8 +921,6 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
         goto error;
     }
 
-    h->dev = ty_device_ref(dev);
-
     *rh = h;
     return 0;
 
@@ -929,7 +929,7 @@ error:
     return r;
 }
 
-void ty_device_close(ty_handle *h)
+static void close_win32_device(ty_handle *h)
 {
     if (h) {
         if (h->handle)
@@ -943,6 +943,11 @@ void ty_device_close(ty_handle *h)
 
     free(h);
 }
+
+static const struct _ty_device_vtable win32_device_vtable = {
+    .open = open_win32_device,
+    .close = close_win32_device,
+};
 
 void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
 {

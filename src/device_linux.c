@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include "ty/device.h"
 #include "device_priv.h"
+#include "device_posix_priv.h"
 #include "ty/system.h"
 
 struct ty_device_monitor {
@@ -104,6 +105,7 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
     } else {
         return 0;
     }
+    dev->vtable = &_ty_posix_device_vtable;
 
     buf = udev_device_get_devnode(agg->dev);
     if (!buf || access(buf, F_OK) != 0)

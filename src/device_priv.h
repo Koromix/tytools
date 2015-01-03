@@ -36,6 +36,11 @@ struct ty_device_monitor_ {
     void *udata;
 };
 
+struct _ty_device_vtable {
+    int (*open)(ty_device *dev, bool block, ty_handle **rh);
+    void (*close)(ty_handle *h);
+};
+
 struct ty_device {
     ty_device_monitor *monitor;
     ty_htable_head table;
@@ -45,6 +50,7 @@ struct ty_device {
     char *key;
 
     ty_device_type type;
+    const struct _ty_device_vtable *vtable;
 
     char *location;
     char *path;
@@ -58,14 +64,9 @@ struct ty_device {
     void *udata;
 };
 
-#if defined(__unix__) || defined(__APPLE__)
-
-struct ty_handle {
+struct ty_handle_ {
     ty_device *dev;
-    int fd;
 };
-
-#endif
 
 int _ty_device_monitor_init(ty_device_monitor *monitor);
 void _ty_device_monitor_release(ty_device_monitor *monitor);

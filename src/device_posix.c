@@ -26,19 +26,26 @@
 #include <unistd.h>
 #include "ty/device.h"
 #include "device_priv.h"
+#include "device_posix_priv.h"
 #include "ty/system.h"
 
-int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
+void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
 {
-    assert(rh);
-    assert(dev);
+    assert(h);
+    assert(set);
 
+    ty_descriptor_set_add(set, h->fd, id);
+}
+
+static int open_posix_device(ty_device *dev, bool block, ty_handle **rh)
+{
     ty_handle *h;
     int flags, r;
 
     h = calloc(1, sizeof(*h));
     if (!h)
         return ty_error(TY_ERROR_MEMORY, NULL);
+    h->dev = ty_device_ref(dev);
 
     flags = O_RDWR | O_CLOEXEC | O_NOCTTY;
     if (!block)
@@ -70,34 +77,29 @@ restart:
         goto error;
     }
 
-    h->dev = ty_device_ref(dev);
-
     *rh = h;
     return 0;
 
 error:
-    free(h);
+    ty_device_close(h);
     return r;
 }
 
-void ty_device_close(ty_handle *h)
+static void close_posix_device(ty_handle *h)
 {
     if (h) {
-        ty_device_unref(h->dev);
         if (h->fd >= 0)
             close(h->fd);
+        ty_device_unref(h->dev);
     }
 
     free(h);
 }
 
-void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
-{
-    assert(h);
-    assert(set);
-
-    ty_descriptor_set_add(set, h->fd, id);
-}
+const struct _ty_device_vtable _ty_posix_device_vtable = {
+    .open = open_posix_device,
+    .close = close_posix_device,
+};
 
 int ty_serial_set_control(ty_handle *h, uint32_t rate, uint16_t flags)
 {

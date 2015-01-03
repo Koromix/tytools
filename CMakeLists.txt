@@ -118,6 +118,7 @@ if(WIN32)
                            src/timer_win32.c)
 else()
     list(APPEND TY_SOURCES src/device_posix.c
+                           src/device_posix_priv.h
                            src/process_posix.c
                            src/system_posix.c)
 
