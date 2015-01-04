@@ -22,6 +22,7 @@
 
 #include "ty/common.h"
 #include "config.h"
+#include <stdarg.h>
 
 char *strrpbrk(const char *s, const char *accept);
 
