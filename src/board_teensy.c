@@ -252,6 +252,28 @@ const ty_board_model _ty_teensy_31_model = {
 
 static const size_t seremu_packet_size = 32;
 
+// Two quirks have to be accounted when reading the serial number.
+//
+// The bootloader returns the serial number as hexadecimal with prefixed zeros
+// (which would suggest octal to stroull).
+//
+// In other modes a decimal value is used, but Teensyduino 1.19 added a workaround
+// for a Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
+// See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194d
+static int teensy_open(ty_board *board)
+{
+    const char *s = ty_device_get_serial_number(board->dev);
+
+    if (s && *s == '0') {
+        board->serial = strtoull(s, NULL, 16);
+
+        if (board->serial < 10000000)
+            board->serial *= 10;
+    }
+
+    return 1;
+}
+
 static int teensy_identify(ty_board *board)
 {
     ty_hid_descriptor desc;
@@ -445,6 +467,7 @@ static int teensy_reboot(ty_board *board)
 }
 
 static const struct _ty_board_mode_vtable teensy_mode_vtable = {
+    .open = teensy_open,
     .identify = teensy_identify,
     .read_serial = teensy_read_serial,
     .write_serial = teensy_write_serial,

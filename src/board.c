@@ -234,38 +234,12 @@ static int trigger_callbacks(ty_board *board, ty_board_event event)
     return 0;
 }
 
-// Two quirks have to be accounted for.
-//
-// The bootloader returns the serial number as hexadecimal with prefixed zeros
-// (which would suggest octal to stroull).
-//
-// In other modes a decimal value is used, but Teensyduino 1.19 added a workaround
-// for a Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
-// See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194d
-static uint64_t parse_serial_number(const char *s)
-{
-    if (!s)
-        return 0;
-
-    int base = 10;
-    uint64_t serial;
-
-    if (*s == '0')
-        base = 16;
-
-    serial = strtoull(s, NULL, base);
-
-    if (base == 16 && serial < 10000000)
-        serial *= 10;
-
-    return serial;
-}
-
 static int open_board(ty_board *board, ty_device *dev)
 {
     const ty_board_mode *mode = NULL;
     uint16_t vid, pid;
     uint64_t old_serial;
+    const char *s;
     int r;
 
     vid = ty_device_get_vid(dev);
@@ -292,7 +266,18 @@ static int open_board(ty_board *board, ty_device *dev)
     // and the things we knew about it (such as the model) are not valid anymore.
     old_serial = board->serial;
 
-    board->serial = parse_serial_number(ty_device_get_serial_number(dev));
+    s = ty_device_get_serial_number(dev);
+    if (s) {
+        board->serial = strtoull(s, NULL, 10);
+    } else {
+        board->serial = 0;
+    }
+
+    if (mode->vtable->open) {
+        r = mode->vtable->open(board);
+        if (r <= 0)
+            return r;
+    }
 
     // Yup, different board (probably)
     if (!board->serial || board->serial != old_serial)

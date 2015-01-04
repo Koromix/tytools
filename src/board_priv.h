@@ -48,6 +48,8 @@ struct ty_board {
 };
 
 struct _ty_board_mode_vtable {
+    int (*open)(ty_board *board);
+
     int (*identify)(ty_board *board);
 
     ssize_t (*read_serial)(ty_board *board, char *buf, size_t size);
