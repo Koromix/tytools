@@ -261,11 +261,45 @@ static uint64_t parse_serial_number(const char *s)
     return serial;
 }
 
-static int open_board(ty_board *board)
+static int open_board(ty_board *board, ty_device *dev)
 {
+    const ty_board_mode *mode = NULL;
+    uint16_t vid, pid;
+    uint64_t old_serial;
     int r;
 
+    vid = ty_device_get_vid(dev);
+    pid = ty_device_get_pid(dev);
+
+    const ty_board_mode **cur;
+    for (cur = ty_board_modes; *cur; cur++) {
+        mode = *cur;
+        if (mode->vid == vid && mode->pid == pid)
+            break;
+    }
+    if (!*cur)
+        return 0;
+
+    if (ty_device_get_interface_number(dev) != mode->iface)
+        return 0;
+
+    ty_device_unref(board->dev);
+    board->dev = ty_device_ref(dev);
+
+    board->mode = mode;
+
+    // Detect serial number changes: if it's different, we know it's probably a different board
+    // and the things we knew about it (such as the model) are not valid anymore.
+    old_serial = board->serial;
+
+    board->serial = parse_serial_number(ty_device_get_serial_number(dev));
+
+    // Yup, different board (probably)
+    if (!board->serial || board->serial != old_serial)
+        board->model = NULL;
+
     ty_device_close(board->h);
+    board->h = NULL;
 
     ty_error_mask(TY_ERROR_NOT_FOUND);
     r = ty_device_open(board->dev, false, &board->h);
@@ -287,60 +321,46 @@ static int open_board(ty_board *board)
     return 1;
 }
 
-static int load_board(ty_board *board, ty_device *dev, ty_board **rboard)
+static int add_board(ty_board_manager *manager, ty_device *dev)
 {
-    const ty_board_mode *mode = NULL;
-    uint16_t vid, pid;
-    uint64_t serial;
+    ty_board *board;
     int r;
 
-    vid = ty_device_get_vid(dev);
-    pid = ty_device_get_pid(dev);
+    board = calloc(1, sizeof(*board));
+    if (!board)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+    board->refcount = 1;
 
-    const ty_board_mode **cur;
-    for (cur = ty_board_modes; *cur; cur++) {
-        mode = *cur;
-        if (mode->vid == vid && mode->pid == pid)
-            break;
-    }
-    if (!*cur)
-        return 0;
-
-    if (ty_device_get_interface_number(dev) != mode->iface)
-        return 0;
-
-    if (!board) {
-        board = calloc(1, sizeof(*board));
-        if (!board)
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        board->refcount = 1;
-    }
-
-    ty_device_unref(board->dev);
-    board->dev = ty_device_ref(dev);
-
-    serial = parse_serial_number(ty_device_get_serial_number(dev));
-    if (board->serial != serial)
-        board->model = NULL;
-    board->serial = serial;
-
-    board->mode = mode;
-
-    r = open_board(board);
-    if (r < 0)
+    r = open_board(board, dev);
+    if (r <= 0)
         goto error;
 
-    if (board->missing.prev)
-        ty_list_remove(&board->missing);
+    board->manager = manager;
+    ty_list_add_tail(&manager->boards, &board->list);
 
-    if (rboard)
-        *rboard = board;
-    return 1;
+    return trigger_callbacks(board, TY_BOARD_EVENT_ADDED);
 
 error:
-    if (board && !board->manager)
-        ty_board_unref(board);
+    ty_board_unref(board);
     return r;
+}
+
+static int change_board(ty_board *board, ty_device *dev)
+{
+    int r;
+
+    r = open_board(board, dev);
+    if (r <= 0)
+        return r;
+
+    if (board->missing.prev) {
+        ty_list_remove(&board->missing);
+
+        if (ty_list_is_empty(&board->manager->missing_boards))
+            ty_timer_set(board->manager->timer, -1, 0);
+    }
+
+    return trigger_callbacks(board, TY_BOARD_EVENT_CHANGED);
 }
 
 static void close_board(ty_board *board)
@@ -380,7 +400,6 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
     ty_board_manager *manager = udata;
 
     const char *location;
-    ty_board *board;
     int r;
 
     location = ty_device_get_location(dev);
@@ -388,32 +407,17 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
     switch (event) {
     case TY_DEVICE_EVENT_ADDED:
         ty_list_foreach(cur, &manager->boards) {
-            board = ty_container_of(cur, ty_board, list);
+            ty_board *board = ty_container_of(cur, ty_board, list);
 
-            if (strcmp(ty_device_get_location(board->dev), location) == 0) {
-                r = load_board(board, dev, NULL);
-                if (r <= 0)
-                    return r;
-
-                if (ty_list_is_empty(&manager->missing_boards))
-                    ty_timer_set(manager->timer, -1, 0);
-
-                return trigger_callbacks(board, TY_BOARD_EVENT_CHANGED);
-            }
+            if (strcmp(ty_device_get_location(board->dev), location) == 0)
+                return change_board(board, dev);
         }
 
-        r = load_board(NULL, dev, &board);
-        if (r <= 0)
-            return r;
-
-        board->manager = manager;
-        ty_list_add_tail(&manager->boards, &board->list);
-
-        return trigger_callbacks(board, TY_BOARD_EVENT_ADDED);
+        return add_board(manager, dev);
 
     case TY_DEVICE_EVENT_REMOVED:
         ty_list_foreach(cur, &manager->boards) {
-            board = ty_container_of(cur, ty_board, list);
+            ty_board *board = ty_container_of(cur, ty_board, list);
 
             if (board->dev == dev) {
                 close_board(board);
