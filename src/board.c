@@ -420,7 +420,7 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
 
                 // If there's only one element, it must be us because (see close_board)
                 // so the timer is either not set or wrong.
-                if (!ty_list_is_singular(&manager->missing_boards)) {
+                if (ty_list_is_singular(&manager->missing_boards)) {
                     r = ty_timer_set(manager->timer, drop_board_delay, TY_TIMER_ONESHOT);
                     if (r < 0)
                         return r;
