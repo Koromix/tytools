@@ -695,11 +695,15 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
     assert(board->manager);
 
     struct wait_for_context ctx;
+    int r;
 
-    ctx.board = board;
+    ctx.board = ty_board_ref(board);
     ctx.capability = capability;
 
-    return ty_board_manager_wait(board->manager, wait_callback, &ctx, timeout);
+    r = ty_board_manager_wait(board->manager, wait_callback, &ctx, timeout);
+    ty_board_unref(board);
+
+    return r;
 }
 
 int ty_board_control_serial(ty_board *board, uint32_t rate, uint16_t flags)
