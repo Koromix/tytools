@@ -106,6 +106,7 @@ set(TY_SOURCES include/ty.h
                src/device.c
                src/device_priv.h
                src/firmware.c
+               src/firmware_elf.c
                src/firmware_ihex.c
                src/htable.c
                src/ini.c

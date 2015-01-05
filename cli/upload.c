@@ -26,11 +26,12 @@ enum {
     OPTION_NORESET
 };
 
-static const char *short_options = "w";
+static const char *short_options = "wf:";
 static const struct option long_options[] = {
-    {"help",    no_argument, NULL, OPTION_HELP},
-    {"noreset", no_argument, NULL, OPTION_NORESET},
-    {"wait",    no_argument, NULL, 'w'},
+    {"format",  required_argument, NULL, 'f'},
+    {"help",    no_argument,       NULL, OPTION_HELP},
+    {"noreset", no_argument,       NULL, OPTION_NORESET},
+    {"wait",    no_argument,       NULL, 'w'},
     {0}
 };
 
@@ -38,15 +39,21 @@ static const int manual_reboot_delay = 4000;
 
 static bool reset_after = true;
 static bool wait_device = false;
+static const char *image_format = NULL;
 static const char *image_filename = NULL;
 
 void print_upload_usage(void)
 {
     fprintf(stderr, "usage: tyc upload [options] <filename>\n\n"
                     "Options:\n"
+                    "   -f, --format <format>    Firmware file format (autodetected by default)\n"
                     "       --noreset            Do not reset the device once the upload is finished\n"
                     "   -w, --wait               Wait for the bootloader instead of rebooting\n\n"
-                    "Only Intel HEX files are suppported as of now.\n");
+                    "Supported firmware formats: ");
+
+    for (const ty_firmware_format *format = ty_firmware_formats; format->name; format++)
+        fprintf(stderr, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
+    fprintf(stderr, "\n");
 }
 
 static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64_t *rmtime)
@@ -60,7 +67,7 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
         return r;
 
     if (!*rfirmware || info.mtime != *rmtime) {
-        r = ty_firmware_load_ihex(filename, &firmware);
+        r = ty_firmware_load(filename, image_format, &firmware);
         if (r < 0)
             return r;
 
@@ -95,6 +102,10 @@ int upload(int argc, char *argv[])
             break;
         case 'w':
             wait_device = true;
+            break;
+
+        case 'f':
+            image_format = optarg;
             break;
 
         default:
