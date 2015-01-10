@@ -123,7 +123,7 @@ else()
                            src/process_posix.c
                            src/system_posix.c)
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+    if(LINUX)
         list(APPEND TY_SOURCES src/device_linux.c
                                src/timer_linux.c)
     elseif(APPLE)
