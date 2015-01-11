@@ -10,7 +10,7 @@ license=('GPL3')
 depends=('libudev.so')
 makedepends=('git')
 source=('git+https://github.com/Koromix/ty.git')
-md5sums=('SKIP')
+sha256sums=('SKIP')
 
 pkgver() {
   cd ty
@@ -28,5 +28,5 @@ build() {
 package() {
   cd ty
 
-  make install DESTDIR="$pkgdir"
+  make install DESTDIR="${pkgdir}"
 }
