@@ -189,7 +189,7 @@ static void child_send_error(ty_err err, const char *msg, void *udata)
     report->msg[sizeof(report->msg) - 1] = 0;
 }
 
-TY_FUNC_NORETURN static int child_exec(const char *path, const char *dir, const char * const args[],
+TY_NORETURN static int child_exec(const char *path, const char *dir, const char * const args[],
                                        const int fds[3], uint32_t flags, int cpipe)
 {
     struct child_report report;

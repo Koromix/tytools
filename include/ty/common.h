@@ -48,7 +48,7 @@
 
 #ifdef __GNUC__
     #define TY_PUBLIC __attribute__((__visibility__("default")))
-    #define TY_FUNC_NORETURN __attribute__((__noreturn__))
+    #define TY_NORETURN __attribute__((__noreturn__))
 
     #define TY_INIT(name) \
         __attribute__((constructor)) \
