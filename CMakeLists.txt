@@ -164,4 +164,4 @@ install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS tyc RUNTIME DESTINATION bin)
 
-install(FILES contrib/udev/teensy.rules DESTINATION /lib/udev/rules.d RENAME 49-teensy.rules)
+install(FILES contrib/udev/teensy.rules DESTINATION /usr/lib/udev/rules.d RENAME 49-teensy.rules)
