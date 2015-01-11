@@ -307,7 +307,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     start = ty_millis();
 
 restart:
-    r = poll(pfd, set->count, ty_adjust_timeout(timeout, start));
+    r = poll(pfd, (nfds_t)set->count, ty_adjust_timeout(timeout, start));
     if (r < 0) {
         switch (errno) {
         case EINTR:
