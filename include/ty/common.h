@@ -54,6 +54,12 @@
         __attribute__((constructor)) \
         void name(void)
 
+    #define TY_WARNING_DISABLE_SIGN_CONVERSION \
+        _Pragma("GCC diagnostic push"); \
+        _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"");
+    #define TY_WARNING_RESTORE \
+        _Pragma("GCC diagnostic pop");
+
     #ifdef __MINGW_PRINTF_FORMAT
         #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
     #else

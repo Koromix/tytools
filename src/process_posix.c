@@ -78,9 +78,14 @@ static void add_process(struct process *proc)
 {
     sigset_t mask, oldmask;
 
+// We can't stop sigaddset from tripping this (on OS X, at least), so disable it temporarily
+TY_WARNING_DISABLE_SIGN_CONVERSION
+
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &mask, &oldmask);
+
+TY_WARNING_RESTORE
 
     ty_htable_add(&processes, (uint32_t)proc->pid, &proc->hnode);
 
@@ -91,9 +96,13 @@ static void remove_process(struct process *proc)
 {
     sigset_t mask, oldmask;
 
+TY_WARNING_DISABLE_SIGN_CONVERSION
+
     sigemptyset(&mask);
     sigaddset(&mask, SIGCHLD);
     sigprocmask(SIG_BLOCK, &mask, &oldmask);
+
+TY_WARNING_RESTORE
 
     ty_htable_remove(&proc->hnode);
 
