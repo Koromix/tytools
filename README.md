@@ -18,6 +18,8 @@ It currently runs on Linux and Windows only.
 <a name="build"/>
 # Build instructions
 
+You can download a source release from the release page on GitHub or clone the repository.
+
 ty can be built using GCC. Clang is not supported yet.
 
 Experimental features are disabled by default, enable them by turning ON the EXPERIMENTAL option in cmake with `-DEXPERIMENTAL=1`.
@@ -30,25 +32,19 @@ Experimental features are disabled by default, enable them by turning ON the EXP
 
 To install the dependencies on Debian or Ubuntu execute:
 ```bash
-sudo apt-get install git build-essential cmake libudev-dev
+sudo apt-get install build-essential cmake libudev-dev
 ```
 
 On Arch Linux you can do so (as root):
 ```bash
-pacman -S --needed git base-devel cmake udev
+pacman -S --needed base-devel cmake udev
 ```
 
 <a name="build_linux_compile"/>
 ### Compile
 
-To get the latest development sources you need to use git:
+Open the project directory in a terminal and execute:
 ```bash
-git clone https://github.com/Koromix/ty.git
-```
-
-You can then build ty:
-```bash
-cd ty
 mkdir -p build/linux && cd build/linux
 cmake ../..
 make
@@ -80,9 +76,9 @@ If you use Arch Linux, execute as root:
 pacman -S --needed cmake mingw-w64-toolchain
 ```
 
-You can then use the appropriate toolchain file provided in the contrib/cmake directory:
+You can then use the appropriate toolchain file provided in the contrib/cmake directory. Open the
+project directory in a console and execute:
 ```bash
-cd ty
 mkdir -p build/win32 && cd build/win32
 cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/i686-w64-mingw32.cmake ../..
 make
