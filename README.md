@@ -23,7 +23,7 @@ Pre-built binaries are available for Windows.
 
 ty can be built using GCC. Clang is not supported yet.
 
-Experimental features are disabled by default, enable them by turning ON the EXPERIMENTAL option
+Experimental features are disabled by default, enable them by turning on the EXPERIMENTAL option
 in cmake with `-DEXPERIMENTAL=1`.
 
 <a name="build_linux"/>
@@ -43,7 +43,7 @@ pacman -S --needed base-devel cmake udev
 ```
 
 <a name="build_linux_compile"/>
-### Compile
+### Compilation
 
 Open the project directory in a terminal and execute:
 ```bash
@@ -70,7 +70,7 @@ at the moment, nor is the historical MinGW toolchain.
 To install MinGW-w64, the [TDM-GCC](http://tdm-gcc.tdragon.net/) package is probably the easiest
 option. Make sure to use the TDM64 MinGW-w64 edition.
 
-Open a console, go to the project directory and execute:
+To compile ty, open a console, go to the project directory and execute:
 ```bash
 mkdir build\win32 && cd build\win32
 cmake -G "MinGW Makefiles" ..\..
@@ -87,7 +87,7 @@ On Debian and Ubuntu, install cmake and mingw-w64:
 sudo apt-get install cmake mingw-w64
 ```
 
-If you use Arch Linux, execute as root:
+If you use Arch Linux, execute (as root):
 ```bash
 pacman -S --needed cmake mingw-w64-toolchain
 ```
@@ -116,9 +116,10 @@ can be omitted.
 ## Upload firmware
 
 Use `tyc upload <filename.hex>` to upload a specific firmware to your device. It is checked for
-compatibility with your model before being uploaded. By default, a reboot is triggered but you can
-use `--wait` to wait for the bootloader to show up, meaning ty will wait for you to press the button
-on your board.
+compatibility with your model before being uploaded.
+
+By default, a reboot is triggered but you can use `--wait` to wait for the bootloader to show up,
+meaning ty will wait for you to press the button on your board.
 
 <a name="usage_monitor"/>
 ## Serial monitor
