@@ -19,6 +19,7 @@ It currently runs on Linux and Windows only.
 # Build instructions
 
 You can download a source release from the release page on GitHub or clone the repository.
+Pre-built binaries are available for Windows.
 
 ty can be built using GCC. Clang is not supported yet.
 
@@ -60,7 +61,19 @@ cmake -DCMAKE_BUILD_TYPE=Debug ../..
 
 Pre-built binaries are provided in the releases section.
 
-You will need to install CMake and MinGW (with make) to build ty under Windows. Visual Studio is not supported at the moment.
+### Native compilation
+
+You need to install CMake and MinGW-w64 to build ty under Windows. Visual Studio is not supported at the moment, nor is the historical MinGW toolchain.
+
+To install MinGW-w64, the [TDM-GCC](http://tdm-gcc.tdragon.net/) package is probably the easiest option.
+Make sure to use the TDM64 MinGW-w64 edition.
+
+Open a console, go to the project directory and execute:
+```bash
+mkdir build\win32 && cd build\win32
+cmake -G "MinGW Makefiles" ..\..
+mingw32-make
+```
 
 ### Cross-compilation
 
