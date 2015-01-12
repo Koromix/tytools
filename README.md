@@ -10,6 +10,7 @@ It currently runs on Linux and Windows only.
   - [Linux](#build_linux)
   - [Windows](#build_windows)
 - [Usage](#usage)
+  - [List devices](#usage_list)
   - [Upload firmware](#usage_upload)
   - [Serial monitor](#usage_monitor)
   - [Other commands](#usage_misc)
@@ -106,11 +107,31 @@ make
 You can manage multiple devices connected simultaneously, ty uniquely identifies each device by its
 position in the host USB topology. Meaning if it stays on the same USB port, it is the same device
 for ty. That's necessary because across reboots and resets, Teensies look completely different to
-the host. Use `tyc list` to discover teensies (`--verbose` to get details).
+the host.
 
 When you want to target a specific device, use `tyc --device <path>#<serial> <command>`. The format
 of path is specific to ty and can be found using `tyc list`, serial is the USB serial number. Either
 can be omitted.
+
+<a name="usage_list"/>
+## List devices
+
+`tyc list` lists plugged Teensy devices. Here is how it looks:
+```
++ usb-1-2#34130 (HalfKay Bootloader)
++ usb-4-2#29460 (Raw HID)
++ usb-4-3#32250 (Serial)
+```
+
+If you want detailed information about plugged devices, use `--verbose`:
+```
++ usb-4-3#32250 (HalfKay Bootloader)
+  - node: /dev/hidraw3
+  - model: Teensy 3.0
+  - capabilities: identify, upload, reset
+```
+
+You can also watch device changes with `--watch`.
 
 <a name="usage_upload"/>
 ## Upload firmware
