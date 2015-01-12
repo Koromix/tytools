@@ -45,7 +45,8 @@ void print_list_usage(void)
 {
     fprintf(stderr, "usage: tyc list [--help] [options]\n\n"
                     "Options:\n"
-                    "   -v, --verbose            Print detailed information about devices\n");
+                    "   -v, --verbose            Print detailed information about devices\n"
+                    "   -w, --watch              Watch devices dynamically\n");
 }
 
 static void print_capabilities(ty_board *board)
