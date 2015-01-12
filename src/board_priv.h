@@ -43,7 +43,7 @@ struct _ty_board_mode_vtable {
     ssize_t (*write_serial)(ty_board *board, const char *buf, size_t size);
 
     int (*reset)(ty_board *board);
-    int (*upload)(ty_board *board, struct ty_firmware *firmware, uint16_t flags);
+    int (*upload)(ty_board *board, struct ty_firmware *firmware, uint16_t flags, ty_board_upload_progress_func *pf, void *udata);
 
     int (*reboot)(ty_board *board);
 };

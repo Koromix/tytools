@@ -48,6 +48,8 @@ enum {
 typedef int ty_board_manager_callback_func(ty_board *board, ty_board_event event, void *udata);
 typedef int ty_board_manager_wait_func(ty_board_manager *manager, void *udata);
 
+typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *f, size_t uploaded, void *udata);
+
 TY_PUBLIC extern const ty_board_mode *ty_board_modes[];
 TY_PUBLIC extern const ty_board_model *ty_board_models[];
 
@@ -117,7 +119,7 @@ TY_PUBLIC int ty_board_control_serial(ty_board *board, uint32_t rate, uint16_t f
 TY_PUBLIC ssize_t ty_board_read_serial(ty_board *board, char *buf, size_t size);
 TY_PUBLIC ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size);
 
-TY_PUBLIC int ty_board_upload(ty_board *board, struct ty_firmware *firmware, uint16_t flags);
+TY_PUBLIC int ty_board_upload(ty_board *board, struct ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata);
 TY_PUBLIC int ty_board_reset(ty_board *board);
 
 TY_PUBLIC int ty_board_reboot(ty_board *board);

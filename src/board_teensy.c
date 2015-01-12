@@ -404,15 +404,20 @@ static int halfkay_send(ty_board *board, size_t addr, void *data, size_t size, u
     return 0;
 }
 
-static int teensy_upload(ty_board *board, ty_firmware *f, uint16_t flags)
+static int teensy_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)
 {
     TY_UNUSED(flags);
 
-    for (size_t addr = 0; addr < f->size; addr += board->model->block_size) {
-        size_t size;
-        int r;
+    int r;
 
-        size = TY_MIN(board->model->block_size, (size_t)(f->size - addr));
+    if (pf) {
+        r = (*pf)(board, f, 0, udata);
+        if (r)
+            return r;
+    }
+
+    for (size_t addr = 0; addr < f->size; addr += board->model->block_size) {
+        size_t size = TY_MIN(board->model->block_size, (size_t)(f->size - addr));
 
         // Writing to the first block triggers flash erasure hence the longer timeout
         r = halfkay_send(board, addr, f->image + addr, size, addr ? 300 : 3000);
@@ -421,6 +426,12 @@ static int teensy_upload(ty_board *board, ty_firmware *f, uint16_t flags)
 
         // HalfKay generates STALL if you go too fast (translates to EPIPE on Linux)
         ty_delay(addr ? 30 : 300);
+
+        if (pf) {
+            r = (*pf)(board, f, addr + size, udata);
+            if (r)
+                return r;
+        }
     }
 
     return 0;

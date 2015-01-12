@@ -738,7 +738,7 @@ ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
     return board->mode->vtable->write_serial(board, buf, size);
 }
 
-int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
+int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)
 {
     assert(board);
     assert(f);
@@ -765,7 +765,7 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags)
             return ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->desc);
     }
 
-    return board->mode->vtable->upload(board, f, flags);
+    return board->mode->vtable->upload(board, f, flags, pf, udata);
 }
 
 int ty_board_reset(ty_board *board)

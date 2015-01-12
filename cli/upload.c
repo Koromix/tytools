@@ -69,6 +69,17 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
     return 0;
 }
 
+static int show_progress(const ty_board *board, const ty_firmware *f, size_t uploaded, void *udata)
+{
+    TY_UNUSED(board);
+    TY_UNUSED(udata);
+
+    printf("\rUploading firmware... %zu%%", uploaded * 100 / f->size);
+    fflush(stdout);
+
+    return 0;
+}
+
 int upload(int argc, char *argv[])
 {
     ty_board *board = NULL;
@@ -157,10 +168,10 @@ wait:
     printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)ty_board_model_get_code_size(model) * 100.0,
            firmware->size);
 
-    printf("Uploading firmware...\n");
-    r = ty_board_upload(board, firmware, 0);
+    r = ty_board_upload(board, firmware, 0, show_progress, NULL);
     if (r < 0)
         goto cleanup;
+    printf("\n");
 
     if (reset_after) {
         printf("Sending reset command\n");
