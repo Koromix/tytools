@@ -163,7 +163,6 @@ ignored. They are provided in case your application uses them for specific purpo
 
 You can learn about other commands using `tyc help`. Get specific help for them using
 `tyc help <command>`. The main ones are:
-* list: list teensies, and show details if used with `--verbose`
 * reset: reset the Teensy device (currently by issuing a reboot followed by a reset)
 
 <a name="faq"/>
