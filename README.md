@@ -23,7 +23,8 @@ Pre-built binaries are available for Windows.
 
 ty can be built using GCC. Clang is not supported yet.
 
-Experimental features are disabled by default, enable them by turning ON the EXPERIMENTAL option in cmake with `-DEXPERIMENTAL=1`.
+Experimental features are disabled by default, enable them by turning ON the EXPERIMENTAL option
+in cmake with `-DEXPERIMENTAL=1`.
 
 <a name="build_linux"/>
 ## Linux
@@ -63,10 +64,11 @@ Pre-built binaries are provided in the releases section.
 
 ### Native compilation
 
-You need to install CMake and MinGW-w64 to build ty under Windows. Visual Studio is not supported at the moment, nor is the historical MinGW toolchain.
+You need to install CMake and MinGW-w64 to build ty under Windows. Visual Studio is not supported
+at the moment, nor is the historical MinGW toolchain.
 
-To install MinGW-w64, the [TDM-GCC](http://tdm-gcc.tdragon.net/) package is probably the easiest option.
-Make sure to use the TDM64 MinGW-w64 edition.
+To install MinGW-w64, the [TDM-GCC](http://tdm-gcc.tdragon.net/) package is probably the easiest
+option. Make sure to use the TDM64 MinGW-w64 edition.
 
 Open a console, go to the project directory and execute:
 ```bash
@@ -77,7 +79,8 @@ mingw32-make
 
 ### Cross-compilation
 
-An easier option is to cross-compile the windows binary from Linux. You need to install MinGW-w64 first.
+An easier option is to cross-compile the windows binary from Linux. You need to install MinGW-w64
+first.
 
 On Debian and Ubuntu, install cmake and mingw-w64:
 ```bash
@@ -100,30 +103,44 @@ make
 <a name="usage"/>
 # Usage
 
-You can manage multiple devices connected simultaneously, ty uniquely identifies each device by its position in the host USB topology. Meaning if it stays on the same USB port, it is the same device for ty. That's necessary because across reboots and resets, Teensies look completely different to the host. Use `tyc list` to discover teensies (`--verbose` to get details).
+You can manage multiple devices connected simultaneously, ty uniquely identifies each device by its
+position in the host USB topology. Meaning if it stays on the same USB port, it is the same device
+for ty. That's necessary because across reboots and resets, Teensies look completely different to
+the host. Use `tyc list` to discover teensies (`--verbose` to get details).
 
-When you want to target a specific device, use `tyc --device <path>#<serial> <command>`. The format of path is specific to ty and can be found using `tyc list`, serial is the USB serial number. Either can be omitted.
+When you want to target a specific device, use `tyc --device <path>#<serial> <command>`. The format
+of path is specific to ty and can be found using `tyc list`, serial is the USB serial number. Either
+can be omitted.
 
 <a name="usage_upload"/>
 ## Upload firmware
 
-Use `tyc upload <filename.hex>` to upload a specific firmware to your device. It is checked for compatibility with your model before being uploaded. By default, a reboot is triggered but you can use `--wait` to wait for the bootloader to show up, meaning ty will wait for you to press the button on your board.
+Use `tyc upload <filename.hex>` to upload a specific firmware to your device. It is checked for
+compatibility with your model before being uploaded. By default, a reboot is triggered but you can
+use `--wait` to wait for the bootloader to show up, meaning ty will wait for you to press the button
+on your board.
 
 <a name="usage_monitor"/>
 ## Serial monitor
 
-`tyc monitor` opens a text connection with your Teensy. It is either done through the serial device (/dev/ttyACM*) or through the HID serial emulation (SEREMU) in other USB modes. ty uses the correct mode automatically.
+`tyc monitor` opens a text connection with your Teensy. It is either done through the serial device
+(/dev/ttyACM*) or through the HID serial emulation (SEREMU) in other USB modes. ty uses the correct
+mode automatically.
 
-You can use the `--reconnect` option to detect I/O errors (such as a reset, or after a brief unplugging) and reconnect immediately. Other errors will exit the program.
+You can use the `--reconnect` option to detect I/O errors (such as a reset, or after a brief
+unplugging) and reconnect immediately. Other errors will exit the program.
 
-The `--raw` option will disable line-buffering/editing and immediately send everything you type in the terminal.
+The `--raw` option will disable line-buffering/editing and immediately send everything you type in
+the terminal.
 
-See `tyc help monitor` for other options. Note that Teensy being a USB device, serial settings are ignored. They are provided in case your application uses them for specific purposes.
+See `tyc help monitor` for other options. Note that Teensy being a USB device, serial settings are
+ignored. They are provided in case your application uses them for specific purposes.
 
 <a name="usage_misc"/>
 ## Other commands
 
-You can learn about other commands using `tyc help`. Get specific help for them using `tyc help <command>`. The main ones are:
+You can learn about other commands using `tyc help`. Get specific help for them using
+`tyc help <command>`. The main ones are:
 * list: list teensies, and show details if used with `--verbose`
 * reset: reset the Teensy device (currently by issuing a reboot followed by a reset)
 
@@ -135,7 +152,8 @@ You can learn about other commands using `tyc help`. Get specific help for them 
 ### Why isn't Clang supported ?
 
 To make the code a little simpler, libty uses -fms-extensions which is theoretically supported on
-GCC and Clang. The problem is, it fails with designated initializers in Clang [due to a bug](http://llvm.org/bugs/show_bug.cgi?id=20573).
+GCC and Clang. The problem is, it fails with designated initializers in Clang
+[due to a bug](http://llvm.org/bugs/show_bug.cgi?id=20573).
 
 It has been fixed a few months ago in Clang but this fix will only materialize in Clang 3.6.
 Clang will be supported starting with this version.
