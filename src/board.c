@@ -693,7 +693,7 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
     return r;
 }
 
-int ty_board_control_serial(ty_board *board, uint32_t rate, uint16_t flags)
+int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags)
 {
     assert(board);
 
@@ -705,14 +705,14 @@ int ty_board_control_serial(ty_board *board, uint32_t rate, uint16_t flags)
     if (ty_device_get_type(board->dev) != TY_DEVICE_SERIAL)
         return 0;
 
-    r = ty_serial_set_control(board->h, rate, flags);
+    r = ty_serial_set_attributes(board->h, rate, flags);
     if (r < 0)
         return r;
 
     return 0;
 }
 
-ssize_t ty_board_read_serial(ty_board *board, char *buf, size_t size)
+ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
 {
     assert(board);
     assert(buf);
@@ -721,10 +721,10 @@ ssize_t ty_board_read_serial(ty_board *board, char *buf, size_t size)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    return board->mode->vtable->read_serial(board, buf, size);
+    return board->mode->vtable->serial_read(board, buf, size);
 }
 
-ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
+ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
 {
     assert(board);
     assert(buf);
@@ -735,7 +735,7 @@ ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size)
     if (!size)
         size = strlen(buf);
 
-    return board->mode->vtable->write_serial(board, buf, size);
+    return board->mode->vtable->serial_write(board, buf, size);
 }
 
 int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)

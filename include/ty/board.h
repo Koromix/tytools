@@ -114,10 +114,10 @@ static inline bool ty_board_has_capability(const ty_board *board, ty_board_capab
 
 TY_PUBLIC int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeout);
 
-TY_PUBLIC int ty_board_control_serial(ty_board *board, uint32_t rate, uint16_t flags);
+TY_PUBLIC int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags);
 
-TY_PUBLIC ssize_t ty_board_read_serial(ty_board *board, char *buf, size_t size);
-TY_PUBLIC ssize_t ty_board_write_serial(ty_board *board, const char *buf, size_t size);
+TY_PUBLIC ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size);
+TY_PUBLIC ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size);
 
 TY_PUBLIC int ty_board_upload(ty_board *board, struct ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata);
 TY_PUBLIC int ty_board_reset(ty_board *board);

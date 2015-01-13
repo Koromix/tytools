@@ -288,7 +288,7 @@ static int teensy_identify(ty_board *board)
     return 0;
 }
 
-static ssize_t teensy_read_serial(ty_board *board, char *buf, size_t size)
+static ssize_t teensy_serial_read(ty_board *board, char *buf, size_t size)
 {
     ssize_t r;
 
@@ -309,7 +309,7 @@ static ssize_t teensy_read_serial(ty_board *board, char *buf, size_t size)
     __builtin_unreachable();
 }
 
-static ssize_t teensy_write_serial(ty_board *board, const char *buf, size_t size)
+static ssize_t teensy_serial_write(ty_board *board, const char *buf, size_t size)
 {
     uint8_t report[seremu_packet_size + 1];
     size_t total = 0;
@@ -450,7 +450,7 @@ static int teensy_reboot(ty_board *board)
     r = TY_ERROR_UNSUPPORTED;
     switch (ty_device_get_type(board->dev)) {
     case TY_DEVICE_SERIAL:
-        r = ty_serial_set_control(board->h, 134, 0);
+        r = ty_serial_set_attributes(board->h, 134, 0);
         break;
 
     case TY_DEVICE_HID:
@@ -467,8 +467,8 @@ static int teensy_reboot(ty_board *board)
 static const struct _ty_board_mode_vtable teensy_mode_vtable = {
     .open = teensy_open,
     .identify = teensy_identify,
-    .read_serial = teensy_read_serial,
-    .write_serial = teensy_write_serial,
+    .serial_read = teensy_serial_read,
+    .serial_write = teensy_serial_write,
     .upload = teensy_upload,
     .reset = teensy_reset,
     .reboot = teensy_reboot

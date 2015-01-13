@@ -132,7 +132,7 @@ static int loop(ty_board *board, int outfd)
             break;
 
         case 2:
-            r = ty_board_read_serial(board, buf, sizeof(buf));
+            r = ty_board_serial_read(board, buf, sizeof(buf));
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
                     timeout = error_io_timeout;
@@ -179,7 +179,7 @@ static int loop(ty_board *board, int outfd)
             }
 #endif
 
-            r = ty_board_write_serial(board, buf, (size_t)r);
+            r = ty_board_serial_write(board, buf, (size_t)r);
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
                     timeout = error_io_timeout;
@@ -307,7 +307,7 @@ int monitor(int argc, char *argv[])
     if (r < 0)
         goto cleanup;
 
-    r = ty_board_control_serial(board, device_rate, device_flags);
+    r = ty_board_serial_set_attributes(board, device_rate, device_flags);
     if (r < 0)
         goto cleanup;
 

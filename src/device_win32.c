@@ -1056,7 +1056,7 @@ int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
     return 1;
 }
 
-int ty_serial_set_control(ty_handle *h, uint32_t rate, uint16_t flags)
+int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_SERIAL);
