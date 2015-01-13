@@ -39,6 +39,7 @@ struct _ty_board_mode_vtable {
 
     int (*identify)(ty_board *board);
 
+    int (*serial_set_attributes)(ty_board *board, uint32_t rate, uint16_t flags);
     ssize_t (*serial_read)(ty_board *board, char *buf, size_t size);
     ssize_t (*serial_write)(ty_board *board, const char *buf, size_t size);
 

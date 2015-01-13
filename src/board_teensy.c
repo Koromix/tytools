@@ -288,6 +288,14 @@ static int teensy_identify(ty_board *board)
     return 0;
 }
 
+static int teensy_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags)
+{
+    if (ty_device_get_type(board->dev) != TY_DEVICE_SERIAL)
+        return 0;
+
+    return ty_serial_set_attributes(board->h, rate, flags);
+}
+
 static ssize_t teensy_serial_read(ty_board *board, char *buf, size_t size)
 {
     ssize_t r;
@@ -467,6 +475,7 @@ static int teensy_reboot(ty_board *board)
 static const struct _ty_board_mode_vtable teensy_mode_vtable = {
     .open = teensy_open,
     .identify = teensy_identify,
+    .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,
     .upload = teensy_upload,

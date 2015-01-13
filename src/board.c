@@ -697,19 +697,10 @@ int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flag
 {
     assert(board);
 
-    int r;
-
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    if (ty_device_get_type(board->dev) != TY_DEVICE_SERIAL)
-        return 0;
-
-    r = ty_serial_set_attributes(board->h, rate, flags);
-    if (r < 0)
-        return r;
-
-    return 0;
+    return (*board->mode->vtable->serial_set_attributes)(board, rate, flags);
 }
 
 ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
