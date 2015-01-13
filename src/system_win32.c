@@ -335,7 +335,9 @@ int ty_terminal_setup(uint32_t flags)
         atexit(ty_terminal_restore);
     }
 
-    mode = ENABLE_PROCESSED_INPUT;
+    mode |= ENABLE_PROCESSED_INPUT;
+
+    mode &= (DWORD)~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
     if (!(flags & TY_TERMINAL_RAW))
         mode |= ENABLE_LINE_INPUT;
     if (!(flags & TY_TERMINAL_SILENT))

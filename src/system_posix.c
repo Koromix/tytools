@@ -11,9 +11,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <termios.h>
 #include <time.h>
 #include <unistd.h>
+#define TTYDEFCHARS
+#include <termios.h>
 #ifdef __APPLE__
 #include <mach/mach_time.h>
 #endif
@@ -340,6 +341,12 @@ int ty_terminal_setup(uint32_t flags)
         tio.c_lflag |= ISIG;
         tio.c_cc[VMIN] = 1;
         tio.c_cc[VTIME] = 0;
+    } else {
+        tio.c_iflag = TTYDEF_IFLAG;
+        tio.c_oflag = TTYDEF_OFLAG;
+        tio.c_lflag = TTYDEF_LFLAG;
+        tio.c_cflag = TTYDEF_CFLAG;
+        memcpy(&tio.c_cc, ttydefchars, sizeof(ttydefchars));
     }
 
     tio.c_lflag |= ECHO;
