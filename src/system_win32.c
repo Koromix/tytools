@@ -184,6 +184,8 @@ int ty_stat(const char *path, ty_file_info *info, bool follow)
 
         memcpy(info->fileindex, &id, 16);
     } else {
+        memset(info->fileindex, 0, 8);
+
         memcpy(&info->fileindex[8], &attr.nFileIndexHigh, 4);
         memcpy(&info->fileindex[12], &attr.nFileIndexLow, 4);
     }
