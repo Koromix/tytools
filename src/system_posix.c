@@ -319,7 +319,7 @@ static void restore_terminal(void)
     tcsetattr(STDIN_FILENO, TCSADRAIN, &orig_tio);
 }
 
-int ty_terminal_change(uint32_t flags)
+int ty_terminal_setup(uint32_t flags)
 {
     struct termios tio;
     int r;

@@ -287,7 +287,7 @@ int monitor(int argc, char *argv[])
 #endif
 
     ty_error_mask(TY_ERROR_UNSUPPORTED);
-    r = ty_terminal_change(terminal_flags);
+    r = ty_terminal_setup(terminal_flags);
     ty_error_unmask();
     if (r < 0) {
         if (r != TY_ERROR_UNSUPPORTED)

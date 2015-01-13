@@ -314,7 +314,7 @@ static void restore_terminal(void)
     SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_mode);
 }
 
-int ty_terminal_change(uint32_t flags)
+int ty_terminal_setup(uint32_t flags)
 {
     HANDLE handle;
     DWORD mode;
