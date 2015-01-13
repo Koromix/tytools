@@ -224,7 +224,7 @@ int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
     assert(dev);
     assert(rh);
 
-    return dev->vtable->open(dev, block, rh);
+    return (*dev->vtable->open)(dev, block, rh);
 }
 
 void ty_device_close(ty_handle *h)
@@ -232,7 +232,7 @@ void ty_device_close(ty_handle *h)
     if (!h)
         return;
 
-    h->dev->vtable->close(h);
+    (*h->dev->vtable->close)(h);
 }
 
 ty_device_type ty_device_get_type(const ty_device *dev)

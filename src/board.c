@@ -261,7 +261,7 @@ static int open_board(ty_board *board, ty_device *dev)
     }
 
     if (mode->vtable->open) {
-        r = mode->vtable->open(board);
+        r = (*mode->vtable->open)(board);
         if (r <= 0)
             return r;
     }
@@ -283,7 +283,7 @@ static int open_board(ty_board *board, ty_device *dev)
     }
 
     if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_IDENTIFY)) {
-        r = board->mode->vtable->identify(board);
+        r = (*board->mode->vtable->identify)(board);
         if (r < 0)
             return r;
     }
@@ -721,7 +721,7 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    return board->mode->vtable->serial_read(board, buf, size);
+    return (*board->mode->vtable->serial_read)(board, buf, size);
 }
 
 ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
@@ -735,7 +735,7 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     if (!size)
         size = strlen(buf);
 
-    return board->mode->vtable->serial_write(board, buf, size);
+    return (*board->mode->vtable->serial_write)(board, buf, size);
 }
 
 int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)
@@ -765,7 +765,7 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_up
             return ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->desc);
     }
 
-    return board->mode->vtable->upload(board, f, flags, pf, udata);
+    return (*board->mode->vtable->upload)(board, f, flags, pf, udata);
 }
 
 int ty_board_reset(ty_board *board)
@@ -775,7 +775,7 @@ int ty_board_reset(ty_board *board)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET))
         return ty_error(TY_ERROR_MODE, "Cannot reset in this mode");
 
-    return board->mode->vtable->reset(board);
+    return (*board->mode->vtable->reset)(board);
 }
 
 int ty_board_reboot(ty_board *board)
@@ -785,7 +785,7 @@ int ty_board_reboot(ty_board *board)
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT))
         return ty_error(TY_ERROR_MODE, "Cannot reboot in this mode");
 
-    return board->mode->vtable->reboot(board);
+    return (*board->mode->vtable->reboot)(board);
 }
 
 const ty_board_model *ty_board_test_firmware(const ty_firmware *f)
