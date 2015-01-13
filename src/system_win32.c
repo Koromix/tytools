@@ -23,7 +23,8 @@ static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
 
 static const uint64_t delta_epoch = 11644473600000;
 
-static DWORD orig_mode;
+static DWORD orig_console_mode;
+static bool saved_console_mode;
 
 HANDLE _ty_win32_descriptors[3];
 
@@ -309,11 +310,6 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     return set->id[ret - WAIT_OBJECT_0];
 }
 
-static void restore_terminal(void)
-{
-    SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_mode);
-}
-
 int ty_terminal_setup(uint32_t flags)
 {
     HANDLE handle;
@@ -332,12 +328,11 @@ int ty_terminal_setup(uint32_t flags)
                         ty_win32_strerror(0));
     }
 
-    static bool saved = false;
-    if (!saved) {
-        orig_mode = mode;
-        saved = true;
+    if (!saved_console_mode) {
+        orig_console_mode = mode;
+        saved_console_mode = true;
 
-        atexit(restore_terminal);
+        atexit(ty_terminal_restore);
     }
 
     mode = ENABLE_PROCESSED_INPUT;
@@ -352,4 +347,12 @@ int ty_terminal_setup(uint32_t flags)
                         ty_win32_strerror(0));
 
     return 0;
+}
+
+void ty_terminal_restore(void)
+{
+    if (!saved_console_mode)
+        return;
+
+    SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_console_mode);
 }

@@ -24,7 +24,8 @@ struct child_report {
     char msg[512];
 };
 
-static struct termios orig_tio;
+static struct termios orig_termios;
+static bool saved_termios;
 
 #ifdef __APPLE__
 
@@ -314,11 +315,6 @@ restart:
     assert(false);
 }
 
-static void restore_terminal(void)
-{
-    tcsetattr(STDIN_FILENO, TCSADRAIN, &orig_tio);
-}
-
 int ty_terminal_setup(uint32_t flags)
 {
     struct termios tio;
@@ -331,12 +327,11 @@ int ty_terminal_setup(uint32_t flags)
         return ty_error(TY_ERROR_SYSTEM, "tcgetattr() failed: %s", strerror(errno));
     }
 
-    static bool saved = false;
-    if (!saved) {
-        orig_tio = tio;
-        saved = true;
+    if (!saved_termios) {
+        orig_termios = tio;
+        saved_termios = true;
 
-        atexit(restore_terminal);
+        atexit(ty_terminal_restore);
     }
 
     if (flags & TY_TERMINAL_RAW) {
@@ -356,4 +351,12 @@ int ty_terminal_setup(uint32_t flags)
         return ty_error(TY_ERROR_SYSTEM, "tcsetattr() failed: %s", strerror(errno));
 
     return 0;
+}
+
+void ty_terminal_restore(void)
+{
+    if (!saved_termios)
+        return;
+
+    tcsetattr(STDIN_FILENO, TCSADRAIN, &orig_termios);
 }
