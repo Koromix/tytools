@@ -64,8 +64,8 @@ Pre-built binaries are provided in the releases section.
 
 ### Native compilation
 
-You need to install CMake and MinGW-w64 to build ty under Windows. Visual Studio is not supported
-at the moment, nor is the historical MinGW toolchain.
+You need to install [CMake](http://www.cmake.org/) and MinGW-w64 to build ty under Windows.
+Visual Studio is not supported at the moment, nor is the historical MinGW toolchain.
 
 To install MinGW-w64, the [TDM-GCC](http://tdm-gcc.tdragon.net/) package is probably the easiest
 option. Make sure to use the TDM64 MinGW-w64 edition.
