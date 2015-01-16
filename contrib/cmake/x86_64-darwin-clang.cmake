@@ -3,15 +3,15 @@
 set(CMAKE_SYSTEM_NAME Darwin)
 
 find_file(CMAKE_C_COMPILER
-    NAMES x86_64-apple-darwin14-gcc
-          x86_64-apple-darwin13-gcc
-          x86_64-apple-darwin12-gcc
-          x86_64-apple-darwin11-gcc)
+    NAMES x86_64-apple-darwin14-clang
+          x86_64-apple-darwin13-clang
+          x86_64-apple-darwin12-clang
+          x86_64-apple-darwin11-clang)
 
 if(CMAKE_C_COMPILER)
-    string(REGEX REPLACE "-gcc$" "" DARWIN_TOOLCHAIN "${CMAKE_C_COMPILER}")
+    string(REGEX REPLACE "-clang$" "" DARWIN_TOOLCHAIN "${CMAKE_C_COMPILER}")
 
-    set(CMAKE_CXX_COMPILER "${DARWIN_TOOLCHAIN}-g++")
+    set(CMAKE_CXX_COMPILER "${DARWIN_TOOLCHAIN}-clang++")
     set(PKG_CONFIG_EXECUTABLE "${DARWIN_TOOLCHAIN}-pkg-config")
 
     # Kind of a cheat, this path cannot exist (unless CMAKE_C_COMPILER is a directory)
@@ -30,7 +30,7 @@ if(CMAKE_C_COMPILER)
         message(FATAL_ERROR "Cannot find Apple SDK")
     endif()
 else()
-    message(FATAL_ERROR "Cannot find Apple GCC compiler")
+    message(FATAL_ERROR "Cannot find Apple Clang compiler")
 endif()
 
 # Adjust the default behaviour of the FIND_XXX() commands:
