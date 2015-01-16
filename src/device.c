@@ -11,11 +11,11 @@
 #include "device_priv.h"
 
 struct ty_device_monitor {
-    struct ty_device_monitor_;
+    TY_DEVICE_MONITOR
 };
 
 struct ty_handle {
-    struct ty_handle_;
+    TY_HANDLE
 };
 
 struct callback {

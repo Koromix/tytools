@@ -21,7 +21,7 @@
 #include "ty/system.h"
 
 struct ty_device_monitor {
-    struct ty_device_monitor_;
+    TY_DEVICE_MONITOR
 
     ty_list_head controllers;
 
@@ -35,7 +35,7 @@ struct ty_device_monitor {
 };
 
 struct ty_handle {
-    struct ty_handle_;
+    TY_HANDLE
 
     bool block;
     HANDLE handle;

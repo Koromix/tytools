@@ -27,11 +27,11 @@ struct ty_board_manager {
 };
 
 struct ty_board_mode {
-    struct ty_board_mode_;
+    TY_BOARD_MODE
 };
 
 struct ty_board_model {
-    struct ty_board_model_;
+    TY_BOARD_MODEL
 };
 
 struct callback {

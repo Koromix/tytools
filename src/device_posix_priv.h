@@ -12,7 +12,8 @@
 #include "device_priv.h"
 
 struct ty_handle {
-    struct ty_handle_;
+    TY_HANDLE
+
     int fd;
 };
 

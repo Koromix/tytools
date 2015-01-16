@@ -12,7 +12,7 @@
 #include "ty/system.h"
 
 struct ty_board_model {
-    struct ty_board_model_;
+    TY_BOARD_MODEL
 
     // Upload settings
     uint8_t usage;
@@ -28,7 +28,7 @@ struct ty_board_model {
 };
 
 struct ty_board_mode {
-    struct ty_board_mode_;
+    TY_BOARD_MODE
 
     // Build settings
     const char *flags;

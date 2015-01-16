@@ -35,7 +35,7 @@ if(WIN32)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_C_FLAGS "-std=gnu99 -fvisibility=hidden -fms-extensions -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
+    set(CMAKE_C_FLAGS "-std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
 
     if(CMAKE_COMPILER_IS_GNUCC)
         set(CMAKE_C_FLAGS_DEBUG "-Og -ggdb -D_FORTIFY_SOURCE=2")

@@ -49,32 +49,30 @@ struct _ty_board_mode_vtable {
     int (*reboot)(ty_board *board);
 };
 
-struct ty_board_mode_ {
-    const char *name;
-    const char *desc;
-
-    const struct _ty_board_mode_vtable *vtable;
-
-    uint16_t pid;
-    uint16_t vid;
-    ty_device_type type;
-    uint8_t iface;
-
+#define TY_BOARD_MODE \
+    const char *name; \
+    const char *desc; \
+    \
+    const struct _ty_board_mode_vtable *vtable; \
+    \
+    uint16_t pid; \
+    uint16_t vid; \
+    ty_device_type type; \
+    uint8_t iface; \
+    \
     uint16_t capabilities;
-};
 
 struct _ty_board_model_vtable {
 };
 
-struct ty_board_model_ {
-    const char *name;
-    const char *mcu;
-    const char *desc;
-
-    const struct _ty_board_model_vtable *vtable;
-
+#define TY_BOARD_MODEL \
+    const char *name; \
+    const char *mcu; \
+    const char *desc; \
+    \
+    const struct _ty_board_model_vtable *vtable; \
+    \
     size_t code_size;
-};
 
 TY_C_END
 

@@ -14,7 +14,6 @@ It currently runs on Linux and Windows only.
   - [Upload firmware](#usage_upload)
   - [Serial monitor](#usage_monitor)
   - [Other commands](#usage_misc)
-- [FAQ](#faq)
 
 <a name="build"/>
 # Build instructions
@@ -22,7 +21,7 @@ It currently runs on Linux and Windows only.
 You can download a source release from the release page on GitHub or clone the repository.
 Pre-built binaries are available for Windows.
 
-ty can be built using GCC. Clang is not supported yet.
+ty can be built using GCC or Clang.
 
 Experimental features are disabled by default, enable them by turning on the EXPERIMENTAL option
 in cmake with `-DEXPERIMENTAL=1`.
@@ -164,19 +163,3 @@ ignored. They are provided in case your application uses them for specific purpo
 You can learn about other commands using `tyc help`. Get specific help for them using
 `tyc help <command>`. The main ones are:
 * reset: reset the Teensy device (currently by issuing a reboot followed by a reset)
-
-<a name="faq"/>
-# FAQ
-
-## Compilation and installation
-
-### Why isn't Clang supported ?
-
-To make the code a little simpler, libty uses -fms-extensions which is theoretically supported on
-GCC and Clang. The problem is, it fails with designated initializers in Clang
-[due to a bug](http://llvm.org/bugs/show_bug.cgi?id=20573).
-
-It has been fixed a few months ago in Clang but this fix will only materialize in Clang 3.6.
-Clang will be supported starting with this version.
-
-As a matter of fact, I'm using Clang's trunk version to compile the code in addition to GCC.

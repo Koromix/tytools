@@ -14,14 +14,13 @@
 
 TY_C_BEGIN
 
-struct ty_device_monitor_ {
-    ty_list_head callbacks;
-    int callback_id;
-
-    ty_htable devices;
-
+#define TY_DEVICE_MONITOR \
+    ty_list_head callbacks; \
+    int callback_id; \
+    \
+    ty_htable devices; \
+    \
     void *udata;
-};
 
 struct _ty_device_vtable {
     int (*open)(ty_device *dev, bool block, ty_handle **rh);
@@ -51,9 +50,8 @@ struct ty_device {
     void *udata;
 };
 
-struct ty_handle_ {
+#define TY_HANDLE \
     ty_device *dev;
-};
 
 int _ty_device_monitor_init(ty_device_monitor *monitor);
 void _ty_device_monitor_release(ty_device_monitor *monitor);

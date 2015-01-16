@@ -16,7 +16,7 @@
 #include "ty/system.h"
 
 struct ty_device_monitor {
-    struct ty_device_monitor_;
+    TY_DEVICE_MONITOR
 
     struct udev_monitor *monitor;
 };
