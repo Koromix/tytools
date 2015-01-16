@@ -143,7 +143,11 @@ static int loop(ty_board *board, int outfd)
                 return (int)r;
             }
 
+#ifdef _WIN32
+            r = write(outfd, buf, (unsigned int)r);
+#else
             r = write(outfd, buf, (size_t)r);
+#endif
             if (r < 0) {
                 if (errno == EIO)
                     return ty_error(TY_ERROR_IO, "I/O error on standard output");
@@ -173,7 +177,7 @@ static int loop(ty_board *board, int outfd)
 
 #ifdef _WIN32
             if (fake_echo) {
-                r = write(outfd, buf, (size_t)r);
+                r = write(outfd, buf, (unsigned int)r);
                 if (r < 0)
                     return (int)r;
             }

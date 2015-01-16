@@ -297,7 +297,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     assert(set->count);
     assert(set->count <= 64);
 
-    DWORD ret = WaitForMultipleObjects(set->count, set->desc, FALSE,
+    DWORD ret = WaitForMultipleObjects((DWORD)set->count, set->desc, FALSE,
                                        timeout < 0 ? INFINITE : (DWORD)timeout);
     switch (ret) {
     case WAIT_FAILED:

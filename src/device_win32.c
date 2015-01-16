@@ -902,7 +902,7 @@ static int open_win32_device(ty_device *dev, bool block, ty_handle **rh)
 
     SetCommTimeouts(h->handle, &timeouts);
 
-    r = ReadFile(h->handle, h->buf, read_buffer_size, &len, h->ov);
+    r = ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, &len, h->ov);
     if (!r && GetLastError() != ERROR_IO_PENDING) {
         r = ty_error(TY_ERROR_SYSTEM, "ReadFile() failed: %s", ty_win32_strerror(0));
         goto error;
@@ -1002,7 +1002,7 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
     }
 
     ResetEvent(h->ov->hEvent);
-    ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
+    ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(h->handle);
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
@@ -1178,7 +1178,7 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
 
         // Could be a transient error, try to restart it
         ResetEvent(h->ov->hEvent);
-        ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
+        ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
         if (!ret && GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
             h->len = -1;
@@ -1208,7 +1208,7 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
 
     if (!h->len) {
         ResetEvent(h->ov->hEvent);
-        ret = (DWORD)ReadFile(h->handle, h->buf, read_buffer_size, NULL, h->ov);
+        ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
         if (!ret && GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
             h->len = -1;
