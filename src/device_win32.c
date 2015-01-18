@@ -322,9 +322,9 @@ static int find_device_node(DEVINST inst, ty_device *dev)
 {
     int r;
 
-    // GUID_DEVINTERFACE_COMPORT only works for real COM ports... Haven't found any way to
-    // list virtual (USB) serial device interfaces, so instead list USB devices and consider
-    // them serial if registry key "PortName" is available (and use its value as device node).
+    /* GUID_DEVINTERFACE_COMPORT only works for real COM ports... Haven't found any way to
+       list virtual (USB) serial device interfaces, so instead list USB devices and consider
+       them serial if registry key "PortName" is available (and use its value as device node). */
     if (strncmp(dev->key, "USB\\", 4) == 0) {
         r = get_device_comport(inst, &dev->path);
         if (r <= 0)

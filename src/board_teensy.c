@@ -226,27 +226,22 @@ const ty_board_model _ty_teensy_31_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1E,
-    .halfkay_version = 2,
-    .code_size = 262144,
-    .block_size = 1024,
 
-    .toolchain = "arm-none-eabi",
-    .core = "teensy/cores/teensy3",
-    .frequency = 96000000,
-    .flags = "-mcpu=cortex-m4 -mthumb -D__MK20DX256__",
-    .ldflags = "-mcpu=cortex-m4 -mthumb -T\"$arduino/hardware/teensy/cores/teensy3/mk20dx256.ld\""
+    .code_size = 262144,
+    .halfkay_version = 2,
+    .block_size = 1024
 };
 
 static const size_t seremu_packet_size = 32;
 
-// Two quirks have to be accounted when reading the serial number.
-//
-// The bootloader returns the serial number as hexadecimal with prefixed zeros
-// (which would suggest octal to stroull).
-//
-// In other modes a decimal value is used, but Teensyduino 1.19 added a workaround
-// for a Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
-// See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194d
+/* Two quirks have to be accounted when reading the serial number.
+
+   The bootloader returns the serial number as hexadecimal with prefixed zeros
+   (which would suggest octal to stroull).
+
+   In other modes a decimal value is used, but Teensyduino 1.19 added a workaround
+   for a Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
+   See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194d */
 static int teensy_open(ty_board *board)
 {
     const char *s = ty_device_get_serial_number(board->dev);
@@ -328,7 +323,8 @@ static ssize_t teensy_serial_write(ty_board *board, const char *buf, size_t size
         return ty_serial_write(board->h, buf, (ssize_t)size);
 
     case TY_DEVICE_HID:
-        // SEREMU expects packets of 32 bytes
+        /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so no binary
+           transfers. */
         for (size_t i = 0; i < size;) {
             memset(report, 0, sizeof(report));
             memcpy(report + 1, buf + i, TY_MIN(seremu_packet_size, size - i));
@@ -397,8 +393,8 @@ static int halfkay_send(ty_board *board, size_t addr, void *data, size_t size, u
 
     start = ty_millis();
 
-    // We may get errors along the way (while the bootloader works)
-    // so try again until timeout expires.
+    /* We may get errors along the way (while the bootloader works) so try again
+       until timeout expires. */
     do {
         r = ty_hid_write(h, buf, size);
         if (r >= 0)

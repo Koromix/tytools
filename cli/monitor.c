@@ -167,8 +167,8 @@ static int loop(ty_board *board, int outfd)
             }
             if (!r) {
                 if (timeout_eof >= 0) {
-                    // EOF reached, don't listen to stdin anymore, and start timeout to give some
-                    // time for the device to send any data before closing down
+                    /* EOF reached, don't listen to stdin anymore, and start timeout to give some
+                       time for the device to send any data before closing down. */
                     timeout = timeout_eof;
                     ty_descriptor_set_remove(&set, 3);
                 }

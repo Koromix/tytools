@@ -283,7 +283,7 @@ restart:
         switch (errno) {
         case EINTR:
             goto restart;
-        // hidraw honours O_NONBLOCK only on read operations.
+        // hidraw honours O_NONBLOCK only on read operations
         case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
         case EWOULDBLOCK:

@@ -46,8 +46,8 @@ int ty_timer_new(ty_timer **rtimer)
     if (!timer)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    // Must be done first because ty_timer_free can't check if mutex is initialized
-    // (without an annoying mutex_initialized variable anyway).
+    /* Must be done first because ty_timer_free can't check if mutex is initialized
+       (without an annoying mutex_initialized variable anyway). */
     InitializeCriticalSection(&timer->mutex);
 
     timer->event = CreateEvent(NULL, TRUE, FALSE, NULL);

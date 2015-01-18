@@ -249,8 +249,8 @@ static int open_board(ty_board *board, ty_device *dev)
 
     board->mode = mode;
 
-    // Detect serial number changes: if it's different, we know it's probably a different board
-    // and the things we knew about it (such as the model) are not valid anymore.
+    /* Detect serial number changes: if it's different, we know it's probably a different board
+       and the things we knew about it (such as the model) are not valid anymore. */
     old_serial = board->serial;
 
     s = ty_device_get_serial_number(dev);
@@ -394,8 +394,8 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
             if (board->dev == dev) {
                 close_board(board);
 
-                // If there's only one element, it must be us because (see close_board)
-                // so the timer is either not set or wrong.
+                /* If there's only one element, it must be us because (see close_board)
+                   so the timer is either not set or wrong. */
                 if (ty_list_is_singular(&manager->missing_boards)) {
                     r = ty_timer_set(manager->timer, drop_board_delay, TY_TIMER_ONESHOT);
                     if (r < 0)
@@ -783,14 +783,13 @@ const ty_board_model *ty_board_test_firmware(const ty_firmware *f)
 {
     assert(f);
 
-    // Naive search with each board's signature, not pretty but unless
-    // thousands of models appear this is good enough.
-
     size_t magic_size = sizeof(signatures[0].magic);
 
     if (f->size < magic_size)
         return NULL;
 
+    /* Naive search with each board's signature, not pretty but unless
+       thousands of models appear this is good enough. */
     for (size_t i = 0; i < f->size - magic_size; i++) {
         for (const struct firmware_signature *sig = signatures; sig->model; sig++) {
             if (memcmp(f->image + i, sig->magic, magic_size) == 0)

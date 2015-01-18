@@ -43,8 +43,8 @@ static inline uint32_t ty_htable_hash_str(const char *s)
     return hash;
 }
 
-// While a break will only end the inner loop, the outer loop will subsequently fail
-// the cur == TY_UNIQUE_ID(head) test and thus break out of the outer loop too.
+/* While a break will only end the inner loop, the outer loop will subsequently fail
+   the cur == TY_UNIQUE_ID(head) test and thus break out of the outer loop too. */
 #define ty_htable_foreach(cur, table) \
     for (ty_htable_head *TY_UNIQUE_ID(head) = (ty_htable_head *)(table)->heads, *cur = TY_UNIQUE_ID(head), *TY_UNIQUE_ID(next); \
             cur == TY_UNIQUE_ID(head) && TY_UNIQUE_ID(head) < (ty_htable_head *)((table)->heads + (table)->size); \

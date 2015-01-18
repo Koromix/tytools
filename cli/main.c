@@ -192,8 +192,8 @@ static void handle_sigchld(int sig)
 
     pid_t pid;
 
-    // Reap all children, we don't use SIG_IGN or SA_NOCLDWAIT because
-    // we want to wait for some children and ignore others.
+    /* Reap all children, we don't use SIG_IGN or SA_NOCLDWAIT because
+       we want to wait for some children and ignore others. */
     do {
         pid = waitpid((pid_t)-1, 0, WNOHANG);
     } while (pid > 0);

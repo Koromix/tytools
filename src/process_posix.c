@@ -121,8 +121,8 @@ static int create_pipe(int pfd[2], int flags)
 
 #else
 
-// Racy alternative, not having CLOEXEC by default (and explictely disabled
-// for standard descriptors) is one of the most pervasive design defects ever.
+/* Racy alternative, not having CLOEXEC by default (and explictely disabled
+   for standard descriptors) is one of the most pervasive design defects ever. */
 static int create_pipe(int pfd[2], int flags)
 {
     int fds[2], r;
@@ -470,9 +470,9 @@ static void signal_process(const siginfo_t *si)
     free_process(proc);
 }
 
-// Pass 0 as signum to avoid automatic child reaping if you want to do it yourself. This
-// way you can register ty_process_handle_sigchld directly as the signal handler and it will
-// reap children correctly.
+/* Pass 0 as signum to avoid automatic child reaping if you want to do it yourself. This
+   way you can register ty_process_handle_sigchld directly as the signal handler and it
+   will reap children correctly. */
 void ty_process_handle_sigchld(int signum)
 {
     int options;
