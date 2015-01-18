@@ -14,24 +14,16 @@
 struct ty_board_model {
     TY_BOARD_MODEL
 
-    // Upload settings
+    // Identifcation
     uint8_t usage;
+
+    // Upload settings
     uint8_t halfkay_version;
     size_t block_size;
-
-    // Build settings
-    const char *toolchain;
-    const char *core;
-    uint32_t frequency;
-    const char *flags;
-    const char *ldflags;
 };
 
 struct ty_board_mode {
     TY_BOARD_MODE
-
-    // Build settings
-    const char *flags;
 };
 
 static const struct _ty_board_mode_vtable teensy_mode_vtable;
@@ -59,10 +51,7 @@ const ty_board_mode _ty_teensy_flightsim_mode = {
     .vid = 0x16C0,
     .pid = 0x488,
     .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    // FIXME: build capability?
-    .flags = "-DUSB_FLIGHTSIM -DLAYOUT_US_ENGLISH"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 const ty_board_mode _ty_teensy_hid_mode = {
@@ -75,9 +64,7 @@ const ty_board_mode _ty_teensy_hid_mode = {
     .vid = 0x16C0,
     .pid = 0x482,
     .iface = 2,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_HID -DLAYOUT_US_ENGLISH"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 const ty_board_mode _ty_teensy_midi_mode = {
@@ -90,9 +77,7 @@ const ty_board_mode _ty_teensy_midi_mode = {
     .vid = 0x16C0,
     .pid = 0x485,
     .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_MIDI -DLAYOUT_US_ENGLISH"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 const ty_board_mode _ty_teensy_rawhid_mode = {
@@ -105,9 +90,7 @@ const ty_board_mode _ty_teensy_rawhid_mode = {
     .vid = 0x16C0,
     .pid = 0x486,
     .iface = 1,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_RAWHID -DLAYOUT_US_ENGLISH"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 const ty_board_mode _ty_teensy_serial_mode = {
@@ -120,9 +103,7 @@ const ty_board_mode _ty_teensy_serial_mode = {
     .vid = 0x16C0,
     .pid = 0x483,
     .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_SERIAL -DLAYOUT_US_ENGLISH"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 const ty_board_mode _ty_teensy_serial_hid_mode = {
@@ -135,9 +116,7 @@ const ty_board_mode _ty_teensy_serial_hid_mode = {
     .vid = 0x16C0,
     .pid = 0x487,
     .iface = 0,
-    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT,
-
-    .flags = "-DUSB_SERIAL_HID -DLAYOUT_US_ENGLISH"
+    .capabilities = TY_BOARD_CAPABILITY_SERIAL | TY_BOARD_CAPABILITY_REBOOT
 };
 
 static const struct _ty_board_model_vtable teensy_model_vtable;
@@ -150,15 +129,10 @@ const ty_board_model _ty_teensy_pp10_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1A,
-    .halfkay_version = 0,
-    .code_size = 64512,
-    .block_size = 256,
 
-    .toolchain = "avr",
-    .core = "teensy/cores/teensy",
-    .frequency = 16000000,
-    .flags = "-mmcu=at90usb646",
-    .ldflags = "-mmcu=at90usb646"
+    .code_size = 64512,
+    .halfkay_version = 0,
+    .block_size = 256
 };
 
 const ty_board_model _ty_teensy_20_model = {
@@ -169,15 +143,10 @@ const ty_board_model _ty_teensy_20_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1B,
-    .halfkay_version = 0,
-    .code_size = 32256,
-    .block_size = 128,
 
-    .toolchain = "avr",
-    .core = "teensy/cores/teensy",
-    .frequency = 16000000,
-    .flags = "-mmcu=atmega32u4",
-    .ldflags = "-mmcu=atmega32u4"
+    .code_size = 32256,
+    .halfkay_version = 0,
+    .block_size = 128
 };
 
 const ty_board_model _ty_teensy_pp20_model = {
@@ -188,15 +157,10 @@ const ty_board_model _ty_teensy_pp20_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1C,
-    .halfkay_version = 1,
-    .code_size = 130048,
-    .block_size = 256,
 
-    .toolchain = "avr",
-    .core = "teensy/cores/teensy",
-    .frequency = 16000000,
-    .flags = "-mmcu=at90usb1286",
-    .ldflags = "-mmcu=at90usb1286"
+    .code_size = 130048,
+    .halfkay_version = 1,
+    .block_size = 256
 };
 
 const ty_board_model _ty_teensy_30_model = {
@@ -207,15 +171,10 @@ const ty_board_model _ty_teensy_30_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1D,
-    .halfkay_version = 2,
-    .code_size = 131072,
-    .block_size = 1024,
 
-    .toolchain = "arm-none-eabi",
-    .core = "teensy/cores/teensy3",
-    .frequency = 96000000,
-    .flags = "-mcpu=cortex-m4 -mthumb -D__MK20DX128__",
-    .ldflags = "-mcpu=cortex-m4 -mthumb -T\"$arduino/hardware/teensy/cores/teensy3/mk20dx128.ld\""
+    .code_size = 131072,
+    .halfkay_version = 2,
+    .block_size = 1024
 };
 
 const ty_board_model _ty_teensy_31_model = {
