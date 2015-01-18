@@ -427,6 +427,12 @@ static int create_device(ty_device_monitor *monitor, const char *key, DEVINST in
     if (r <= 0)
         goto cleanup;
 
+    /* ports is used to make the USB location string, but you can pass NULL. create_device() is
+       called in two contexts:
+       - when listing USB devices, we've already got the ports used to find the device so we pass
+         it to this function
+       - when a device is added, we know nothing so create_device() has to walk up the device tree
+         to identify ports, see resolve_device_location() */
     if (ports) {
         r = build_location_string(ports, depth, &dev->location);
         if (r < 0)
@@ -459,6 +465,7 @@ static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t por
     }
 
     cret = CM_Get_Child(&child, inst, 0);
+    // Leaf = actual device, so just try to create a device struct for it
     if (cret != CR_SUCCESS)
         return create_device(monitor, NULL, inst, ports, depth);
 
@@ -515,6 +522,11 @@ error:
     return r;
 }
 
+/* The principles here are simple, they're just hidden behind ugly Win32 APIs. Basically:
+   - list USB controllers and assign them a controller ID (1, 2, etc.), this will be the first
+     port number is the USB location string
+   - for each controller, browse the device tree recursively. The port number for each hub/device
+     comes from the device registry (Vista and later) or asking hubs about it (XP) */
 static int list_devices(ty_device_monitor *monitor)
 {
     HDEVINFO set;
@@ -657,6 +669,8 @@ static unsigned int __stdcall monitor_thread(void *udata)
         goto cleanup;
     }
 
+    /* Our fake window is created and ready to receive device notifications,
+       ty_device_monitor_new() can go on. */
     SetEvent(monitor->event);
 
     while((ret = GetMessage(&msg, NULL, 0, 0)) != 0) {
@@ -694,6 +708,10 @@ static int wait_event(HANDLE event)
     return 0;
 }
 
+/* Monitoring device changes on Windows involves a window to receive device notifications on the
+   thread message queue. Unfortunately we can't poll on message queues so instead, we make a
+   background thread to get device notifications, and tell us about it using Win32 events which
+   we can poll. */
 int ty_device_monitor_new(ty_device_monitor **rmonitor)
 {
     assert(rmonitor);
@@ -726,6 +744,9 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
     if (r < 0)
         goto error;
 
+    /* We can't create our fake window here, because the messages would be posted to this thread's
+       message queue and not to the monitoring thread. So instead, the background thread creates
+       its own window and we wait for it to signal us before we continue. */
     monitor->thread = (HANDLE)_beginthreadex(NULL, 0, monitor_thread, monitor, 0, NULL);
     if (!monitor->thread)
         return ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
@@ -796,6 +817,8 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 
     EnterCriticalSection(&monitor->mutex);
 
+    /* We don't want to keep the lock for too long, so move all notifications to our own list
+       and let the background thread work and process Win32 events. */
     ty_list_replace(&monitor->notifications, &notifications);
     r = monitor->ret;
 
@@ -830,6 +853,8 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 cleanup:
     EnterCriticalSection(&monitor->mutex);
 
+    /* If an error occurs, there maty be unprocessed notifications. We don't want to lose them so
+       put everything back in front of the notification list. */
     ty_list_splice(&monitor->notifications, &notifications);
     if (ty_list_is_empty(&monitor->notifications))
         ResetEvent(monitor->event);
@@ -987,6 +1012,8 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
 
+    /* HID communication is message-based. So if the caller does not provide a big enough
+       buffer, we can just discard the extra data, unlike for serial communication. */
     if (len) {
         if (h->buf[0]) {
             if (size > len)
@@ -1187,6 +1214,9 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
 
+    /* Serial devices are stream-based. If we don't have any data yet, see if our asynchronous
+       read request has returned anything. Then we can just give the user the data we have, until
+       our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
     if (!h->len) {
         ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, h->block);
         if (!ret) {
@@ -1206,6 +1236,9 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
     h->ptr += size;
     h->len -= (ssize_t)size;
 
+    /* Our buffer has been fully read, start a new asynchonous request. I don't know how
+       much latency this brings. Maybe double buffering would help, but not before any concrete
+       benchmarking is done. */
     if (!h->len) {
         ResetEvent(h->ov->hEvent);
         ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
