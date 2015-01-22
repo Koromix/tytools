@@ -36,41 +36,26 @@ static const char *device_subsystems[] = {
 
 static struct udev *udev;
 
-static int compute_device_location(const char *key, char **rlocation)
+static int compute_device_location(struct udev_device *dev, char **rlocation)
 {
-    const char *end;
-    uint8_t buf;
+    const char *busnum, *devpath;
     char *location;
-    int r, len;
+    int r;
 
-    key = strstr(key, "/usb");
-    if (!key || strlen(key) < 5)
-        return 0;
-    key += 5;
+    busnum = udev_device_get_sysattr_value(dev, "busnum");
+    devpath = udev_device_get_sysattr_value(dev, "devpath");
 
-    r = sscanf(key, "/%hhu%n", &buf, &len);
-    if (r < 1)
-        return 0;
-    end = key + len;
-
-    do {
-        len = 0;
-        r = sscanf(end, "-%hhu%n", &buf, &len);
-        end += len;
-    } while (r == 1);
-
-    if (*end != '/')
+    if (!busnum || !devpath)
         return 0;
 
-    key++;
-
-    // Account for 'usb-' prefix and NUL byte
-    location = malloc((size_t)(end - key) + 5);
-    if (!location)
+    r = asprintf(&location, "usb-%s-%s", busnum, devpath);
+    if (r < 0)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    strcpy(location, "usb-");
-    strncat(location, key, (size_t)(end - key));
+    for (char *ptr = location; *ptr; ptr++) {
+        if (*ptr == '.')
+            *ptr = '-';
+    }
 
     *rlocation = location;
     return 1;
@@ -105,7 +90,7 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
     if (!dev->key)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    r = compute_device_location(dev->key, &dev->location);
+    r = compute_device_location(agg->usb, &dev->location);
     if (r <= 0)
         return r;
 
