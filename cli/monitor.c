@@ -125,6 +125,7 @@ static int loop(ty_board *board, int outfd)
                     return (int)r;
 
                 fill_descriptor_set(&set, board);
+                timeout = -1;
 
                 printf("Connection ready\n");
             }
@@ -170,6 +171,7 @@ static int loop(ty_board *board, int outfd)
                     /* EOF reached, don't listen to stdin anymore, and start timeout to give some
                        time for the device to send any data before closing down. */
                     timeout = timeout_eof;
+                    ty_descriptor_set_remove(&set, 1);
                     ty_descriptor_set_remove(&set, 3);
                 }
                 break;
