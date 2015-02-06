@@ -8,10 +8,6 @@
 #include "ty.h"
 #include "main.h"
 
-struct list_context {
-    bool verbose;
-};
-
 struct capability_description {
     uint32_t cap;
     const char *desc;
