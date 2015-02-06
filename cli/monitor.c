@@ -85,7 +85,7 @@ static void fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
     ty_descriptor_set_clear(set);
 
     ty_board_manager_get_descriptors(ty_board_get_manager(board), set, 1);
-    ty_device_get_descriptors(ty_board_get_handle(board), set, 2);
+    ty_board_get_descriptors(board, TY_BOARD_CAPABILITY_SERIAL, set, 2);
 #ifdef _WIN32
     ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
 #else

@@ -98,7 +98,8 @@ void print_supported_models(void)
 
     for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
         const ty_board_model *model = *cur;
-        fprintf(stderr, "   - %-22s (%s)\n", ty_board_model_get_name(model), ty_board_model_get_mcu(model));
+        fprintf(stderr, "   - %-22s (%s, %s)\n", ty_board_model_get_desc(model),
+                ty_board_model_get_name(model), ty_board_model_get_mcu(model));
     }
 }
 
@@ -148,7 +149,7 @@ static int board_callback(ty_board *board, ty_board_event event, void *udata)
         break;
 
     case TY_BOARD_EVENT_CHANGED:
-    case TY_BOARD_EVENT_CLOSED:
+    case TY_BOARD_EVENT_DISAPPEARED:
         break;
 
     case TY_BOARD_EVENT_DROPPED:
@@ -175,8 +176,8 @@ int get_board(ty_board **rboard)
 
     static ty_board *previous_board = NULL;
     if (main_board != previous_board) {
-        printf("Board at '%s#%"PRIu64"' (%s)\n", ty_board_get_location(main_board),
-               ty_board_get_serial_number(main_board), ty_board_mode_get_desc(ty_board_get_mode(main_board)));
+        printf("Board at '%s#%"PRIu64"'\n", ty_board_get_location(main_board),
+               ty_board_get_serial_number(main_board));
         previous_board = main_board;
     }
 

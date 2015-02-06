@@ -25,8 +25,7 @@ static const struct option long_options[] = {
     {0}
 };
 
-static const struct capability_description capabilities[] = {
-    {TY_BOARD_CAPABILITY_IDENTIFY, "identify"},
+static const struct capability_description capability_names[] = {
     {TY_BOARD_CAPABILITY_UPLOAD,   "upload"},
     {TY_BOARD_CAPABILITY_RESET,    "reset"},
     {TY_BOARD_CAPABILITY_SERIAL,   "serial"},
@@ -45,16 +44,34 @@ void print_list_usage(void)
                     "   -w, --watch              Watch devices dynamically\n");
 }
 
-static void print_capabilities(ty_board *board)
+static void print_capabilities(uint16_t capabilities)
 {
     bool first = true;
-    for (const struct capability_description *c = capabilities; c->desc; c++) {
-        if (ty_board_has_capability(board, c->cap)) {
+    for (const struct capability_description *c = capability_names; c->desc; c++) {
+        if (capabilities & (1 << c->cap)) {
             printf("%s%s", first ? "" : ", ", c->desc);
             first = false;
         }
     }
-    printf("\n");
+
+    if (first)
+        printf("(none)");
+}
+
+static int print_interface_info(ty_board *board, ty_board_interface *iface, void *udata)
+{
+    TY_UNUSED(board);
+    TY_UNUSED(udata);
+
+    printf("    * %s: %s\n", ty_board_interface_get_desc(iface),
+           ty_device_get_path(ty_board_interface_get_device(iface)));
+
+    return 0;
+}
+
+static void print_interfaces(ty_board *board)
+{
+    ty_board_list_interfaces(board, print_interface_info, NULL);
 }
 
 static int list_callback(ty_board *board, ty_board_event event, void *udata)
@@ -62,28 +79,40 @@ static int list_callback(ty_board *board, ty_board_event event, void *udata)
     TY_UNUSED(event);
     TY_UNUSED(udata);
 
-    const ty_board_mode *mode = ty_board_get_mode(board);
     const ty_board_model *model = ty_board_get_model(board);
+
+    int c;
 
     switch (event) {
     case TY_BOARD_EVENT_ADDED:
+        c = '+';
+        break;
     case TY_BOARD_EVENT_CHANGED:
-        printf("%c %s#%"PRIu64" (%s)\n", event == TY_BOARD_EVENT_ADDED ? '+' : '=',
-               ty_board_get_location(board), ty_board_get_serial_number(board), ty_board_mode_get_desc(mode));
-
-        if (list_verbose) {
-            printf("  - node: %s\n", ty_board_get_path(board));
-            printf("  - model: %s\n", model ? ty_board_model_get_desc(model) : "(unknown)");
-            printf("  - capabilities: ");
-            print_capabilities(board);
-        }
-
+        c = '=';
+        break;
+    case TY_BOARD_EVENT_DISAPPEARED:
+        c = '?';
         break;
     case TY_BOARD_EVENT_DROPPED:
-        printf("- %s#%"PRIu64"\n", ty_board_get_location(board), ty_board_get_serial_number(board));
+        c = '-';
         break;
-    default:
-        break;
+    }
+
+    printf("%c %s#%"PRIu64"\n", c, ty_board_get_location(board), ty_board_get_serial_number(board));
+
+    if (list_verbose && event != TY_BOARD_EVENT_DROPPED) {
+        printf("  - model: %s\n", model ? ty_board_model_get_desc(model) : "(unknown)");
+
+        printf("  - capabilities: ");
+        print_capabilities(ty_board_get_capabilities(board));
+        printf("\n");
+
+        if (event != TY_BOARD_EVENT_DISAPPEARED) {
+            printf("  - interfaces: \n");
+            print_interfaces(board);
+        } else {
+            printf("  - interfaces: (none)\n");
+        }
     }
 
     return 0;

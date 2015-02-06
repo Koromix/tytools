@@ -9,6 +9,7 @@
 #include "ty/board.h"
 #include "board_priv.h"
 #include "ty/firmware.h"
+#include "htable.h"
 #include "list.h"
 #include "ty/system.h"
 #include "ty/timer.h"
@@ -23,11 +24,9 @@ struct ty_board_manager {
     ty_list_head boards;
     ty_list_head missing_boards;
 
-    void *udata;
-};
+    ty_htable interfaces;
 
-struct ty_board_mode {
-    TY_BOARD_MODE
+    void *udata;
 };
 
 struct ty_board_model {
@@ -47,25 +46,6 @@ struct firmware_signature {
     uint8_t magic[8];
 };
 
-extern const ty_board_mode _ty_teensy_bootloader_mode;
-extern const ty_board_mode _ty_teensy_flightsim_mode;
-extern const ty_board_mode _ty_teensy_hid_mode;
-extern const ty_board_mode _ty_teensy_midi_mode;
-extern const ty_board_mode _ty_teensy_rawhid_mode;
-extern const ty_board_mode _ty_teensy_serial_mode;
-extern const ty_board_mode _ty_teensy_serial_hid_mode;
-
-const ty_board_mode *ty_board_modes[] = {
-    &_ty_teensy_bootloader_mode,
-    &_ty_teensy_flightsim_mode,
-    &_ty_teensy_hid_mode,
-    &_ty_teensy_midi_mode,
-    &_ty_teensy_rawhid_mode,
-    &_ty_teensy_serial_mode,
-    &_ty_teensy_serial_hid_mode,
-    NULL
-};
-
 extern const ty_board_model _ty_teensy_pp10_model;
 extern const ty_board_model _ty_teensy_20_model;
 extern const ty_board_model _ty_teensy_pp20_model;
@@ -80,6 +60,13 @@ const ty_board_model *ty_board_models[] = {
 #endif
     &_ty_teensy_30_model,
     &_ty_teensy_31_model,
+    NULL
+};
+
+extern const struct _ty_board_vendor _ty_teensy_vendor;
+
+static const struct _ty_board_vendor *vendors[] = {
+    &_ty_teensy_vendor,
     NULL
 };
 
@@ -114,6 +101,10 @@ int ty_board_manager_new(ty_board_manager **rmanager)
     ty_list_init(&manager->boards);
     ty_list_init(&manager->missing_boards);
 
+    r = ty_htable_init(&manager->interfaces, 64);
+    if (r < 0)
+        goto error;
+
     ty_list_init(&manager->callbacks);
 
     *rmanager = manager;
@@ -141,6 +132,8 @@ void ty_board_manager_free(ty_board_manager *manager)
             board->manager = NULL;
             ty_board_unref(board);
         }
+
+        ty_htable_release(&manager->interfaces);
     }
 
     free(manager);
@@ -221,135 +214,76 @@ static int trigger_callbacks(ty_board *board, ty_board_event event)
     return 0;
 }
 
-static int open_board(ty_board *board, ty_device *dev)
-{
-    const ty_board_mode *mode = NULL;
-    uint16_t vid, pid;
-    uint64_t old_serial;
-    const char *s;
-    int r;
-
-    vid = ty_device_get_vid(dev);
-    pid = ty_device_get_pid(dev);
-
-    const ty_board_mode **cur;
-    for (cur = ty_board_modes; *cur; cur++) {
-        mode = *cur;
-        if (mode->vid == vid && mode->pid == pid)
-            break;
-    }
-    if (!*cur)
-        return 0;
-
-    if (ty_device_get_interface_number(dev) != mode->iface)
-        return 0;
-
-    ty_device_unref(board->dev);
-    board->dev = ty_device_ref(dev);
-
-    board->mode = mode;
-
-    /* Detect serial number changes: if it's different, we know it's probably a different board
-       and the things we knew about it (such as the model) are not valid anymore. */
-    old_serial = board->serial;
-
-    s = ty_device_get_serial_number(dev);
-    if (s) {
-        board->serial = strtoull(s, NULL, 10);
-    } else {
-        board->serial = 0;
-    }
-
-    if (mode->vtable->open) {
-        r = (*mode->vtable->open)(board);
-        if (r <= 0)
-            return r;
-    }
-
-    // Yup, different board (probably)
-    if (!board->serial || board->serial != old_serial)
-        board->model = NULL;
-
-    ty_device_close(board->h);
-    board->h = NULL;
-
-    ty_error_mask(TY_ERROR_NOT_FOUND);
-    r = ty_device_open(board->dev, false, &board->h);
-    ty_error_unmask();
-    if (r < 0) {
-        if (r == TY_ERROR_NOT_FOUND)
-            return 0;
-        return r;
-    }
-
-    if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_IDENTIFY)) {
-        r = (*board->mode->vtable->identify)(board);
-        if (r < 0)
-            return r;
-    }
-
-    board->state = TY_BOARD_STATE_ONLINE;
-
-    return 1;
-}
-
-static int add_board(ty_board_manager *manager, ty_device *dev)
+static int add_board(ty_board_manager *manager, ty_board_interface *iface, ty_board **rboard)
 {
     ty_board *board;
     int r;
 
     board = calloc(1, sizeof(*board));
-    if (!board)
-        return ty_error(TY_ERROR_MEMORY, NULL);
+    if (!board) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
     board->refcount = 1;
 
-    r = open_board(board, dev);
-    if (r <= 0)
+    board->location = strdup(ty_device_get_location(iface->dev));
+    if (!board->location) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
+    }
+
+    ty_list_init(&board->interfaces);
+
+    board->model = iface->model;
+    board->serial = iface->serial;
+
+    board->vid = ty_device_get_vid(iface->dev);
+    board->pid = ty_device_get_pid(iface->dev);
 
     board->manager = manager;
     ty_list_add_tail(&manager->boards, &board->list);
 
-    return trigger_callbacks(board, TY_BOARD_EVENT_ADDED);
+    *rboard = board;
+    return 0;
 
 error:
     ty_board_unref(board);
     return r;
 }
 
-static int change_board(ty_board *board, ty_device *dev)
-{
-    int r;
-
-    r = open_board(board, dev);
-    if (r <= 0)
-        return r;
-
-    if (board->missing.prev) {
-        ty_list_remove(&board->missing);
-
-        if (ty_list_is_empty(&board->manager->missing_boards))
-            ty_timer_set(board->manager->timer, -1, 0);
-    }
-
-    return trigger_callbacks(board, TY_BOARD_EVENT_CHANGED);
-}
+static void free_interface(ty_board_interface *iface);
 
 static void close_board(ty_board *board)
 {
-    board->state = TY_BOARD_STATE_CLOSED;
+    board->state = TY_BOARD_STATE_MISSING;
 
-    ty_device_close(board->h);
-    board->h = NULL;
+    ty_list_foreach(cur, &board->interfaces) {
+        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, list);
 
+        if (iface->hnode.next)
+            ty_htable_remove(&iface->hnode);
+
+        free_interface(iface);
+    }
+    ty_list_init(&board->interfaces);
+
+    memset(board->cap2iface, 0, sizeof(board->cap2iface));
+    board->capabilities = 0;
+
+    trigger_callbacks(board, TY_BOARD_EVENT_DISAPPEARED);
+}
+
+static int add_missing_board(ty_board *board)
+{
+    board->missing_since = ty_millis();
     if (board->missing.prev)
         ty_list_remove(&board->missing);
     ty_list_add_tail(&board->manager->missing_boards, &board->missing);
-    board->missing_since = ty_millis();
 
-    board->mode = NULL;
+    // There may be other boards waiting to be dropped, set timeout for the next in line
+    board = ty_list_get_first(&board->manager->missing_boards, ty_board, missing);
 
-    trigger_callbacks(board, TY_BOARD_EVENT_CLOSED);
+    return ty_timer_set(board->manager->timer, ty_adjust_timeout(drop_board_delay, board->missing_since), TY_TIMER_ONESHOT);
 }
 
 static void drop_board(ty_board *board)
@@ -367,46 +301,206 @@ static void drop_board(ty_board *board)
     ty_board_unref(board);
 }
 
+static ty_board *find_board(ty_board_manager *manager, const char *location)
+{
+    ty_list_foreach(cur, &manager->boards) {
+        ty_board *board = ty_container_of(cur, ty_board, list);
+
+        if (strcmp(board->location, location) == 0)
+            return board;
+    }
+
+    return NULL;
+}
+
+static int open_interface(ty_device *dev, ty_board_interface **riface)
+{
+    ty_board_interface *iface;
+    const char *serial;
+    int r;
+
+    iface = calloc(1, sizeof(*iface));
+    if (!iface) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
+    iface->dev = ty_device_ref(dev);
+
+    serial = ty_device_get_serial_number(dev);
+    if (serial)
+        iface->serial = strtoull(serial, NULL, 10);
+
+    r = 0;
+    for (const struct _ty_board_vendor **cur = vendors; *cur; cur++) {
+        const struct _ty_board_vendor *vendor = *cur;
+
+        r = (*vendor->open_interface)(iface);
+        if (r < 0)
+            goto error;
+        if (r)
+            break;
+    }
+    if (!r)
+        goto error;
+
+    *riface = iface;
+    return 1;
+
+error:
+    free_interface(iface);
+    return r;
+}
+
+static void free_interface(ty_board_interface *iface)
+{
+    if (iface) {
+        ty_device_close(iface->h);
+        ty_device_unref(iface->dev);
+    }
+
+    free(iface);
+}
+
+static ty_board_interface *find_interface(ty_board_manager *manager, ty_device *dev)
+{
+    ty_htable_foreach_hash(cur, &manager->interfaces, ty_htable_hash_ptr(dev)) {
+        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, hnode);
+
+        if (iface->dev == dev)
+            return iface;
+    }
+
+    return NULL;
+}
+
+static inline bool model_is_valid(const ty_board_model *model)
+{
+    return model && model->code_size;
+}
+
+static int add_interface(ty_board_manager *manager, ty_device *dev)
+{
+    ty_board_interface *iface = NULL;
+    ty_board *board;
+    ty_board_event event;
+    int r;
+
+    r = open_interface(dev, &iface);
+    if (r <= 0)
+        goto error;
+
+    board = find_board(manager, ty_device_get_location(dev));
+
+    /* Maybe the device notifications came in the wrong order, or somehow the device removal
+       notifications were dropped somewhere and we never got it, so use heuristics to improve
+       board change detection. */
+    if (board) {
+        if ((model_is_valid(iface->model) && model_is_valid(board->model) && iface->model != board->model)
+                || iface->serial != board->serial) {
+            drop_board(board);
+            board = NULL;
+        } else if (board->vid != ty_device_get_vid(dev) || board->pid != ty_device_get_pid(dev)) {
+            close_board(board);
+
+            board->vid = ty_device_get_vid(dev);
+            board->pid = ty_device_get_pid(dev);
+        }
+    }
+
+    if (board) {
+        if (model_is_valid(iface->model))
+            board->model = iface->model;
+        if (iface->serial)
+            board->serial = iface->serial;
+
+        event = TY_BOARD_EVENT_CHANGED;
+    } else {
+        r = add_board(manager, iface, &board);
+        if (r < 0)
+            goto error;
+
+        event = TY_BOARD_EVENT_ADDED;
+    }
+
+    iface->board = board;
+
+    ty_list_add_tail(&board->interfaces, &iface->list);
+    ty_htable_add(&manager->interfaces, ty_htable_hash_ptr(iface->dev), &iface->hnode);
+
+    for (size_t i = 0; i < TY_COUNTOF(board->cap2iface); i++) {
+        if (iface->capabilities & (1 << i))
+            board->cap2iface[i] = iface;
+    }
+    board->capabilities |= iface->capabilities;
+
+    if (board->missing.prev)
+        ty_list_remove(&board->missing);
+
+    board->state = TY_BOARD_STATE_ONLINE;
+
+    return trigger_callbacks(board, event);
+
+error:
+    free_interface(iface);
+    return r;
+}
+
+static int remove_interface(ty_board_manager *manager, ty_device *dev)
+{
+    ty_board_interface *iface;
+    ty_board *board;
+    int r;
+
+    iface = find_interface(manager, dev);
+    if (!iface)
+        return 0;
+
+    board = iface->board;
+
+    ty_htable_remove(&iface->hnode);
+    ty_list_remove(&iface->list);
+
+    free_interface(iface);
+
+    memset(board->cap2iface, 0, sizeof(board->cap2iface));
+    board->capabilities = 0;
+
+    ty_list_foreach(cur, &board->interfaces) {
+        iface = ty_container_of(cur, ty_board_interface, list);
+
+        for (size_t i = 0; i < TY_COUNTOF(board->cap2iface); i++) {
+            if (iface->capabilities & (1 << i))
+                board->cap2iface[i] = iface;
+        }
+        board->capabilities |= iface->capabilities;
+    }
+
+    if (ty_list_is_empty(&board->interfaces)) {
+        close_board(board);
+
+        r = add_missing_board(board);
+        if (r < 0)
+            return r;
+    } else {
+        r = trigger_callbacks(board, TY_BOARD_EVENT_CHANGED);
+        if (r < 0)
+            return r;
+    }
+
+    return 0;
+}
+
 static int device_callback(ty_device *dev, ty_device_event event, void *udata)
 {
     ty_board_manager *manager = udata;
 
-    const char *location;
-    int r;
-
-    location = ty_device_get_location(dev);
-
     switch (event) {
     case TY_DEVICE_EVENT_ADDED:
-        ty_list_foreach(cur, &manager->boards) {
-            ty_board *board = ty_container_of(cur, ty_board, list);
-
-            if (strcmp(ty_device_get_location(board->dev), location) == 0)
-                return change_board(board, dev);
-        }
-
-        return add_board(manager, dev);
+        return add_interface(manager, dev);
 
     case TY_DEVICE_EVENT_REMOVED:
-        ty_list_foreach(cur, &manager->boards) {
-            ty_board *board = ty_container_of(cur, ty_board, list);
-
-            if (board->dev == dev) {
-                close_board(board);
-
-                /* If there's only one element, it must be us because (see close_board)
-                   so the timer is either not set or wrong. */
-                if (ty_list_is_singular(&manager->missing_boards)) {
-                    r = ty_timer_set(manager->timer, drop_board_delay, TY_TIMER_ONESHOT);
-                    if (r < 0)
-                        return r;
-                }
-
-                break;
-            }
-        }
-
-        return 0;
+        return remove_interface(manager, dev);
     }
 
     assert(false);
@@ -423,9 +517,6 @@ int ty_board_manager_refresh(ty_board_manager *manager)
         ty_list_foreach(cur, &manager->missing_boards) {
             ty_board *board = ty_container_of(cur, ty_board, missing);
             int timeout;
-
-            if (board->state != TY_BOARD_STATE_CLOSED)
-                continue;
 
             timeout = ty_adjust_timeout(drop_board_delay, board->missing_since);
             if (timeout) {
@@ -509,19 +600,6 @@ int ty_board_manager_list(ty_board_manager *manager, ty_board_manager_callback_f
     return 0;
 }
 
-const ty_board_mode *ty_board_find_mode(const char *name)
-{
-    assert(name);
-
-    for (const ty_board_mode **cur = ty_board_modes; *cur; cur++) {
-        const ty_board_mode *mode = *cur;
-        if (strcasecmp(mode->name, name) == 0)
-            return mode;
-    }
-
-    return NULL;
-}
-
 const ty_board_model *ty_board_find_model(const char *name)
 {
     assert(name);
@@ -533,18 +611,6 @@ const ty_board_model *ty_board_find_model(const char *name)
     }
 
     return NULL;
-}
-
-const char *ty_board_mode_get_name(const ty_board_mode *mode)
-{
-    assert(mode);
-    return mode->name;
-}
-
-const char *ty_board_mode_get_desc(const ty_board_mode *mode)
-{
-    assert(mode);
-    return mode->desc;
 }
 
 const char *ty_board_model_get_name(const ty_board_model *model)
@@ -588,8 +654,16 @@ void ty_board_unref(ty_board *board)
         board->refcount--;
 
     if (!board->manager && !board->refcount) {
-        ty_device_close(board->h);
-        ty_device_unref(board->dev);
+        free(board->location);
+
+        ty_list_foreach(cur, &board->interfaces) {
+            ty_board_interface *iface = ty_container_of(cur, ty_board_interface, list);
+
+            if (iface->hnode.next)
+                ty_htable_remove(&iface->hnode);
+
+            free_interface(iface);
+        }
 
         free(board);
     }
@@ -619,22 +693,10 @@ ty_board_state ty_board_get_state(const ty_board *board)
     return board->state;
 }
 
-ty_device *ty_board_get_device(const ty_board *board)
+const char *ty_board_get_location(const ty_board *board)
 {
     assert(board);
-    return board->dev;
-}
-
-ty_handle *ty_board_get_handle(const ty_board *board)
-{
-    assert(board);
-    return board->h;
-}
-
-const ty_board_mode *ty_board_get_mode(const ty_board *board)
-{
-    assert(board);
-    return board->mode;
+    return board->location;
 }
 
 const ty_board_model *ty_board_get_model(const ty_board *board)
@@ -643,20 +705,75 @@ const ty_board_model *ty_board_get_model(const ty_board *board)
     return board->model;
 }
 
-uint32_t ty_board_get_capabilities(const ty_board *board)
+ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap)
 {
     assert(board);
+    assert(cap < TY_COUNTOF(board->cap2iface));
 
-    if (!board->mode)
-        return 0;
+    return board->cap2iface[cap];
+}
 
-    return board->mode->capabilities;
+uint16_t ty_board_get_capabilities(const ty_board *board)
+{
+    assert(board);
+    return board->capabilities;
 }
 
 uint64_t ty_board_get_serial_number(const ty_board *board)
 {
     assert(board);
     return board->serial;
+}
+
+ty_device *ty_board_get_device(const ty_board *board, ty_board_capability cap)
+{
+    assert(board);
+
+    ty_board_interface *iface = board->cap2iface[cap];
+    if (!iface)
+        return NULL;
+
+    return iface->dev;
+}
+
+ty_handle *ty_board_get_handle(const ty_board *board, ty_board_capability cap)
+{
+    assert(board);
+
+    ty_board_interface *iface = board->cap2iface[cap];
+    if (!iface)
+        return NULL;
+
+    return iface->h;
+}
+
+void ty_board_get_descriptors(const ty_board *board, ty_board_capability cap, struct ty_descriptor_set *set, int id)
+{
+    assert(board);
+
+    ty_board_interface *iface = board->cap2iface[cap];
+    if (!iface)
+        return;
+
+    ty_device_get_descriptors(iface->h, set, id);
+}
+
+int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, void *udata)
+{
+    assert(board);
+    assert(f);
+
+    int r;
+
+    ty_list_foreach(cur, &board->interfaces) {
+        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, list);
+
+        r = (*f)(board, iface, udata);
+        if (r)
+            return r;
+    }
+
+    return 0;
 }
 
 struct wait_for_context {
@@ -697,10 +814,11 @@ int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flag
 {
     assert(board);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
+    ty_board_interface *iface = board->cap2iface[TY_BOARD_CAPABILITY_SERIAL];
+    if (!iface)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    return (*board->mode->vtable->serial_set_attributes)(board, rate, flags);
+    return (*iface->vtable->serial_set_attributes)(iface, rate, flags);
 }
 
 ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
@@ -709,10 +827,11 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
     assert(buf);
     assert(size);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
+    ty_board_interface *iface = board->cap2iface[TY_BOARD_CAPABILITY_SERIAL];
+    if (!iface)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    return (*board->mode->vtable->serial_read)(board, buf, size);
+    return (*iface->vtable->serial_read)(iface, buf, size);
 }
 
 ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
@@ -720,13 +839,14 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     assert(board);
     assert(buf);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL))
+    ty_board_interface *iface = board->cap2iface[TY_BOARD_CAPABILITY_SERIAL];
+    if (!iface)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
     if (!size)
         size = strlen(buf);
 
-    return (*board->mode->vtable->serial_write)(board, buf, size);
+    return (*iface->vtable->serial_write)(iface, buf, size);
 }
 
 int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)
@@ -734,8 +854,12 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_up
     assert(board);
     assert(f);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD))
+    ty_board_interface *iface = board->cap2iface[TY_BOARD_CAPABILITY_UPLOAD];
+    if (!iface)
         return ty_error(TY_ERROR_MODE, "Firmware upload is not available in this mode");
+
+    if (!model_is_valid(board->model))
+        return ty_error(TY_ERROR_MODE, "Cannot upload to unknown board model");
 
     // FIXME: detail error message (max allowed, ratio)
     if (f->size > board->model->code_size)
@@ -748,35 +872,33 @@ int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_up
         if (!guess)
             return ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
 
-        // board->model may have been carried over
-        if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_IDENTIFY))
-            return ty_error(TY_ERROR_MODE, "Cannot detect board model");
-        
         if (guess != board->model)
             return ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->desc);
     }
 
-    return (*board->mode->vtable->upload)(board, f, flags, pf, udata);
+    return (*iface->vtable->upload)(iface, f, flags, pf, udata);
 }
 
 int ty_board_reset(ty_board *board)
 {
     assert(board);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET))
+    ty_board_interface *iface = board->cap2iface[TY_BOARD_CAPABILITY_RESET];
+    if (!iface)
         return ty_error(TY_ERROR_MODE, "Cannot reset in this mode");
 
-    return (*board->mode->vtable->reset)(board);
+    return (*iface->vtable->reset)(iface);
 }
 
 int ty_board_reboot(ty_board *board)
 {
     assert(board);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT))
+    ty_board_interface *iface = board->cap2iface[TY_BOARD_CAPABILITY_REBOOT];
+    if (!iface)
         return ty_error(TY_ERROR_MODE, "Cannot reboot in this mode");
 
-    return (*board->mode->vtable->reboot)(board);
+    return (*iface->vtable->reboot)(iface);
 }
 
 const ty_board_model *ty_board_test_firmware(const ty_firmware *f)
@@ -798,4 +920,36 @@ const ty_board_model *ty_board_test_firmware(const ty_firmware *f)
     }
 
     return NULL;
+}
+
+const char *ty_board_interface_get_desc(const ty_board_interface *iface)
+{
+    assert(iface);
+    return iface->desc;
+}
+
+uint16_t ty_board_interface_get_capabilities(const ty_board_interface *iface)
+{
+    assert(iface);
+    return iface->capabilities;
+}
+
+ty_device *ty_board_interface_get_device(const ty_board_interface *iface)
+{
+    assert(iface);
+    return iface->dev;
+}
+
+ty_handle *ty_board_interface_get_handle(const ty_board_interface *iface)
+{
+    assert(iface);
+    return iface->h;
+}
+
+void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct ty_descriptor_set *set, int id)
+{
+    assert(iface);
+    assert(set);
+
+    ty_device_get_descriptors(iface->h, set, id);
 }
