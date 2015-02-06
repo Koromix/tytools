@@ -73,6 +73,11 @@ static inline bool ty_list_is_singular(const ty_list_head *head)
     return head->next != head && head->next == head->prev;
 }
 
+#define ty_list_get_first(head, type, member) \
+    (ty_list_is_empty(head) ? NULL : ty_container_of((head)->next, type, member))
+#define ty_list_get_last(head, type, member) \
+    (ty_list_is_empty(head) ? NULL : ty_container_of((head)->prev, type, member))
+
 static inline void _ty_list_splice(ty_list_head *prev, ty_list_head *next, ty_list_head *head)
 {
     if (ty_list_is_empty(head))
