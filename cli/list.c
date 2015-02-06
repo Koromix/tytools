@@ -98,7 +98,8 @@ static int list_callback(ty_board *board, ty_board_event event, void *udata)
         break;
     }
 
-    printf("%c %s#%"PRIu64"\n", c, ty_board_get_location(board), ty_board_get_serial_number(board));
+    printf("%c %s#%"PRIu64" %s\n", c, ty_board_get_location(board), ty_board_get_serial_number(board),
+           model ? ty_board_model_get_name(model) : "(unknown)");
 
     if (list_verbose && event != TY_BOARD_EVENT_DROPPED) {
         printf("  - model: %s\n", model ? ty_board_model_get_desc(model) : "(unknown)");

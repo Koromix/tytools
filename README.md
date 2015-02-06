@@ -117,17 +117,18 @@ can be omitted.
 
 `tyc list` lists plugged Teensy devices. Here is how it looks:
 ```
-+ usb-1-2#34130 (HalfKay Bootloader)
-+ usb-4-2#29460 (Raw HID)
-+ usb-4-3#32250 (Serial)
++ usb-1-2#34130 teensy31
++ usb-4-2#29460 teensy
++ usb-4-3#32250 teensy30
 ```
 
 If you want detailed information about plugged devices, use `--verbose`:
 ```
-+ usb-4-3#32250 (HalfKay Bootloader)
-  - node: /dev/hidraw3
++ usb-4-3#32250 teensy30
   - model: Teensy 3.0
-  - capabilities: identify, upload, reset
+  - capabilities: upload, reset
+  - interfaces:
+      * HalfKay Bootloader: /dev/hidraw2
 ```
 
 You can also watch device changes with `--watch`.
