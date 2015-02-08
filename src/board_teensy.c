@@ -172,13 +172,15 @@ static int teensy_open_interface(ty_board_interface *iface)
         return 0;
     }
 
-    ty_error_mask(TY_ERROR_NOT_FOUND);
-    r = ty_device_open(iface->dev, false, &iface->h);
-    ty_error_unmask();
-    if (r < 0) {
-        if (r == TY_ERROR_NOT_FOUND)
-            return 0;
-        return r;
+    if (!iface->h) {
+        ty_error_mask(TY_ERROR_NOT_FOUND);
+        r = ty_device_open(iface->dev, false, &iface->h);
+        ty_error_unmask();
+        if (r < 0) {
+            if (r == TY_ERROR_NOT_FOUND)
+                return 0;
+            return r;
+        }
     }
 
     iface->model = &teensy_unknown_model;
