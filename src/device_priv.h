@@ -29,7 +29,7 @@ struct _ty_device_vtable {
 
 struct ty_device {
     ty_device_monitor *monitor;
-    ty_htable_head table;
+    ty_htable_head hnode;
 
     unsigned int refcount;
 

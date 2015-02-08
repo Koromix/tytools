@@ -47,7 +47,7 @@ void _ty_device_monitor_release(ty_device_monitor *monitor)
     }
 
     ty_htable_foreach(cur, &monitor->devices) {
-        ty_device *dev = ty_container_of(cur, ty_device, table);
+        ty_device *dev = ty_container_of(cur, ty_device, hnode);
 
         dev->monitor = NULL;
         ty_device_unref(dev);
@@ -108,7 +108,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
 static ty_device *find_device(ty_device_monitor *monitor, const char *key)
 {
     ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(key)) {
-        ty_device *dev = ty_container_of(cur, ty_device, table);
+        ty_device *dev = ty_container_of(cur, ty_device, hnode);
 
         if (strcmp(dev->key, key) == 0)
             return dev;
@@ -143,7 +143,7 @@ int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev)
     ty_device_ref(dev);
 
     dev->monitor = monitor;
-    ty_htable_add(&monitor->devices, ty_htable_hash_str(dev->key), &dev->table);
+    ty_htable_add(&monitor->devices, ty_htable_hash_str(dev->key), &dev->hnode);
 
     return trigger_callbacks(dev, TY_DEVICE_EVENT_ADDED);
 }
@@ -158,7 +158,7 @@ void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key)
 
     trigger_callbacks(dev, TY_DEVICE_EVENT_REMOVED);
 
-    ty_htable_remove(&dev->table);
+    ty_htable_remove(&dev->hnode);
     dev->monitor = NULL;
 
     ty_device_unref(dev);
@@ -170,7 +170,7 @@ int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *
     assert(f);
 
     ty_htable_foreach(cur, &monitor->devices) {
-        ty_device *dev = ty_container_of(cur, ty_device, table);
+        ty_device *dev = ty_container_of(cur, ty_device, hnode);
         int r;
 
         r = (*f)(dev, TY_DEVICE_EVENT_ADDED, udata);
