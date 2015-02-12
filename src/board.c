@@ -708,7 +708,7 @@ const ty_board_model *ty_board_get_model(const ty_board *board)
 ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap)
 {
     assert(board);
-    assert(cap < TY_COUNTOF(board->cap2iface));
+    assert((size_t)cap < TY_COUNTOF(board->cap2iface));
 
     return board->cap2iface[cap];
 }
