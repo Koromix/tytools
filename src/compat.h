@@ -11,6 +11,8 @@
 #include "config.h"
 #include <stdarg.h>
 
+TY_C_BEGIN
+
 char *strrpbrk(const char *s, const char *accept);
 
 #ifndef HAVE_STPCPY
@@ -37,5 +39,7 @@ ssize_t getdelim(char **rbuf, size_t *rsize, int delim, FILE *fp);
 #ifndef HAVE_GETLINE
 ssize_t getline(char **rbuf, size_t *rsize, FILE *fp);
 #endif
+
+TY_C_END
 
 #endif
