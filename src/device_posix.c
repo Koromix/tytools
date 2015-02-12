@@ -50,7 +50,7 @@ restart:
         case EIO:
         case ENXIO:
         case ENODEV:
-            r = ty_error(TY_ERROR_IO, "I/O while opening device '%s'", dev->path);
+            r = ty_error(TY_ERROR_IO, "I/O error while opening device '%s'", dev->path);
             break;
         case ENOENT:
         case ENOTDIR:
