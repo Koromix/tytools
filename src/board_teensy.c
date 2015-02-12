@@ -398,7 +398,11 @@ static int teensy_reboot(ty_board_interface *iface)
         break;
 
     case TY_DEVICE_HID:
-        r = ty_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
+        r = (int)ty_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
+        if (r >= 0) {
+            assert(r == sizeof(seremu_magic));
+            r = 0;
+        }
         break;
 
     default:

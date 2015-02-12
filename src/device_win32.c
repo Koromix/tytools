@@ -1066,7 +1066,7 @@ ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
     return (ssize_t)len;
 }
 
-int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_HID);
@@ -1080,7 +1080,7 @@ int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
     if (!r)
         return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
 
-    return 1;
+    return (ssize_t)size;
 }
 
 int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)

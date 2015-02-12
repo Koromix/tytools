@@ -102,7 +102,7 @@ TY_PUBLIC int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc);
 TY_PUBLIC ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size);
 TY_PUBLIC ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size);
 
-TY_PUBLIC int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size);
+TY_PUBLIC ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size);
 
 TY_C_END
 

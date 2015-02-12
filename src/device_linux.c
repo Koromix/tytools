@@ -487,7 +487,7 @@ restart:
     return r;
 }
 
-int ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_HID);
@@ -517,5 +517,5 @@ restart:
                         strerror(errno));
     }
 
-    return 1;
+    return (ssize_t)size;
 }
