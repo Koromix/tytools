@@ -40,6 +40,13 @@ if(APPLE)
     if(POLICY CMP0042)
         cmake_policy(SET CMP0042 NEW)
     endif()
+
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
+    set(CMAKE_INSTALL_RPATH "@executable_path;@executable_path/../lib")
+
+    # Makes it easier for cross-compilation and testing. In my case, compile on Linux
+    # and test on OSX using sshfs
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
 if(WIN32)

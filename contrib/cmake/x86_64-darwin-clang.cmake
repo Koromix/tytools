@@ -14,6 +14,12 @@ if(CMAKE_C_COMPILER)
     set(CMAKE_CXX_COMPILER "${DARWIN_TOOLCHAIN}-clang++")
     set(PKG_CONFIG_EXECUTABLE "${DARWIN_TOOLCHAIN}-pkg-config")
 
+    string(REGEX REPLACE "^.*-darwin([0-9]+)-.*$" "\\1" DARWIN_MAJOR_VERSION "${CMAKE_C_COMPILER}")
+
+    # CMAKE_SYSTEM_VERSION is needed to enable the OSX RPATH support, without it
+    # Platform/Darwin.cmake does not set CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG
+    set(CMAKE_SYSTEM_VERSION "${DARWIN_MAJOR_VERSION}.0")
+
     # Kind of a cheat, this path cannot exist (unless CMAKE_C_COMPILER is a directory)
     # but ABSOLUTE does not care about it (REALPATH would)
     get_filename_component(DARWIN_SDK "${CMAKE_C_COMPILER}/../../SDK" ABSOLUTE)
