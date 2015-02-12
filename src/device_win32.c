@@ -173,7 +173,10 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
 
     CONFIGRET cret;
     do {
-        assert(depth < TY_COUNTOF(ports));
+        if (depth == TY_COUNTOF(ports)) {
+            ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
+            return 0;
+        }
 
         cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
         if (cret != CR_SUCCESS)
@@ -460,7 +463,10 @@ static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t por
 
     port = find_device_port(inst);
     if (port) {
-        assert(depth < 16);
+        if (depth == TY_COUNTOF(ports)) {
+            ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
+            return 0;
+        }
         ports[depth++] = port;
     }
 
