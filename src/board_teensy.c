@@ -245,7 +245,7 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
         r = ty_hid_read(iface->h, (uint8_t *)buf, size);
         if (r < 0)
             return r;
-        else if (!r)
+        if (!r)
             return 0;
         return (ssize_t)strnlen(buf, size);
     }
@@ -274,7 +274,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
             r = ty_hid_write(iface->h, report, sizeof(report));
             if (r < 0)
                 return r;
-            else if (!r)
+            if (!r)
                 break;
 
             i += (size_t)r - 1;
