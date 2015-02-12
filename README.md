@@ -4,11 +4,12 @@ ty is a collection of tools to manage Teensy devices (or teensies). It provides:
 - libty, a C library
 - and tyc, a command-line tool
 
-It currently runs on Linux and Windows only.
+It currently runs on Linux, Windows and Mac OS X.
 
 - [Build instructions](#build)
   - [Linux](#build_linux)
   - [Windows](#build_windows)
+  - [Mac OS X](#build_darwin)
 - [Usage](#usage)
   - [List devices](#usage_list)
   - [Upload firmware](#usage_upload)
@@ -19,7 +20,7 @@ It currently runs on Linux and Windows only.
 # Build instructions
 
 You can download a source release from the release page on GitHub or clone the repository.
-Pre-built binaries are available for Windows.
+Pre-built binaries are available for Windows and Mac OS X.
 
 ty can be built using GCC or Clang.
 
@@ -98,6 +99,45 @@ project directory in a console and execute:
 mkdir -p build/win32 && cd build/win32
 cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/i686-w64-mingw32.cmake ../..
 make
+```
+
+<a name="build_darwin"/>
+## Mac OS X
+
+Pre-built binaries are provided in the releases section.
+
+### Native compilation
+
+Install Xcode, the developer command-line tools and CMake.
+
+Open a console in the project directory and execute:
+```bash
+mkdir -p build/darwin && cd build/darwin
+cmake ../..
+make
+```
+
+CMake supports universal binaries but does not build them by default. To generate universal
+binaries for i386 and x86_64, use:
+```bash
+cmake -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ../..
+```
+
+### Cross-compilation
+
+You need to install [osxcross](https://github.com/tpoechtrager/osxcross).
+
+Open a terminal and load the OSX environment (using osxcross-env). Go to the project directory
+and execute:
+```bash
+mkdir -p build/darwin && cd build/darwin
+cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake ../..
+make
+```
+
+You can also make universal binaries under Linux. To build one with i386 and x86_64 binaries, use:
+```bash
+cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ../..
 ```
 
 <a name="usage"/>
