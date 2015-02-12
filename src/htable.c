@@ -47,7 +47,7 @@ void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *n)
 
     n->key = key;
 
-    n->next = head;
+    n->next = head->next;
     head->next = n;
 }
 
