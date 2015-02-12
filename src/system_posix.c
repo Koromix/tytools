@@ -7,7 +7,6 @@
 #include "ty/common.h"
 #include "compat.h"
 #include <fcntl.h>
-#include <poll.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -16,6 +15,9 @@
 #include <termios.h>
 #ifdef __APPLE__
 #include <mach/mach_time.h>
+#include <sys/select.h>
+#else
+#include <poll.h>
 #endif
 #include "ty/system.h"
 
@@ -274,6 +276,53 @@ int ty_delete(const char *path, bool tolerant)
     return 0;
 }
 
+#ifdef __APPLE__
+
+int ty_poll(const ty_descriptor_set *set, int timeout)
+{
+    assert(set);
+    assert(set->count);
+    assert(set->count <= 64);
+
+    fd_set fds;
+    uint64_t start;
+    struct timeval tv;
+    int r;
+
+    FD_ZERO(&fds);
+    for (size_t i = 0; i < set->count; i++)
+        FD_SET(set->desc[i], &fds);
+
+    start = ty_millis();
+restart:
+    if (timeout >= 0) {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+    }
+
+    r = select(FD_SETSIZE, &fds, NULL, NULL, timeout >= 0 ? &tv : NULL);
+    if (r < 0) {
+        switch (errno) {
+        case EINTR:
+            timeout = ty_adjust_timeout(timeout, start);
+            goto restart;
+        case ENOMEM:
+            return ty_error(TY_ERROR_MEMORY, NULL);
+        }
+        return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
+    }
+    if (!r)
+        return 0;
+
+    for (size_t i = 0; i < set->count; i++) {
+        if (FD_ISSET(set->desc[i], &fds))
+            return set->id[i];
+    }
+    assert(false);
+}
+
+#else
+
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);
@@ -314,6 +363,8 @@ restart:
     }
     assert(false);
 }
+
+#endif
 
 int ty_terminal_setup(uint32_t flags)
 {
