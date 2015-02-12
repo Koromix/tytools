@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "ty/device.h"
 #include "device_priv.h"
+#include "ty/system.h"
 
 struct ty_device_monitor {
     TY_DEVICE_MONITOR
@@ -233,6 +234,14 @@ void ty_device_close(ty_handle *h)
         return;
 
     (*h->dev->vtable->close)(h);
+}
+
+void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+{
+    assert(h);
+    assert(set);
+
+    (*h->dev->vtable->get_descriptors)(h, set, id);
 }
 
 ty_device_type ty_device_get_type(const ty_device *dev)

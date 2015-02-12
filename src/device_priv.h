@@ -14,6 +14,8 @@
 
 TY_C_BEGIN
 
+struct ty_descriptor_set;
+
 #define TY_DEVICE_MONITOR \
     ty_list_head callbacks; \
     int callback_id; \
@@ -25,6 +27,8 @@ TY_C_BEGIN
 struct _ty_device_vtable {
     int (*open)(ty_device *dev, bool block, ty_handle **rh);
     void (*close)(ty_handle *h);
+
+    void (*get_descriptors)(const ty_handle *h, struct ty_descriptor_set *set, int id);
 };
 
 struct ty_device {

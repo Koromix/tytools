@@ -16,14 +16,6 @@
 #include "device_posix_priv.h"
 #include "ty/system.h"
 
-void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
-{
-    assert(h);
-    assert(set);
-
-    ty_descriptor_set_add(set, h->fd, id);
-}
-
 static int open_posix_device(ty_device *dev, bool block, ty_handle **rh)
 {
     ty_handle *h;
@@ -83,9 +75,16 @@ static void close_posix_device(ty_handle *h)
     free(h);
 }
 
+static void get_posix_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+{
+    ty_descriptor_set_add(set, h->fd, id);
+}
+
 const struct _ty_device_vtable _ty_posix_device_vtable = {
     .open = open_posix_device,
     .close = close_posix_device,
+
+    .get_descriptors = get_posix_descriptors
 };
 
 int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)

@@ -956,18 +956,17 @@ static void close_win32_device(ty_handle *h)
     free(h);
 }
 
+static void get_win32_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+{
+    ty_descriptor_set_add(set, h->ov->hEvent, id);
+}
+
 static const struct _ty_device_vtable win32_device_vtable = {
     .open = open_win32_device,
     .close = close_win32_device,
+
+    .get_descriptors = get_win32_descriptors
 };
-
-void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
-{
-    assert(h);
-    assert(set);
-
-    ty_descriptor_set_add(set, h->ov->hEvent, id);
-}
 
 int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
 {
