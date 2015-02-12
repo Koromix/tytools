@@ -37,6 +37,10 @@ if(LINUX)
 endif()
 
 if(APPLE)
+    find_library(COREFOUNDATION_LIBRARIES CoreFoundation)
+    find_library(IOKIT_LIBRARIES IOKit)
+    list(APPEND LIBRARIES ${COREFOUNDATION_LIBRARIES} ${IOKIT_LIBRARIES})
+
     if(POLICY CMP0042)
         cmake_policy(SET CMP0042 NEW)
     endif()
