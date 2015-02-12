@@ -7,6 +7,7 @@
 #include "ty/common.h"
 #include "compat.h"
 #include <fcntl.h>
+#include <poll.h>
 #include <termios.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -55,6 +56,7 @@ restart:
         }
         goto error;
     }
+    h->block = block;
 
     *rh = h;
     return 0;
@@ -274,20 +276,30 @@ ssize_t ty_serial_write(struct ty_handle *h, const char *buf, ssize_t size)
     if (!size)
         return 0;
 
+    struct pollfd pfd;
     ssize_t r;
 
+    pfd.events = POLLOUT;
+    pfd.fd = h->fd;
+
 restart:
-    r = write(h->fd, buf, (size_t)size);
+    r = poll(&pfd, 1, -1);
     if (r < 0) {
         switch (errno) {
         case EINTR:
             goto restart;
-        // hidraw honours O_NONBLOCK only on read operations
-        case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-        case EWOULDBLOCK:
-#endif
-            return 0;
+        case EIO:
+        case ENXIO:
+            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+        }
+        return ty_error(TY_ERROR_SYSTEM, "poll('%s') failed: %s", h->dev->path,
+                        strerror(errno));
+    }
+    assert(r == 1);
+
+    r = write(h->fd, buf, (size_t)size);
+    if (r < 0) {
+        switch (errno) {
         case EIO:
         case ENXIO:
             return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);

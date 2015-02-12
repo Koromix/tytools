@@ -466,17 +466,12 @@ ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
     ssize_t r;
 
 restart:
-    // On linux, USB requests timeout after 5000ms
+    // On linux, USB requests timeout after 5000ms and O_NONBLOCK isn't honoured for write
     r = write(h->fd, (const char *)buf, size);
     if (r < 0) {
         switch (errno) {
         case EINTR:
             goto restart;
-        case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-        case EWOULDBLOCK:
-#endif
-            return 0;
         case EIO:
         case ENXIO:
             return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
