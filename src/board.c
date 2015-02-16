@@ -18,6 +18,8 @@ struct ty_board_manager {
     ty_device_monitor *monitor;
     ty_timer *timer;
 
+    bool enumerated;
+
     ty_list_head callbacks;
     int callback_id;
 
@@ -81,121 +83,10 @@ static const struct firmware_signature signatures[] = {
 
 static const int drop_board_delay = 3000;
 
-int ty_board_manager_new(ty_board_manager **rmanager)
-{
-    assert(rmanager);
-
-    ty_board_manager *manager;
-    int r;
-
-    manager = calloc(1, sizeof(*manager));
-    if (!manager) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto error;
-    }
-
-    r = ty_timer_new(&manager->timer);
-    if (r < 0)
-        goto error;
-
-    ty_list_init(&manager->boards);
-    ty_list_init(&manager->missing_boards);
-
-    r = ty_htable_init(&manager->interfaces, 64);
-    if (r < 0)
-        goto error;
-
-    ty_list_init(&manager->callbacks);
-
-    *rmanager = manager;
-    return 0;
-
-error:
-    ty_board_manager_free(manager);
-    return r;
-}
-
-void ty_board_manager_free(ty_board_manager *manager)
-{
-    if (manager) {
-        ty_device_monitor_free(manager->monitor);
-        ty_timer_free(manager->timer);
-
-        ty_list_foreach(cur, &manager->callbacks) {
-            struct callback *callback = ty_container_of(cur, struct callback, list);
-            free(callback);
-        }
-
-        ty_list_foreach(cur, &manager->boards) {
-            ty_board *board = ty_container_of(cur, ty_board, list);
-
-            board->manager = NULL;
-            ty_board_unref(board);
-        }
-
-        ty_htable_release(&manager->interfaces);
-    }
-
-    free(manager);
-}
-
-void ty_board_manager_set_udata(ty_board_manager *manager, void *udata)
-{
-    assert(manager);
-    manager->udata = udata;
-}
-
-void *ty_board_manager_get_udata(const ty_board_manager *manager)
-{
-    assert(manager);
-    return manager->udata;
-}
-
-void ty_board_manager_get_descriptors(const ty_board_manager *manager, ty_descriptor_set *set, int id)
-{
-    assert(manager);
-    assert(set);
-
-    ty_device_monitor_get_descriptors(manager->monitor, set, id);
-    ty_timer_get_descriptors(manager->timer, set, id);
-}
-
-int ty_board_manager_register_callback(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata)
-{
-    assert(manager);
-    assert(f);
-
-    struct callback *callback = calloc(1, sizeof(*callback));
-    if (!callback)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    callback->id = manager->callback_id++;
-    callback->f = f;
-    callback->udata = udata;
-
-    ty_list_add_tail(&manager->callbacks, &callback->list);
-
-    return callback->id;
-}
-
 static void drop_callback(struct callback *callback)
 {
     ty_list_remove(&callback->list);
     free(callback);
-}
-
-void ty_board_manager_deregister_callback(ty_board_manager *manager, int id)
-{
-    assert(manager);
-    assert(id >= 0);
-
-    ty_list_foreach(cur, &manager->callbacks) {
-        struct callback *callback = ty_container_of(cur, struct callback, list);
-        if (callback->id == id) {
-            drop_callback(callback);
-            break;
-        }
-    }
 }
 
 static int trigger_callbacks(ty_board *board, ty_board_event event)
@@ -507,6 +398,125 @@ static int device_callback(ty_device *dev, ty_device_event event, void *udata)
     __builtin_unreachable();
 }
 
+int ty_board_manager_new(ty_board_manager **rmanager)
+{
+    assert(rmanager);
+
+    ty_board_manager *manager;
+    int r;
+
+    manager = calloc(1, sizeof(*manager));
+    if (!manager) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
+    r = ty_device_monitor_new(&manager->monitor);
+    if (r < 0)
+        goto error;
+
+    r = ty_device_monitor_register_callback(manager->monitor, device_callback, manager);
+    if (r < 0)
+        goto error;
+
+    r = ty_timer_new(&manager->timer);
+    if (r < 0)
+        goto error;
+
+    ty_list_init(&manager->boards);
+    ty_list_init(&manager->missing_boards);
+
+    r = ty_htable_init(&manager->interfaces, 64);
+    if (r < 0)
+        goto error;
+
+    ty_list_init(&manager->callbacks);
+
+    *rmanager = manager;
+    return 0;
+
+error:
+    ty_board_manager_free(manager);
+    return r;
+}
+
+void ty_board_manager_free(ty_board_manager *manager)
+{
+    if (manager) {
+        ty_device_monitor_free(manager->monitor);
+        ty_timer_free(manager->timer);
+
+        ty_list_foreach(cur, &manager->callbacks) {
+            struct callback *callback = ty_container_of(cur, struct callback, list);
+            free(callback);
+        }
+
+        ty_list_foreach(cur, &manager->boards) {
+            ty_board *board = ty_container_of(cur, ty_board, list);
+
+            board->manager = NULL;
+            ty_board_unref(board);
+        }
+
+        ty_htable_release(&manager->interfaces);
+    }
+
+    free(manager);
+}
+
+void ty_board_manager_set_udata(ty_board_manager *manager, void *udata)
+{
+    assert(manager);
+    manager->udata = udata;
+}
+
+void *ty_board_manager_get_udata(const ty_board_manager *manager)
+{
+    assert(manager);
+    return manager->udata;
+}
+
+void ty_board_manager_get_descriptors(const ty_board_manager *manager, ty_descriptor_set *set, int id)
+{
+    assert(manager);
+    assert(set);
+
+    ty_device_monitor_get_descriptors(manager->monitor, set, id);
+    ty_timer_get_descriptors(manager->timer, set, id);
+}
+
+int ty_board_manager_register_callback(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata)
+{
+    assert(manager);
+    assert(f);
+
+    struct callback *callback = calloc(1, sizeof(*callback));
+    if (!callback)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    callback->id = manager->callback_id++;
+    callback->f = f;
+    callback->udata = udata;
+
+    ty_list_add_tail(&manager->callbacks, &callback->list);
+
+    return callback->id;
+}
+
+void ty_board_manager_deregister_callback(ty_board_manager *manager, int id)
+{
+    assert(manager);
+    assert(id >= 0);
+
+    ty_list_foreach(cur, &manager->callbacks) {
+        struct callback *callback = ty_container_of(cur, struct callback, list);
+        if (callback->id == id) {
+            drop_callback(callback);
+            break;
+        }
+    }
+}
+
 int ty_board_manager_refresh(ty_board_manager *manager)
 {
     assert(manager);
@@ -530,15 +540,10 @@ int ty_board_manager_refresh(ty_board_manager *manager)
         }
     }
 
-    if (!manager->monitor) {
-        r = ty_device_monitor_new(&manager->monitor);
-        if (r < 0)
-            return r;
+    if (!manager->enumerated) {
+        manager->enumerated = true;
 
-        r = ty_device_monitor_register_callback(manager->monitor, device_callback, manager);
-        if (r < 0)
-            return r;
-
+        // FIXME: never listed devices if error on enumeration (unlink the real refresh)
         r = ty_device_monitor_list(manager->monitor, device_callback, manager);
         if (r < 0)
             return r;
