@@ -395,6 +395,11 @@ static int teensy_reboot(ty_board_interface *iface)
     switch (ty_device_get_type(iface->dev)) {
     case TY_DEVICE_SERIAL:
         r = ty_serial_set_attributes(iface->h, 134, 0);
+        if (!r) {
+            /* Don't keep these settings, some systems (such as Linux) may reuse them and
+               the device will keep rebooting when opened. */
+            ty_serial_set_attributes(iface->h, 9600, 0);
+        }
         break;
 
     case TY_DEVICE_HID:
