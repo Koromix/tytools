@@ -19,10 +19,11 @@ enum {
     OPTION_TIMEOUT_EOF
 };
 
-static const char *short_options = "b:d:f:p:rRs";
+static const char *short_options = "b:d:D:f:p:rRs";
 static const struct option long_options[] = {
     {"baud",        required_argument, NULL, 'b'},
     {"databits",    required_argument, NULL, 'd'},
+    {"direction",   required_argument, NULL, 'D'},
     {"flow",        required_argument, NULL, 'f'},
     {"help",        no_argument,       NULL, OPTION_HELP},
     {"noreset",     no_argument,       NULL, OPTION_NORESET},
@@ -34,6 +35,11 @@ static const struct option long_options[] = {
     {0}
 };
 
+enum {
+    DIRECTION_INPUT = 1,
+    DIRECTION_OUTPUT = 2
+};
+
 static const int error_io_timeout = 6000;
 
 static uint16_t terminal_flags = 0;
@@ -42,6 +48,7 @@ static bool fake_echo = false;
 #endif
 static uint32_t device_rate = 115200;
 static uint16_t device_flags = 0;
+static uint16_t directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
 static bool reconnect = false;
 static int timeout_eof = 200;
 
@@ -52,6 +59,8 @@ void print_monitor_usage(void)
                     "   -b, --baud <rate>        Use baudrate for serial port\n"
                     "   -d, --databits <bits>    Change number of bits for each character\n"
                     "                            Must be one of 5, 6, 7 or 8 (default)\n"
+                    "   -D, --direction <dir>    Open serial connection in given direction\n"
+                    "                            Supports input, output, both (default)\n"
                     "   -f, --flow <control>     Define flow-control mode\n"
                     "                            Supports xonxoff (x), rtscts (h) and none (n)\n"
                     "       --noreset            Don't reset serial port when closing\n"
@@ -85,11 +94,14 @@ static void fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
     ty_descriptor_set_clear(set);
 
     ty_board_manager_get_descriptors(ty_board_get_manager(board), set, 1);
-    ty_board_get_descriptors(board, TY_BOARD_CAPABILITY_SERIAL, set, 2);
+    if (directions & DIRECTION_INPUT)
+        ty_board_get_descriptors(board, TY_BOARD_CAPABILITY_SERIAL, set, 2);
 #ifdef _WIN32
-    ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
+    if (directions & DIRECTION_OUTPUT)
+        ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
 #else
-    ty_descriptor_set_add(set, STDIN_FILENO, 3);
+    if (directions & DIRECTION_OUTPUT)
+        ty_descriptor_set_add(set, STDIN_FILENO, 3);
 #endif
 }
 
@@ -104,6 +116,9 @@ static int loop(ty_board *board, int outfd)
 
     while (true) {
         memset(buf, 0, sizeof(buf));
+
+        if (!set.count)
+            return 0;
 
         r = ty_poll(&set, timeout);
         if (r < 0)
@@ -219,6 +234,18 @@ int monitor(int argc, char *argv[])
             break;
         case 'r':
             terminal_flags |= TY_TERMINAL_RAW;
+            break;
+
+        case 'D':
+            if (strcmp(optarg, "input") == 0) {
+                directions = DIRECTION_INPUT;
+            } else if (strcmp(optarg, "output") == 0) {
+                directions = DIRECTION_OUTPUT;
+            } else if (strcmp(optarg, "both") == 0) {
+                directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
+            } else {
+                return ty_error(TY_ERROR_PARAM, "--direction must be one off input, output or both");
+            }
             break;
 
         case 'b':
