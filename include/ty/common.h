@@ -7,8 +7,6 @@
 #ifndef TY_COMMON_H
 #define TY_COMMON_H
 
-#define TY_VERSION "1.0~alpha"
-
 // Keep assertions ;)
 #undef NDEBUG
 

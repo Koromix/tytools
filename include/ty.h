@@ -15,5 +15,6 @@
 #include "ty/process.h"
 #include "ty/system.h"
 #include "ty/timer.h"
+#include "ty/version.h"
 
 #endif

@@ -5,6 +5,8 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(ty C)
 
+set(TY_VERSION v0.4.0)
+
 find_package(Threads)
 list(APPEND LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
@@ -84,9 +86,19 @@ if(NOT HAVE_STAT_MTIM)
     check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
 endif()
 
-configure_file(src/config.h.in src/config.h)
+find_package(Git)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --tags
+        OUTPUT_VARIABLE TY_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
-include_directories(include "${CMAKE_CURRENT_BINARY_DIR}/src")
+configure_file(src/config.h.in config.h)
+configure_file(include/ty/version.h.in ty/version.h)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+include_directories(include)
 
 set(TY_SOURCES include/ty.h
                include/ty/board.h
@@ -161,6 +173,7 @@ endif()
 install(TARGETS ty_shared DESTINATION lib)
 install(TARGETS ty_static DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
+install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
 
 install(TARGETS tyc RUNTIME DESTINATION bin)
 
