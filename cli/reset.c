@@ -50,7 +50,7 @@ int reset(int argc, char *argv[])
         if (r < 0)
             goto cleanup;
 
-        r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RESET, -1);
+        r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RESET, false, -1);
         if (r < 0)
             goto cleanup;
     }

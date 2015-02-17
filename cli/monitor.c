@@ -135,7 +135,7 @@ static int loop(ty_board *board, int outfd)
 
             if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL)) {
                 printf("Waiting for device...\n");
-                r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, -1);
+                r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, false, -1);
                 if (r < 0)
                     return (int)r;
 

@@ -6,6 +6,7 @@
 
 #include "ty/common.h"
 #include "compat.h"
+#include <pthread.h>
 #include "ty/board.h"
 #include "board_priv.h"
 #include "ty/firmware.h"
@@ -22,6 +23,11 @@ struct ty_board_manager {
 
     ty_list_head callbacks;
     int callback_id;
+
+    pthread_mutex_t refresh_mutex;
+    bool refresh_mutex_init;
+    pthread_cond_t refresh_cond;
+    bool refresh_cond_init;
 
     ty_list_head boards;
     ty_list_head missing_boards;
@@ -423,6 +429,20 @@ int ty_board_manager_new(ty_board_manager **rmanager)
     if (r < 0)
         goto error;
 
+    r = pthread_mutex_init(&manager->refresh_mutex, NULL);
+    if (r) {
+        r = ty_error(TY_ERROR_SYSTEM, "pthread_mutex_init() failed");
+        goto error;
+    }
+    manager->refresh_mutex_init = true;
+
+    r = pthread_cond_init(&manager->refresh_cond, NULL);
+    if (r) {
+        r = ty_error(TY_ERROR_SYSTEM, "pthread_cond_init() failed");
+        goto error;
+    }
+    manager->refresh_cond_init = true;
+
     ty_list_init(&manager->boards);
     ty_list_init(&manager->missing_boards);
 
@@ -443,6 +463,11 @@ error:
 void ty_board_manager_free(ty_board_manager *manager)
 {
     if (manager) {
+        if (manager->refresh_cond_init)
+            pthread_cond_destroy(&manager->refresh_cond);
+        if (manager->refresh_mutex_init)
+            pthread_mutex_destroy(&manager->refresh_mutex);
+
         ty_device_monitor_free(manager->monitor);
         ty_timer_free(manager->timer);
 
@@ -554,6 +579,10 @@ int ty_board_manager_refresh(ty_board_manager *manager)
     r = ty_device_monitor_refresh(manager->monitor);
     if (r < 0)
         return r;
+
+    pthread_mutex_lock(&manager->refresh_mutex);
+    pthread_cond_broadcast(&manager->refresh_cond);
+    pthread_mutex_unlock(&manager->refresh_mutex);
 
     return 0;
 }
@@ -786,7 +815,7 @@ struct wait_for_context {
     ty_board_capability capability;
 };
 
-static int wait_callback(ty_board_manager *manager, void *udata)
+static int wait_for_callback(ty_board_manager *manager, void *udata)
 {
     TY_UNUSED(manager);
 
@@ -798,21 +827,75 @@ static int wait_callback(ty_board_manager *manager, void *udata)
     return ty_board_has_capability(ctx->board, ctx->capability);
 }
 
-int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeout)
+int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool parallel, int timeout)
 {
     assert(board);
-    assert(board->manager);
+
+    ty_board_manager *manager = board->manager;
 
     struct wait_for_context ctx;
     int r;
 
+    if (!manager)
+        return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
+
     ctx.board = ty_board_ref(board);
     ctx.capability = capability;
 
-    r = ty_board_manager_wait(board->manager, wait_callback, &ctx, timeout);
-    ty_board_unref(board);
+    if (parallel) {
+#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+        uint64_t start;
+#endif
+        struct timespec ts;
 
-    return r;
+        pthread_mutex_lock(&manager->refresh_mutex);
+
+#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+        start = ty_millis();
+#else
+        if (timeout >= 0) {
+            clock_gettime(CLOCK_REALTIME, &ts);
+
+            ts.tv_sec += (time_t)(timeout / 1000);
+            ts.tv_nsec += (long)(timeout % 1000 * 1000000);
+            while (ts.tv_nsec >= 1000000000) {
+                ts.tv_sec++;
+                ts.tv_nsec -= 1000000000;
+            }
+        }
+#endif
+
+        while (!(r = wait_for_callback(manager, &ctx))) {
+            if (timeout >= 0) {
+#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+                int adjusted_timeout = ty_adjust_timeout(timeout, start);
+
+                ts.tv_sec = (time_t)(adjusted_timeout / 1000);
+                ts.tv_nsec = (long)(adjusted_timeout % 1000 * 10000000);
+
+                r = pthread_cond_timedwait_relative_np(&manager->refresh_cond, &manager->refresh_mutex, &ts);
+#else
+                r = pthread_cond_timedwait(&manager->refresh_cond, &manager->refresh_mutex, &ts);
+#endif
+                if (r == ETIMEDOUT) {
+                    r = 0;
+                    break;
+                }
+            } else {
+                pthread_cond_wait(&manager->refresh_cond, &manager->refresh_mutex);
+            }
+        }
+
+        pthread_mutex_unlock(&manager->refresh_mutex);
+        ty_board_unref(board);
+
+        return r;
+    } else {
+        r = ty_board_manager_wait(manager, wait_for_callback, &ctx, timeout);
+        ty_board_unref(board);
+
+        return r;
+    }
 }
 
 int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags)

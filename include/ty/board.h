@@ -107,7 +107,7 @@ TY_PUBLIC ty_device *ty_board_get_device(const ty_board *board, ty_board_capabil
 TY_PUBLIC ty_handle *ty_board_get_handle(const ty_board *board, ty_board_capability cap);
 TY_PUBLIC void ty_board_get_descriptors(const ty_board *board, ty_board_capability cap, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeout);
+TY_PUBLIC int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool parallel, int timeout);
 
 TY_PUBLIC int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags);
 

@@ -79,6 +79,7 @@ check_symbol_exists(getdelim stdio.h HAVE_GETDELIM)
 check_symbol_exists(getline stdio.h HAVE_GETLINE)
 check_symbol_exists(fstatat sys/stat.h HAVE_FSTATAT)
 check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
+check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
 
 include(CheckStructHasMember)
 check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_MTIM)
