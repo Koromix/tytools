@@ -38,6 +38,8 @@ static const char *generic_message(int err)
         return "Busy error";
     case TY_ERROR_IO:
         return "I/O error";
+    case TY_ERROR_TIMEOUT:
+        return "Timeout error";
     case TY_ERROR_MODE:
         return "Wrong mode";
     case TY_ERROR_RANGE:

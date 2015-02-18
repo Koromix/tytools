@@ -81,11 +81,12 @@ typedef enum ty_err {
     TY_ERROR_BUSY          = -7,
     TY_ERROR_IO            = -8,
     TY_ERROR_MODE          = -9,
-    TY_ERROR_RANGE         = -10,
-    TY_ERROR_SYSTEM        = -11,
-    TY_ERROR_PARSE         = -12,
-    TY_ERROR_FIRMWARE      = -13,
-    TY_ERROR_OTHER         = -14
+    TY_ERROR_TIMEOUT       = -10,
+    TY_ERROR_RANGE         = -11,
+    TY_ERROR_SYSTEM        = -12,
+    TY_ERROR_PARSE         = -13,
+    TY_ERROR_FIRMWARE      = -14,
+    TY_ERROR_OTHER         = -15
 } ty_err;
 
 typedef void ty_error_func(ty_err err, const char *msg, void *udata);
