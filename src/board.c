@@ -409,6 +409,9 @@ int ty_board_manager_new(ty_board_manager **rmanager)
     assert(rmanager);
 
     ty_board_manager *manager;
+#ifndef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+    pthread_condattr_t cond_attr;
+#endif
     int r;
 
     manager = calloc(1, sizeof(*manager));
@@ -436,7 +439,18 @@ int ty_board_manager_new(ty_board_manager **rmanager)
     }
     manager->refresh_mutex_init = true;
 
+#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
     r = pthread_cond_init(&manager->refresh_cond, NULL);
+#else
+    // Doesn't look like any decent system/libc can fail there
+    r = pthread_condattr_init(&cond_attr);
+    assert(!r);
+    r = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+    assert(!r);
+
+    r = pthread_cond_init(&manager->refresh_cond, &cond_attr);
+    pthread_condattr_destroy(&cond_attr);
+#endif
     if (r) {
         r = ty_error(TY_ERROR_SYSTEM, "pthread_cond_init() failed");
         goto error;
@@ -854,14 +868,10 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool para
         start = ty_millis();
 #else
         if (timeout >= 0) {
-            clock_gettime(CLOCK_REALTIME, &ts);
+            uint64_t end = ty_millis() + (uint64_t)timeout;
 
-            ts.tv_sec += (time_t)(timeout / 1000);
-            ts.tv_nsec += (long)(timeout % 1000 * 1000000);
-            while (ts.tv_nsec >= 1000000000) {
-                ts.tv_sec++;
-                ts.tv_nsec -= 1000000000;
-            }
+            ts.tv_sec = (time_t)(end / 1000);
+            ts.tv_nsec = (long)(end % 1000 * 1000000);
         }
 #endif
 
