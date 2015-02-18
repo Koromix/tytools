@@ -183,8 +183,6 @@ static int teensy_open_interface(ty_board_interface *iface)
         }
     }
 
-    iface->model = &teensy_unknown_model;
-
     switch (ty_device_get_type(iface->dev)) {
     case TY_DEVICE_SERIAL:
         iface->desc = "Serial";
@@ -203,8 +201,10 @@ static int teensy_open_interface(ty_board_interface *iface)
             iface->serial = parse_bootloader_serial(ty_device_get_serial_number(iface->dev));
 
             iface->desc = "HalfKay Bootloader";
-            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
-            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
+            if (iface->model) {
+                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
+                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
+            }
             break;
 
         case TEENSY_USAGE_PAGE_SEREMU:
@@ -220,6 +220,8 @@ static int teensy_open_interface(ty_board_interface *iface)
         break;
     }
 
+    if (!iface->model)
+        iface->model = &teensy_unknown_model;
     iface->vtable = &teensy_vtable;
 
     return 1;
