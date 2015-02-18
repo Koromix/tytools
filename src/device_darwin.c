@@ -187,10 +187,10 @@ static int find_serial_device_node(io_service_t service, char **rpath)
         goto cleanup;
     }
 
-    r = get_ioregistry_value_string(client, CFSTR("IODialinDevice"), &path);
+    r = get_ioregistry_value_string(client, CFSTR("IOCalloutDevice"), &path);
     if (r <= 0) {
         if (!r)
-            ty_error(TY_ERROR_SYSTEM, "Serial device does not have property IODialinDevice");
+            ty_error(TY_ERROR_SYSTEM, "Serial device does not have property IOCalloutDevice");
         goto cleanup;
     }
 
