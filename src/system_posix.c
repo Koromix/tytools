@@ -44,20 +44,17 @@ uint64_t ty_millis(void)
 
 uint64_t ty_millis(void)
 {
-    struct timespec spec;
-    uint64_t millis;
+    struct timespec ts;
     int r;
 
 #ifdef CLOCK_MONOTONIC_RAW
-    r = clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+    r = clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 #else
-    r = clock_gettime(CLOCK_MONOTONIC, &spec);
+    r = clock_gettime(CLOCK_MONOTONIC, &ts);
 #endif
     assert(!r);
 
-    millis = (uint64_t)spec.tv_sec * 1000 + (uint64_t)spec.tv_nsec / 10000000;
-
-    return millis;
+    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 10000000;
 }
 
 #endif
