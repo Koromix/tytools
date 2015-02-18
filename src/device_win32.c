@@ -74,7 +74,9 @@ __declspec(dllimport) BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject
 __declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
 #endif
 
+enum { MAX_USB_DEPTH = 8 };
 static const char *monitor_class_name = "ty_device_monitor";
+
 static const size_t read_buffer_size = 1024;
 
 static GUID hid_guid;
@@ -165,7 +167,7 @@ static int build_location_string(uint8_t ports[], size_t depth, char **rpath)
 static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char **rpath)
 {
     char buf[256];
-    uint8_t ports[16];
+    uint8_t ports[MAX_USB_DEPTH];
     size_t depth;
     int r;
 
@@ -173,7 +175,7 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
 
     CONFIGRET cret;
     do {
-        if (depth == TY_COUNTOF(ports)) {
+        if (depth == MAX_USB_DEPTH) {
             ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
             return 0;
         }
@@ -463,7 +465,7 @@ static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t por
 
     port = find_device_port(inst);
     if (port) {
-        if (depth == TY_COUNTOF(ports)) {
+        if (depth == MAX_USB_DEPTH) {
             ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
             return 0;
         }
@@ -490,7 +492,7 @@ static int browse_controller_tree(ty_device_monitor *monitor, DEVINST inst, DWOR
 {
     struct usb_controller *controller;
     char buf[256];
-    uint8_t ports[16];
+    uint8_t ports[MAX_USB_DEPTH];
     CONFIGRET cret;
     int r;
 
