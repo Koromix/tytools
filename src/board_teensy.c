@@ -249,7 +249,7 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
             return r;
         if (!r)
             return 0;
-        return (ssize_t)strnlen(buf, size);
+        return (ssize_t)strnlen(buf, (size_t)r);
     }
 
     assert(false);
