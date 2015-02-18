@@ -21,8 +21,6 @@ static ULONGLONG WINAPI GetTickCount64_fallback(void);
 static GetTickCount64_func *GetTickCount64_;
 static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
 
-static const uint64_t delta_epoch = 11644473600000;
-
 static DWORD orig_console_mode;
 static bool saved_console_mode;
 
