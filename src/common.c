@@ -67,8 +67,13 @@ static void default_handler(ty_err err, const char *msg, void *udata)
 
 void ty_error_redirect(ty_error_func *f, void *udata)
 {
-    handler = f;
-    handler_udata = udata;
+    if (f) {
+        handler = f;
+        handler_udata = udata;
+    } else {
+        handler = default_handler;
+        handler_udata = NULL;
+    }
 }
 
 void ty_error_mask(ty_err err)
