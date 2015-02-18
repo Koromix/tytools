@@ -60,8 +60,7 @@ if(WIN32)
     list(APPEND LIBRARIES setupapi hid)
 
     if(MINGW)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
+        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic -static-libgcc -static-libstdc++")
     endif()
 endif()
 
