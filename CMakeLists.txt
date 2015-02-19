@@ -207,6 +207,11 @@ qt5_add_resources(TYQ_RESOURCES_RCC ${TYQ_RESOURCES})
 add_executable(tyqt WIN32 ${TYQ_SOURCES} ${TYQ_FORMS_HEADERS} ${TYQ_RESOURCES_RCC})
 set_target_properties(tyqt PROPERTIES AUTOMOC ON)
 
+file(GLOB QT_SHARED_LIBRARIES "${QT5_LIBRARY_DIRECTORY}/*${CMAKE_SHARED_LIBRARY_SUFFIX}")
+if(NOT QT_SHARED_LIBRARIES)
+    set_property(TARGET tyqt APPEND PROPERTY COMPILE_DEFINITIONS QT_STATIC)
+endif()
+
 # Qt5 sets INTERFACE_INCLUDE_DIRECTORIES, so no need to add the correct include directories
 target_link_libraries(tyqt ${TY_LIBRARIES} Qt5::Widgets Qt5::Network)
 if(WIN32)
@@ -215,10 +220,10 @@ if(WIN32)
 
     # Why is there no config package for this?
     find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupportd
-        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
         NO_CMAKE_FIND_ROOT_PATH)
     find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
-        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
         NO_CMAKE_FIND_ROOT_PATH)
 
     target_link_libraries(tyqt
@@ -232,10 +237,10 @@ elseif(APPLE)
     find_package(Cups REQUIRED)
 
     find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupport_debug
-        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
         NO_CMAKE_FIND_ROOT_PATH)
     find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
-        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
         NO_CMAKE_FIND_ROOT_PATH)
 
     target_link_libraries(tyqt

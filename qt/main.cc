@@ -11,12 +11,13 @@
 #include "board_proxy.hh"
 #include "main_window.hh"
 
-#if defined(_WIN32)
-#include <QtPlugin>
-Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
-#elif defined(__APPLE__)
-#include <QtPlugin>
-Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin)
+#ifdef QT_STATIC
+    #include <QtPlugin>
+    #if defined(_WIN32)
+        Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+    #elif defined(__APPLE__)
+        Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin)
+    #endif
 #endif
 
 using namespace std;
