@@ -78,6 +78,13 @@ static const struct _ty_board_vendor *vendors[] = {
     NULL
 };
 
+static const char *capability_names[] = {
+    "upload",
+    "reset",
+    "reboot",
+    "serial"
+};
+
 static const struct firmware_signature signatures[] = {
     {&_ty_teensy_pp10_model, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
     {&_ty_teensy_20_model,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
@@ -683,6 +690,12 @@ size_t ty_board_model_get_code_size(const ty_board_model *model)
 {
     assert(model);
     return model->code_size;
+}
+
+const char *ty_board_get_capability_name(ty_board_capability cap)
+{
+    assert((int)cap >= 0 && (int)cap < TY_BOARD_CAPABILITY_COUNT);
+    return capability_names[cap];
 }
 
 ty_board *ty_board_ref(ty_board *board)

@@ -8,11 +8,6 @@
 #include "ty.h"
 #include "main.h"
 
-struct capability_description {
-    uint32_t cap;
-    const char *desc;
-};
-
 enum {
     OPTION_HELP = 0x100
 };
@@ -22,14 +17,6 @@ static const struct option long_options[] = {
     {"help",    no_argument, NULL, OPTION_HELP},
     {"verbose", no_argument, NULL, 'v'},
     {"watch",   no_argument, NULL, 'w'},
-    {0}
-};
-
-static const struct capability_description capability_names[] = {
-    {TY_BOARD_CAPABILITY_UPLOAD,   "upload"},
-    {TY_BOARD_CAPABILITY_RESET,    "reset"},
-    {TY_BOARD_CAPABILITY_SERIAL,   "serial"},
-    {TY_BOARD_CAPABILITY_REBOOT,   "reboot"},
     {0}
 };
 
@@ -47,9 +34,9 @@ void print_list_usage(void)
 static void print_capabilities(uint16_t capabilities)
 {
     bool first = true;
-    for (const struct capability_description *c = capability_names; c->desc; c++) {
-        if (capabilities & (1 << c->cap)) {
-            printf("%s%s", first ? "" : ", ", c->desc);
+    for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
+        if (capabilities & (1 << i)) {
+            printf("%s%s", first ? "" : ", ", ty_board_get_capability_name(i));
             first = false;
         }
     }

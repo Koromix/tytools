@@ -22,10 +22,12 @@ typedef struct ty_board_interface ty_board_interface;
 typedef struct ty_board_model ty_board_model;
 
 typedef enum ty_board_capability {
-    TY_BOARD_CAPABILITY_SERIAL   = 0,
-    TY_BOARD_CAPABILITY_UPLOAD   = 1,
-    TY_BOARD_CAPABILITY_RESET    = 2,
-    TY_BOARD_CAPABILITY_REBOOT   = 3
+    TY_BOARD_CAPABILITY_UPLOAD,
+    TY_BOARD_CAPABILITY_RESET,
+    TY_BOARD_CAPABILITY_REBOOT,
+    TY_BOARD_CAPABILITY_SERIAL,
+
+    TY_BOARD_CAPABILITY_COUNT
 } ty_board_capability;
 
 typedef enum ty_board_state {
@@ -76,6 +78,8 @@ TY_PUBLIC const char *ty_board_model_get_name(const ty_board_model *model);
 TY_PUBLIC const char *ty_board_model_get_mcu(const ty_board_model *model);
 TY_PUBLIC const char *ty_board_model_get_desc(const ty_board_model *model);
 TY_PUBLIC size_t ty_board_model_get_code_size(const ty_board_model *model);
+
+TY_PUBLIC const char *ty_board_get_capability_name(ty_board_capability cap);
 
 TY_PUBLIC ty_board *ty_board_ref(ty_board *teensy);
 TY_PUBLIC void ty_board_unref(ty_board *teensy);
