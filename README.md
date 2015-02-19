@@ -31,20 +31,18 @@ in cmake with `-DEXPERIMENTAL=1`.
 <a name="build_linux"/>
 ## Linux
 
-<a name="build_linux_dependencies"/>
-### Dependencies
+### Prerequisites
 
 To install the dependencies on Debian or Ubuntu execute:
 ```bash
-sudo apt-get install build-essential cmake libudev-dev
+sudo apt-get install build-essential cmake libudev-dev qtbase5-dev
 ```
 
 On Arch Linux you can do so (as root):
 ```bash
-pacman -S --needed base-devel cmake udev
+pacman -S --needed base-devel cmake udev qt5-base
 ```
 
-<a name="build_linux_compile"/>
 ### Compilation
 
 Open the project directory in a terminal and execute:
@@ -64,82 +62,21 @@ cmake -DCMAKE_BUILD_TYPE=Debug ../..
 
 Pre-built binaries are provided in the releases section.
 
-### Native compilation
-
 You need to install [CMake](http://www.cmake.org/) and MinGW-w64 to build ty under Windows.
-Visual Studio is not supported at the moment, nor is the historical MinGW toolchain.
+Visual Studio is not supported at the moment, nor is the historical MinGW toolchain. You should
+add it to the PATH variable when the installer asks you to.
 
-To install MinGW-w64, the [TDM-GCC](http://tdm-gcc.tdragon.net/) package is probably the easiest
-option. Make sure to use the TDM64 MinGW-w64 edition.
-
-To compile ty, open a console, go to the project directory and execute:
-```bash
-mkdir build\win32 && cd build\win32
-cmake -G "MinGW Makefiles" ..\..
-mingw32-make
-```
-
-### Cross-compilation
-
-An easier option is to cross-compile the windows binary from Linux. You need to install MinGW-w64
-first.
-
-On Debian and Ubuntu, install cmake and mingw-w64:
-```bash
-sudo apt-get install cmake mingw-w64
-```
-
-If you use Arch Linux, execute (as root):
-```bash
-pacman -S --needed cmake mingw-w64-toolchain
-```
-
-You can then use the appropriate toolchain file provided in the contrib/cmake directory. Open the
-project directory in a console and execute:
-```bash
-mkdir -p build/win32 && cd build/win32
-cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/i686-w64-mingw32.cmake ../..
-make
-```
+Using [Qt Creator](http://www.qt.io/download-open-source/) is probably the easiest option to build
+ty on Windows. If you use the online installer, make sure to select the compiler on the components
+page, in Tools > MinGW (use the latest version).
 
 <a name="build_darwin"/>
 ## Mac OS X
 
 Pre-built binaries are provided in the releases section.
 
-### Native compilation
-
-Install Xcode, the developer command-line tools and CMake.
-
-Open a console in the project directory and execute:
-```bash
-mkdir -p build/darwin && cd build/darwin
-cmake ../..
-make
-```
-
-CMake supports universal binaries but does not build them by default. To generate universal
-binaries for i386 and x86_64, use:
-```bash
-cmake -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ../..
-```
-
-### Cross-compilation
-
-You need to install [osxcross](https://github.com/tpoechtrager/osxcross).
-
-Open a terminal and load the OSX environment (using osxcross-env). Go to the project directory
-and execute:
-```bash
-mkdir -p build/darwin && cd build/darwin
-cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake ../..
-make
-```
-
-You can also make universal binaries under Linux. To build one with i386 and x86_64 binaries, use:
-```bash
-cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ../..
-```
+Install Xcode, the developer command-line tools, [CMake](http://www.cmake.org/) and
+[Qt Creator](http://www.qt.io/download-open-source/). The native Clang compiler can build ty.
 
 <a name="usage"/>
 # Command-line usage
