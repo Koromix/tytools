@@ -233,7 +233,7 @@ if(WIN32)
 elseif(APPLE)
     find_library(COCOA_LIBRARIES Cocoa)
     find_library(CARBON_LIBRARIES Carbon)
-    find_library(ZLIB REQUIRED)
+    find_package(ZLIB REQUIRED)
     find_package(Cups REQUIRED)
 
     find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupport_debug
