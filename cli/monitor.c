@@ -40,7 +40,7 @@ enum {
     DIRECTION_OUTPUT = 2
 };
 
-static const int error_io_timeout = 6000;
+static const int error_io_timeout = 5000;
 
 static uint16_t terminal_flags = 0;
 #ifdef _WIN32

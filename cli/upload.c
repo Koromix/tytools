@@ -22,7 +22,7 @@ static const struct option long_options[] = {
     {0}
 };
 
-static const int manual_reboot_delay = 4000;
+static const int manual_reboot_delay = 5000;
 
 static bool reset_after = true;
 static bool wait_device = false;
