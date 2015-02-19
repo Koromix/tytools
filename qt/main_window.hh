@@ -16,9 +16,13 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     BoardManagerProxy *manager_;
     std::shared_ptr<BoardProxy> current_board_;
 
+    QString last_error_;
+
 public:
     MainWindow(BoardManagerProxy *manager, QWidget *parent = nullptr);
     virtual ~MainWindow();
+
+    QString lastError() const;
 
 signals:
     void errorMessage(const QString &msg);

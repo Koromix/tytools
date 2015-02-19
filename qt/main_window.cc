@@ -49,6 +49,11 @@ MainWindow::~MainWindow()
     ty_error_redirect(nullptr, nullptr);
 }
 
+QString MainWindow::lastError() const
+{
+    return last_error_;
+}
+
 void MainWindow::disableBoardWidgets()
 {
     infoTab->setEnabled(false);
@@ -180,6 +185,8 @@ void MainWindow::monitorTextChanged()
 
 void MainWindow::showErrorMessage(const QString &msg)
 {
+    last_error_ = msg;
+
     fprintf(stderr, "%s\n", qPrintable(msg));
 
     statusBar()->showMessage(msg, 5000);

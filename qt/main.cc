@@ -26,18 +26,14 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    ty_error_redirect([](ty_err err, const char *msg, void *udata) {
-        TY_UNUSED(err);
-        TY_UNUSED(udata);
-
-        QMessageBox::critical(nullptr, MainWindow::tr("Teensy Qt (critical error)"), msg, QMessageBox::Close);
-        exit(1);
-    }, nullptr);
-
     BoardManagerProxy manager;
-    manager.start();
-
     MainWindow window(&manager);
+
+    if (!manager.start()) {
+        QMessageBox::critical(nullptr, MainWindow::tr("Teensy Qt (critical error)"), window.lastError(), QMessageBox::Close);
+        return 1;
+    }
+
     window.show();
 
     return app.exec();
