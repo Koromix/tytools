@@ -2,7 +2,8 @@
 
 ty is a collection of tools to manage Teensy devices (or teensies). It provides:
 - libty, a C library
-- and tyc, a command-line tool
+- Teensy Qt, a simple GUI to manage devices
+- tyc, a command-line tool
 
 It currently runs on Linux, Windows and Mac OS X.
 
@@ -10,7 +11,7 @@ It currently runs on Linux, Windows and Mac OS X.
   - [Linux](#build_linux)
   - [Windows](#build_windows)
   - [Mac OS X](#build_darwin)
-- [Usage](#usage)
+- [Command-line usage](#usage)
   - [List devices](#usage_list)
   - [Upload firmware](#usage_upload)
   - [Serial monitor](#usage_monitor)
@@ -141,7 +142,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake -DCMA
 ```
 
 <a name="usage"/>
-# Usage
+# Command-line usage
 
 You can manage multiple devices connected simultaneously, ty uniquely identifies each device by its
 position in the host USB topology. Meaning if it stays on the same USB port, it is the same device

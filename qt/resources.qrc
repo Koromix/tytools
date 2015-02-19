@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="board">../resources/images/board.png</file>
+        <file alias="reset">../resources/images/reset.png</file>
+        <file alias="upload">../resources/images/upload.png</file>
+        <file alias="reboot">../resources/images/reboot.png</file>
+        <file alias="tyq">../resources/images/tyq.png</file>
+    </qresource>
+</RCC>

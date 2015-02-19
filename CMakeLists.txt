@@ -2,8 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-cmake_minimum_required(VERSION 2.8.9)
-project(ty C)
+cmake_minimum_required(VERSION 2.8.12)
+project(ty C CXX)
 
 set(TY_VERSION v0.4.0)
 
@@ -19,14 +19,20 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set(CMAKE_CXX_FLAGS "-std=gnu++1y -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wold-style-cast -Wformat=2")
 
     if(CMAKE_COMPILER_IS_GNUCC)
-        set(CMAKE_C_FLAGS_DEBUG "-Og -ggdb -D_FORTIFY_SOURCE=2")
-        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -ggdb -D_FORTIFY_SOURCE=2")
+        foreach(lang C CXX)
+            set(CMAKE_${lang}_FLAGS_DEBUG "-O1 -ggdb -D_FORTIFY_SOURCE=2")
+            set(CMAKE_${lang}_FLAGS_RELWITHDEBINFO "-O2 -ggdb -D_FORTIFY_SOURCE=2")
+        endforeach()
     else()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-microsoft")
-        set(CMAKE_C_FLAGS_DEBUG "-O1 -g -D_FORTIFY_SOURCE=2")
-        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g -D_FORTIFY_SOURCE=2")
+        foreach(lang C CXX)
+            set(CMAKE_${lang}_FLAGS_DEBUG "-O1 -g -D_FORTIFY_SOURCE=2")
+            set(CMAKE_${lang}_FLAGS_RELWITHDEBINFO "-O2 -g -D_FORTIFY_SOURCE=2")
+        endforeach()
     endif()
-    set(CMAKE_C_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2")
+    foreach(lang C CXX)
+        set(CMAKE_${lang}_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2")
+    endforeach()
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -64,6 +70,7 @@ if(WIN32)
 
     if(MINGW)
         set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic -static-libgcc -static-libstdc++")
+        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic -static-libgcc -static-libstdc++")
     endif()
 endif()
 
@@ -155,6 +162,17 @@ set(TYC_SOURCES cli/list.c
                 cli/reset.c
                 cli/upload.c)
 
+set(TYQ_SOURCES qt/about_dialog.cc
+                qt/main.cc
+                qt/main_window.cc
+                qt/board_proxy.cc
+                qt/board_widget.cc
+                qt/descriptor_set_notifier.cc)
+set(TYQ_FORMS qt/about_dialog.ui
+              qt/main_window.ui
+              qt/board_widget.ui)
+set(TYQ_RESOURCES qt/resources.qrc)
+
 add_library(ty OBJECT ${TY_SOURCES})
 set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -174,6 +192,58 @@ endif()
 
 add_executable(tyc ${TYC_SOURCES})
 target_link_libraries(tyc ${TY_LIBRARIES})
+
+find_package(Qt5 REQUIRED
+    COMPONENTS Widgets Network PrintSupport
+    HINTS "${CMAKE_BINARY_DIR}/qt5"
+    NO_CMAKE_FIND_ROOT_PATH)
+
+get_target_property(QT5_LIBRARY_DIRECTORY Qt5::Core LOCATION)
+get_filename_component(QT5_LIBRARY_DIRECTORY "${QT5_LIBRARY_DIRECTORY}" DIRECTORY)
+
+qt5_wrap_ui(TYQ_FORMS_HEADERS ${TYQ_FORMS})
+qt5_add_resources(TYQ_RESOURCES_RCC ${TYQ_RESOURCES})
+
+add_executable(tyqt WIN32 ${TYQ_SOURCES} ${TYQ_FORMS_HEADERS} ${TYQ_RESOURCES_RCC})
+set_target_properties(tyqt PROPERTIES AUTOMOC ON)
+
+# Qt5 sets INTERFACE_INCLUDE_DIRECTORIES, so no need to add the correct include directories
+target_link_libraries(tyqt ${TY_LIBRARIES} Qt5::Widgets Qt5::Network)
+if(WIN32)
+    # Fix undefined reference to _imp__WSAAsyncSelect@16
+    set_property(TARGET Qt5::Core APPEND PROPERTY INTERFACE_LINK_LIBRARIES ws2_32)
+
+    # Why is there no config package for this?
+    find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupportd
+        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        NO_CMAKE_FIND_ROOT_PATH)
+    find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
+        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        NO_CMAKE_FIND_ROOT_PATH)
+
+    target_link_libraries(tyqt
+        Qt5::QWindowsIntegrationPlugin imm32 winmm
+        debug ${Qt5PlatformSupport_LIBRARIES_DEBUG}
+        optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED})
+elseif(APPLE)
+    find_library(COCOA_LIBRARIES Cocoa)
+    find_library(CARBON_LIBRARIES Carbon)
+    find_library(ZLIB REQUIRED)
+    find_package(Cups REQUIRED)
+
+    find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupport_debug
+        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        NO_CMAKE_FIND_ROOT_PATH)
+    find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
+        HINTS "${QT5_LIBRARY_DIRECTORY}"
+        NO_CMAKE_FIND_ROOT_PATH)
+
+    target_link_libraries(tyqt
+        Qt5::QCocoaIntegrationPlugin Qt5::PrintSupport
+        ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES}
+        debug ${Qt5PlatformSupport_LIBRARIES_DEBUG}
+        optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED})
+endif()
 
 install(TARGETS ty_shared DESTINATION lib)
 install(TARGETS ty_static DESTINATION lib)
