@@ -7,9 +7,6 @@
 #ifndef TY_COMMON_H
 #define TY_COMMON_H
 
-// Keep assertions ;)
-#undef NDEBUG
-
 // Avoid msvcrt's limited versions of printf/scanf functions
 #define __USE_MINGW_ANSI_STDIO 1
 
