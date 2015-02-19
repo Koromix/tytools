@@ -128,6 +128,9 @@ TY_PUBLIC const ty_board_model *ty_board_test_firmware(const struct ty_firmware 
 TY_PUBLIC const char *ty_board_interface_get_desc(const ty_board_interface *iface);
 TY_PUBLIC uint16_t ty_board_interface_get_capabilities(const ty_board_interface *iface);
 
+TY_PUBLIC uint8_t ty_board_interface_get_interface_number(const ty_board_interface *iface);
+TY_PUBLIC const char *ty_board_interface_get_path(const ty_board_interface *iface);
+
 TY_PUBLIC ty_device *ty_board_interface_get_device(const ty_board_interface *iface);
 TY_PUBLIC ty_handle *ty_board_interface_get_handle(const ty_board_interface *iface);
 TY_PUBLIC void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct ty_descriptor_set *set, int id);

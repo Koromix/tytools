@@ -1043,6 +1043,18 @@ uint16_t ty_board_interface_get_capabilities(const ty_board_interface *iface)
     return iface->capabilities;
 }
 
+const char *ty_board_interface_get_path(const ty_board_interface *iface)
+{
+    assert(iface);
+    return ty_device_get_path(iface->dev);
+}
+
+uint8_t ty_board_interface_get_interface_number(const ty_board_interface *iface)
+{
+    assert(iface);
+    return ty_device_get_interface_number(iface->dev);
+}
+
 ty_device *ty_board_interface_get_device(const ty_board_interface *iface)
 {
     assert(iface);
