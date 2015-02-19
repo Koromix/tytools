@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(ty C CXX)
 
-set(TY_VERSION v0.4.0)
+set(TY_VERSION v0.5.0)
 
 find_package(Threads)
 list(APPEND TY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
