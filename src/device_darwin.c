@@ -786,10 +786,16 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
 
     ty_handle *h = ctx;
 
+    pthread_mutex_lock(&h->mutex);
+
     CFRelease(h->hid);
     h->hid = NULL;
 
     CFRunLoopSourceSignal(h->shutdown);
+    h->loop = NULL;
+
+    pthread_mutex_unlock(&h->mutex);
+
     fire_device_event(h);
 }
 
@@ -839,11 +845,11 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     r = 0;
 cleanup:
     free_report(report);
-    if (fire)
-        fire_device_event(h);
     if (r < 0)
         h->thread_ret = r;
     pthread_mutex_unlock(&h->mutex);
+    if (fire)
+        fire_device_event(h);
 }
 
 static void *device_thread(void *ptr)
@@ -880,6 +886,10 @@ static void *device_thread(void *ptr)
 
     if (h->hid)
         IOHIDDeviceUnscheduleFromRunLoop(h->hid, h->loop, kCFRunLoopCommonModes);
+
+    pthread_mutex_lock(&h->mutex);
+    h->loop = NULL;
+    pthread_mutex_unlock(&h->mutex);
 
     return NULL;
 
@@ -1005,10 +1015,14 @@ static void close_hid_device(ty_handle *h)
 {
     if (h) {
         if (h->shutdown) {
-            CFRunLoopSourceSignal(h->shutdown);
-            if (CFRunLoopIsWaiting(h->loop))
-                CFRunLoopWakeUp(h->loop);
+            pthread_mutex_lock(&h->mutex);
 
+            if (h->loop) {
+                CFRunLoopSourceSignal(h->shutdown);
+                CFRunLoopWakeUp(h->loop);
+            }
+
+            pthread_mutex_unlock(&h->mutex);
             pthread_join(h->thread, NULL);
 
             CFRelease(h->shutdown);
