@@ -56,7 +56,7 @@ struct usb_controller {
     ty_list_head list;
 
     uint8_t index;
-    char *id;
+    char *roothub_id;
 };
 
 struct device_notification {
@@ -90,7 +90,7 @@ static const struct _ty_device_vtable win32_device_vtable;
 static void free_controller(struct usb_controller *controller)
 {
     if (controller)
-        free(controller->id);
+        free(controller->roothub_id);
 
     free(controller);
 }
@@ -106,10 +106,10 @@ static void free_notification(struct device_notification *notification)
 static uint8_t find_controller_index(ty_list_head *controllers, const char *id)
 {
     ty_list_foreach(cur, controllers) {
-        struct usb_controller *usb_controller = ty_container_of(cur, struct usb_controller, list);
+        struct usb_controller *controller = ty_container_of(cur, struct usb_controller, list);
 
-        if (strcmp(usb_controller->id, id) == 0)
-            return usb_controller->index;
+        if (strcmp(controller->roothub_id, id) == 0)
+            return controller->index;
     }
 
     return 0;
@@ -169,11 +169,10 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
     char buf[256];
     uint8_t ports[MAX_USB_DEPTH];
     size_t depth;
+    CONFIGRET cret;
     int r;
 
     depth = 0;
-
-    CONFIGRET cret;
     do {
         if (depth == MAX_USB_DEPTH) {
             ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
@@ -184,9 +183,13 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
         if (cret != CR_SUCCESS)
             return 0;
 
-        if (depth && strncmp(buf, "USB\\", 4) != 0) {
+        if (strstr(buf, "\\ROOT_HUB")) {
             ports[depth++] = find_controller_index(controllers, buf);
+            if (depth == 1)
+                return 0;
             break;
+        } else if (depth && strncmp(buf, "USB\\", 4) != 0) {
+            return 0;
         }
 
         ports[depth] = find_device_port(inst);
@@ -491,6 +494,7 @@ static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t por
 static int browse_controller_tree(ty_device_monitor *monitor, DEVINST inst, DWORD index)
 {
     struct usb_controller *controller;
+    DEVINST roothub_inst;
     char buf[256];
     uint8_t ports[MAX_USB_DEPTH];
     CONFIGRET cret;
@@ -505,13 +509,19 @@ static int browse_controller_tree(ty_device_monitor *monitor, DEVINST inst, DWOR
     // should we worry about having more than 255 controllers?
     controller->index = (uint8_t)(index + 1);
 
-    cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+    cret = CM_Get_Child(&roothub_inst, inst, 0);
     if (cret != CR_SUCCESS) {
         r = 0;
         goto error;
     }
-    controller->id = strdup(buf);
-    if (!controller->id) {
+
+    cret = CM_Get_Device_ID(roothub_inst, buf, sizeof(buf), 0);
+    if (cret != CR_SUCCESS || !strstr(buf, "\\ROOT_HUB")) {
+        r = 0;
+        goto error;
+    }
+    controller->roothub_id = strdup(buf);
+    if (!controller->roothub_id) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
