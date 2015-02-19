@@ -178,26 +178,24 @@ ty_device *ty_device_ref(ty_device *dev)
 {
     assert(dev);
 
-    dev->refcount++;
+    __atomic_fetch_add(&dev->refcount, 1, __ATOMIC_RELAXED);
     return dev;
 }
 
 void ty_device_unref(ty_device *dev)
 {
-    if (!dev)
-        return;
+    if (dev) {
+        if (__atomic_fetch_sub(&dev->refcount, 1, __ATOMIC_RELEASE) > 1)
+            return;
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
-    if (dev->refcount)
-        dev->refcount--;
-
-    if (!dev->monitor && !dev->refcount) {
         free(dev->key);
         free(dev->location);
         free(dev->path);
         free(dev->serial);
-
-        free(dev);
     }
+
+    free(dev);
 }
 
 void ty_device_set_udata(ty_device *dev, void *udata)

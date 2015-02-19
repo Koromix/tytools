@@ -689,19 +689,17 @@ ty_board *ty_board_ref(ty_board *board)
 {
     assert(board);
 
-    board->refcount++;
+    __atomic_add_fetch(&board->refcount, 1, __ATOMIC_RELAXED);
     return board;
 }
 
 void ty_board_unref(ty_board *board)
 {
-    if (!board)
-        return;
+    if (board) {
+        if (__atomic_fetch_sub(&board->refcount, 1, __ATOMIC_RELEASE) > 1)
+            return;
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
-    if (board->refcount)
-        board->refcount--;
-
-    if (!board->manager && !board->refcount) {
         free(board->location);
 
         ty_list_foreach(cur, &board->interfaces) {
@@ -712,9 +710,9 @@ void ty_board_unref(ty_board *board)
 
             free_interface(iface);
         }
-
-        free(board);
     }
+
+    free(board);
 }
 
 void ty_board_set_udata(ty_board *board, void *udata)

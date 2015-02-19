@@ -52,7 +52,7 @@ struct ty_board {
     ty_board_manager *manager;
     ty_list_head list;
 
-    unsigned int refcount;
+    volatile unsigned int refcount;
 
     ty_board_state state;
 
