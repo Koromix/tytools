@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(ty C CXX)
 
-set(TY_VERSION v0.5.0)
+set(TY_VERSION 0.5.0)
 
 find_package(Threads)
 list(APPEND TY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
@@ -102,6 +102,8 @@ if(GIT_FOUND)
         COMMAND ${GIT_EXECUTABLE} describe --tags
         OUTPUT_VARIABLE TY_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # Strip the 'v' prefix
+    string(SUBSTRING ${TY_VERSION} 1 -1 TY_VERSION)
 endif()
 
 configure_file(src/config.h.in config.h)
