@@ -171,7 +171,7 @@ set(TYQ_SOURCES qt/about_dialog.cc
 set(TYQ_FORMS qt/about_dialog.ui
               qt/main_window.ui
               qt/board_widget.ui)
-set(TYQ_RESOURCES qt/resources.qrc)
+set(TYQ_RESOURCES resources/tyqt.qrc)
 
 add_library(ty OBJECT ${TY_SOURCES})
 set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)

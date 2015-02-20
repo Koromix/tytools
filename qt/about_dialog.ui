@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>About Teensy Qt</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../resources/tyqt.qrc">
+    <normaloff>:/tyqt</normaloff>:/tyqt</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
    <property name="spacing">
     <number>10</number>
@@ -31,7 +35,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="resources.qrc">:/tyq</pixmap>
+        <pixmap resource="../resources/tyqt.qrc">:/tyqt</pixmap>
        </property>
        <property name="scaledContents">
         <bool>false</bool>
@@ -121,7 +125,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../resources/tyqt.qrc"/>
  </resources>
  <connections>
   <connection>

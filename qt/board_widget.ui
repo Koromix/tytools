@@ -68,7 +68,7 @@
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="resources.qrc">:/board</pixmap>
+      <pixmap resource="../resources/tyqt.qrc">:/board</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -172,7 +172,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../resources/tyqt.qrc"/>
  </resources>
  <connections/>
 </ui>
