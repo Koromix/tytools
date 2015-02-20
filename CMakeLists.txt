@@ -57,7 +57,7 @@ if(APPLE)
     endif()
 
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
-    set(CMAKE_INSTALL_RPATH "@executable_path;@executable_path/../lib")
+    set(CMAKE_INSTALL_RPATH "@executable_path;@executable_path/../lib;@executable_path/../Frameworks")
 
     # Makes it easier for cross-compilation and testing. In my case, compile on Linux
     # and test on OSX using sshfs
@@ -108,6 +108,9 @@ endif()
 
 configure_file(src/config.h.in config.h)
 configure_file(include/ty/version.h.in ty/version.h)
+if (APPLE)
+    configure_file(resources/tyqt_osx.plist.in tyqt_osx.plist)
+endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(include)
@@ -174,6 +177,9 @@ set(TYQ_FORMS qt/about_dialog.ui
               qt/main_window.ui
               qt/board_widget.ui)
 set(TYQ_RESOURCES resources/tyqt.qrc)
+if(WIN32)
+    list(APPEND TYQ_SOURCES resources/tyqt_win32.rc)
+endif()
 
 add_library(ty OBJECT ${TY_SOURCES})
 set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -252,12 +258,50 @@ elseif(APPLE)
         optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED})
 endif()
 
-install(TARGETS ty_shared DESTINATION lib)
-install(TARGETS ty_static DESTINATION lib)
-install(FILES include/ty.h DESTINATION include)
-install(FILES include/ty/*.h DESTINATION include/ty)
-install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
+set(CPACK_PACKAGE_NAME "TyQt")
+set(CPACK_PACKAGE_VENDOR "Koromix")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GUI and command-line tools to manage Teensy devices")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
+set(CPACK_PACKAGE_VERSION ${TY_VERSION})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "TyQt")
+set(CPACK_PACKAGE_EXECUTABLES tyqt "TyQt")
+set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/resources/images/tyqt.png")
 
-install(TARGETS tyc RUNTIME DESTINATION bin)
+if(WIN32)
+    set(CPACK_GENERATOR ZIP WIX)
 
-install(FILES contrib/udev/teensy.rules DESTINATION /usr/lib/udev/rules.d RENAME 49-teensy.rules)
+    set(CPACK_WIX_UPGRADE_GUID 72663aca-47a7-4b9b-aa53-aa067b872b8a)
+    string(REGEX REPLACE "\\-.*$" "" CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION})
+
+    install(TARGETS ty_shared RUNTIME DESTINATION .)
+    install(TARGETS tyc tyqt RUNTIME DESTINATION .)
+
+    install(FILES README.md DESTINATION . RENAME README.txt)
+    install(FILES LICENSE.txt DESTINATION .)
+    install(DIRECTORY contrib/licenses/ DESTINATION .)
+elseif(APPLE)
+    set(CPACK_GENERATOR Bundle)
+
+    set(CPACK_BUNDLE_NAME "TyQt")
+    set(CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/resources/images/tyqt.icns")
+    set(CPACK_BUNDLE_PLIST "${CMAKE_BINARY_DIR}/tyqt_osx.plist")
+
+    # Kind of a hack, but it works (the Bundle generator want to put everything in Resources)
+    install(TARGETS ty_shared DESTINATION ../Frameworks)
+    install(TARGETS tyqt tyc DESTINATION ../MacOS)
+
+    install(FILES README.md DESTINATION . RENAME README.txt)
+    install(FILES LICENSE.txt DESTINATION .)
+else()
+    install(TARGETS ty_shared DESTINATION lib)
+    install(TARGETS ty_static DESTINATION lib)
+    install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN *.h)
+    install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
+
+    install(TARGETS tyc tyqt RUNTIME DESTINATION bin)
+
+    install(FILES contrib/udev/teensy.rules DESTINATION lib/udev/rules.d RENAME 49-teensy.rules)
+endif()
+
+include(CPack)
