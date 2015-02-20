@@ -1,9 +1,9 @@
 # Introduction
 
 ty is a collection of tools to manage Teensy devices (or teensies). It provides:
-- libty, a C library
-- Teensy Qt, a simple GUI to manage devices
+- TyQt, a simple GUI to manage devices
 - tyc, a command-line tool
+- libty, a C library
 
 It currently runs on Linux, Windows and Mac OS X.
 

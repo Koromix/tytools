@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>About Teensy Qt</string>
+   <string>About TyQt</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../resources/tyqt.qrc">
@@ -63,7 +63,7 @@
           </font>
          </property>
          <property name="text">
-          <string>Teensy Qt</string>
+          <string>TyQt</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>

@@ -15,7 +15,7 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
 {
     setupUi(this);
 
-    versionLabel->setText(QString("Teensy Qt ") + TY_VERSION);
+    versionLabel->setText(QString("TyQt ") + TY_VERSION);
 }
 
 void AboutDialog::on_websiteButton_clicked()

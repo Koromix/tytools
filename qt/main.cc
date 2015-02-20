@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     MainWindow window(&manager);
 
     if (!manager.start()) {
-        QMessageBox::critical(nullptr, MainWindow::tr("Teensy Qt (critical error)"), window.lastError(), QMessageBox::Close);
+        QMessageBox::critical(nullptr, MainWindow::tr("TyQt (critical error)"), window.lastError(), QMessageBox::Close);
         return 1;
     }
 
