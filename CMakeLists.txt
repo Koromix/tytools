@@ -216,7 +216,7 @@ endif()
 target_link_libraries(tyqt ${TY_LIBRARIES} Qt5::Widgets Qt5::Network)
 if(WIN32)
     # Fix undefined reference to _imp__WSAAsyncSelect@16
-    set_property(TARGET Qt5::Core APPEND PROPERTY INTERFACE_LINK_LIBRARIES ws2_32)
+    set_property(TARGET Qt5::Network APPEND PROPERTY INTERFACE_LINK_LIBRARIES ws2_32)
 
     # Why is there no config package for this?
     find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupportd
