@@ -316,6 +316,8 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="actionNewWindow"/>
+    <addaction name="separator"/>
     <addaction name="actionUpload"/>
     <addaction name="actionUploadNew"/>
     <addaction name="separator"/>
@@ -490,6 +492,14 @@
     <string>Ctrl+H</string>
    </property>
   </action>
+  <action name="actionNewWindow">
+   <property name="text">
+    <string>&amp;New Window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>boardList</tabstop>
@@ -510,22 +520,5 @@
  <resources>
   <include location="../resources/tyqt.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>actionQuit</sender>
-   <signal>triggered()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>329</x>
-     <y>225</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

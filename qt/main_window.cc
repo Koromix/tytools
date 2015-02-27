@@ -12,6 +12,7 @@
 #include "about_dialog.hh"
 #include "board_widget.hh"
 #include "main_window.hh"
+#include "tyqt.hh"
 
 using namespace std;
 
@@ -20,17 +21,10 @@ MainWindow::MainWindow(BoardManagerProxy *manager, QWidget *parent)
 {
     setupUi(this);
 
+    connect(actionQuit, &QAction::triggered, TyQt::instance(), &TyQt::quit);
+
     disableBoardWidgets();
     monitorText->setWordWrapMode(QTextOption::WrapAnywhere);
-
-    // Errors may be thrown from a worker thread, so use signals to queue them on the GUI thread
-    ty_error_redirect([](ty_err err, const char *msg, void *udata) {
-        TY_UNUSED(err);
-
-        MainWindow *main = static_cast<MainWindow *>(udata);
-        emit main->errorMessage(msg);
-    }, this);
-    connect(this, &MainWindow::errorMessage, this, &MainWindow::showErrorMessage);
 
     boardList->setModel(manager);
     boardList->setItemDelegate(new BoardItemDelegate(manager));
@@ -42,16 +36,6 @@ MainWindow::MainWindow(BoardManagerProxy *manager, QWidget *parent)
 
     for (auto &board: *manager)
         setBoardDefaults(board);
-}
-
-MainWindow::~MainWindow()
-{
-    ty_error_redirect(nullptr, nullptr);
-}
-
-QString MainWindow::lastError() const
-{
-    return last_error_;
 }
 
 void MainWindow::disableBoardWidgets()
@@ -97,6 +81,7 @@ void MainWindow::uploadCurrentFirmware()
     if (!current_board_)
         return;
 
+    // FIXME: the firmware/resetAfter handling should be integrated into BoardProxy itself (maybe)
     current_board_->upload(current_board_->property("firmware").toString(),
                            current_board_->property("resetAfter").toBool());
 }
@@ -202,10 +187,6 @@ void MainWindow::monitorTextChanged()
 
 void MainWindow::showErrorMessage(const QString &msg)
 {
-    last_error_ = msg;
-
-    fprintf(stderr, "%s\n", qPrintable(msg));
-
     statusBar()->showMessage(msg, 5000);
     logText->appendPlainText(msg);
 }
@@ -234,6 +215,11 @@ void MainWindow::on_resetAfterUpload_toggled(bool checked)
         return;
 
     current_board_->setProperty("resetAfter", checked);
+}
+
+void MainWindow::on_actionNewWindow_triggered()
+{
+    tyQt->newMainWindow();
 }
 
 void MainWindow::on_actionUpload_triggered()

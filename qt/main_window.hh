@@ -16,16 +16,11 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     BoardManagerProxy *manager_;
     std::shared_ptr<BoardProxy> current_board_;
 
-    QString last_error_;
-
 public:
     MainWindow(BoardManagerProxy *manager, QWidget *parent = nullptr);
-    virtual ~MainWindow();
 
-    QString lastError() const;
-
-signals:
-    void errorMessage(const QString &msg);
+public slots:
+    void showErrorMessage(const QString &msg);
 
 private:
     void disableBoardWidgets();
@@ -38,13 +33,14 @@ private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void refreshBoardInfo();
 
-    void monitorTextChanged();
     void updatePropertyField(const char *name, const QVariant &value);
 
-    void showErrorMessage(const QString &msg);
+    void monitorTextChanged();
 
     void on_firmwarePath_editingFinished();
     void on_resetAfterUpload_toggled(bool checked);
+
+    void on_actionNewWindow_triggered();
 
     void on_actionUpload_triggered();
     void on_actionUploadNew_triggered();

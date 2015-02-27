@@ -4,12 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <QApplication>
-#include <QMessageBox>
-#include <QTimer>
-
-#include "board_proxy.hh"
-#include "main_window.hh"
+#include "tyqt.hh"
 
 #ifdef QT_STATIC
     #include <QtPlugin>
@@ -24,17 +19,6 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-
-    BoardManagerProxy manager;
-    MainWindow window(&manager);
-
-    if (!manager.start()) {
-        QMessageBox::critical(nullptr, MainWindow::tr("TyQt (critical error)"), window.lastError(), QMessageBox::Close);
-        return 1;
-    }
-
-    window.show();
-
+    TyQt app(argc, argv);
     return app.exec();
 }
