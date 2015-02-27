@@ -137,7 +137,7 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
 void MainWindow::refreshBoardInfo()
 {
     infoTab->setEnabled(true);
-    modelText->setText(current_board_->modelName());
+    modelText->setText(current_board_->modelDesc());
     locationText->setText(current_board_->location());
     serialText->setText(QString::number(current_board_->serialNumber()));
 

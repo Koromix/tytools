@@ -843,6 +843,26 @@ const ty_board_model *ty_board_get_model(const ty_board *board)
     return board->model;
 }
 
+const char *ty_board_get_model_name(const ty_board *board)
+{
+    assert(board);
+
+    if (!board->model)
+        return NULL;
+
+    return board->model->name;
+}
+
+const char *ty_board_get_model_desc(const ty_board *board)
+{
+    assert(board);
+
+    if (!board->model)
+        return NULL;
+
+    return board->model->desc;
+}
+
 ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap)
 {
     assert(board);

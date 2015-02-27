@@ -81,6 +81,7 @@ public:
 
     const ty_board_model *model() const;
     QString modelName() const;
+    QString modelDesc() const;
 
     QString identity() const;
     QString location() const;
@@ -150,6 +151,7 @@ public:
     const_iterator cbegin() const { return boards_.cbegin(); }
     const_iterator cend() const { return boards_.cend(); }
 
+    std::vector<std::shared_ptr<BoardProxy>> boards();
     std::shared_ptr<BoardProxy> board(size_t i);
     size_t boardCount() const;
 

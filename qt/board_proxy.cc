@@ -129,7 +129,16 @@ const ty_board_model *BoardProxy::model() const
 
 QString BoardProxy::modelName() const
 {
-    const ty_board_model *model = ty_board_get_model(board_);
+    auto model = ty_board_get_model(board_);
+    if (!model)
+        return tr("(unknown)");
+
+    return ty_board_model_get_name(model);
+}
+
+QString BoardProxy::modelDesc() const
+{
+    auto model = ty_board_get_model(board_);
     if (!model)
         return tr("(unknown)");
 
@@ -409,6 +418,11 @@ bool BoardManagerProxy::start()
     ty_board_manager_refresh(manager_);
 
     return true;
+}
+
+vector<shared_ptr<BoardProxy>> BoardManagerProxy::boards()
+{
+    return boards_;
 }
 
 shared_ptr<BoardProxy> BoardManagerProxy::board(size_t i)
