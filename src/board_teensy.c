@@ -185,6 +185,11 @@ static int teensy_open_interface(ty_board_interface *iface)
 
     switch (ty_device_get_type(iface->dev)) {
     case TY_DEVICE_SERIAL:
+        /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
+           around and reuse them. The device will keep rebooting if 134 is what stays around,
+           so try to break the loop here. */
+        ty_serial_set_attributes(iface->h, 115200, 0);
+
         iface->desc = "Serial";
         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
