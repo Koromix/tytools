@@ -34,7 +34,7 @@ static const struct _ty_board_model_vtable teensy_model_vtable;
 
 static const ty_board_model teensy_unknown_model = {
     .name = "teensy",
-    .desc = "Teensy (unknown)"
+    .desc = "Teensy"
 };
 
 const ty_board_model _ty_teensy_pp10_model = {
