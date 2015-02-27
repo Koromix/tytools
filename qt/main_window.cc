@@ -297,6 +297,13 @@ void MainWindow::on_monitorEdit_returnPressed()
     current_board_->sendSerial(s.toUtf8());
 }
 
+void MainWindow::on_actionMinimalInterface_toggled(bool checked)
+{
+    toolBar->setVisible(!checked);
+    boardList->setVisible(!checked);
+    statusbar->setVisible(!checked);
+}
+
 void MainWindow::on_browseButton_clicked()
 {
     browseForFirmware();

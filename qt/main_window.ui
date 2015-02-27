@@ -333,7 +333,14 @@
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <addaction name="actionMinimalInterface"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menu_View"/>
    <addaction name="menu_Help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
@@ -467,6 +474,20 @@
   <action name="actionReportBug">
    <property name="text">
     <string>&amp;Report a bug</string>
+   </property>
+  </action>
+  <action name="actionMinimalInterface">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Minimal Interface</string>
+   </property>
+   <property name="toolTip">
+    <string>Minimal Interface</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
    </property>
   </action>
  </widget>
