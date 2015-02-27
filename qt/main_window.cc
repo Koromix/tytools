@@ -56,6 +56,8 @@ QString MainWindow::lastError() const
 
 void MainWindow::disableBoardWidgets()
 {
+    setWindowTitle("TyQt");
+
     infoTab->setEnabled(false);
     modelText->clear();
     locationText->clear();
@@ -136,6 +138,10 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
 
 void MainWindow::refreshBoardInfo()
 {
+    setWindowTitle(QString("TyQt - %1 - %2")
+                   .arg(current_board_->modelDesc())
+                   .arg(current_board_->identity()));
+
     infoTab->setEnabled(true);
     modelText->setText(current_board_->modelDesc());
     locationText->setText(current_board_->location());
