@@ -35,6 +35,11 @@ class TyQt : public QApplication {
 
     std::vector<MainWindow *> main_windows_;
 
+    QAction *action_visible_;
+    QAction *action_quit_;
+    QSystemTrayIcon tray_icon_;
+    QMenu tray_menu_;
+
 public:
     TyQt(int &argc, char *argv[]);
     virtual ~TyQt();
@@ -43,14 +48,20 @@ public:
 
     static TyQt *instance();
 
+    bool visible();
+
 public slots:
     void newMainWindow();
     void reportError(const QString &msg);
+
+    void setVisible(bool visible);
 
 signals:
     void errorMessage(const QString &msg);
 
 private slots:
+    void trayActivated(QSystemTrayIcon::ActivationReason reason);
+
     void executeAction(SessionPeer &peer, const QStringList &arguments);
     void readAnswer(SessionPeer &peer, const QStringList &arguments);
 

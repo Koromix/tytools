@@ -94,6 +94,40 @@ void TyQt::reportError(const QString &msg)
     emit errorMessage(msg);
 }
 
+void TyQt::setVisible(bool visible)
+{
+    if (visible) {
+        for (auto &win: main_windows_) {
+            win->move(win->property("position").toPoint());
+            win->show();
+        }
+    } else {
+        for (auto &win: main_windows_) {
+            win->setProperty("position", win->pos());
+            win->hide();
+        }
+    }
+
+    action_visible_->setChecked(visible);
+}
+
+bool TyQt::visible()
+{
+    return action_visible_->isChecked();
+}
+
+void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    switch (reason) {
+    case QSystemTrayIcon::Trigger:
+        setVisible(!visible());
+        break;
+
+    default:
+        break;
+    }
+}
+
 void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
 {
     if (arguments.isEmpty()) {
@@ -201,6 +235,23 @@ void TyQt::initServer()
         tyQt->reportError(msg);
     }, nullptr);
 
+    action_visible_ = new QAction(tr("&Visible"), this);
+    action_visible_->setCheckable(true);
+    action_visible_->setChecked(true);
+
+    action_quit_ = new QAction(tr("&Quit"), this);
+
+    tray_menu_.addAction(action_visible_);
+    tray_menu_.addSeparator();
+    tray_menu_.addAction(action_quit_);
+
+    tray_icon_.setIcon(QIcon(":/tyqt"));
+    tray_icon_.setContextMenu(&tray_menu_);
+
+    connect(&tray_icon_, &QSystemTrayIcon::activated, this, &TyQt::trayActivated);
+    connect(action_visible_, &QAction::toggled, this, &TyQt::setVisible);
+    connect(action_quit_, &QAction::triggered, this, &TyQt::quit);
+
     connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
 
     server_ = true;
@@ -213,6 +264,7 @@ int TyQt::execServer()
         return 1;
     }
 
+    tray_icon_.show();
     newMainWindow();
 
     if (!channel_.listen())
