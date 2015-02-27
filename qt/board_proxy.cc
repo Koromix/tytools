@@ -5,6 +5,7 @@
  */
 
 #include <QCoreApplication>
+#include <QIcon>
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
 #include <QTextCursor>
@@ -427,6 +428,9 @@ vector<shared_ptr<BoardProxy>> BoardManagerProxy::boards()
 
 shared_ptr<BoardProxy> BoardManagerProxy::board(size_t i)
 {
+    if (i >= boards_.size())
+        return nullptr;
+
     return boards_[i];
 }
 
@@ -442,6 +446,30 @@ int BoardManagerProxy::rowCount(const QModelIndex &parent) const
     return boards_.size();
 }
 
+int BoardManagerProxy::columnCount(const QModelIndex &parent) const
+{
+    TY_UNUSED(parent);
+
+    return 2;
+}
+
+QVariant BoardManagerProxy::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (orientation == Qt::Vertical)
+        return QVariant();
+
+    if (role == Qt::DisplayRole) {
+        switch (section) {
+        case 0:
+            return tr("Model");
+        case 1:
+            return tr("Location");
+        }
+    }
+
+    return QVariant();
+}
+
 QVariant BoardManagerProxy::data(const QModelIndex &index, int role) const
 {
     if (index.row() >= static_cast<int>(boards_.size()))
@@ -449,19 +477,35 @@ QVariant BoardManagerProxy::data(const QModelIndex &index, int role) const
 
     auto board = boards_[index.row()];
 
-    switch (role) {
-    case Qt::DisplayRole:
-        return board->modelName();
-    case Qt::ToolTipRole:
-        return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4"))
-                       .arg(board->modelName())
-                       .arg(BoardProxy::makeCapabilityString(board->capabilities(), tr("(none)")))
-                       .arg(board->location())
-                       .arg(QString::number(board->serialNumber()));
-
-    default:
-        return QVariant();
+    if (index.column() == 0) {
+        switch (role) {
+        case Qt::DisplayRole:
+            return board->modelDesc();
+        case Qt::DecorationRole:
+            return QIcon(":/board");
+        case Qt::ToolTipRole:
+            return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4"))
+                           .arg(board->modelDesc())
+                           .arg(BoardProxy::makeCapabilityString(board->capabilities(), tr("(none)")))
+                           .arg(board->location())
+                           .arg(QString::number(board->serialNumber()));
+        case Qt::SizeHintRole:
+            return QSize(0, 24);
+        }
+    } else if (index.column() == 1) {
+        /* I don't like putting selector stuff into the base model but we can always
+           make a proxy later if there's a problem. */
+        switch (role) {
+        case Qt::DisplayRole:
+            return board->identity();
+        case Qt::ForegroundRole:
+            return QBrush(Qt::lightGray);
+        case Qt::TextAlignmentRole:
+            return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+        }
     }
+
+    return QVariant();
 }
 
 Qt::ItemFlags BoardManagerProxy::flags(const QModelIndex &index) const

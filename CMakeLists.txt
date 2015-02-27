@@ -173,10 +173,12 @@ set(TYQ_SOURCES qt/about_dialog.cc
                 qt/board_proxy.cc
                 qt/board_widget.cc
                 qt/descriptor_set_notifier.cc
+                qt/selector_dialog.cc
                 qt/session_channel.cc)
 set(TYQ_FORMS qt/about_dialog.ui
               qt/main_window.ui
-              qt/board_widget.ui)
+              qt/board_widget.ui
+              qt/selector_dialog.ui)
 set(TYQ_RESOURCES resources/tyqt.qrc)
 if(WIN32)
     list(APPEND TYQ_SOURCES resources/tyqt_win32.rc)
