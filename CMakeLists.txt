@@ -172,7 +172,8 @@ set(TYQ_SOURCES qt/about_dialog.cc
                 qt/main_window.cc
                 qt/board_proxy.cc
                 qt/board_widget.cc
-                qt/descriptor_set_notifier.cc)
+                qt/descriptor_set_notifier.cc
+                qt/session_channel.cc)
 set(TYQ_FORMS qt/about_dialog.ui
               qt/main_window.ui
               qt/board_widget.ui)
