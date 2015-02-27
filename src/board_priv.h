@@ -56,6 +56,7 @@ struct ty_board {
 
     ty_board_state state;
 
+    char *identity;
     char *location;
 
     uint16_t vid;

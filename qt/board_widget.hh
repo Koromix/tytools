@@ -23,7 +23,7 @@ public:
 
     void setModel(const QString &model);
     void setCapabilities(const QString &capabilities);
-    void setLocation(const QString &location);
+    void setIdentity(const QString &identity);
 
     void setTask(const QString &msg);
     void setProgress(unsigned int progress, unsigned int total);
@@ -32,7 +32,7 @@ public:
 
     QString model() const;
     QString capabilities() const;
-    QString location() const;
+    QString identity() const;
 };
 
 class BoardItemDelegate : public QItemDelegate {

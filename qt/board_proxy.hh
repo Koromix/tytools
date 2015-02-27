@@ -74,11 +74,15 @@ public:
 
     ty_board *board() const;
 
+    bool matchesIdentity(const QString &id);
+
     ty_board_state state() const;
     uint16_t capabilities() const;
 
     const ty_board_model *model() const;
     QString modelName() const;
+
+    QString identity() const;
     QString location() const;
     uint64_t serialNumber() const;
 

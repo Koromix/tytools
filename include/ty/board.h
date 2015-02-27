@@ -84,6 +84,8 @@ TY_PUBLIC const char *ty_board_get_capability_name(ty_board_capability cap);
 TY_PUBLIC ty_board *ty_board_ref(ty_board *teensy);
 TY_PUBLIC void ty_board_unref(ty_board *teensy);
 
+TY_PUBLIC int ty_board_matches_identity(ty_board *board, const char *id);
+
 TY_PUBLIC void ty_board_set_udata(ty_board *board, void *udata);
 TY_PUBLIC void *ty_board_get_udata(const ty_board *board);
 
@@ -91,6 +93,7 @@ TY_PUBLIC ty_board_manager *ty_board_get_manager(const ty_board *board);
 
 TY_PUBLIC ty_board_state ty_board_get_state(const ty_board *board);
 
+TY_PUBLIC const char *ty_board_get_identity(const ty_board *board);
 TY_PUBLIC const char *ty_board_get_location(const ty_board *board);
 
 TY_PUBLIC const ty_board_model *ty_board_get_model(const ty_board *board);

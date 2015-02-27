@@ -107,6 +107,11 @@ ty_board *BoardProxy::board() const
     return board_;
 }
 
+bool BoardProxy::matchesIdentity(const QString &id)
+{
+    return ty_board_matches_identity(board_, id.toLocal8Bit().constData()) == 1;
+}
+
 ty_board_state BoardProxy::state() const
 {
     return ty_board_get_state(board_);
@@ -129,6 +134,11 @@ QString BoardProxy::modelName() const
         return tr("(unknown)");
 
     return ty_board_model_get_desc(model);
+}
+
+QString BoardProxy::identity() const
+{
+    return ty_board_get_identity(board_);
 }
 
 QString BoardProxy::location() const

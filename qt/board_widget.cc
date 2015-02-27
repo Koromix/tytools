@@ -28,9 +28,9 @@ void BoardWidget::setCapabilities(const QString &capabilities)
     capabilityLabel->setText(capabilities);
 }
 
-void BoardWidget::setLocation(const QString &location)
+void BoardWidget::setIdentity(const QString &identity)
 {
-    locationLabel->setText(location);
+    identityLabel->setText(identity);
 }
 
 void BoardWidget::setAvailable(bool available)
@@ -67,9 +67,9 @@ QString BoardWidget::capabilities() const
     return capabilityLabel->text();
 }
 
-QString BoardWidget::location() const
+QString BoardWidget::identity() const
 {
-    return locationLabel->text();
+    return identityLabel->text();
 }
 
 bool BoardWidget::available() const
@@ -95,7 +95,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.setModel(board->modelName());
     widget_.setCapabilities(BoardProxy::makeCapabilityString(board->capabilities(), tr("(none)")));
-    widget_.setLocation(QString("%1#%2").arg(board->location(), QString::number(board->serialNumber())));
+    widget_.setIdentity(board->identity());
 
     unsigned int progress, total;
     QString msg = board->runningTask(&progress, &total);

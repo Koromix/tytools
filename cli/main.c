@@ -36,11 +36,11 @@ int monitor(int argc, char *argv[]);
 int reset(int argc, char *argv[]);
 int upload(int argc, char *argv[]);
 
-static const char *short_options = "+d:";
+static const char *short_options = "+b:";
 static const struct option long_options[] = {
-    {"device",    required_argument, NULL, 'd'},
-    {"help",      optional_argument, NULL, OPTION_HELP},
-    {"version",   no_argument,       NULL, OPTION_VERSION},
+    {"board",    required_argument, NULL, 'b'},
+    {"help",     optional_argument, NULL, OPTION_HELP},
+    {"version",  no_argument,       NULL, OPTION_VERSION},
     {0}
 };
 
@@ -55,8 +55,7 @@ static const struct command commands[] = {
 static ty_board_manager *board_manager;
 static ty_board *main_board;
 
-static const char *device_location = NULL;
-static uint64_t device_serial = 0;
+static const char *board_identity = NULL;
 
 static void print_version(void)
 {
@@ -79,9 +78,9 @@ static void print_usage(const char *cmd_name)
         ty_error(TY_ERROR_PARAM, "Invalid command '%s'", cmd_name);
     }
 
-    fprintf(stderr, "usage: tyc [-d <device>] <command> [options]\n\n"
+    fprintf(stderr, "usage: tyc [-b <id>] <command> [options]\n\n"
                     "Options:\n"
-                    "   -d, --device=<device>    Work with <device> instead of first device found\n\n");
+                    "   -b, --board <id>         Work with board <id> instead of first detected\n\n");
 
     fprintf(stderr, "Commands:\n");
 
@@ -103,49 +102,20 @@ void print_supported_models(void)
     }
 }
 
-static int parse_device_path(char *device, const char **rpath, uint64_t *rserial)
-{
-    *rpath = NULL;
-    *rserial = 0;
-
-    char *ptr = strchr(device, '#');
-
-    if (ptr == device) {
-        ptr++;
-    } else {
-        if (ptr > device)
-            *ptr++ = 0;
-        *rpath = device;
-    }
-
-    if (ptr) {
-        errno = 0;
-        *rserial = strtoull(ptr, NULL, 0);
-        if (errno)
-            return ty_error(TY_ERROR_PARAM, "Serial must be a number");
-    }
-
-    return 0;
-}
-
-static bool test_board(ty_board *board)
-{
-    if (device_location && strcmp(ty_board_get_location(board), device_location) != 0)
-        return false;
-    if (device_serial && ty_board_get_serial_number(board) != device_serial)
-        return false;
-
-    return true;
-}
-
 static int board_callback(ty_board *board, ty_board_event event, void *udata)
 {
     TY_UNUSED(udata);
 
     switch (event) {
     case TY_BOARD_EVENT_ADDED:
-        if (!main_board && test_board(board))
-            main_board = ty_board_ref(board);
+        if (!main_board) {
+            int r = ty_board_matches_identity(board, board_identity);
+            if (r < 0)
+                return r;
+
+            if (r)
+                main_board = ty_board_ref(board);
+        }
         break;
 
     case TY_BOARD_EVENT_CHANGED:
@@ -176,8 +146,7 @@ int get_board(ty_board **rboard)
 
     static ty_board *previous_board = NULL;
     if (main_board != previous_board) {
-        printf("Board at '%s#%"PRIu64"'\n", ty_board_get_location(main_board),
-               ty_board_get_serial_number(main_board));
+        printf("Board at '%s'\n", ty_board_get_identity(main_board));
         previous_board = main_board;
     }
 
@@ -229,8 +198,8 @@ int main(int argc, char *argv[])
             print_version();
             return 0;
 
-        case 'd':
-            r = parse_device_path(optarg, &device_location, &device_serial);
+        case 'b':
+            board_identity = optarg;
             break;
 
         default:

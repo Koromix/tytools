@@ -144,6 +144,12 @@ static int add_board(ty_board_manager *manager, ty_board_interface *iface, ty_bo
     board->vid = ty_device_get_vid(iface->dev);
     board->pid = ty_device_get_pid(iface->dev);
 
+    r = asprintf(&board->identity, "%s#%"PRIu64, board->location, board->serial);
+    if (r < 0) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
     board->manager = manager;
     ty_list_add_tail(&manager->boards, &board->list);
 
@@ -713,6 +719,7 @@ void ty_board_unref(ty_board *board)
             return;
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
+        free(board->identity);
         free(board->location);
 
         ty_list_foreach(cur, &board->interfaces) {
@@ -726,6 +733,72 @@ void ty_board_unref(ty_board *board)
     }
 
     free(board);
+}
+
+static int parse_identity(const char *id, char **rlocation, uint64_t *rserial)
+{
+    char *location = NULL;
+    uint64_t serial = 0;
+    char *ptr;
+    int r;
+
+    ptr = strchr(id, '#');
+
+    if (ptr != id) {
+        if (ptr) {
+            location = strndup(id, (size_t)(ptr - id));
+        } else {
+            location = strdup(id);
+        }
+        if (!location) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            goto error;
+        }
+    }
+
+    if (ptr) {
+        char *end;
+        serial = strtoull(++ptr, &end, 10);
+        if (end == ptr || *end) {
+            r = ty_error(TY_ERROR_PARAM, "#<serial> must be a number");
+            goto error;
+        }
+    }
+
+    *rlocation = location;
+    *rserial = serial;
+    return 0;
+
+error:
+    free(location);
+    return r;
+}
+
+int ty_board_matches_identity(ty_board *board, const char *id)
+{
+    assert(board);
+
+    if (!id || !*id)
+        return 1;
+
+    char *location = NULL;
+    uint64_t serial = 0;
+    int r;
+
+    r = parse_identity(id, &location, &serial);
+    if (r < 0)
+        return r;
+
+    r = 0;
+    if (location && strcmp(location, board->location) != 0)
+        goto cleanup;
+    if (serial && serial != board->serial)
+        goto cleanup;
+
+    r = 1;
+cleanup:
+    free(location);
+    return r;
 }
 
 void ty_board_set_udata(ty_board *board, void *udata)
@@ -750,6 +823,12 @@ ty_board_state ty_board_get_state(const ty_board *board)
 {
     assert(board);
     return board->state;
+}
+
+const char *ty_board_get_identity(const ty_board *board)
+{
+    assert(board);
+    return board->identity;
 }
 
 const char *ty_board_get_location(const ty_board *board)
