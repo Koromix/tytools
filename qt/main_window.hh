@@ -39,6 +39,7 @@ private slots:
     void refreshBoardInfo();
 
     void monitorTextChanged();
+    void updatePropertyField(const char *name, const QVariant &value);
 
     void showErrorMessage(const QString &msg);
 

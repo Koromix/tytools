@@ -132,8 +132,10 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
 
     monitorText->setDocument(&current_board_->serialDocument());
 
-    refreshBoardInfo();
     connect(current_board_.get(), &BoardProxy::boardChanged, this, &MainWindow::refreshBoardInfo);
+    connect(current_board_.get(), &BoardProxy::propertyChanged, this, &MainWindow::updatePropertyField);
+
+    refreshBoardInfo();
 }
 
 void MainWindow::refreshBoardInfo()
@@ -179,6 +181,15 @@ void MainWindow::refreshBoardInfo()
 
     actionReset->setEnabled(current_board_->isResetAvailable());
     actionReboot->setEnabled(current_board_->isRebootAvailable());
+}
+
+void MainWindow::updatePropertyField(const char *name, const QVariant &value)
+{
+    if (strcmp(name, "firmware") == 0) {
+        firmwarePath->setText(value.toString());
+    } else if (strcmp(name, "resetAfter") == 0) {
+        resetAfterUpload->setChecked(value.toBool());
+    }
 }
 
 void MainWindow::monitorTextChanged()

@@ -101,6 +101,8 @@ public:
 
     QString runningTask(unsigned int *progress, unsigned int *total) const;
 
+    virtual bool event(QEvent *e) override;
+
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
@@ -114,6 +116,8 @@ signals:
     void boardDropped();
 
     void taskProgress(const BoardProxy &board, const QString &msg, size_t progress, size_t total);
+
+    void propertyChanged(const char *name, const QVariant &value);
 
 private slots:
     void serialReceived(ty_descriptor desc);

@@ -5,6 +5,7 @@
  */
 
 #include <QCoreApplication>
+#include <QDynamicPropertyChangeEvent>
 #include <QIcon>
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
@@ -224,6 +225,18 @@ QString BoardProxy::runningTask(unsigned int *progress, unsigned int *total) con
         *total = task_total_;
 
     return task_msg_;
+}
+
+bool BoardProxy::event(QEvent *e)
+{
+    if (e->type() == QEvent::DynamicPropertyChange) {
+        QDynamicPropertyChangeEvent *ce = static_cast<QDynamicPropertyChangeEvent *>(e);
+        const char *name = ce->propertyName().constData();
+
+        emit propertyChanged(name, property(name));
+    }
+
+    return QObject::event(e);
 }
 
 QStringList BoardProxy::makeCapabilityList(uint16_t capabilities)
