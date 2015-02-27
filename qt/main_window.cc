@@ -117,10 +117,10 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
         current_board_->disconnect(this);
 
     if (selected.indexes().isEmpty()) {
-        current_board_ = nullptr;
-
-        disableBoardWidgets();
         monitorText->setDocument(nullptr);
+
+        current_board_ = nullptr;
+        disableBoardWidgets();
 
         return;
     }
