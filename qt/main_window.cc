@@ -215,7 +215,17 @@ void MainWindow::on_firmwarePath_editingFinished()
     if (!current_board_)
         return;
 
-    current_board_->setProperty("firmware", firmwarePath->text());
+    if (!firmwarePath->text().isEmpty()) {
+        QString firmware = QFileInfo(firmwarePath->text()).canonicalFilePath();
+        if (firmware.isEmpty()) {
+            tyQt->reportError(tr("Path '%1' is not valid").arg(firmwarePath->text()));
+            return;
+        }
+
+        current_board_->setProperty("firmware", firmware);
+    } else {
+        current_board_->setProperty("firmware", QVariant());
+    }
 }
 
 void MainWindow::on_resetAfterUpload_toggled(bool checked)
