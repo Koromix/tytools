@@ -282,7 +282,7 @@ if(WIN32)
 
         install(FILES README.md DESTINATION . RENAME README.txt)
         install(FILES LICENSE.txt DESTINATION .)
-        install(DIRECTORY contrib/licenses/ DESTINATION .)
+        install(DIRECTORY contrib/win32/ DESTINATION . FILES_MATCHING PATTERN *.txt)
 
         include(CPack)
     else()
