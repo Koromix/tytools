@@ -10,20 +10,23 @@
 
 enum {
     OPTION_HELP = 0x100,
+    OPTION_NOPROGRESS,
     OPTION_NORESET
 };
 
 static const char *short_options = "wf:";
 static const struct option long_options[] = {
-    {"format",  required_argument, NULL, 'f'},
-    {"help",    no_argument,       NULL, OPTION_HELP},
-    {"noreset", no_argument,       NULL, OPTION_NORESET},
-    {"wait",    no_argument,       NULL, 'w'},
+    {"format",     required_argument, NULL, 'f'},
+    {"help",       no_argument,       NULL, OPTION_HELP},
+    {"noprogress", no_argument,       NULL, OPTION_NOPROGRESS},
+    {"noreset",    no_argument,       NULL, OPTION_NORESET},
+    {"wait",       no_argument,       NULL, 'w'},
     {0}
 };
 
 static const int manual_reboot_delay = 5000;
 
+static bool show_progress = true;
 static bool reset_after = true;
 static bool wait_device = false;
 static const char *image_format = NULL;
@@ -69,7 +72,7 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
     return 0;
 }
 
-static int show_progress(const ty_board *board, const ty_firmware *f, size_t uploaded, void *udata)
+static int progress_callback(const ty_board *board, const ty_firmware *f, size_t uploaded, void *udata)
 {
     TY_UNUSED(board);
     TY_UNUSED(udata);
@@ -95,6 +98,9 @@ int upload(int argc, char *argv[])
             print_upload_usage();
             return 0;
 
+        case OPTION_NOPROGRESS:
+            show_progress = false;
+            break;
         case OPTION_NORESET:
             reset_after = false;
             break;
@@ -168,10 +174,15 @@ wait:
     printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)ty_board_model_get_code_size(model) * 100.0,
            firmware->size);
 
-    r = ty_board_upload(board, firmware, 0, show_progress, NULL);
+    if (show_progress) {
+        r = ty_board_upload(board, firmware, 0, progress_callback, NULL);
+        printf("\n");
+    } else {
+        printf("Uploading firmware...\n");
+        r = ty_board_upload(board, firmware, 0, NULL, NULL);
+    }
     if (r < 0)
         goto cleanup;
-    printf("\n");
 
     if (reset_after) {
         printf("Sending reset command\n");
