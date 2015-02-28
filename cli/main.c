@@ -59,7 +59,7 @@ static const char *board_identity = NULL;
 
 static void print_version(void)
 {
-    fprintf(stderr, "tyc version "TY_VERSION"\n");
+    fprintf(stderr, "tyc "TY_VERSION"\n");
 }
 
 static void print_usage(const char *cmd_name)
