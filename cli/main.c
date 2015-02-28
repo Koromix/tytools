@@ -141,8 +141,13 @@ int get_manager(ty_board_manager **rmanager)
 
 int get_board(ty_board **rboard)
 {
-    if (!main_board)
-        return ty_error(TY_ERROR_NOT_FOUND, "Board not found");
+    if (!main_board) {
+        if (board_identity) {
+            return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' not found", board_identity);
+        } else {
+            return ty_error(TY_ERROR_NOT_FOUND, "No board available");
+        }
+    }
 
     static ty_board *previous_board = NULL;
     if (main_board != previous_board) {
