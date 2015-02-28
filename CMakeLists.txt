@@ -277,6 +277,10 @@ if(WIN32)
         set(CPACK_WIX_UPGRADE_GUID 72663aca-47a7-4b9b-aa53-aa067b872b8a)
         string(REGEX REPLACE "\\-.*$" "" CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION})
 
+        set(CPACK_WIX_PRODUCT_ICON "${CMAKE_SOURCE_DIR}/resources/images/tyqt.ico")
+        set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/win32/wix_banner.jpg")
+        set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/win32/wix_dialog.jpg")
+
         install(TARGETS ty_shared RUNTIME DESTINATION .)
         install(TARGETS tyc tyqt RUNTIME DESTINATION .)
 
