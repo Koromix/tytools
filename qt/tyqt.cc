@@ -119,9 +119,11 @@ bool TyQt::visible()
 void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 {
     switch (reason) {
+#ifndef __APPLE__
     case QSystemTrayIcon::Trigger:
         setVisible(!visible());
         break;
+#endif
 
     default:
         break;
