@@ -37,7 +37,6 @@ struct ty_device_monitor {
 struct ty_handle {
     TY_HANDLE
 
-    bool block;
     HANDLE handle;
     struct _OVERLAPPED *ov;
     uint8_t *buf;
@@ -881,7 +880,7 @@ cleanup:
     return r;
 }
 
-static int open_win32_device(ty_device *dev, bool block, ty_handle **rh)
+static int open_win32_device(ty_device *dev, ty_handle **rh)
 {
     ty_handle *h = NULL;
     DWORD len;
@@ -934,8 +933,6 @@ static int open_win32_device(ty_device *dev, bool block, ty_handle **rh)
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
-
-    h->block = block;
 
     timeouts.ReadIntervalTimeout = 1;
     timeouts.ReadTotalTimeoutMultiplier = 0;
@@ -1013,7 +1010,7 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     return 0;
 }
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
+ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_HID);
@@ -1022,7 +1019,16 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
 
     DWORD len, ret;
 
-    ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, h->block);
+    if (timeout > 0) {
+        ret = WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
+        if (ret != WAIT_OBJECT_0) {
+            if (ret == WAIT_TIMEOUT)
+                return 0;
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        }
+    }
+
+    ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
     if (!ret) {
         if (GetLastError() == ERROR_IO_PENDING)
             return 0;
@@ -1208,7 +1214,7 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)
     return 0;
 }
 
-ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
+ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_SERIAL);
@@ -1235,7 +1241,16 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size)
        read request has returned anything. Then we can just give the user the data we have, until
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
     if (!h->len) {
-        ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, h->block);
+        if (timeout > 0) {
+            ret = WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
+            if (ret != WAIT_OBJECT_0) {
+                if (ret == WAIT_TIMEOUT)
+                    return 0;
+                return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+            }
+        }
+
+        ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
         if (!ret) {
             if (GetLastError() == ERROR_IO_PENDING)
                 return 0;

@@ -210,12 +210,12 @@ void *ty_device_get_udata(const ty_device *dev)
     return dev->udata;
 }
 
-int ty_device_open(ty_device *dev, bool block, ty_handle **rh)
+int ty_device_open(ty_device *dev, ty_handle **rh)
 {
     assert(dev);
     assert(rh);
 
-    return (*dev->vtable->open)(dev, block, rh);
+    return (*dev->vtable->open)(dev, rh);
 }
 
 void ty_device_close(ty_handle *h)

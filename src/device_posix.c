@@ -17,22 +17,18 @@
 #include "device_posix_priv.h"
 #include "ty/system.h"
 
-static int open_posix_device(ty_device *dev, bool block, ty_handle **rh)
+static int open_posix_device(ty_device *dev, ty_handle **rh)
 {
     ty_handle *h;
-    int flags, r;
+    int r;
 
     h = calloc(1, sizeof(*h));
     if (!h)
         return ty_error(TY_ERROR_MEMORY, NULL);
     h->dev = ty_device_ref(dev);
 
-    flags = O_RDWR | O_CLOEXEC | O_NOCTTY;
-    if (!block)
-        flags |= O_NONBLOCK;
-
 restart:
-    h->fd = open(dev->path, flags);
+    h->fd = open(dev->path, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);
     if (h->fd < 0) {
         switch (errno) {
         case EINTR:
@@ -56,7 +52,6 @@ restart:
         }
         goto error;
     }
-    h->block = block;
 
     *rh = h;
     return 0;
@@ -234,7 +229,7 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)
     return 0;
 }
 
-ssize_t ty_serial_read(struct ty_handle *h, char *buf, size_t size)
+ssize_t ty_serial_read(struct ty_handle *h, char *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_SERIAL);
@@ -243,12 +238,29 @@ ssize_t ty_serial_read(struct ty_handle *h, char *buf, size_t size)
 
     ssize_t r;
 
+    if (timeout) {
+        struct pollfd pfd;
+        uint64_t start;
+
+        pfd.events = POLLIN;
+        pfd.fd = h->fd;
+
+        start = ty_millis();
 restart:
+        r = poll(&pfd, 1, ty_adjust_timeout(timeout, start));
+        if (r < 0) {
+            if (errno == EINTR)
+                goto restart;
+            return ty_error(TY_ERROR_SYSTEM, "poll('%s') failed: %s", h->dev->path,
+                            strerror(errno));
+        }
+        if (!r)
+            return 0;
+    }
+
     r = read(h->fd, buf, size);
     if (r < 0) {
         switch (errno) {
-        case EINTR:
-            goto restart;
         case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
         case EWOULDBLOCK:
@@ -258,8 +270,7 @@ restart:
         case ENXIO:
             return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
         }
-        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->path,
-                        strerror(errno));
+        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->path, strerror(errno));
     }
 
     return r;

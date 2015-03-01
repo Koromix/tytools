@@ -174,7 +174,7 @@ static int teensy_open_interface(ty_board_interface *iface)
 
     if (!iface->h) {
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = ty_device_open(iface->dev, false, &iface->h);
+        r = ty_device_open(iface->dev, &iface->h);
         ty_error_unmask();
         if (r < 0) {
             if (r == TY_ERROR_NOT_FOUND)
@@ -240,16 +240,16 @@ static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate
     return ty_serial_set_attributes(iface->h, rate, flags);
 }
 
-static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size)
+static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
 {
     ssize_t r;
 
     switch (ty_device_get_type(iface->dev)) {
     case TY_DEVICE_SERIAL:
-        return ty_serial_read(iface->h, buf, size);
+        return ty_serial_read(iface->h, buf, size, timeout);
 
     case TY_DEVICE_HID:
-        r = ty_hid_read(iface->h, (uint8_t *)buf, size);
+        r = ty_hid_read(iface->h, (uint8_t *)buf, size, timeout);
         if (r < 0)
             return r;
         if (!r)

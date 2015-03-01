@@ -148,7 +148,7 @@ static int loop(ty_board *board, int outfd)
             break;
 
         case 2:
-            r = ty_board_serial_read(board, buf, sizeof(buf));
+            r = ty_board_serial_read(board, buf, sizeof(buf), 0);
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
                     timeout = error_io_timeout;

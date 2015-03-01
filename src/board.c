@@ -1029,7 +1029,7 @@ int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flag
     return (*iface->vtable->serial_set_attributes)(iface, rate, flags);
 }
 
-ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
+ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeout)
 {
     assert(board);
     assert(buf);
@@ -1039,7 +1039,7 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size)
     if (!iface)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
-    return (*iface->vtable->serial_read)(iface, buf, size);
+    return (*iface->vtable->serial_read)(iface, buf, size, timeout);
 }
 
 ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)

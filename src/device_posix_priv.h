@@ -15,7 +15,6 @@ struct ty_handle {
     TY_HANDLE
 
     int fd;
-    bool block;
 };
 
 extern const struct _ty_device_vtable _ty_posix_device_vtable;

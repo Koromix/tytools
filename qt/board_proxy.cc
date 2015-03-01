@@ -375,7 +375,7 @@ void BoardProxy::serialReceived(ty_descriptor desc)
 
     char buf[128];
 
-    ssize_t r = ty_board_serial_read(board_, buf, sizeof(buf));
+    ssize_t r = ty_board_serial_read(board_, buf, sizeof(buf), 0);
     if (r < 0) {
         serial_notifier_.clear();
         return;

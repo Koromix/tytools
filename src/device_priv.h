@@ -25,7 +25,7 @@ struct ty_descriptor_set;
     void *udata;
 
 struct _ty_device_vtable {
-    int (*open)(ty_device *dev, bool block, ty_handle **rh);
+    int (*open)(ty_device *dev, ty_handle **rh);
     void (*close)(ty_handle *h);
 
     void (*get_descriptors)(const ty_handle *h, struct ty_descriptor_set *set, int id);

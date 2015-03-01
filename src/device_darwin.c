@@ -44,8 +44,6 @@ struct ty_handle {
         IOHIDDeviceRef hid;
     };
 
-    bool block;
-
     uint8_t *buf;
     size_t size;
 
@@ -910,7 +908,7 @@ static bool get_hid_device_property_number(IOHIDDeviceRef dev, CFStringRef prop,
     return CFNumberGetValue(data, type, rn);
 }
 
-static int open_hid_device(ty_device *dev, bool block, ty_handle **rh)
+static int open_hid_device(ty_device *dev, ty_handle **rh)
 {
     ty_handle *h;
     kern_return_t kret;
@@ -943,8 +941,6 @@ static int open_hid_device(ty_device *dev, bool block, ty_handle **rh)
         r = ty_error(TY_ERROR_SYSTEM, "Failed to open HID device '%s'", dev->path);
         goto error;
     }
-
-    h->block = block;
 
     r = get_hid_device_property_number(h->hid, CFSTR(kIOHIDMaxInputReportSizeKey), kCFNumberSInt32Type,
                                        &h->size);
@@ -1083,7 +1079,7 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     return 0;
 }
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
+ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_HID);
@@ -1091,7 +1087,6 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
     assert(size);
 
     fd_set fds;
-    struct timeval tv = {0};
     struct hid_report *report;
     ssize_t r;
 
@@ -1101,8 +1096,21 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
     FD_ZERO(&fds);
     FD_SET(h->pipe[0], &fds);
 
+    if (timeout >= 0) {
+        uint64_t start;
+        int adjusted_timeout;
+        struct timeval tv;
+
+        start = ty_millis();
 restart:
-    r = select(h->pipe[0] + 1, &fds, NULL, NULL, h->block ? NULL : &tv);
+        adjusted_timeout = ty_adjust_timeout(timeout, start);
+        tv.tv_sec = adjusted_timeout / 1000;
+        tv.tv_usec = (adjusted_timeout % 1000) * 1000;
+
+        r = select(h->pipe[0] + 1, &fds, NULL, NULL, &tv);
+    } else {
+        r = select(h->pipe[0] + 1, &fds, NULL, NULL, NULL);
+    }
     if (r < 0) {
         if (errno == EINTR)
             goto restart;

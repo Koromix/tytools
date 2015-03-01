@@ -8,6 +8,7 @@
 #include "compat.h"
 #include <libudev.h>
 #include <linux/hidraw.h>
+#include <poll.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "ty/device.h"
@@ -424,7 +425,7 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     return 0;
 }
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
+ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_HID);
@@ -433,12 +434,29 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size)
 
     ssize_t r;
 
+    if (timeout) {
+        struct pollfd pfd;
+        uint64_t start;
+
+        pfd.events = POLLIN;
+        pfd.fd = h->fd;
+
+        start = ty_millis();
 restart:
+        r = poll(&pfd, 1, ty_adjust_timeout(timeout, start));
+        if (r < 0) {
+            if (errno == EINTR)
+                goto restart;
+            return ty_error(TY_ERROR_SYSTEM, "poll('%s') failed: %s", h->dev->path,
+                            strerror(errno));
+        }
+        if (!r)
+            return 0;
+    }
+
     r = read(h->fd, buf, size);
     if (r < 0) {
         switch (errno) {
-        case EINTR:
-            goto restart;
         case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
         case EWOULDBLOCK:
