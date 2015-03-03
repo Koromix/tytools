@@ -22,18 +22,35 @@ TyQt::TyQt(int &argc, char *argv[])
     setApplicationVersion(TY_VERSION);
 
     setupOptionParser(parser_);
-    parser_.parse(arguments());
+
+    // This can be triggered from multiple threads, but Qt can queue signals appropriately
+    ty_error_redirect([](ty_err err, const char *msg, void *udata) {
+        TY_UNUSED(err);
+        TY_UNUSED(udata);
+
+        tyQt->reportError(msg);
+    }, nullptr);
+
+    action_visible_ = new QAction(tr("&Visible"), this);
+    action_visible_->setCheckable(true);
+    action_visible_->setChecked(true);
+
+    action_quit_ = new QAction(tr("&Quit"), this);
+
+    tray_menu_.addAction(action_visible_);
+    tray_menu_.addSeparator();
+    tray_menu_.addAction(action_quit_);
+
+    tray_icon_.setIcon(QIcon(":/tyqt"));
+    tray_icon_.setContextMenu(&tray_menu_);
+
+    connect(&tray_icon_, &QSystemTrayIcon::activated, this, &TyQt::trayActivated);
+    connect(action_visible_, &QAction::toggled, this, &TyQt::setVisible);
+    connect(action_quit_, &QAction::triggered, this, &TyQt::quit);
 
     channel_.init();
-    if (channel_.lock()) {
-        if (arguments().count() > 1) {
-            initClient();
-        } else {
-            initServer();
-        }
-    } else {
-        initClient();
-    }
+
+    connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
 }
 
 TyQt::~TyQt()
@@ -48,20 +65,7 @@ TyQt::~TyQt()
 
 int TyQt::exec()
 {
-    if (tyQt->parser_.isSet("version")) {
-        tyQt->showClientMessage(QString("%1 %2").arg(applicationName(), applicationVersion()));
-        return 0;
-    }
-    if (tyQt->parser_.isSet("help")) {
-        tyQt->showClientMessage(tyQt->parser_.helpText());
-        return 0;
-    }
-
-    if (tyQt->server_) {
-        return tyQt->execServer();
-    } else {
-        return tyQt->execClient();
-    }
+    return tyQt->run();
 }
 
 TyQt *TyQt::instance()
@@ -227,39 +231,46 @@ void TyQt::setupOptionParser(QCommandLineParser &parser)
     parser.addOption(activateCommand);
 }
 
-void TyQt::initServer()
+int TyQt::run()
 {
-    // This can be triggered from multiple threads, but Qt can queue signals appropriately
-    ty_error_redirect([](ty_err err, const char *msg, void *udata) {
-        TY_UNUSED(err);
-        TY_UNUSED(udata);
+    if (!parser_.parse(arguments())) {
+        showClientError(QString("%1\n%2").arg(parser_.errorText(), parser_.helpText()));
+        return 1;
+    }
 
-        tyQt->reportError(msg);
-    }, nullptr);
+    if (parser_.isSet("version")) {
+        showClientMessage(QString("%1 %2").arg(applicationName(), applicationVersion()));
+        return 0;
+    }
+    if (parser_.isSet("help")) {
+        showClientMessage(parser_.helpText());
+        return 0;
+    }
 
-    action_visible_ = new QAction(tr("&Visible"), this);
-    action_visible_->setCheckable(true);
-    action_visible_->setChecked(true);
+    if (!parser_.positionalArguments().isEmpty()) {
+        showClientError(QString("%1\n%2").arg(tr("Positional arguments are not allowed."), parser_.helpText()));
+        return 1;
+    }
 
-    action_quit_ = new QAction(tr("&Quit"), this);
+    unsigned int commandCount = parser_.isSet("activate") + parser_.isSet("upload");
+    if (commandCount > 1) {
+        showClientError(QString("%1\n%2").arg(tr("Multiple commands are not allowed."), parser_.helpText()));
+        return 1;
+    }
 
-    tray_menu_.addAction(action_visible_);
-    tray_menu_.addSeparator();
-    tray_menu_.addAction(action_quit_);
 
-    tray_icon_.setIcon(QIcon(":/tyqt"));
-    tray_icon_.setContextMenu(&tray_menu_);
 
-    connect(&tray_icon_, &QSystemTrayIcon::activated, this, &TyQt::trayActivated);
-    connect(action_visible_, &QAction::toggled, this, &TyQt::setVisible);
-    connect(action_quit_, &QAction::triggered, this, &TyQt::quit);
+    if (channel_.lock() && !commandCount) {
+        return runServer();
+    } else {
+        channel_.disconnect(this);
+        connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
 
-    connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
-
-    server_ = true;
+        return runClient();
+    }
 }
 
-int TyQt::execServer()
+int TyQt::runServer()
 {
     if (!manager_.start()) {
         QMessageBox::critical(nullptr, tr("TyQt (critical error)"), last_error_, QMessageBox::Close);
@@ -275,40 +286,8 @@ int TyQt::execServer()
     return QApplication::exec();
 }
 
-shared_ptr<BoardProxy> TyQt::getBoard(function<bool(BoardProxy &board)> filter, bool show_selector)
+int TyQt::runClient()
 {
-    auto board = find_if(manager_.begin(), manager_.end(), [&](auto ptr) { return filter(*ptr); });
-
-    if (board == manager_.end()) {
-        if (show_selector && manager_.boardCount()) {
-            return SelectorDialog::getBoard(&manager_, main_windows_.front());
-        } else {
-            return nullptr;
-        }
-    }
-
-    return *board;
-}
-
-void TyQt::initClient()
-{
-    connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
-
-    server_ = false;
-}
-
-int TyQt::execClient()
-{
-    if (!parser_.parse(arguments())) {
-        showClientError(QString("%1\n%2").arg(parser_.errorText(), parser_.helpText()));
-        return 1;
-    }
-
-    if (!parser_.positionalArguments().isEmpty()) {
-        showClientError(QString("%1\n%2").arg(tr("Positional arguments are not allowed."), parser_.helpText()));
-        return 1;
-    }
-
     if (channel_.isLocked()) {
         channel_.unlock();
 
@@ -322,12 +301,6 @@ int TyQt::execClient()
 
     if (!channel_.connectToMaster()) {
         showClientError(tr("Cannot connect to main TyQt instance"));
-        return 1;
-    }
-
-    unsigned int commandCount = parser_.isSet("activate") + parser_.isSet("upload");
-    if (commandCount > 1) {
-        showClientError(QString("%1\n%2").arg(tr("Multiple commands are not allowed."), parser_.helpText()));
         return 1;
     }
 
@@ -356,6 +329,21 @@ int TyQt::execClient()
     timeout.start(3000);
 
     return QApplication::exec();
+}
+
+shared_ptr<BoardProxy> TyQt::getBoard(function<bool(BoardProxy &board)> filter, bool show_selector)
+{
+    auto board = find_if(manager_.begin(), manager_.end(), [&](auto ptr) { return filter(*ptr); });
+
+    if (board == manager_.end()) {
+        if (show_selector && manager_.boardCount()) {
+            return SelectorDialog::getBoard(&manager_, main_windows_.front());
+        } else {
+            return nullptr;
+        }
+    }
+
+    return *board;
 }
 
 bool TyQt::startBackgroundServer()

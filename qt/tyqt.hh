@@ -27,7 +27,6 @@ class TyQt : public QApplication {
     QCommandLineParser parser_;
 
     SessionChannel channel_;
-    bool server_;
 
     QString last_error_;
 
@@ -68,13 +67,11 @@ private slots:
 private:
     void setupOptionParser(QCommandLineParser &parser);
 
-    void initServer();
-    int execServer();
+    int run();
+    int runServer();
+    int runClient();
 
     std::shared_ptr<BoardProxy> getBoard(std::function<bool(BoardProxy &board)> filter, bool show_selector);
-
-    void initClient();
-    int execClient();
 
     bool startBackgroundServer();
     void showClientMessage(const QString &msg);
