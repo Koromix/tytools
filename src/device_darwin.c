@@ -50,8 +50,11 @@ struct ty_handle {
     pthread_mutex_t mutex;
     bool mutex_init;
     int pipe[2];
-    ty_list_head reports;
     int thread_ret;
+
+    ty_list_head reports;
+    unsigned int allocated_reports;
+    ty_list_head free_reports;
 
     pthread_t thread;
     pthread_cond_t cond;
@@ -750,21 +753,6 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
     return r;
 }
 
-struct hid_report {
-    ty_list_head list;
-
-    uint8_t *data;
-    size_t size;
-};
-
-static void free_report(struct hid_report *report)
-{
-    if (report)
-        free(report->data);
-
-    free(report);
-}
-
 static void fire_device_event(ty_handle *h)
 {
     char buf = '.';
@@ -797,6 +785,13 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     fire_device_event(h);
 }
 
+struct hid_report {
+    ty_list_head list;
+
+    size_t size;
+    uint8_t data[];
+};
+
 static void hid_report_callback(void *ctx, IOReturn result, void *sender,
                                 IOHIDReportType report_type, uint32_t report_id,
                                 uint8_t *report_data, CFIndex report_size)
@@ -817,32 +812,43 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
 
     fire = ty_list_is_empty(&h->reports);
 
-    report = calloc(1, sizeof(*report));
+    report = ty_list_get_first(&h->free_reports, struct hid_report, list);
     if (!report) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
+        if (h->allocated_reports < 64) {
+            // Don't forget the potential leading report ID
+            report = calloc(1, sizeof(struct hid_report) + h->size + 1);
+            if (!report) {
+                r = ty_error(TY_ERROR_MEMORY, NULL);
+                goto cleanup;
+            }
+            h->allocated_reports++;
+        } else {
+            // Drop oldest report, too bad for the user
+            report = ty_list_get_first(&h->reports, struct hid_report, list);
+        }
     }
+    if (report->list.prev)
+        ty_list_remove(&report->list);
 
-    report->data = malloc((size_t)report_size + !!report_id);
-    if (!report->data) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
+    // You never know, even if h->size is supposed to be the maximum input report size
+    if (report_size > (CFIndex)h->size)
+        report_size = (CFIndex)h->size;
 
     if (report_id) {
         report->data[0] = (uint8_t)report_id;
         memcpy(report->data + 1, report_data, report_size);
+
+        report->size = (size_t)report_size + 1;
     } else {
         memcpy(report->data, report_data, report_size);
+
+        report->size = (size_t)report_size;
     }
-    report->size = (size_t)report_size;
 
     ty_list_add_tail(&h->reports, &report->list);
-    report = NULL;
 
     r = 0;
 cleanup:
-    free_report(report);
     if (r < 0)
         h->thread_ret = r;
     pthread_mutex_unlock(&h->mutex);
@@ -966,6 +972,7 @@ static int open_hid_device(ty_device *dev, ty_handle **rh)
     fcntl(h->pipe[1], F_SETFL, fcntl(h->pipe[1], F_GETFL, 0) | O_NONBLOCK);
 
     ty_list_init(&h->reports);
+    ty_list_init(&h->free_reports);
 
     r = pthread_mutex_init(&h->mutex, NULL);
     if (r) {
@@ -1029,9 +1036,10 @@ static void close_hid_device(ty_handle *h)
         if (h->mutex_init)
             pthread_mutex_destroy(&h->mutex);
 
-        ty_list_foreach(cur, &h->reports) {
+        ty_list_splice(&h->free_reports, &h->reports);
+        ty_list_foreach(cur, &h->free_reports) {
             struct hid_report *report = ty_container_of(cur, struct hid_report, list);
-            free_report(report);
+            free(report);
         }
 
         close(h->pipe[0]);
@@ -1138,7 +1146,7 @@ restart:
     memcpy(buf, report->data, size);
 
     ty_list_remove(&report->list);
-    free_report(report);
+    ty_list_add(&h->free_reports, &report->list);
 
     r = (ssize_t)size;
 cleanup:
