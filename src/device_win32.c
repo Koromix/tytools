@@ -40,6 +40,7 @@ struct ty_handle {
     HANDLE handle;
     struct _OVERLAPPED *ov;
     uint8_t *buf;
+    DWORD pending_thread;
 
     uint8_t *ptr;
     ssize_t len;
@@ -65,6 +66,8 @@ struct device_notification {
     char *key;
 };
 
+typedef BOOL WINAPI CancelIoEx_func(HANDLE hFile, LPOVERLAPPED lpOverlapped);
+
 #ifdef __MINGW32__
 // MinGW may miss these
 __declspec(dllimport) void NTAPI HidD_GetHidGuid(LPGUID HidGuid);
@@ -72,6 +75,8 @@ __declspec(dllimport) BOOLEAN NTAPI HidD_GetSerialNumberString(HANDLE device, PV
 __declspec(dllimport) BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject, PHIDP_PREPARSED_DATA *PreparsedData);
 __declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
 #endif
+
+static CancelIoEx_func *CancelIoEx_;
 
 enum { MAX_USB_DEPTH = 8 };
 static const char *monitor_class_name = "ty_device_monitor";
@@ -85,6 +90,14 @@ static const struct device_type device_types[] = {
 };
 
 static const struct _ty_device_vtable win32_device_vtable;
+
+TY_INIT()
+{
+    HMODULE h = LoadLibrary("kernel32.dll");
+    assert(h);
+
+    CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(h, "CancelIoEx");
+}
 
 static void free_controller(struct usb_controller *controller)
 {
@@ -947,6 +960,7 @@ static int open_win32_device(ty_device *dev, ty_handle **rh)
         r = ty_error(TY_ERROR_SYSTEM, "ReadFile() failed: %s", ty_win32_strerror(0));
         goto error;
     }
+    h->pending_thread = GetCurrentThreadId();
 
     *rh = h;
     return 0;
@@ -956,16 +970,58 @@ error:
     return r;
 }
 
+static void close_win32_device(ty_handle *h);
+static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
+{
+    ty_handle *h = udata;
+    DWORD ret;
+
+    /* Give up if nothing happens, even if it means a leak; we'll get rid of this when XP
+       becomes irrelevant anyway. Hope this happens within my lifetime. */
+    ret = WaitForSingleObject(h->ov->hEvent, 300000);
+    if (ret != WAIT_OBJECT_0) {
+        ty_error(TY_ERROR_SYSTEM, "Failed to cleanup OVERLAPPED structure, leaking memory");
+        return 0;
+    }
+
+    h->pending_thread = 0;
+    close_win32_device(h);
+
+    return 0;
+}
+
 static void close_win32_device(ty_handle *h)
 {
     if (h) {
+        ty_device_unref(h->dev);
+        h->dev = NULL;
+
+        if (h->pending_thread) {
+            if (CancelIoEx_) {
+                CancelIoEx_(h->handle, NULL);
+            } else {
+                CancelIo(h->handle);
+
+                CloseHandle(h->handle);
+                h->handle = NULL;
+
+                /* CancelIoEx does not exist on XP, so instead we create a new thread to cleanup
+                   when pending I/O stops. And if the thread cannot be created, just leaking seems
+                   better than a potential segmentation fault. */
+                if (h->pending_thread != GetCurrentThreadId()) {
+                    _beginthreadex(NULL, 0, overlapped_cleanup_thread, h, 0, NULL);
+                    return;
+                }
+            }
+        }
+
         if (h->handle)
             CloseHandle(h->handle);
+
+        free(h->buf);
         if (h->ov && h->ov->hEvent)
             CloseHandle(h->ov->hEvent);
         free(h->ov);
-        free(h->buf);
-        ty_device_unref(h->dev);
     }
 
     free(h);
@@ -1032,8 +1088,11 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
     if (!ret) {
         if (GetLastError() == ERROR_IO_PENDING)
             return 0;
+
+        h->pending_thread = 0;
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
+    h->pending_thread = 0;
 
     /* HID communication is message-based. So if the caller does not provide a big enough
        buffer, we can just discard the extra data, unlike for serial communication. */
@@ -1057,6 +1116,7 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
         CancelIo(h->handle);
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
+    h->pending_thread = GetCurrentThreadId();
 
     return (ssize_t)size;
 }
@@ -1233,6 +1293,7 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout)
             CancelIo(h->handle);
             h->len = -1;
         }
+        h->pending_thread = GetCurrentThreadId();
 
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
@@ -1254,8 +1315,11 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout)
         if (!ret) {
             if (GetLastError() == ERROR_IO_PENDING)
                 return 0;
+
+            h->pending_thread = 0;
             return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
         }
+        h->pending_thread = 0;
 
         h->ptr = h->buf;
         h->len = (ssize_t)len;
@@ -1278,6 +1342,7 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout)
             CancelIo(h->handle);
             h->len = -1;
         }
+        h->pending_thread = GetCurrentThreadId();
     }
 
     return (ssize_t)size;
