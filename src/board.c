@@ -243,9 +243,13 @@ static int open_interface(ty_device *dev, ty_board_interface **riface)
     for (const struct _ty_board_vendor **cur = vendors; *cur; cur++) {
         const struct _ty_board_vendor *vendor = *cur;
 
+        ty_error_mask(TY_ERROR_NOT_FOUND);
         r = (*vendor->open_interface)(iface);
-        if (r < 0)
-            goto error;
+        ty_error_unmask();
+        if (r < 0) {
+            if (r != TY_ERROR_NOT_FOUND)
+                goto error;
+        }
         if (r)
             break;
     }

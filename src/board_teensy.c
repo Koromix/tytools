@@ -177,14 +177,9 @@ static int teensy_open_interface(ty_board_interface *iface)
     }
 
     if (!iface->h) {
-        ty_error_mask(TY_ERROR_NOT_FOUND);
         r = ty_device_open(iface->dev, &iface->h);
-        ty_error_unmask();
-        if (r < 0) {
-            if (r == TY_ERROR_NOT_FOUND)
-                return 0;
+        if (r < 0)
             return r;
-        }
     }
 
     switch (ty_device_get_type(iface->dev)) {
