@@ -61,11 +61,9 @@ extern const ty_board_model _ty_teensy_30_model;
 extern const ty_board_model _ty_teensy_31_model;
 
 const ty_board_model *ty_board_models[] = {
-#ifdef TY_EXPERIMENTAL
     &_ty_teensy_pp10_model,
     &_ty_teensy_20_model,
     &_ty_teensy_pp20_model,
-#endif
     &_ty_teensy_30_model,
     &_ty_teensy_31_model,
     NULL

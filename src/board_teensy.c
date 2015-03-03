@@ -16,6 +16,7 @@ struct ty_board_model {
 
     // Identifcation
     uint8_t usage;
+    bool experimental;
 
     // Upload settings
     uint8_t halfkay_version;
@@ -45,6 +46,7 @@ const ty_board_model _ty_teensy_pp10_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1A,
+    .experimental = true,
 
     .code_size = 64512,
     .halfkay_version = 1,
@@ -59,6 +61,7 @@ const ty_board_model _ty_teensy_20_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1B,
+    .experimental = true,
 
     .code_size = 32256,
     .halfkay_version = 1,
@@ -73,6 +76,7 @@ const ty_board_model _ty_teensy_pp20_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x1C,
+    .experimental = true,
 
     .code_size = 130048,
     .halfkay_version = 2,
@@ -358,6 +362,9 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *f, uint16_t fla
 {
     TY_UNUSED(flags);
 
+    if (iface->model->experimental && !ty_config_experimental)
+        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, use --experimental", iface->model->desc);
+
     int r;
 
     if (pf) {
@@ -389,6 +396,9 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *f, uint16_t fla
 
 static int teensy_reset(ty_board_interface *iface)
 {
+    if (iface->model->experimental && !ty_config_experimental)
+        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, use --experimental", iface->model->desc);
+
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }
 

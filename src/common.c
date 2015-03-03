@@ -10,11 +10,20 @@
 
 static void default_handler(ty_err err, const char *msg, void *udata);
 
+bool ty_config_experimental = false;
+
 static ty_error_func *handler = default_handler;
 static void *handler_udata = NULL;
 
 static ty_err mask[32];
 static size_t mask_count = 0;
+
+TY_INIT()
+{
+    const char *experimental = getenv("TY_EXPERIMENTAL");
+    if (experimental && strcmp(experimental, "0") != 0 && strcmp(experimental, "") != 0)
+        ty_config_experimental = true;
+}
 
 static const char *generic_message(int err)
 {

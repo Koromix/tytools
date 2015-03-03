@@ -22,7 +22,8 @@ struct command {
 };
 
 enum {
-    OPTION_HELP = 0x100,
+    OPTION_EXPERIMENTAL = 0x100,
+    OPTION_HELP,
     OPTION_VERSION
 };
 
@@ -38,9 +39,10 @@ int upload(int argc, char *argv[]);
 
 static const char *short_options = "+b:";
 static const struct option long_options[] = {
-    {"board",    required_argument, NULL, 'b'},
-    {"help",     optional_argument, NULL, OPTION_HELP},
-    {"version",  no_argument,       NULL, OPTION_VERSION},
+    {"board",        required_argument, NULL, 'b'},
+    {"experimental", no_argument,       NULL, OPTION_EXPERIMENTAL},
+    {"help",         optional_argument, NULL, OPTION_HELP},
+    {"version",      no_argument,       NULL, OPTION_VERSION},
     {0}
 };
 
@@ -80,7 +82,8 @@ static void print_usage(const char *cmd_name)
 
     fprintf(stderr, "usage: tyc [-b <id>] <command> [options]\n\n"
                     "Options:\n"
-                    "   -b, --board <id>         Work with board <id> instead of first detected\n\n");
+                    "   -b, --board <id>         Work with board <id> instead of first detected\n"
+                    "       --experimental       Enable experimental features (use with caution)\n\n");
 
     fprintf(stderr, "Commands:\n");
 
@@ -192,6 +195,10 @@ int main(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
+        case OPTION_EXPERIMENTAL:
+            ty_config_experimental = true;
+            break;
+
         case OPTION_HELP:
             if (optind < argc) {
                 print_usage(argv[optind]);

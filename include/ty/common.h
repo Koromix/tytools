@@ -88,6 +88,8 @@ typedef enum ty_err {
 
 typedef void ty_error_func(ty_err err, const char *msg, void *udata);
 
+TY_PUBLIC extern bool ty_config_experimental;
+
 TY_PUBLIC void ty_error_redirect(ty_error_func *f, void *udata);
 TY_PUBLIC void ty_error_mask(ty_err err);
 TY_PUBLIC void ty_error_unmask(void);

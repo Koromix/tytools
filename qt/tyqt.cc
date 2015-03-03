@@ -229,6 +229,9 @@ void TyQt::setupOptionParser(QCommandLineParser &parser)
 
     QCommandLineOption activateCommand("activate", tr("Bring TyQt to foreground."));
     parser.addOption(activateCommand);
+
+    QCommandLineOption experimentalOption("experimental", tr("Enable experimental features (use with caution)."));
+    parser.addOption(experimentalOption);
 }
 
 int TyQt::run()
@@ -258,7 +261,15 @@ int TyQt::run()
         return 1;
     }
 
+    if (parser_.isSet("experimental")) {
+        ty_config_experimental = true;
 
+#ifdef _WIN32
+        _putenv("TY_EXPERIMENTAL=1");
+#else
+        setenv("TY_EXPERIMENTAL", "1", 1);
+#endif
+    }
 
     if (channel_.lock() && !commandCount) {
         return runServer();

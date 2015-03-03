@@ -74,11 +74,6 @@ if(WIN32)
     endif()
 endif()
 
-set(EXPERIMENTAL OFF CACHE BOOL "Build experimental and unsafe features")
-if(EXPERIMENTAL)
-    add_definitions(-DTY_EXPERIMENTAL=1)
-endif()
-
 include(CheckSymbolExists)
 check_symbol_exists(stpcpy string.h HAVE_STPCPY)
 check_symbol_exists(strndup string.h HAVE_STRNDUP)
