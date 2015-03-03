@@ -32,9 +32,9 @@
     #define TY_PUBLIC __attribute__((__visibility__("default")))
     #define TY_NORETURN __attribute__((__noreturn__))
 
-    #define TY_INIT(name) \
+    #define TY_INIT() \
         __attribute__((constructor)) \
-        void name(void)
+        void TY_UNIQUE_ID(init_)(void)
 
     #define TY_WARNING_DISABLE_SIGN_CONVERSION \
         _Pragma("GCC diagnostic push"); \

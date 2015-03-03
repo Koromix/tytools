@@ -26,7 +26,7 @@ using namespace std;
 
 #ifdef _WIN32
 
-TY_INIT(init_win32)
+TY_INIT()
 {
     HMODULE h = GetModuleHandle("kernel32.dll");
     assert(h);

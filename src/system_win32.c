@@ -26,7 +26,7 @@ static bool saved_console_mode;
 
 HANDLE _ty_win32_descriptors[3];
 
-TY_INIT(init_win32)
+TY_INIT()
 {
     HANDLE h = GetModuleHandle("kernel32.dll");
     assert(h);
