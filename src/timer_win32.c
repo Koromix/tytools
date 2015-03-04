@@ -12,20 +12,16 @@
 #include "ty/system.h"
 
 struct ty_timer {
-    CRITICAL_SECTION mutex;
-
     HANDLE h;
 
+    CRITICAL_SECTION mutex;
     HANDLE event;
+
+    bool enabled;
+    bool oneshot;
+
     uint64_t ticks;
 };
-
-static HANDLE timer_queue;
-
-static void free_timer_queue(void)
-{
-    DeleteTimerQueue(timer_queue);
-}
 
 int ty_timer_new(ty_timer **rtimer)
 {
@@ -33,14 +29,6 @@ int ty_timer_new(ty_timer **rtimer)
 
     ty_timer *timer;
     int r;
-
-    if (!timer_queue) {
-        timer_queue = CreateTimerQueue();
-        if (!timer_queue)
-            return ty_error(TY_ERROR_SYSTEM, "CreateTimerQueue() failed: %s", ty_win32_strerror(0));
-
-        atexit(free_timer_queue);
-    }
 
     timer = calloc(1, sizeof(*timer));
     if (!timer)
@@ -67,8 +55,9 @@ error:
 void ty_timer_free(ty_timer *timer)
 {
     if (timer) {
+        // INVALID_HANDLE_VALUE = wait for any running callback to complete (NULL does not wait)
         if (timer->h)
-            DeleteTimerQueueTimer(timer_queue, timer->h, NULL);
+            DeleteTimerQueueTimer(NULL, timer->h, INVALID_HANDLE_VALUE);
 
         if (timer->event)
             CloseHandle(timer->event);
@@ -94,9 +83,16 @@ static void __stdcall timer_callback(void *udata, BOOLEAN timer_or_wait)
 
     EnterCriticalSection(&timer->mutex);
 
+    if (!timer->enabled)
+        goto cleanup;
+
     timer->ticks++;
     SetEvent(timer->event);
 
+    if (timer->oneshot)
+        timer->enabled = false;
+
+cleanup:
     LeaveCriticalSection(&timer->mutex);
 }
 
@@ -104,30 +100,64 @@ int ty_timer_set(ty_timer *timer, int value, uint16_t flags)
 {
     assert(timer);
 
-    if (timer->h) {
-        // INVALID_HANDLE_VALUE = wait for any running callback to complete (NULL does not wait)
-        DeleteTimerQueueTimer(timer_queue, timer->h, INVALID_HANDLE_VALUE);
-        timer->h = NULL;
+    DWORD due, period;
+    BOOL ret;
+    int r;
+
+    EnterCriticalSection(&timer->mutex);
+
+    if (value > 0) {
+        due = (DWORD)value;
+
+        if (flags & TY_TIMER_ONESHOT) {
+            /* ChangeTimerQueueTimer() fails on expired one-shot timers so make a periodic
+               timer and ignore subsequent events (one every 49.7 days). */
+            period = 0xFFFFFFFE;
+            timer->oneshot = true;
+        } else {
+            period = due;
+            timer->oneshot = false;
+        }
+
+        timer->enabled = true;
+
+        if (!timer->h) {
+            ret = CreateTimerQueueTimer(&timer->h, NULL, timer_callback, timer, due, period, 0);
+            if (!ret) {
+                r = ty_error(TY_ERROR_SYSTEM, "CreateTimerQueueTimer() failed: %s", ty_win32_strerror(0));
+                goto cleanup;
+            }
+
+            r = 0;
+            goto cleanup;
+        }
+    } else {
+        if (!value) {
+            timer->ticks = 1;
+            SetEvent(timer->event);
+        }
+
+        if (!timer->h) {
+            r = 0;
+            goto cleanup;
+        }
+
+        due = 0xFFFFFFFE;
+        period = 0xFFFFFFFE;
+
+        timer->enabled = false;
     }
 
-    ty_timer_rearm(timer);
-
-    if (value >= 0) {
-        DWORD period = 0;
-        BOOL ret;
-
-        if (!(flags & TY_TIMER_ONESHOT))
-            period = (DWORD)value;
-
-        if (!value)
-            value = 1;
-
-        ret = CreateTimerQueueTimer(&timer->h, timer_queue, timer_callback, timer, (DWORD)value, period, 0);
-        if (!ret)
-            return ty_error(TY_ERROR_SYSTEM, "CreateTimerQueueTimer() failed: %s", ty_win32_strerror(0));
+    ret = ChangeTimerQueueTimer(NULL, timer->h, due, period);
+    if (!ret) {
+        r = ty_error(TY_ERROR_SYSTEM, "ChangeTimerQueueTimer() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
     }
 
-    return 0;
+    r = 0;
+cleanup:
+    LeaveCriticalSection(&timer->mutex);
+    return r;
 }
 
 uint64_t ty_timer_rearm(ty_timer *timer)
