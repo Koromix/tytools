@@ -82,8 +82,11 @@ TY_PUBLIC size_t ty_board_model_get_code_size(const ty_board_model *model);
 
 TY_PUBLIC const char *ty_board_get_capability_name(ty_board_capability cap);
 
-TY_PUBLIC ty_board *ty_board_ref(ty_board *teensy);
-TY_PUBLIC void ty_board_unref(ty_board *teensy);
+TY_PUBLIC ty_board *ty_board_ref(ty_board *board);
+TY_PUBLIC void ty_board_unref(ty_board *board);
+
+TY_PUBLIC void ty_board_lock(const ty_board *board);
+TY_PUBLIC void ty_board_unlock(const ty_board *board);
 
 TY_PUBLIC int ty_board_matches_identity(ty_board *board, const char *id);
 
@@ -104,14 +107,13 @@ TY_PUBLIC const char *ty_board_get_model_desc(const ty_board *board);
 TY_PUBLIC uint64_t ty_board_get_serial_number(const ty_board *board);
 
 TY_PUBLIC int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, void *udata);
-
 TY_PUBLIC ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap);
-static inline bool ty_board_has_capability(const ty_board *board, ty_board_capability cap)
-{
-    return ty_board_get_interface(board, cap);
-}
 
 TY_PUBLIC uint16_t ty_board_get_capabilities(const ty_board *board);
+static inline bool ty_board_has_capability(const ty_board *board, ty_board_capability cap)
+{
+    return ty_board_get_capabilities(board) & (1 << cap);
+}
 
 TY_PUBLIC ty_device *ty_board_get_device(const ty_board *board, ty_board_capability cap);
 TY_PUBLIC ty_handle *ty_board_get_handle(const ty_board *board, ty_board_capability cap);
@@ -130,6 +132,9 @@ TY_PUBLIC int ty_board_reset(ty_board *board);
 TY_PUBLIC int ty_board_reboot(ty_board *board);
 
 TY_PUBLIC const ty_board_model *ty_board_test_firmware(const struct ty_firmware *f);
+
+TY_PUBLIC ty_board_interface *ty_board_interface_ref(ty_board_interface *iface);
+TY_PUBLIC void ty_board_interface_unref(ty_board_interface *iface);
 
 TY_PUBLIC const char *ty_board_interface_get_desc(const ty_board_interface *iface);
 TY_PUBLIC uint16_t ty_board_interface_get_capabilities(const ty_board_interface *iface);

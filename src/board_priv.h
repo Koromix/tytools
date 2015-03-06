@@ -8,6 +8,7 @@
 #define TY_BOARD_PRIV_H
 
 #include "ty/common.h"
+#include <pthread.h>
 #include "ty/board.h"
 #include "htable.h"
 #include "list.h"
@@ -31,6 +32,8 @@ struct ty_board_interface {
     ty_board *board;
     ty_list_head list;
 
+    volatile unsigned int refcount;
+
     const struct _ty_board_interface_vtable *vtable;
 
     const char *desc;
@@ -53,6 +56,8 @@ struct ty_board {
     ty_list_head list;
 
     volatile unsigned int refcount;
+    pthread_mutex_t mutex;
+    bool mutex_init;
 
     ty_board_state state;
 
