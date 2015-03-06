@@ -184,6 +184,53 @@ static void setup_signals(void)
 
 #endif
 
+static int run(int argc, char *argv[])
+{
+    int r;
+
+    r = ty_board_manager_new(&board_manager);
+    if (r < 0)
+        goto cleanup;
+
+    r = ty_board_manager_register_callback(board_manager, board_callback, NULL);
+    if (r < 0)
+        goto cleanup;
+
+    r = ty_board_manager_refresh(board_manager);
+    if (r < 0)
+        goto cleanup;
+
+    r = 0;
+    while (optind < argc) {
+        const char *cmd_name = argv[optind];
+        argv[optind] = argv[0];
+
+        argv += optind;
+        argc -= optind;
+        optind = 1;
+
+        const struct command *cmd;
+        for (cmd = commands; cmd->name; cmd++) {
+            if (strcmp(cmd_name, cmd->name) == 0)
+                break;
+        }
+        if (!cmd->name) {
+            r = ty_error(TY_ERROR_PARAM, "Invalid command '%s'", cmd_name);
+            goto cleanup;
+        }
+
+        r = (*cmd->f)(argc, argv);
+        if (r)
+            goto cleanup;
+    }
+
+    r = 0;
+cleanup:
+    ty_board_unref(main_board);
+    ty_board_manager_free(board_manager);
+    return r;
+}
+
 int main(int argc, char *argv[])
 {
     int r;
@@ -234,46 +281,11 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    r = ty_board_manager_new(&board_manager);
+    r = run(argc, argv);
     if (r < 0)
-        return -r;
+        return 1;
 
-    r = ty_board_manager_register_callback(board_manager, board_callback, NULL);
-    if (r < 0)
-        return -r;
-
-    r = ty_board_manager_refresh(board_manager);
-    if (r < 0)
-        return -r;
-
-    r = 0;
-    while (optind < argc) {
-        const char *cmd_name = argv[optind];
-        argv[optind] = argv[0];
-
-        argv += optind;
-        argc -= optind;
-        optind = 1;
-
-        const struct command *cmd;
-        for (cmd = commands; cmd->name; cmd++) {
-            if (strcmp(cmd_name, cmd->name) == 0)
-                break;
-        }
-        if (cmd->name) {
-            r = (*cmd->f)(argc, argv);
-            if (r)
-                break;
-        } else {
-            r = ty_error(TY_ERROR_PARAM, "Invalid command '%s'", cmd_name);
-            break;
-        }
-    }
-
-    ty_board_unref(main_board);
-    ty_board_manager_free(board_manager);
-
-    return -r;
+    return 0;
 
 usage:
     print_usage(NULL);
