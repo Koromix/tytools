@@ -32,21 +32,23 @@ static bool wait_device = false;
 static const char *image_format = NULL;
 static const char *image_filename = NULL;
 
-void print_upload_usage(void)
+void print_upload_usage(FILE *f)
 {
-    fprintf(stderr, "usage: tyc upload [options] <filename>\n\n");
+    fprintf(f, "usage: tyc upload [options] <filename>\n\n");
 
-    print_main_options();
-    fprintf(stderr, "Upload options:\n"
-                    "   -f, --format <format>    Firmware file format (autodetected by default)\n"
-                    "       --noreset            Do not reset the device once the upload is finished\n\n"
+    print_main_options(f);
+    fprintf(f, "\n");
 
-                    "   -w, --wait               Wait for the bootloader instead of rebooting\n\n");
+    fprintf(f, "Upload options:\n"
+               "   -f, --format <format>    Firmware file format (autodetected by default)\n"
+               "       --noreset            Do not reset the device once the upload is finished\n\n"
 
-    fprintf(stderr, "Supported firmware formats: ");
+               "   -w, --wait               Wait for the bootloader instead of rebooting\n\n");
+
+    fprintf(f, "Supported firmware formats: ");
     for (const ty_firmware_format *format = ty_firmware_formats; format->name; format++)
-        fprintf(stderr, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
-    fprintf(stderr, "\n");
+        fprintf(f, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
+    fprintf(f, "\n");
 }
 
 static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64_t *rmtime)
@@ -207,6 +209,6 @@ cleanup:
     return r;
 
 usage:
-    print_upload_usage();
+    print_upload_usage(stderr);
     return TY_ERROR_PARAM;
 }

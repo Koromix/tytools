@@ -14,8 +14,8 @@ TY_C_BEGIN
 struct ty_board_manager;
 struct ty_board;
 
-void print_main_options(void);
-void print_supported_models(void);
+void print_main_options(FILE *f);
+void print_supported_models(FILE *f);
 
 int parse_main_option(int argc, char *argv[], int c);
 

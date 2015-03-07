@@ -16,15 +16,15 @@ struct command {
     const char *name;
 
     int (*f)(int argc, char *argv[]);
-    void (*usage)(void);
+    void (*usage)(FILE *f);
 
     const char *description;
 };
 
-void print_list_usage(void);
-void print_monitor_usage(void);
-void print_reset_usage(void);
-void print_upload_usage(void);
+void print_list_usage(FILE *f);
+void print_monitor_usage(FILE *f);
+void print_reset_usage(FILE *f);
+void print_upload_usage(FILE *f);
 
 int list(int argc, char *argv[]);
 int monitor(int argc, char *argv[]);
@@ -42,52 +42,54 @@ static const struct command commands[] = {
 static ty_board_manager *board_manager;
 static ty_board *main_board;
 
-static const struct command *cmd;
+static const struct command *current_command;
 static const char *board_identity = NULL;
 
-static void print_version(void)
+static void print_version(FILE *f)
 {
-    fprintf(stderr, "tyc "TY_VERSION"\n");
+    fprintf(f, "tyc "TY_VERSION"\n");
 }
 
-static void print_main_usage(void)
+static void print_main_usage(FILE *f)
 {
-    fprintf(stderr, "usage: tyc <command> [options]\n\n");
-    print_main_options();
+    fprintf(f, "usage: tyc <command> [options]\n\n");
 
-    fprintf(stderr, "Commands:\n");
+    print_main_options(f);
+    fprintf(f, "\n");
+
+    fprintf(f, "Commands:\n");
     for (const struct command *c = commands; c->name; c++)
-        fprintf(stderr, "   %-24s %s\n", c->name, c->description);
+        fprintf(f, "   %-24s %s\n", c->name, c->description);
+    fputc('\n', f);
 
-    fputc('\n', stderr);
-    print_supported_models();
+    print_supported_models(f);
 }
 
-static void print_usage(void)
+static void print_usage(FILE *f, const struct command *cmd)
 {
     if (cmd) {
-        cmd->usage();
+        cmd->usage(f);
     } else {
-        print_main_usage();
+        print_main_usage(f);
     }
 }
 
-void print_main_options(void)
+void print_main_options(FILE *f)
 {
-    fprintf(stderr, "General options:\n"
-                    "       --help               Show help message\n"
-                    "       --version            Display version information\n\n"
+    fprintf(f, "General options:\n"
+               "       --help               Show help message\n"
+               "       --version            Display version information\n\n"
 
-                    "   -b, --board <id>         Work with board <id> instead of first detected\n"
-                    "       --experimental       Enable experimental features (use with caution)\n\n");
+               "   -b, --board <id>         Work with board <id> instead of first detected\n"
+               "       --experimental       Enable experimental features (use with caution)\n");
 }
 
-void print_supported_models(void)
+void print_supported_models(FILE *f)
 {
-    fprintf(stderr, "Supported models:\n");
+    fprintf(f, "Supported models:\n");
     for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
         const ty_board_model *model = *cur;
-        fprintf(stderr, "   - %-22s (%s, %s)\n", ty_board_model_get_desc(model),
+        fprintf(f, "   - %-22s (%s, %s)\n", ty_board_model_get_desc(model),
                 ty_board_model_get_name(model), ty_board_model_get_mcu(model));
     }
 }
@@ -213,10 +215,10 @@ int parse_main_option(int argc, char *argv[], int c)
 
     switch (c) {
     case MAIN_OPTION_HELP:
-        print_usage();
+        print_usage(stdout, current_command);
         return 0;
     case MAIN_OPTION_VERSION:
-        print_version();
+        print_version(stdout);
         return 0;
 
     case MAIN_OPTION_EXPERIMENTAL:
@@ -229,14 +231,14 @@ int parse_main_option(int argc, char *argv[], int c)
     }
 
     ty_error(TY_ERROR_PARAM, "Unknown option '%s'", argv[optind - 1]);
-    print_usage();
+    print_usage(stderr, current_command);
 
     return TY_ERROR_PARAM;
 }
 
 static const struct command *find_command(const char *name)
 {
-    for (cmd = commands; cmd->name; cmd++) {
+    for (const struct command *cmd = commands; cmd->name; cmd++) {
         if (strcmp(cmd->name, name) == 0)
             return cmd;
     }
@@ -249,7 +251,7 @@ int main(int argc, char *argv[])
     int r;
 
     if (argc < 2) {
-        print_main_usage();
+        print_main_usage(stderr);
         return 0;
     }
 
@@ -259,29 +261,34 @@ int main(int argc, char *argv[])
 
     if (strcmp(argv[1], "help") == 0 || strcmp(argv[1], "--help") == 0) {
         if (argc > 2 && *argv[2] != '-') {
-            cmd = find_command(argv[2]);
-            if (!cmd)
+            const struct command *cmd = find_command(argv[2]);
+            if (cmd) {
+                print_usage(stdout, cmd);
+            } else {
                 ty_error(TY_ERROR_PARAM, "Unknown command '%s'", argv[2]);
+                print_usage(stderr, NULL);
+            }
+        } else {
+            print_usage(stdout, NULL);
         }
 
-        print_usage();
         return 0;
     } else if (strcmp(argv[1], "--version") == 0) {
-        print_version();
+        print_version(stdout);
         return 0;
     }
 
-    cmd = find_command(argv[1]);
-    if (!cmd) {
+    current_command = find_command(argv[1]);
+    if (!current_command) {
         ty_error(TY_ERROR_PARAM, "Unknown command '%s'", argv[1]);
-        print_main_usage();
+        print_main_usage(stderr);
         return 1;
     }
 
     // We'll print our own, for consistency
     opterr = 0;
 
-    r = (*cmd->f)(argc - 1, argv + 1);
+    r = (*current_command->f)(argc - 1, argv + 1);
 
     ty_board_unref(main_board);
     ty_board_manager_free(board_manager);

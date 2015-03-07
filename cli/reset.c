@@ -15,11 +15,11 @@ static const struct option long_options[] = {
     {0}
 };
 
-void print_reset_usage(void)
+void print_reset_usage(FILE *f)
 {
-    fprintf(stderr, "usage: tyc reset\n");
+    fprintf(f, "usage: tyc reset\n\n");
 
-    print_main_options();
+    print_main_options(f);
 }
 
 int reset(int argc, char *argv[])
@@ -71,6 +71,6 @@ cleanup:
     return r;
 
 usage:
-    print_reset_usage();
+    print_reset_usage(stderr);
     return TY_ERROR_PARAM;
 }

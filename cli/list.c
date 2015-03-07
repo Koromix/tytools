@@ -20,14 +20,16 @@ static const struct option long_options[] = {
 static bool list_verbose = false;
 static bool watch = false;
 
-void print_list_usage(void)
+void print_list_usage(FILE *f)
 {
-    fprintf(stderr, "usage: tyc list [options]\n\n");
+    fprintf(f, "usage: tyc list [options]\n\n");
 
-    print_main_options();
-    fprintf(stderr, "List options:\n"
-                    "   -v, --verbose            Print detailed information about devices\n"
-                    "   -w, --watch              Watch devices dynamically\n");
+    print_main_options(f);
+    fprintf(f, "\n");
+
+    fprintf(f, "List options:\n"
+               "   -v, --verbose            Print detailed information about devices\n"
+               "   -w, --watch              Watch devices dynamically\n");
 }
 
 static void print_capabilities(uint16_t capabilities)
@@ -157,6 +159,6 @@ int list(int argc, char *argv[])
     return 0;
 
 usage:
-    print_list_usage();
+    print_list_usage(stderr);
     return TY_ERROR_PARAM;
 }

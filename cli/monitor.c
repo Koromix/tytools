@@ -52,30 +52,32 @@ static uint16_t directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
 static bool reconnect = false;
 static int timeout_eof = 200;
 
-void print_monitor_usage(void)
+void print_monitor_usage(FILE *f)
 {
-    fprintf(stderr, "usage: tyc monitor [options]\n\n");
+    fprintf(f, "usage: tyc monitor [options]\n\n");
 
-    print_main_options();
-    fprintf(stderr, "Monitor options:\n"
-                    "   -b, --baud <rate>        Use baudrate for serial port\n"
-                    "   -d, --databits <bits>    Change number of bits for each character\n"
-                    "                            Must be one of 5, 6, 7 or 8 (default)\n"
-                    "   -D, --direction <dir>    Open serial connection in given direction\n"
-                    "                            Supports input, output, both (default)\n"
-                    "   -f, --flow <control>     Define flow-control mode\n"
-                    "                            Supports xonxoff (x), rtscts (h) and none (n)\n"
+    print_main_options(f);
+    fprintf(f, "\n");
 
-                    "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
-                    "                            Supports odd (o), even (e) and none (n)\n\n"
+    fprintf(f, "Monitor options:\n"
+               "   -b, --baud <rate>        Use baudrate for serial port\n"
+               "   -d, --databits <bits>    Change number of bits for each character\n"
+               "                            Must be one of 5, 6, 7 or 8 (default)\n"
+               "   -D, --direction <dir>    Open serial connection in given direction\n"
+               "                            Supports input, output, both (default)\n"
+               "   -f, --flow <control>     Define flow-control mode\n"
+               "                            Supports xonxoff (x), rtscts (h) and none (n)\n"
 
-                    "   -r, --raw                Disable line-buffering and line-editing\n"
-                    "   -s, --silent             Disable echoing of local input on terminal\n\n"
+               "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
+               "                            Supports odd (o), even (e) and none (n)\n\n"
 
-                    "   -R, --reconnect          Try to reconnect on I/O errors\n"
-                    "       --noreset            Don't reset serial port when closing\n"
-                    "       --timeout-eof <ms>   Time before closing after EOF on standard input\n"
-                    "                            Defaults to %d ms, use -1 to disable\n", timeout_eof);
+               "   -r, --raw                Disable line-buffering and line-editing\n"
+               "   -s, --silent             Disable echoing of local input on terminal\n\n"
+
+               "   -R, --reconnect          Try to reconnect on I/O errors\n"
+               "       --noreset            Don't reset serial port when closing\n"
+               "       --timeout-eof <ms>   Time before closing after EOF on standard input\n"
+               "                            Defaults to %d ms, use -1 to disable\n", timeout_eof);
 }
 
 static int redirect_stdout(int *routfd)
@@ -360,6 +362,6 @@ cleanup:
     return r;
 
 usage:
-    print_monitor_usage();
+    print_monitor_usage(stderr);
     return TY_ERROR_PARAM;
 }
