@@ -86,9 +86,9 @@ position in the host USB topology. Meaning if it stays on the same USB port, it 
 for ty. That's necessary because across reboots and resets, Teensies look completely different to
 the host.
 
-When you want to target a specific device, use `tyc --board <location>#<serial> <command>`. The
-format of <location> is specific to ty and can be found using `tyc list`, <serial> is the USB
-serial number. Either can be omitted.
+When you want to target a specific device, use `tyc <command> --board "<location>#<serial>"`.
+The format of <location> is specific to ty and can be found using `tyc list`, <serial> is the
+USB serial number. Either can be omitted.
 
 <a name="usage_list"/>
 ## List devices

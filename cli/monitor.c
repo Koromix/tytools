@@ -14,24 +14,24 @@
 #include "main.h"
 
 enum {
-    OPTION_HELP = 0x100,
-    OPTION_NORESET,
-    OPTION_TIMEOUT_EOF
+    MONITOR_OPTION_NORESET = 0x200,
+    MONITOR_OPTION_TIMEOUT_EOF
 };
 
-static const char *short_options = "b:d:D:f:p:rRs";
+static const char *short_options = MAIN_SHORT_OPTIONS "b:d:D:f:p:rRs";
 static const struct option long_options[] = {
+    MAIN_LONG_OPTIONS
+
     {"baud",        required_argument, NULL, 'b'},
     {"databits",    required_argument, NULL, 'd'},
     {"direction",   required_argument, NULL, 'D'},
     {"flow",        required_argument, NULL, 'f'},
-    {"help",        no_argument,       NULL, OPTION_HELP},
-    {"noreset",     no_argument,       NULL, OPTION_NORESET},
+    {"noreset",     no_argument,       NULL, MONITOR_OPTION_NORESET},
     {"parity",      required_argument, NULL, 'p'},
     {"raw",         no_argument,       NULL, 'r'},
     {"reconnect",   no_argument,       NULL, 'R'},
     {"silent",      no_argument,       NULL, 's'},
-    {"timeout-eof", required_argument, NULL, OPTION_TIMEOUT_EOF},
+    {"timeout-eof", required_argument, NULL, MONITOR_OPTION_TIMEOUT_EOF},
     {0}
 };
 
@@ -54,8 +54,10 @@ static int timeout_eof = 200;
 
 void print_monitor_usage(void)
 {
-    fprintf(stderr, "usage: tyc monitor [--help] [options]\n\n"
-                    "Options:\n"
+    fprintf(stderr, "usage: tyc monitor [options]\n\n");
+
+    print_main_options();
+    fprintf(stderr, "Monitor options:\n"
                     "   -b, --baud <rate>        Use baudrate for serial port\n"
                     "   -d, --databits <bits>    Change number of bits for each character\n"
                     "                            Must be one of 5, 6, 7 or 8 (default)\n"
@@ -63,12 +65,15 @@ void print_monitor_usage(void)
                     "                            Supports input, output, both (default)\n"
                     "   -f, --flow <control>     Define flow-control mode\n"
                     "                            Supports xonxoff (x), rtscts (h) and none (n)\n"
-                    "       --noreset            Don't reset serial port when closing\n"
+
                     "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
-                    "                            Supports odd (o), even (e) and none (n)\n"
+                    "                            Supports odd (o), even (e) and none (n)\n\n"
+
                     "   -r, --raw                Disable line-buffering and line-editing\n"
+                    "   -s, --silent             Disable echoing of local input on terminal\n\n"
+
                     "   -R, --reconnect          Try to reconnect on I/O errors\n"
-                    "   -s, --silent             Disable echoing of local input on terminal\n"
+                    "       --noreset            Don't reset serial port when closing\n"
                     "       --timeout-eof <ms>   Time before closing after EOF on standard input\n"
                     "                            Defaults to %d ms, use -1 to disable\n", timeout_eof);
 }
@@ -225,10 +230,6 @@ int monitor(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
-        case OPTION_HELP:
-            print_monitor_usage();
-            return 0;
-
         case 's':
             terminal_flags |= TY_TERMINAL_SILENT;
             break;
@@ -276,7 +277,7 @@ int monitor(int argc, char *argv[])
                                 "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
             }
             break;
-        case OPTION_NORESET:
+        case MONITOR_OPTION_NORESET:
             device_flags |= TY_SERIAL_NOHUP_CLOSE;
             break;
         case 'p':
@@ -295,7 +296,7 @@ int monitor(int argc, char *argv[])
             reconnect = true;
             break;
 
-        case OPTION_TIMEOUT_EOF:
+        case MONITOR_OPTION_TIMEOUT_EOF:
             errno = 0;
             timeout_eof = (int)strtol(optarg, NULL, 10);
             if (errno)
@@ -305,8 +306,16 @@ int monitor(int argc, char *argv[])
             break;
 
         default:
-            goto usage;
+            r = parse_main_option(argc, argv, c);
+            if (r <= 0)
+                return r;
+            break;
         }
+    }
+
+    if (argc > optind) {
+        ty_error(TY_ERROR_PARAM, "No positional argument is allowed");
+        goto usage;
     }
 
 #ifdef _WIN32

@@ -8,19 +8,18 @@
 #include "ty.h"
 #include "main.h"
 
-enum {
-    OPTION_HELP = 0x100
-};
-
-static const char *short_options = "";
+static const char *short_options = MAIN_SHORT_OPTIONS;
 static const struct option long_options[] = {
-    {"help", no_argument, NULL, OPTION_HELP},
+    MAIN_LONG_OPTIONS
+
     {0}
 };
 
 void print_reset_usage(void)
 {
-    fprintf(stderr, "usage: tyc reset [--help]\n");
+    fprintf(stderr, "usage: tyc reset\n");
+
+    print_main_options();
 }
 
 int reset(int argc, char *argv[])
@@ -30,14 +29,15 @@ int reset(int argc, char *argv[])
 
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        case OPTION_HELP:
-            print_reset_usage();
-            return 0;
+        r = parse_main_option(argc, argv, c);
+        if (r <= 0)
+            return r;
+        break;
+    }
 
-        default:
-            goto usage;
-        }
+    if (argc > optind) {
+        ty_error(TY_ERROR_PARAM, "No positional argument is allowed");
+        goto usage;
     }
 
     r = get_board(&board);

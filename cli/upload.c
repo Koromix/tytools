@@ -9,17 +9,17 @@
 #include "main.h"
 
 enum {
-    OPTION_HELP = 0x100,
-    OPTION_NOPROGRESS,
-    OPTION_NORESET
+    UPLOAD_OPTION_NOPROGRESS = 0x200,
+    UPLOAD_OPTION_NORESET
 };
 
-static const char *short_options = "wf:";
+static const char *short_options = MAIN_SHORT_OPTIONS "wf:";
 static const struct option long_options[] = {
+    MAIN_LONG_OPTIONS
+
     {"format",     required_argument, NULL, 'f'},
-    {"help",       no_argument,       NULL, OPTION_HELP},
-    {"noprogress", no_argument,       NULL, OPTION_NOPROGRESS},
-    {"noreset",    no_argument,       NULL, OPTION_NORESET},
+    {"noprogress", no_argument,       NULL, UPLOAD_OPTION_NOPROGRESS},
+    {"noreset",    no_argument,       NULL, UPLOAD_OPTION_NORESET},
     {"wait",       no_argument,       NULL, 'w'},
     {0}
 };
@@ -34,13 +34,16 @@ static const char *image_filename = NULL;
 
 void print_upload_usage(void)
 {
-    fprintf(stderr, "usage: tyc upload [options] <filename>\n\n"
-                    "Options:\n"
-                    "   -f, --format <format>    Firmware file format (autodetected by default)\n"
-                    "       --noreset            Do not reset the device once the upload is finished\n"
-                    "   -w, --wait               Wait for the bootloader instead of rebooting\n\n"
-                    "Supported firmware formats: ");
+    fprintf(stderr, "usage: tyc upload [options] <filename>\n\n");
 
+    print_main_options();
+    fprintf(stderr, "Upload options:\n"
+                    "   -f, --format <format>    Firmware file format (autodetected by default)\n"
+                    "       --noreset            Do not reset the device once the upload is finished\n\n"
+
+                    "   -w, --wait               Wait for the bootloader instead of rebooting\n\n");
+
+    fprintf(stderr, "Supported firmware formats: ");
     for (const ty_firmware_format *format = ty_firmware_formats; format->name; format++)
         fprintf(stderr, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
     fprintf(stderr, "\n");
@@ -94,14 +97,10 @@ int upload(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
-        case OPTION_HELP:
-            print_upload_usage();
-            return 0;
-
-        case OPTION_NOPROGRESS:
+        case UPLOAD_OPTION_NOPROGRESS:
             show_progress = false;
             break;
-        case OPTION_NORESET:
+        case UPLOAD_OPTION_NORESET:
             reset_after = false;
             break;
         case 'w':
@@ -113,12 +112,18 @@ int upload(int argc, char *argv[])
             break;
 
         default:
-            goto usage;
+            r = parse_main_option(argc, argv, c);
+            if (r <= 0)
+                return r;
+            break;
         }
     }
 
     if (optind >= argc) {
         ty_error(TY_ERROR_PARAM, "Missing firmware filename");
+        goto usage;
+    } else if (argc > optind + 1) {
+        ty_error(TY_ERROR_PARAM, "Only one positional argument is allowed");
         goto usage;
     }
 
@@ -176,13 +181,15 @@ wait:
 
     if (show_progress) {
         r = ty_board_upload(board, firmware, 0, progress_callback, NULL);
+        if (r < 0)
+            goto cleanup;
         printf("\n");
     } else {
         printf("Uploading firmware...\n");
         r = ty_board_upload(board, firmware, 0, NULL, NULL);
+        if (r < 0)
+            goto cleanup;
     }
-    if (r < 0)
-        goto cleanup;
 
     if (reset_after) {
         printf("Sending reset command\n");
