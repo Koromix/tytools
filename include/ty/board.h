@@ -51,7 +51,7 @@ enum {
 typedef int ty_board_manager_callback_func(ty_board *board, ty_board_event event, void *udata);
 typedef int ty_board_manager_wait_func(ty_board_manager *manager, void *udata);
 
-typedef int ty_board_list_interfaces_func(ty_board *board, ty_board_interface *iface, void *udata);
+typedef int ty_board_list_interfaces_func(ty_board_interface *iface, void *udata);
 
 typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *f, size_t uploaded, void *udata);
 

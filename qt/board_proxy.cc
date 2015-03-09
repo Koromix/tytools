@@ -166,9 +166,7 @@ std::vector<BoardInterfaceInfo> BoardProxy::interfaces() const
 {
     std::vector<BoardInterfaceInfo> vec;
 
-    ty_board_list_interfaces(board_, [](ty_board *board, ty_board_interface *iface, void *udata) {
-        TY_UNUSED(board);
-
+    ty_board_list_interfaces(board_, [](ty_board_interface *iface, void *udata) {
         BoardInterfaceInfo info;
         info.desc = ty_board_interface_get_desc(iface);
         info.path = ty_board_interface_get_path(iface);

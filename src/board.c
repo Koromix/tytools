@@ -990,7 +990,7 @@ int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, 
     ty_list_foreach(cur, &board->interfaces) {
         ty_board_interface *iface = ty_container_of(cur, ty_board_interface, list);
 
-        r = (*f)(board, iface, udata);
+        r = (*f)(iface, udata);
         if (r)
             goto cleanup;
     }

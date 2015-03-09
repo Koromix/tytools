@@ -46,9 +46,8 @@ static void print_capabilities(uint16_t capabilities)
         printf("(none)");
 }
 
-static int print_interface_info(ty_board *board, ty_board_interface *iface, void *udata)
+static int print_interface_info(ty_board_interface *iface, void *udata)
 {
-    TY_UNUSED(board);
     TY_UNUSED(udata);
 
     printf("    * %s: %s\n", ty_board_interface_get_desc(iface),
