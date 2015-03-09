@@ -24,8 +24,6 @@ static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
 static DWORD orig_console_mode;
 static bool saved_console_mode;
 
-HANDLE _ty_win32_descriptors[3];
-
 TY_INIT()
 {
     HANDLE h = GetModuleHandle("kernel32.dll");
@@ -36,10 +34,6 @@ TY_INIT()
         GetTickCount64_ = GetTickCount64_fallback;
 
     GetFileInformationByHandleEx_ = (GetFileInformationByHandleEx_func *)GetProcAddress(h, "GetFileInformationByHandleEx");
-
-    _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
-    _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
-    _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
 }
 
 char *ty_win32_strerror(DWORD err)
