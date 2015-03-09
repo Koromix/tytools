@@ -186,7 +186,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     return set->id[ret - WAIT_OBJECT_0];
 }
 
-int ty_terminal_setup(uint32_t flags)
+int ty_terminal_setup(int flags)
 {
     HANDLE handle;
     DWORD mode;

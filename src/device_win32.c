@@ -145,7 +145,7 @@ static uint8_t find_device_port(DEVINST inst)
     return port;
 }
 
-static int build_location_string(uint8_t ports[], size_t depth, char **rpath)
+static int build_location_string(uint8_t ports[], unsigned int depth, char **rpath)
 {
     char buf[256];
     char *ptr;
@@ -180,7 +180,7 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
 {
     char buf[256];
     uint8_t ports[MAX_USB_DEPTH];
-    size_t depth;
+    unsigned int depth;
     CONFIGRET cret;
     int r;
 
@@ -213,7 +213,7 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
     if (cret != CR_SUCCESS)
         return 0;
 
-    for (size_t i = 0; i < depth / 2; i++) {
+    for (unsigned int i = 0; i < depth / 2; i++) {
         uint8_t tmp = ports[i];
 
         ports[i] = ports[depth - i - 1];
@@ -396,7 +396,7 @@ static int extract_device_id(const char *key, char **rid)
     return 0;
 }
 
-static int create_device(ty_device_monitor *monitor, const char *key, DEVINST inst, uint8_t ports[], size_t depth)
+static int create_device(ty_device_monitor *monitor, const char *key, DEVINST inst, uint8_t ports[], unsigned int depth)
 {
     ty_device *dev;
     CONFIGRET cret;
@@ -471,7 +471,7 @@ cleanup:
     return r;
 }
 
-static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t ports[], size_t depth)
+static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t ports[], unsigned int depth)
 {
     uint8_t port;
     DEVINST child;
@@ -1166,7 +1166,7 @@ ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size
     return (ssize_t)size;
 }
 
-int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)
+int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_SERIAL);

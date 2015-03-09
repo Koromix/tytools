@@ -126,8 +126,8 @@ void ty_descriptor_set_remove(ty_descriptor_set *set, int id)
 {
     assert(set);
 
-    size_t count = 0;
-    for (size_t i = 0; i < set->count; i++) {
+    unsigned int count = 0;
+    for (unsigned int i = 0; i < set->count; i++) {
         if (set->id[i] != id) {
             set->desc[count] = set->desc[i];
             set->id[count] = set->id[i];

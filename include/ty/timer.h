@@ -24,7 +24,7 @@ TY_PUBLIC void ty_timer_free(ty_timer *timer);
 
 TY_PUBLIC void ty_timer_get_descriptors(const ty_timer *timer, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int ty_timer_set(ty_timer *timer, int value, uint16_t flags);
+TY_PUBLIC int ty_timer_set(ty_timer *timer, int value, int flags);
 TY_PUBLIC uint64_t ty_timer_rearm(ty_timer *timer);
 
 TY_C_END

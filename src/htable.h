@@ -18,11 +18,11 @@ typedef struct ty_htable_head {
 } ty_htable_head;
 
 typedef struct ty_htable {
-    size_t size;
+    unsigned int size;
     ty_htable_head **heads;
 } ty_htable;
 
-int ty_htable_init(ty_htable *table, size_t size);
+int ty_htable_init(ty_htable *table, unsigned int size);
 void ty_htable_release(ty_htable *table);
 
 ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key);

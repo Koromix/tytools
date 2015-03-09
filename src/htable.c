@@ -8,7 +8,7 @@
 #include "compat.h"
 #include "htable.h"
 
-int ty_htable_init(ty_htable *table, size_t size)
+int ty_htable_init(ty_htable *table, unsigned int size)
 {
     assert(table);
     assert(size);
@@ -18,7 +18,7 @@ int ty_htable_init(ty_htable *table, size_t size)
         return ty_error(TY_ERROR_MEMORY, NULL);
     table->size = size;
 
-    for (size_t i = 0; i < table->size; i++)
+    for (unsigned int i = 0; i < table->size; i++)
         table->heads[i] = (ty_htable_head *)&table->heads[i];
 
     return 0;

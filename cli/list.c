@@ -32,7 +32,7 @@ void print_list_usage(FILE *f)
                "   -w, --watch              Watch devices dynamically\n");
 }
 
-static void print_capabilities(uint16_t capabilities)
+static void print_capabilities(int capabilities)
 {
     bool first = true;
     for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {

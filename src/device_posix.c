@@ -84,7 +84,7 @@ const struct _ty_device_vtable _ty_posix_device_vtable = {
     .get_descriptors = get_posix_descriptors
 };
 
-int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags)
+int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
 {
     assert(h);
     assert(h->dev->type == TY_DEVICE_SERIAL);

@@ -92,7 +92,7 @@ TY_PUBLIC const char *ty_device_get_serial_number(const ty_device *dev);
 
 TY_PUBLIC uint8_t ty_device_get_interface_number(const ty_device *dev);
 
-TY_PUBLIC int ty_serial_set_attributes(ty_handle *h, uint32_t rate, uint16_t flags);
+TY_PUBLIC int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags);
 
 TY_PUBLIC ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout);
 TY_PUBLIC ssize_t ty_serial_write(ty_handle *h, const char *buf, ssize_t size);

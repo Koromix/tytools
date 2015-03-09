@@ -23,7 +23,7 @@ void DescriptorSetNotifier::setDescriptorSet(ty_descriptor_set *set)
 
 void DescriptorSetNotifier::addDescriptorSet(ty_descriptor_set *set)
 {
-    for (size_t i = 0; i < set->count; i++) {
+    for (unsigned int i = 0; i < set->count; i++) {
 #ifdef _WIN32
         auto notifier = make_unique<QWinEventNotifier>(set->desc[i]);
         connect(notifier.get(), &QWinEventNotifier::activated, this, &DescriptorSetNotifier::activatedDesc);

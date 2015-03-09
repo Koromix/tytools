@@ -16,12 +16,12 @@
 TY_C_BEGIN
 
 struct _ty_board_interface_vtable {
-    int (*serial_set_attributes)(ty_board_interface *iface, uint32_t rate, uint16_t flags);
+    int (*serial_set_attributes)(ty_board_interface *iface, uint32_t rate, int flags);
     ssize_t (*serial_read)(ty_board_interface *iface, char *buf, size_t size, int timeout);
     ssize_t (*serial_write)(ty_board_interface *iface, const char *buf, size_t size);
 
     int (*reset)(ty_board_interface *iface);
-    int (*upload)(ty_board_interface *iface, struct ty_firmware *firmware, uint16_t flags, ty_board_upload_progress_func *pf, void *udata);
+    int (*upload)(ty_board_interface *iface, struct ty_firmware *firmware, int flags, ty_board_upload_progress_func *pf, void *udata);
 
     int (*reboot)(ty_board_interface *iface);
 };
@@ -44,7 +44,7 @@ struct ty_board_interface {
     ty_device *dev;
     ty_handle *h;
 
-    uint16_t capabilities;
+    int capabilities;
 };
 
 struct _ty_board_vendor {
@@ -70,7 +70,7 @@ struct ty_board {
 
     ty_list_head interfaces;
 
-    uint16_t capabilities;
+    int capabilities;
     ty_board_interface *cap2iface[16];
 
     ty_list_head missing;

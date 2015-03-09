@@ -19,7 +19,7 @@ struct ty_board_model {
     bool experimental;
 
     // Upload settings
-    uint8_t halfkay_version;
+    unsigned int halfkay_version;
     size_t block_size;
 };
 
@@ -231,7 +231,7 @@ static int teensy_open_interface(ty_board_interface *iface)
     return 1;
 }
 
-static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate, uint16_t flags)
+static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate, int flags)
 {
     if (ty_device_get_type(iface->dev) != TY_DEVICE_SERIAL)
         return 0;
@@ -353,7 +353,7 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, void *data, size
     return 0;
 }
 
-static int teensy_upload(ty_board_interface *iface, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)
+static int teensy_upload(ty_board_interface *iface, ty_firmware *f, int flags, ty_board_upload_progress_func *pf, void *udata)
 {
     TY_UNUSED(flags);
 

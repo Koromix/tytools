@@ -61,7 +61,7 @@ void ty_timer_get_descriptors(const ty_timer *timer, ty_descriptor_set *set, int
     ty_descriptor_set_add(set, timer->fd, id);
 }
 
-int ty_timer_set(ty_timer *timer, int value, uint16_t flags)
+int ty_timer_set(ty_timer *timer, int value, int flags)
 {
     assert(timer);
 

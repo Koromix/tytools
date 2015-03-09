@@ -40,7 +40,7 @@ typedef struct ty_file_info {
 #endif
 
 typedef struct ty_descriptor_set {
-    size_t count;
+    unsigned int count;
     ty_descriptor desc[64];
     int id[64];
 } ty_descriptor_set;
@@ -77,7 +77,7 @@ TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
 TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
 
-TY_PUBLIC int ty_terminal_setup(uint32_t flags);
+TY_PUBLIC int ty_terminal_setup(int flags);
 TY_PUBLIC void ty_terminal_restore(void);
 
 TY_C_END

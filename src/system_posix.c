@@ -169,7 +169,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     int r;
 
     FD_ZERO(&fds);
-    for (size_t i = 0; i < set->count; i++)
+    for (unsigned int i = 0; i < set->count; i++)
         FD_SET(set->desc[i], &fds);
 
     start = ty_millis();
@@ -193,7 +193,7 @@ restart:
     if (!r)
         return 0;
 
-    for (size_t i = 0; i < set->count; i++) {
+    for (unsigned int i = 0; i < set->count; i++) {
         if (FD_ISSET(set->desc[i], &fds))
             return set->id[i];
     }
@@ -212,7 +212,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     uint64_t start;
     int r;
 
-    for (size_t i = 0; i < set->count; i++) {
+    for (unsigned int i = 0; i < set->count; i++) {
         pfd[i].events = POLLIN;
         pfd[i].fd = set->desc[i];
     }
@@ -236,7 +236,7 @@ restart:
     if (!r)
         return 0;
 
-    for (size_t i = 0; i < set->count; i++) {
+    for (unsigned int i = 0; i < set->count; i++) {
         if (pfd[i].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL))
             return set->id[i];
     }
@@ -245,7 +245,7 @@ restart:
 
 #endif
 
-int ty_terminal_setup(uint32_t flags)
+int ty_terminal_setup(int flags)
 {
     struct termios tio;
     int r;

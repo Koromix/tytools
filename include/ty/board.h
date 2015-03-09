@@ -109,7 +109,7 @@ TY_PUBLIC uint64_t ty_board_get_serial_number(const ty_board *board);
 TY_PUBLIC int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, void *udata);
 TY_PUBLIC ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap);
 
-TY_PUBLIC uint16_t ty_board_get_capabilities(const ty_board *board);
+TY_PUBLIC int ty_board_get_capabilities(const ty_board *board);
 static inline bool ty_board_has_capability(const ty_board *board, ty_board_capability cap)
 {
     return ty_board_get_capabilities(board) & (1 << cap);
@@ -121,12 +121,12 @@ TY_PUBLIC void ty_board_get_descriptors(const ty_board *board, ty_board_capabili
 
 TY_PUBLIC int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool parallel, int timeout);
 
-TY_PUBLIC int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags);
+TY_PUBLIC int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, int flags);
 
 TY_PUBLIC ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeout);
 TY_PUBLIC ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size);
 
-TY_PUBLIC int ty_board_upload(ty_board *board, struct ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata);
+TY_PUBLIC int ty_board_upload(ty_board *board, struct ty_firmware *f, int flags, ty_board_upload_progress_func *pf, void *udata);
 TY_PUBLIC int ty_board_reset(ty_board *board);
 
 TY_PUBLIC int ty_board_reboot(ty_board *board);
@@ -137,7 +137,7 @@ TY_PUBLIC ty_board_interface *ty_board_interface_ref(ty_board_interface *iface);
 TY_PUBLIC void ty_board_interface_unref(ty_board_interface *iface);
 
 TY_PUBLIC const char *ty_board_interface_get_desc(const ty_board_interface *iface);
-TY_PUBLIC uint16_t ty_board_interface_get_capabilities(const ty_board_interface *iface);
+TY_PUBLIC int ty_board_interface_get_capabilities(const ty_board_interface *iface);
 
 TY_PUBLIC uint8_t ty_board_interface_get_interface_number(const ty_board_interface *iface);
 TY_PUBLIC const char *ty_board_interface_get_path(const ty_board_interface *iface);

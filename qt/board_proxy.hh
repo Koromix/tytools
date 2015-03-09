@@ -156,8 +156,8 @@ public:
     const_iterator cend() const { return boards_.cend(); }
 
     std::vector<std::shared_ptr<BoardProxy>> boards();
-    std::shared_ptr<BoardProxy> board(size_t i);
-    size_t boardCount() const;
+    std::shared_ptr<BoardProxy> board(unsigned int i);
+    unsigned int boardCount() const;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;

@@ -260,7 +260,7 @@ struct usb_controller {
     uint64_t session;
 };
 
-static int build_location_string(uint8_t ports[], size_t depth, char **rpath)
+static int build_location_string(uint8_t ports[], unsigned int depth, char **rpath)
 {
     char buf[256];
     char *ptr;
@@ -275,7 +275,7 @@ static int build_location_string(uint8_t ports[], size_t depth, char **rpath)
     ptr += strlen(buf);
     size -= (size_t)(ptr - buf);
 
-    for (size_t i = 0; i < depth; i++) {
+    for (unsigned int i = 0; i < depth; i++) {
         r = snprintf(ptr, size, "-%hhu", ports[i]);
         assert(r >= 2 && (size_t)r < size);
 
@@ -295,7 +295,7 @@ static int resolve_device_location(struct iokit_device *iodev, ty_list_head *con
                                    char **rlocation)
 {
     uint8_t ports[16];
-    size_t depth;
+    unsigned int depth;
     uint64_t session;
     kern_return_t kret;
     int r;
@@ -346,7 +346,7 @@ static int resolve_device_location(struct iokit_device *iodev, ty_list_head *con
         }
     }
 
-    for (size_t i = 0; i < depth / 2; i++) {
+    for (unsigned int i = 0; i < depth / 2; i++) {
         uint8_t tmp = ports[i];
 
         ports[i] = ports[depth - i - 1];

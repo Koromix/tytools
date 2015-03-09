@@ -13,7 +13,7 @@ struct parser_context {
 
     uint32_t base_offset;
 
-    size_t line;
+    unsigned int line;
 
     const char *ptr;
     uint8_t sum;
@@ -48,7 +48,7 @@ static uint16_t parse_hex_short(struct parser_context *ctx)
 
 static int parse_line(struct parser_context *ctx, const char *line)
 {
-    uint8_t length, type;
+    unsigned int length, type;
     uint32_t address;
     uint8_t checksum;
 
@@ -80,7 +80,7 @@ static int parse_line(struct parser_context *ctx, const char *line)
                                 ty_firmware_max_size);
         }
 
-        for (uint8_t i = 0; i < length; i++)
+        for (unsigned int i = 0; i < length; i++)
             ctx->f->image[address + i] = parse_hex_byte(ctx, true);
         break;
 
@@ -171,7 +171,7 @@ int _ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware)
         r = parse_line(&ctx, buf);
         if (r < 0) {
             if (r == TY_ERROR_PARSE)
-                ty_error(r, "Parse error (Intel HEX) on line %zu in '%s'\n", ctx.line, filename);
+                ty_error(r, "Parse error (Intel HEX) on line %u in '%s'\n", ctx.line, filename);
             goto cleanup;
         }
 

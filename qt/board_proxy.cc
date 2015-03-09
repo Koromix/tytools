@@ -437,7 +437,7 @@ vector<shared_ptr<BoardProxy>> BoardManagerProxy::boards()
     return boards_;
 }
 
-shared_ptr<BoardProxy> BoardManagerProxy::board(size_t i)
+shared_ptr<BoardProxy> BoardManagerProxy::board(unsigned int i)
 {
     if (i >= boards_.size())
         return nullptr;
@@ -445,7 +445,7 @@ shared_ptr<BoardProxy> BoardManagerProxy::board(size_t i)
     return boards_[i];
 }
 
-size_t BoardManagerProxy::boardCount() const
+unsigned int BoardManagerProxy::boardCount() const
 {
     return boards_.size();
 }

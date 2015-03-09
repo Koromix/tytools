@@ -348,7 +348,7 @@ static int add_interface(ty_board_manager *manager, ty_device *dev)
     ty_list_add_tail(&board->interfaces, &iface->list);
     ty_htable_add(&manager->interfaces, ty_htable_hash_ptr(iface->dev), &iface->hnode);
 
-    for (size_t i = 0; i < TY_COUNTOF(board->cap2iface); i++) {
+    for (int i = 0; i < (int)TY_COUNTOF(board->cap2iface); i++) {
         if (iface->capabilities & (1 << i))
             board->cap2iface[i] = iface;
     }
@@ -394,7 +394,7 @@ static int remove_interface(ty_board_manager *manager, ty_device *dev)
     ty_list_foreach(cur, &board->interfaces) {
         iface = ty_container_of(cur, ty_board_interface, list);
 
-        for (size_t i = 0; i < TY_COUNTOF(board->cap2iface); i++) {
+        for (unsigned int i = 0; i < TY_COUNTOF(board->cap2iface); i++) {
             if (iface->capabilities & (1 << i))
                 board->cap2iface[i] = iface;
         }
@@ -905,7 +905,7 @@ const char *ty_board_get_model_desc(const ty_board *board)
 ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap)
 {
     assert(board);
-    assert((size_t)cap < TY_COUNTOF(board->cap2iface));
+    assert((int)cap < (int)TY_COUNTOF(board->cap2iface));
 
     ty_board_interface *iface;
 
@@ -920,7 +920,7 @@ ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capab
     return iface;
 }
 
-uint16_t ty_board_get_capabilities(const ty_board *board)
+int ty_board_get_capabilities(const ty_board *board)
 {
     assert(board);
     return board->capabilities;
@@ -1081,7 +1081,7 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool para
     }
 }
 
-int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, uint16_t flags)
+int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, int flags)
 {
     assert(board);
 
@@ -1138,7 +1138,7 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     return r;
 }
 
-int ty_board_upload(ty_board *board, ty_firmware *f, uint16_t flags, ty_board_upload_progress_func *pf, void *udata)
+int ty_board_upload(ty_board *board, ty_firmware *f, int flags, ty_board_upload_progress_func *pf, void *udata)
 {
     assert(board);
     assert(f);
@@ -1268,7 +1268,7 @@ const char *ty_board_interface_get_desc(const ty_board_interface *iface)
     return iface->desc;
 }
 
-uint16_t ty_board_interface_get_capabilities(const ty_board_interface *iface)
+int ty_board_interface_get_capabilities(const ty_board_interface *iface)
 {
     assert(iface);
     return iface->capabilities;

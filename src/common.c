@@ -16,7 +16,7 @@ static ty_error_func *handler = default_handler;
 static void *handler_udata = NULL;
 
 static ty_err mask[32];
-static size_t mask_count = 0;
+static unsigned int mask_count = 0;
 
 TY_INIT()
 {
@@ -108,7 +108,7 @@ int ty_error(ty_err err, const char *fmt, ...)
 
     va_start(ap, fmt);
 
-    for (size_t i = 0; i < mask_count; i++) {
+    for (unsigned int i = 0; i < mask_count; i++) {
         if (mask[i] == err)
             goto cleanup;
     }

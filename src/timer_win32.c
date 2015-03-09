@@ -96,7 +96,7 @@ cleanup:
     LeaveCriticalSection(&timer->mutex);
 }
 
-int ty_timer_set(ty_timer *timer, int value, uint16_t flags)
+int ty_timer_set(ty_timer *timer, int value, int flags)
 {
     assert(timer);
 

@@ -103,7 +103,7 @@ static int read_chunk(struct loader_context *ctx, off_t offset, size_t size, voi
     return 0;
 }
 
-static int load_program_header(struct loader_context *ctx, size_t i, Elf32_Phdr *rphdr)
+static int load_program_header(struct loader_context *ctx, unsigned int i, Elf32_Phdr *rphdr)
 {
     int r;
 
@@ -125,7 +125,7 @@ static int load_program_header(struct loader_context *ctx, size_t i, Elf32_Phdr 
     return 0;
 }
 
-static int load_segment(struct loader_context *ctx, size_t i)
+static int load_segment(struct loader_context *ctx, unsigned int i)
 {
     Elf32_Phdr phdr;
     int r;
@@ -235,7 +235,7 @@ int _ty_firmware_load_elf(const char *filename, ty_firmware **rfirmware)
         goto cleanup;
     }
 
-    for (size_t i = 0; i < ctx.ehdr.e_phnum; i++) {
+    for (unsigned int i = 0; i < ctx.ehdr.e_phnum; i++) {
         r = load_segment(&ctx, i);
         if (r < 0)
             goto cleanup;

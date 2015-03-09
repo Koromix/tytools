@@ -42,13 +42,13 @@ enum {
 
 static const int error_io_timeout = 5000;
 
-static uint16_t terminal_flags = 0;
+static int terminal_flags = 0;
 #ifdef _WIN32
 static bool fake_echo = false;
 #endif
 static uint32_t device_rate = 115200;
-static uint16_t device_flags = 0;
-static uint16_t directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
+static int device_flags = 0;
+static int directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
 static bool reconnect = false;
 static int timeout_eof = 200;
 
@@ -258,7 +258,7 @@ int monitor(int argc, char *argv[])
                 return ty_error(TY_ERROR_PARAM, "--baud requires a number");
             break;
         case 'd':
-           device_flags &= (uint16_t)~TY_SERIAL_CSIZE_MASK;
+           device_flags &= ~TY_SERIAL_CSIZE_MASK;
             if (strcmp(optarg, "5") == 0) {
                 device_flags |= TY_SERIAL_5BITS_CSIZE;
             } else if (strcmp(optarg, "6") == 0) {
@@ -269,7 +269,7 @@ int monitor(int argc, char *argv[])
                 return ty_error(TY_ERROR_PARAM, "--databits must be one off 5, 6, 7 or 8");
             }
         case 'f':
-            device_flags &= (uint16_t)~TY_SERIAL_FLOW_MASK;
+            device_flags &= ~TY_SERIAL_FLOW_MASK;
             if (strcmp(optarg, "x") == 0 || strcmp(optarg, "xonxoff") == 0) {
                 device_flags |= TY_SERIAL_XONXOFF_FLOW;
             } else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "rtscts") == 0) {
@@ -283,7 +283,7 @@ int monitor(int argc, char *argv[])
             device_flags |= TY_SERIAL_NOHUP_CLOSE;
             break;
         case 'p':
-            device_flags &= (uint16_t)~TY_SERIAL_PARITY_MASK;
+            device_flags &= ~TY_SERIAL_PARITY_MASK;
             if (strcmp(optarg, "o") == 0 || strcmp(optarg, "odd") == 0) {
                 device_flags |= TY_SERIAL_ODD_PARITY;
             } else if (strcmp(optarg, "e") == 0 || strcmp(optarg, "even") == 0) {
