@@ -351,14 +351,15 @@ void ty_descriptor_set_remove(ty_descriptor_set *set, int id)
 {
     assert(set);
 
-    size_t delta = 0;
+    size_t count = 0;
     for (size_t i = 0; i < set->count; i++) {
-        set->desc[i - delta] = set->desc[i];
-        set->id[i - delta] = set->id[i];
+        if (set->id[i] != id) {
+            set->desc[count] = set->desc[i];
+            set->id[count] = set->id[i];
 
-        if (set->id[i] == id)
-            delta++;
+            count++;
+        }
     }
 
-    set->count -= delta;
+    set->count = count;
 }
