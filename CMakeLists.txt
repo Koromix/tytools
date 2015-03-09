@@ -69,8 +69,8 @@ if(WIN32)
     list(APPEND TY_LINK_LIBRARIES setupapi hid)
 
     if(MINGW)
-        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic -static-libgcc -static-libstdc++")
-        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic -static-libgcc -static-libstdc++")
+        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic")
+        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread -Wl,-Bdynamic")
     endif()
 endif()
 
