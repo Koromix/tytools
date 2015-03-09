@@ -56,11 +56,6 @@ static int print_interface_info(ty_board_interface *iface, void *udata)
     return 0;
 }
 
-static void print_interfaces(ty_board *board)
-{
-    ty_board_list_interfaces(board, print_interface_info, NULL);
-}
-
 static int list_callback(ty_board *board, ty_board_event event, void *udata)
 {
     TY_UNUSED(event);
@@ -99,7 +94,7 @@ static int list_callback(ty_board *board, ty_board_event event, void *udata)
 
         if (event != TY_BOARD_EVENT_DISAPPEARED) {
             printf("  - interfaces: \n");
-            print_interfaces(board);
+            ty_board_list_interfaces(board, print_interface_info, NULL);
         } else {
             printf("  - interfaces: (none)\n");
         }
