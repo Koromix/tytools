@@ -21,24 +21,10 @@ typedef enum ty_file_type {
     TY_FILE_SPECIAL
 } ty_file_type;
 
-enum {
-    TY_FILE_HIDDEN = 1
-};
-
 typedef struct ty_file_info {
     ty_file_type type;
     uint64_t size;
     uint64_t mtime;
-
-#ifdef _WIN32
-    uint32_t volume;
-    uint8_t fileindex[16];
-#else
-    dev_t dev;
-    ino_t ino;
-#endif
-
-    uint16_t flags;
 } ty_file_info;
 
 #ifdef _WIN32
@@ -46,30 +32,6 @@ typedef struct ty_file_info {
 #else
 #define TY_PATH_SEPARATORS "/"
 #endif
-
-enum {
-    TY_MKDIR_PARENTS  = 1,
-    TY_MKDIR_PERMISSIVE = 2
-};
-
-enum {
-    TY_WALK_FOLLOW = 1,
-    TY_WALK_HIDDEN  = 2
-};
-
-typedef struct ty_walk_history {
-    struct ty_walk_history *prev;
-
-    ty_file_info info;
-
-    size_t relative;
-    size_t base;
-    size_t level;
-
-    struct _ty_walk_context *ctx;
-} ty_walk_history;
-
-typedef int ty_walk_func(const char *path, ty_walk_history *history, void *udata);
 
 #ifdef _WIN32
     typedef void *ty_descriptor; // HANDLE
@@ -107,20 +69,7 @@ TY_PUBLIC void ty_delay(unsigned int ms);
 
 TY_PUBLIC int ty_adjust_timeout(int timeout, uint64_t start);
 
-TY_PUBLIC bool ty_path_is_absolute(const char *path);
-
-TY_PUBLIC int ty_path_split(const char *path, char **rdirectory, char **rname);
-TY_PUBLIC const char *ty_path_ext(const char *path);
-
-TY_PUBLIC int ty_realpath(const char *path, const char *base, char **rpath);
-
 TY_PUBLIC int ty_stat(const char *path, ty_file_info *info, bool follow);
-TY_PUBLIC bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2);
-
-TY_PUBLIC int ty_mkdir(const char *path, mode_t mode, uint16_t flags);
-TY_PUBLIC int ty_delete(const char *path, bool tolerant);
-
-TY_PUBLIC int ty_walk(const char *path, ty_walk_history *history, ty_walk_func *f, void *udata, uint32_t flags);
 
 TY_PUBLIC void ty_descriptor_set_clear(ty_descriptor_set *set);
 TY_PUBLIC void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);

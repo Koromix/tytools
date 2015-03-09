@@ -115,8 +115,6 @@ set(TY_SOURCES include/ty.h
                include/ty/common.h
                include/ty/device.h
                include/ty/firmware.h
-               include/ty/ini.h
-               include/ty/process.h
                include/ty/system.h
                include/ty/timer.h
 
@@ -131,18 +129,15 @@ set(TY_SOURCES include/ty.h
                src/firmware_elf.c
                src/firmware_ihex.c
                src/htable.c
-               src/ini.c
                src/list.h
                src/system.c)
 if(WIN32)
-    list(APPEND TY_SOURCES src/process_win32.c
+    list(APPEND TY_SOURCES src/device_win32.c
                            src/system_win32.c
-                           src/device_win32.c
                            src/timer_win32.c)
 else()
     list(APPEND TY_SOURCES src/device_posix.c
                            src/device_posix_priv.h
-                           src/process_posix.c
                            src/system_posix.c)
 
     if(LINUX)

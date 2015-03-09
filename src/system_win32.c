@@ -14,12 +14,10 @@
 #include "ty/system.h"
 
 typedef ULONGLONG WINAPI GetTickCount64_func(void);
-typedef WINBOOL WINAPI GetFileInformationByHandleEx_func(HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize);
 
 static ULONGLONG WINAPI GetTickCount64_fallback(void);
 
 static GetTickCount64_func *GetTickCount64_;
-static GetFileInformationByHandleEx_func *GetFileInformationByHandleEx_;
 
 static DWORD orig_console_mode;
 static bool saved_console_mode;
@@ -32,8 +30,6 @@ TY_INIT()
     GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(h, "GetTickCount64");
     if (!GetTickCount64_)
         GetTickCount64_ = GetTickCount64_fallback;
-
-    GetFileInformationByHandleEx_ = (GetFileInformationByHandleEx_func *)GetProcAddress(h, "GetFileInformationByHandleEx");
 }
 
 char *ty_win32_strerror(DWORD err)
@@ -167,118 +163,6 @@ int ty_stat(const char *path, ty_file_info *info, bool follow)
 
     info->size = ((uint64_t)attr.nFileSizeHigh << 32) | attr.nFileSizeLow;
     info->mtime = filetime_to_unix_time(&attr.ftLastWriteTime);
-
-    info->volume = attr.dwVolumeSerialNumber;
-    if (ty_win32_test_version(TY_WIN32_EIGHT)) {
-        FILE_ID_INFO id;
-        r = GetFileInformationByHandleEx_(h, FileIdInfo, &id, sizeof(id));
-        if (!r)
-            return ty_error(TY_ERROR_SYSTEM, "GetFileInformationByHandleEx('%s') failed: %s", path, ty_win32_strerror(0));
-
-        memcpy(info->fileindex, &id, 16);
-    } else {
-        memset(info->fileindex, 0, 8);
-
-        memcpy(&info->fileindex[8], &attr.nFileIndexHigh, 4);
-        memcpy(&info->fileindex[12], &attr.nFileIndexLow, 4);
-    }
-
-    info->flags = 0;
-    if (attr.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
-        info->flags |= TY_FILE_HIDDEN;
-
-    return 0;
-}
-
-bool ty_file_unique(const ty_file_info *info1, const ty_file_info *info2)
-{
-    assert(info1);
-    assert(info2);
-
-    return info1->volume == info2->volume && memcmp(info1->fileindex, info2->fileindex, sizeof(info1->fileindex)) == 0;
-}
-
-int ty_realpath(const char *path, const char *base, char **rpath)
-{
-    assert(path && path[0]);
-
-    char *tmp = NULL, *real = NULL;
-    int r;
-
-    if (base && !ty_path_is_absolute(path)) {
-        r = asprintf(&tmp, "%s\\%s", base, path);
-        if (r < 0)
-            goto cleanup;
-
-        path = tmp;
-    }
-
-    real = _fullpath(NULL, path, 0);
-    if (!real) {
-        if (errno == ENOMEM) {
-            r = ty_error(TY_ERROR_MEMORY, NULL);
-        } else {
-            r = ty_error(TY_ERROR_SYSTEM, "_fullpath('%s') failed: %s", path, strerror(errno));
-        }
-        goto cleanup;
-    }
-
-    r = _access(real, 0);
-    if (r < 0) {
-        switch (errno) {
-        case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
-            break;
-        case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while resolving path '%s'", path);
-            break;
-        case ENOENT:
-            r = ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
-            break;
-
-        default:
-            r = ty_error(TY_ERROR_SYSTEM, "_access('%s') failed: %s", real, strerror(errno));
-            break;
-        }
-        goto cleanup;
-    }
-
-    if (rpath) {
-        *rpath = real;
-        real = NULL;
-    }
-
-    r = 0;
-cleanup:
-    free(real);
-    free(tmp);
-    return r;
-}
-
-int ty_delete(const char *path, bool tolerant)
-{
-    assert(path && path[0]);
-
-    int r;
-
-    if (GetFileAttributes(path) & FILE_ATTRIBUTE_DIRECTORY) {
-        r = _rmdir(path);
-    } else {
-        r = _unlink(path);
-    }
-    if (r < 0) {
-        switch (errno) {
-        case EACCES:
-            return ty_error(TY_ERROR_ACCESS, "Permission denied to delete '%s'", path);
-        case ENOENT:
-            if (tolerant)
-                return 0;
-            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
-        case ENOTEMPTY:
-            return ty_error(TY_ERROR_EXISTS, "Cannot remove non-empty directory '%s", path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "remove('%s') failed: %s", path, strerror(errno));
-    }
 
     return 0;
 }

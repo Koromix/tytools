@@ -11,8 +11,6 @@
 #include "ty/board.h"
 #include "ty/device.h"
 #include "ty/firmware.h"
-#include "ty/ini.h"
-#include "ty/process.h"
 #include "ty/system.h"
 #include "ty/timer.h"
 #include "ty/version.h"

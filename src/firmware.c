@@ -35,7 +35,7 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
         if (!format->name)
             return ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
     } else {
-        const char *ext = ty_path_ext(filename);
+        const char *ext = strrchr(filename, '.');
 
         for (; format->name; format++) {
             if (strcmp(format->ext, ext) == 0)
