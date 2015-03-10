@@ -91,8 +91,9 @@ if(NOT HAVE_STAT_MTIM)
     check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
 endif()
 
-find_package(Git)
-if(GIT_FOUND)
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    find_package(Git REQUIRED)
+
     execute_process(
         COMMAND ${GIT_EXECUTABLE} describe --tags
         OUTPUT_VARIABLE TY_VERSION
