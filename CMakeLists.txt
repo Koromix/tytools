@@ -105,6 +105,8 @@ configure_file(src/config.h.in config.h)
 configure_file(include/ty/version.h.in ty/version.h)
 if (APPLE)
     configure_file(resources/tyqt_osx.plist.in tyqt_osx.plist)
+elseif (NOT WIN32)
+    configure_file(resources/tyqt_linux.desktop.in tyqt_linux.desktop)
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -308,6 +310,7 @@ else()
     install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
 
     install(TARGETS tyc tyqt RUNTIME DESTINATION bin)
+    install(FILES "${CMAKE_BINARY_DIR}/tyqt_linux.desktop" DESTINATION share/applications RENAME tyqt.desktop)
 
     install(FILES contrib/udev/teensy.rules DESTINATION lib/udev/rules.d RENAME 49-teensy.rules)
 endif()

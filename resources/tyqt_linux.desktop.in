@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=@TY_VERSION@
+Name=TyQt
+Comment=GUI tool to manage Teensy devices
+TryExec=tyqt
+Icon=tyqt
+Exec=tyqt
+Terminal=false
+Type=Application
+Categories=Development;
