@@ -116,14 +116,12 @@ static int loop(ty_board *board, int outfd)
 {
     ty_descriptor_set set = {0};
     int timeout = -1;
-    char buf[64];
+    char buf[1024];
     ssize_t r;
 
     fill_descriptor_set(&set, board);
 
     while (true) {
-        memset(buf, 0, sizeof(buf));
-
         if (!set.count)
             return 0;
 

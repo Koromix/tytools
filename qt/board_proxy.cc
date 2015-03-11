@@ -372,7 +372,7 @@ void BoardProxy::serialReceived(ty_descriptor desc)
 {
     TY_UNUSED(desc);
 
-    char buf[128];
+    char buf[1024];
 
     ssize_t r = ty_board_serial_read(board_, buf, sizeof(buf), 0);
     if (r < 0) {
