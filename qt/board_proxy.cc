@@ -93,6 +93,7 @@ BoardProxy::BoardProxy(ty_board *board, QObject *parent)
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(10000);
 
+    serial_notifier_.setMinInterval(5);
     connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &BoardProxy::serialReceived);
 
     refreshBoard();
