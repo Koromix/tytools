@@ -117,8 +117,12 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
     firmwarePath->setText(current_board_->property("firmware").toString());
     resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
 
+    monitor_autoscroll_ = true;
     monitor_cursor_ = QTextCursor();
+
     monitorText->setDocument(&current_board_->serialDocument());
+    monitorText->moveCursor(QTextCursor::End);
+    monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
 
     connect(current_board_.get(), &BoardProxy::boardChanged, this, &MainWindow::refreshBoardInfo);
     connect(current_board_.get(), &BoardProxy::propertyChanged, this, &MainWindow::updatePropertyField);
