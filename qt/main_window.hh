@@ -16,6 +16,9 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     BoardManagerProxy *manager_;
     std::shared_ptr<BoardProxy> current_board_;
 
+    bool monitor_autoscroll_ = true;
+    QTextCursor monitor_cursor_;
+
 public:
     MainWindow(BoardManagerProxy *manager, QWidget *parent = nullptr);
 
@@ -36,6 +39,9 @@ private slots:
     void updatePropertyField(const char *name, const QVariant &value);
 
     void monitorTextChanged();
+    void monitorTextScrolled(int value);
+
+    void clearMonitor();
 
     void on_firmwarePath_editingFinished();
     void on_resetAfterUpload_toggled(bool checked);

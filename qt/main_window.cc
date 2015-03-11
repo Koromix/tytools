@@ -6,6 +6,7 @@
 
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QScrollBar>
 #include <QUrl>
 
 #include "ty.h"
@@ -32,7 +33,9 @@ MainWindow::MainWindow(BoardManagerProxy *manager, QWidget *parent)
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
     connect(manager, &BoardManagerProxy::boardAdded, this, &MainWindow::setBoardDefaults);
 
+    monitorText->verticalScrollBar()->setTracking(true);
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
+    connect(monitorText->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::monitorTextScrolled);
 
     for (auto &board: *manager)
         setBoardDefaults(board);
@@ -115,6 +118,7 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
     firmwarePath->setText(current_board_->property("firmware").toString());
     resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
 
+    monitor_cursor_ = QTextCursor();
     monitorText->setDocument(&current_board_->serialDocument());
 
     connect(current_board_.get(), &BoardProxy::boardChanged, this, &MainWindow::refreshBoardInfo);
@@ -179,10 +183,33 @@ void MainWindow::updatePropertyField(const char *name, const QVariant &value)
 
 void MainWindow::monitorTextChanged()
 {
-    if (autoscroll->isChecked()) {
-        monitorText->moveCursor(QTextCursor::End);
+    if (monitor_autoscroll_) {
+        monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
+    } else {
+        QTextCursor old_cursor = monitorText->textCursor();
+
+        monitorText->setTextCursor(monitor_cursor_);
         monitorText->ensureCursorVisible();
+
+        int position = monitorText->verticalScrollBar()->value();
+
+        monitorText->setTextCursor(old_cursor);
+        monitorText->verticalScrollBar()->setValue(position);
     }
+}
+
+void MainWindow::monitorTextScrolled(int value)
+{
+    TY_UNUSED(value);
+
+    monitor_autoscroll_ = (monitorText->verticalScrollBar()->value() == monitorText->verticalScrollBar()->maximum());
+    monitor_cursor_ = monitorText->cursorForPosition(QPoint(0, 0));
+}
+
+void MainWindow::clearMonitor()
+{
+    monitor_cursor_ = QTextCursor();
+    monitorText->clear();
 }
 
 void MainWindow::showErrorMessage(const QString &msg)
@@ -309,7 +336,7 @@ void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
 {
     QMenu *menu = monitorText->createStandardContextMenu();
 
-    menu->addAction(tr("Clear"), monitorText, SLOT(clear()));
+    menu->addAction(tr("Clear"), this, SLOT(clearMonitor()));
     menu->exec(monitorText->viewport()->mapToGlobal(pos));
 }
 

@@ -174,52 +174,38 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <layout class="QGridLayout" name="gridLayout" columnstretch="0,0">
-            <item row="0" column="1">
-             <widget class="QComboBox" name="newlineComboBox">
-              <property name="currentIndex">
-               <number>1</number>
-              </property>
-              <item>
-               <property name="text">
-                <string>No line ending</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Newline (LF)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Carriage return (CR)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Both (CRLF)</string>
-               </property>
-              </item>
-             </widget>
+           <widget class="QCheckBox" name="echo">
+            <property name="text">
+             <string>Echo</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="newlineComboBox">
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>No line ending</string>
+             </property>
             </item>
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="echo">
-              <property name="text">
-               <string>Echo</string>
-              </property>
-             </widget>
+            <item>
+             <property name="text">
+              <string>Newline (LF)</string>
+             </property>
             </item>
-            <item row="0" column="0">
-             <widget class="QCheckBox" name="autoscroll">
-              <property name="text">
-               <string>Autoscroll</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
+            <item>
+             <property name="text">
+              <string>Carriage return (CR)</string>
+             </property>
             </item>
-           </layout>
+            <item>
+             <property name="text">
+              <string>Both (CRLF)</string>
+             </property>
+            </item>
+           </widget>
           </item>
          </layout>
         </item>
@@ -510,7 +496,6 @@
   <tabstop>interfaceTree</tabstop>
   <tabstop>monitorText</tabstop>
   <tabstop>monitorEdit</tabstop>
-  <tabstop>autoscroll</tabstop>
   <tabstop>echo</tabstop>
   <tabstop>newlineComboBox</tabstop>
   <tabstop>firmwarePath</tabstop>
