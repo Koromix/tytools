@@ -39,7 +39,7 @@ private slots:
     void updatePropertyField(const char *name, const QVariant &value);
 
     void monitorTextChanged();
-    void monitorTextScrolled(int value);
+    void monitorTextScrolled(const QRect &rect, int dy);
 
     void clearMonitor();
 

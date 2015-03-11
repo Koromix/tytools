@@ -33,9 +33,8 @@ MainWindow::MainWindow(BoardManagerProxy *manager, QWidget *parent)
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
     connect(manager, &BoardManagerProxy::boardAdded, this, &MainWindow::setBoardDefaults);
 
-    monitorText->verticalScrollBar()->setTracking(true);
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
-    connect(monitorText->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::monitorTextScrolled);
+    connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
 
     for (auto &board: *manager)
         setBoardDefaults(board);
@@ -198,11 +197,16 @@ void MainWindow::monitorTextChanged()
     }
 }
 
-void MainWindow::monitorTextScrolled(int value)
+void MainWindow::monitorTextScrolled(const QRect &rect, int dy)
 {
-    TY_UNUSED(value);
+    TY_UNUSED(rect);
 
-    monitor_autoscroll_ = (monitorText->verticalScrollBar()->value() == monitorText->verticalScrollBar()->maximum());
+    if (!dy)
+        return;
+
+    QScrollBar *vbar = monitorText->verticalScrollBar();
+
+    monitor_autoscroll_ = vbar->value() >= vbar->maximum() - 1;
     monitor_cursor_ = monitorText->cursorForPosition(QPoint(0, 0));
 }
 
