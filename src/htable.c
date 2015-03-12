@@ -10,9 +10,6 @@
 
 int ty_htable_init(ty_htable *table, unsigned int size)
 {
-    assert(table);
-    assert(size);
-
     table->heads = malloc(size * sizeof(*table->heads));
     if (!table->heads)
         return ty_error(TY_ERROR_MEMORY, NULL);
@@ -26,23 +23,16 @@ int ty_htable_init(ty_htable *table, unsigned int size)
 
 void ty_htable_release(ty_htable *table)
 {
-    assert(table);
-
     free(table->heads);
 }
 
 ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key)
 {
-    assert(table);
-
     return (ty_htable_head *)&table->heads[key % table->size];
 }
 
 void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *n)
 {
-    assert(table);
-    assert(n);
-
     ty_htable_head *head = ty_htable_get_head(table, key);
 
     n->key = key;
@@ -53,9 +43,6 @@ void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *n)
 
 void ty_htable_insert(ty_htable_head *prev, ty_htable_head *n)
 {
-    assert(prev);
-    assert(n);
-
     n->key = prev->key;
 
     n->next = prev->next;
@@ -64,8 +51,6 @@ void ty_htable_insert(ty_htable_head *prev, ty_htable_head *n)
 
 void ty_htable_remove(ty_htable_head *head)
 {
-    assert(head);
-
     for (ty_htable_head *prev = head->next; prev != head; prev = prev->next) {
         if (prev->next == head) {
             prev->next = head->next;
