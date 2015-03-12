@@ -23,10 +23,8 @@ struct ty_board_manager {
     ty_list_head callbacks;
     int callback_id;
 
-    pthread_mutex_t refresh_mutex;
-    bool refresh_mutex_init;
-    pthread_cond_t refresh_cond;
-    bool refresh_cond_init;
+    ty_mutex refresh_mutex;
+    ty_cond refresh_cond;
 
     ty_list_head boards;
     ty_list_head missing_boards;
@@ -118,7 +116,6 @@ static int trigger_callbacks(ty_board *board, ty_board_event event)
 static int add_board(ty_board_manager *manager, ty_board_interface *iface, ty_board **rboard)
 {
     ty_board *board;
-    pthread_mutexattr_t mutex_attr;
     int r;
 
     board = calloc(1, sizeof(*board));
@@ -128,19 +125,9 @@ static int add_board(ty_board_manager *manager, ty_board_interface *iface, ty_bo
     }
     board->refcount = 1;
 
-    // Doesn't look like any decent system/libc can fail there
-    r = pthread_mutexattr_init(&mutex_attr);
-    assert(!r);
-    r = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
-    assert(!r);
-
-    r = pthread_mutex_init(&board->mutex, &mutex_attr);
-    pthread_mutexattr_destroy(&mutex_attr);
-    if (r) {
-        r = ty_error(TY_ERROR_SYSTEM, "pthread_mutex_init() failed");
+    r = ty_mutex_init(&board->mutex, TY_MUTEX_RECURSIVE);
+    if (r < 0)
         goto error;
-    }
-    board->mutex_init = true;
 
     board->location = strdup(ty_device_get_location(iface->dev));
     if (!board->location) {
@@ -440,9 +427,6 @@ int ty_board_manager_new(ty_board_manager **rmanager)
     assert(rmanager);
 
     ty_board_manager *manager;
-#ifndef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
-    pthread_condattr_t cond_attr;
-#endif
     int r;
 
     manager = calloc(1, sizeof(*manager));
@@ -463,30 +447,13 @@ int ty_board_manager_new(ty_board_manager **rmanager)
     if (r < 0)
         goto error;
 
-    r = pthread_mutex_init(&manager->refresh_mutex, NULL);
-    if (r) {
-        r = ty_error(TY_ERROR_SYSTEM, "pthread_mutex_init() failed");
+    r = ty_mutex_init(&manager->refresh_mutex, TY_MUTEX_FAST);
+    if (r < 0)
         goto error;
-    }
-    manager->refresh_mutex_init = true;
 
-#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
-    r = pthread_cond_init(&manager->refresh_cond, NULL);
-#else
-    // Doesn't look like any decent system/libc can fail there
-    r = pthread_condattr_init(&cond_attr);
-    assert(!r);
-    r = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
-    assert(!r);
-
-    r = pthread_cond_init(&manager->refresh_cond, &cond_attr);
-    pthread_condattr_destroy(&cond_attr);
-#endif
-    if (r) {
-        r = ty_error(TY_ERROR_SYSTEM, "pthread_cond_init() failed");
+    r = ty_cond_init(&manager->refresh_cond);
+    if (r < 0)
         goto error;
-    }
-    manager->refresh_cond_init = true;
 
     ty_list_init(&manager->boards);
     ty_list_init(&manager->missing_boards);
@@ -508,10 +475,8 @@ error:
 void ty_board_manager_free(ty_board_manager *manager)
 {
     if (manager) {
-        if (manager->refresh_cond_init)
-            pthread_cond_destroy(&manager->refresh_cond);
-        if (manager->refresh_mutex_init)
-            pthread_mutex_destroy(&manager->refresh_mutex);
+        ty_cond_release(&manager->refresh_cond);
+        ty_mutex_release(&manager->refresh_mutex);
 
         ty_device_monitor_free(manager->monitor);
         ty_timer_free(manager->timer);
@@ -627,9 +592,9 @@ int ty_board_manager_refresh(ty_board_manager *manager)
     if (r < 0)
         return r;
 
-    pthread_mutex_lock(&manager->refresh_mutex);
-    pthread_cond_broadcast(&manager->refresh_cond);
-    pthread_mutex_unlock(&manager->refresh_mutex);
+    ty_mutex_lock(&manager->refresh_mutex);
+    ty_cond_broadcast(&manager->refresh_cond);
+    ty_mutex_unlock(&manager->refresh_mutex);
 
     return 0;
 }
@@ -739,8 +704,7 @@ void ty_board_unref(ty_board *board)
             return;
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
-        if (board->mutex_init)
-            pthread_mutex_destroy(&board->mutex);
+        ty_mutex_release(&board->mutex);
 
         free(board->identity);
         free(board->location);
@@ -762,14 +726,14 @@ void ty_board_lock(const ty_board *board)
 {
     assert(board);
 
-    pthread_mutex_lock(&((ty_board *)board)->mutex);
+    ty_mutex_lock(&((ty_board *)board)->mutex);
 }
 
 void ty_board_unlock(const ty_board *board)
 {
     assert(board);
 
-    pthread_mutex_unlock(&((ty_board *)board)->mutex);
+    ty_mutex_unlock(&((ty_board *)board)->mutex);
 }
 
 static int parse_identity(const char *id, char **rlocation, uint64_t *rserial)
@@ -1034,46 +998,18 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool para
     ctx.capability = capability;
 
     if (parallel) {
-#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
         uint64_t start;
-#endif
-        struct timespec ts;
 
-        pthread_mutex_lock(&manager->refresh_mutex);
+        ty_mutex_lock(&manager->refresh_mutex);
 
-#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
         start = ty_millis();
-#else
-        if (timeout >= 0) {
-            uint64_t end = ty_millis() + (uint64_t)timeout;
-
-            ts.tv_sec = (time_t)(end / 1000);
-            ts.tv_nsec = (long)(end % 1000 * 1000000);
-        }
-#endif
-
         while (!(r = wait_for_callback(manager, &ctx))) {
-            if (timeout >= 0) {
-#ifdef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
-                int adjusted_timeout = ty_adjust_timeout(timeout, start);
-
-                ts.tv_sec = (time_t)(adjusted_timeout / 1000);
-                ts.tv_nsec = (long)(adjusted_timeout % 1000 * 10000000);
-
-                r = pthread_cond_timedwait_relative_np(&manager->refresh_cond, &manager->refresh_mutex, &ts);
-#else
-                r = pthread_cond_timedwait(&manager->refresh_cond, &manager->refresh_mutex, &ts);
-#endif
-                if (r == ETIMEDOUT) {
-                    r = 0;
-                    break;
-                }
-            } else {
-                pthread_cond_wait(&manager->refresh_cond, &manager->refresh_mutex);
-            }
+            r = ty_cond_wait(&manager->refresh_cond, &manager->refresh_mutex, ty_adjust_timeout(timeout, start));
+            if (!r)
+                break;
         }
 
-        pthread_mutex_unlock(&manager->refresh_mutex);
+        ty_mutex_unlock(&manager->refresh_mutex);
 
         return r;
     } else {

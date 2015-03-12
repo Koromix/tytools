@@ -11,7 +11,6 @@
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/hid/IOHIDDevice.h>
 #include <mach/mach.h>
-#include <pthread.h>
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/select.h>
@@ -21,6 +20,7 @@
 #include "list.h"
 #include "ty/system.h"
 #include "device_priv.h"
+#include "thread.h"
 
 struct ty_device_monitor {
     TY_DEVICE_MONITOR
@@ -47,8 +47,7 @@ struct ty_handle {
     uint8_t *buf;
     size_t size;
 
-    pthread_mutex_t mutex;
-    bool mutex_init;
+    ty_mutex mutex;
     int pipe[2];
     int thread_ret;
 
@@ -57,8 +56,7 @@ struct ty_handle {
     ty_list_head free_reports;
 
     pthread_t thread;
-    pthread_cond_t cond;
-    bool cond_init;
+    ty_cond cond;
 
     CFRunLoopRef loop;
     CFRunLoopSourceRef shutdown;
@@ -772,7 +770,7 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
 
     ty_handle *h = ctx;
 
-    pthread_mutex_lock(&h->mutex);
+    ty_mutex_lock(&h->mutex);
 
     CFRelease(h->hid);
     h->hid = NULL;
@@ -780,7 +778,7 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     CFRunLoopSourceSignal(h->shutdown);
     h->loop = NULL;
 
-    pthread_mutex_unlock(&h->mutex);
+    ty_mutex_unlock(&h->mutex);
 
     fire_device_event(h);
 }
@@ -808,7 +806,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     bool fire;
     int r;
 
-    pthread_mutex_lock(&h->mutex);
+    ty_mutex_lock(&h->mutex);
 
     fire = ty_list_is_empty(&h->reports);
 
@@ -851,7 +849,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
 cleanup:
     if (r < 0)
         h->thread_ret = r;
-    pthread_mutex_unlock(&h->mutex);
+    ty_mutex_unlock(&h->mutex);
     if (fire)
         fire_device_event(h);
 }
@@ -863,7 +861,7 @@ static void *device_thread(void *ptr)
     CFRunLoopSourceContext shutdown_ctx = {0};
     int r;
 
-    pthread_mutex_lock(&h->mutex);
+    ty_mutex_lock(&h->mutex);
 
     h->loop = CFRunLoopGetCurrent();
 
@@ -883,24 +881,24 @@ static void *device_thread(void *ptr)
 
     // This thread is ready, open_hid_device() can carry on
     h->thread_ret = 1;
-    pthread_cond_signal(&h->cond);
-    pthread_mutex_unlock(&h->mutex);
+    ty_cond_signal(&h->cond);
+    ty_mutex_unlock(&h->mutex);
 
     CFRunLoopRun();
 
     if (h->hid)
         IOHIDDeviceUnscheduleFromRunLoop(h->hid, h->loop, kCFRunLoopCommonModes);
 
-    pthread_mutex_lock(&h->mutex);
+    ty_mutex_lock(&h->mutex);
     h->loop = NULL;
-    pthread_mutex_unlock(&h->mutex);
+    ty_mutex_unlock(&h->mutex);
 
     return NULL;
 
 error:
     h->thread_ret = r;
-    pthread_cond_signal(&h->cond);
-    pthread_mutex_unlock(&h->mutex);
+    ty_cond_signal(&h->cond);
+    ty_mutex_unlock(&h->mutex);
     return NULL;
 }
 
@@ -974,21 +972,15 @@ static int open_hid_device(ty_device *dev, ty_handle **rh)
     ty_list_init(&h->reports);
     ty_list_init(&h->free_reports);
 
-    r = pthread_mutex_init(&h->mutex, NULL);
-    if (r) {
-        r = ty_error(TY_ERROR_SYSTEM, "pthread_mutex_init() failed: %s", strerror(r));
+    r = ty_mutex_init(&h->mutex, TY_MUTEX_FAST);
+    if (r < 0)
         goto error;
-    }
-    h->mutex_init = true;
 
-    r = pthread_cond_init(&h->cond, NULL);
-    if (r) {
-        r = ty_error(TY_ERROR_SYSTEM, "pthread_cond_init() failed: %s", strerror(r));
+    r = ty_cond_init(&h->cond);
+    if (r < 0)
         goto error;
-    }
-    h->cond_init = true;
 
-    pthread_mutex_lock(&h->mutex);
+    ty_mutex_lock(&h->mutex);
 
     r = pthread_create(&h->thread, NULL, device_thread, h);
     if (r) {
@@ -999,10 +991,10 @@ static int open_hid_device(ty_device *dev, ty_handle **rh)
     /* Barriers are great for this, but OSX doesn't have those... And since it's the only place
        we would use them, it's probably not worth it to have a custom implementation. */
     while (!h->thread_ret)
-        pthread_cond_wait(&h->cond, &h->mutex);
+        ty_cond_wait(&h->cond, &h->mutex, -1);
     r = h->thread_ret;
     h->thread_ret = 0;
-    pthread_mutex_unlock(&h->mutex);
+    ty_mutex_unlock(&h->mutex);
     if (r < 0)
         goto error;
 
@@ -1018,23 +1010,21 @@ static void close_hid_device(ty_handle *h)
 {
     if (h) {
         if (h->shutdown) {
-            pthread_mutex_lock(&h->mutex);
+            ty_mutex_lock(&h->mutex);
 
             if (h->loop) {
                 CFRunLoopSourceSignal(h->shutdown);
                 CFRunLoopWakeUp(h->loop);
             }
 
-            pthread_mutex_unlock(&h->mutex);
+            ty_mutex_unlock(&h->mutex);
             pthread_join(h->thread, NULL);
 
             CFRelease(h->shutdown);
         }
 
-        if (h->cond_init)
-            pthread_cond_destroy(&h->cond);
-        if (h->mutex_init)
-            pthread_mutex_destroy(&h->mutex);
+        ty_cond_release(&h->cond);
+        ty_mutex_release(&h->mutex);
 
         ty_list_splice(&h->free_reports, &h->reports);
         ty_list_foreach(cur, &h->free_reports) {
@@ -1128,7 +1118,7 @@ restart:
     if (!r)
         return 0;
 
-    pthread_mutex_lock(&h->mutex);
+    ty_mutex_lock(&h->mutex);
 
     if (h->thread_ret < 0) {
         r = h->thread_ret;
@@ -1152,7 +1142,7 @@ restart:
 cleanup:
     if (ty_list_is_empty(&h->reports))
         reset_device_event(h);
-    pthread_mutex_unlock(&h->mutex);
+    ty_mutex_unlock(&h->mutex);
     return r;
 }
 

@@ -83,12 +83,14 @@ check_symbol_exists(getdelim stdio.h HAVE_GETDELIM)
 check_symbol_exists(getline stdio.h HAVE_GETLINE)
 check_symbol_exists(fstatat sys/stat.h HAVE_FSTATAT)
 check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
-check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
+if(NOT WIN32)
+    check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
 
-include(CheckStructHasMember)
-check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_MTIM)
-if(NOT HAVE_STAT_MTIM)
-    check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
+    include(CheckStructHasMember)
+    check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_MTIM)
+    if(NOT HAVE_STAT_MTIM)
+        check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
+    endif()
 endif()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
@@ -133,15 +135,18 @@ set(TY_SOURCES include/ty.h
                src/firmware_ihex.c
                src/htable.c
                src/list.h
-               src/system.c)
+               src/system.c
+               src/thread.h)
 if(WIN32)
     list(APPEND TY_SOURCES src/device_win32.c
                            src/system_win32.c
+                           src/thread_win32.c
                            src/timer_win32.c)
 else()
     list(APPEND TY_SOURCES src/device_posix.c
                            src/device_posix_priv.h
-                           src/system_posix.c)
+                           src/system_posix.c
+                           src/thread_pthread.c)
 
     if(LINUX)
         list(APPEND TY_SOURCES src/device_linux.c
