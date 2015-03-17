@@ -23,17 +23,18 @@ int get_manager(ty_board_manager **rmanager);
 int get_board(ty_board **rboard);
 
 enum {
-    MAIN_OPTION_EXPERIMENTAL = 0x100,
+    MAIN_OPTION_BOARD = 0x100,
+    MAIN_OPTION_EXPERIMENTAL,
     MAIN_OPTION_HELP,
     MAIN_OPTION_VERSION
 };
 
-#define MAIN_SHORT_OPTIONS "b:"
+#define MAIN_SHORT_OPTIONS
 #define MAIN_LONG_OPTIONS \
     {"help",         no_argument,       NULL, MAIN_OPTION_HELP}, \
     {"version",      no_argument,       NULL, MAIN_OPTION_VERSION}, \
     \
-    {"board",        required_argument, NULL, 'b'}, \
+    {"board",        required_argument, NULL, MAIN_OPTION_BOARD}, \
     {"experimental", no_argument,       NULL, MAIN_OPTION_EXPERIMENTAL}, \
 
 TY_C_END

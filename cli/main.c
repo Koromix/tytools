@@ -80,7 +80,7 @@ void print_main_options(FILE *f)
                "       --help               Show help message\n"
                "       --version            Display version information\n\n"
 
-               "   -b, --board <id>         Work with board <id> instead of first detected\n"
+               "       --board <id>         Work with board <id> instead of first detected\n"
                "       --experimental       Enable experimental features (use with caution)\n");
 }
 
@@ -225,7 +225,7 @@ int parse_main_option(int argc, char *argv[], int c)
         ty_config_experimental = true;
         return 1;
 
-    case 'b':
+    case MAIN_OPTION_BOARD:
         board_identity = optarg;
         return 1;
     }
