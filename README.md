@@ -15,7 +15,7 @@ It currently runs on Linux, Windows and Mac OS X.
   - [List devices](#usage_list)
   - [Upload firmware](#usage_upload)
   - [Serial monitor](#usage_monitor)
-  - [Other commands](#usage_misc)
+  - [Bootloader and reset](#usage_reset)
 
 <a name="build"/>
 # Build instructions
@@ -90,6 +90,9 @@ When you want to target a specific device, use `tyc <command> --board "<location
 The format of <location> is specific to ty and can be found using `tyc list`, <serial> is the
 USB serial number. Either can be omitted.
 
+You can learn about the various commands using `tyc help`. Get specific help for them using
+`tyc help <command>`.
+
 <a name="usage_list"/>
 ## List devices
 
@@ -136,9 +139,12 @@ the terminal.
 See `tyc help monitor` for other options. Note that Teensy being a USB device, serial settings are
 ignored. They are provided in case your application uses them for specific purposes.
 
-<a name="usage_misc"/>
-## Other commands
+<a name="usage_reset"/>
+## Bootloader and reset
 
-You can learn about other commands using `tyc help`. Get specific help for them using
-`tyc help <command>`. The main ones are:
-* reset: reset the Teensy device (currently by issuing a reboot followed by a reset)
+`tyc reset` will restart your device. Since Teensy devices (at least the ARM ones) do not provide
+a way to trigger a reset, ty will instead start the bootloader first and then issue a reset
+without programming anything.
+
+You can also use `tyc reset -b` to start the bootloader. This is the same as pushing the button on
+your Teensy.
