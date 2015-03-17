@@ -8,18 +8,25 @@
 #include "ty.h"
 #include "main.h"
 
-static const char *short_options = MAIN_SHORT_OPTIONS;
+static const char *short_options = "b" MAIN_SHORT_OPTIONS;
 static const struct option long_options[] = {
     MAIN_LONG_OPTIONS
 
+    {"bootloader", no_argument, NULL, 'b'},
     {0}
 };
+
+static bool bootloader = false;
 
 void print_reset_usage(FILE *f)
 {
     fprintf(f, "usage: tyc reset\n\n");
 
     print_main_options(f);
+    fprintf(f, "\n");
+
+    fprintf(f, "Reset options:\n"
+               "   -b, --bootloader         Switch board to bootloader\n");
 }
 
 int reset(int argc, char *argv[])
@@ -29,10 +36,17 @@ int reset(int argc, char *argv[])
 
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        r = parse_main_option(argc, argv, c);
-        if (r <= 0)
-            return r;
-        break;
+        switch (c) {
+        case 'b':
+            bootloader = true;
+            break;
+
+        default:
+            r = parse_main_option(argc, argv, c);
+            if (r <= 0)
+                return r;
+            break;
+        }
     }
 
     if (argc > optind) {
@@ -44,7 +58,8 @@ int reset(int argc, char *argv[])
     if (r < 0)
         return r;
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
+    if ((bootloader || !ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET))
+            && ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT)) {
         printf("Triggering board reboot\n");
         r = ty_board_reboot(board);
         if (r < 0)
@@ -55,15 +70,17 @@ int reset(int argc, char *argv[])
             goto cleanup;
     }
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
-        r = ty_error(TY_ERROR_MODE, "No way to trigger reset for this board");
-        goto cleanup;
-    }
+    if (!bootloader) {
+        if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
+            r = ty_error(TY_ERROR_MODE, "No way to trigger reset for this board");
+            goto cleanup;
+        }
 
-    printf("Sending reset command\n");
-    r = ty_board_reset(board);
-    if (r < 0)
-        goto cleanup;
+        printf("Sending reset command\n");
+        r = ty_board_reset(board);
+        if (r < 0)
+            goto cleanup;
+    }
 
     r = 0;
 cleanup:
