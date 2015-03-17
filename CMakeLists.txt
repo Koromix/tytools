@@ -5,8 +5,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(ty C CXX)
 
-set(TY_VERSION 0.5.7)
-
 find_package(Threads)
 list(APPEND TY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
@@ -83,19 +81,17 @@ if(NOT WIN32)
     endif()
 endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    find_package(Git REQUIRED)
-
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe --tags
-        OUTPUT_VARIABLE TY_VERSION
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-    # Strip the 'v' prefix
-    string(SUBSTRING ${TY_VERSION} 1 -1 TY_VERSION)
+if(WIN32 AND NOT CMAKE_CROSSCOMPILING)
+    execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.bat"
+        OUTPUT_VARIABLE TY_VERSION_HEADER)
+else()
+    execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.sh"
+        OUTPUT_VARIABLE TY_VERSION_HEADER)
 endif()
+file(WRITE "${CMAKE_BINARY_DIR}/ty/version.h" "${TY_VERSION_HEADER}")
+string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(\\-[0-9]+-[a-zA-Z0-9]+)?" TY_VERSION "${TY_VERSION_HEADER}")
 
 configure_file(src/config.h.in config.h)
-configure_file(include/ty/version.h.in ty/version.h)
 if (APPLE)
     configure_file(resources/tyqt_osx.plist.in tyqt_osx.plist)
 elseif (NOT WIN32)
@@ -302,7 +298,7 @@ elseif(APPLE)
 else()
     install(TARGETS ty_shared DESTINATION lib)
     install(TARGETS ty_static DESTINATION lib)
-    install(DIRECTORY include/ DESTINATION include FILES_MATCHING PATTERN *.h)
+    install(DIRECTORY include/ DESTINATION include)
     install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
 
     install(TARGETS tyc tyqt RUNTIME DESTINATION bin)
