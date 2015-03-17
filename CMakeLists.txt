@@ -80,6 +80,7 @@ if(NOT WIN32)
         check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
     endif()
 endif()
+add_definitions(-DHAVE_CONFIG_H)
 
 if(WIN32 AND NOT CMAKE_CROSSCOMPILING)
     execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.bat"

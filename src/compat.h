@@ -8,8 +8,52 @@
 #define TY_COMPAT_H
 
 #include "ty/common.h"
-#include "config.h"
 #include <stdarg.h>
+
+#ifdef HAVE_CONFIG_H
+    #include "config.h"
+#else
+    /* This file is used when building with qmake, otherwise CMake detects
+       these features. */
+    #if defined(_WIN32)
+        /* #undef HAVE_STPCPY */
+        /* #undef HAVE_STRNDUP */
+        /* #undef HAVE_MEMRCHR */
+        #define HAVE_ASPRINTF
+        /* #undef HAVE_GETDELIM */
+        /* #undef HAVE_GETLINE */
+        /* #undef HAVE_FSTATAT */
+        /* #undef HAVE_PIPE2 */
+    #elif defined(__APPLE__)
+        #define HAVE_STPCPY
+        #define HAVE_STRNDUP
+        /* #undef HAVE_MEMRCHR */
+        #define HAVE_ASPRINTF
+        #define HAVE_GETDELIM
+        #define HAVE_GETLINE
+        #define HAVE_FSTATAT
+        /* #undef HAVE_PIPE2 */
+        #define HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+
+        /* #undef HAVE_STAT_MTIM */
+        #define HAVE_STAT_MTIMESPEC
+    #elif defined(__linux__)
+        #define HAVE_STPCPY
+        #define HAVE_STRNDUP
+        #define HAVE_MEMRCHR
+        #define HAVE_ASPRINTF
+        #define HAVE_GETDELIM
+        #define HAVE_GETLINE
+        #define HAVE_FSTATAT
+        #define HAVE_PIPE2
+        /* #undef HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP */
+
+        #define HAVE_STAT_MTIM
+        /* #undef HAVE_STAT_MTIMESPEC */
+    #else
+        #error "Unknown platform, build with CMake instead"
+    #endif
+#endif
 
 TY_C_BEGIN
 
