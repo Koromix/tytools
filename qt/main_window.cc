@@ -156,11 +156,7 @@ void MainWindow::refreshBoardInfo()
     }
 
     monitorTab->setEnabled(true);
-    if (current_board_->isSerialAvailable()) {
-        monitorEdit->setEnabled(true);
-    } else {
-        monitorEdit->setEnabled(false);
-    }
+    monitorEdit->setEnabled(current_board_->isSerialAvailable());
 
     if (current_board_->isUploadAvailable()) {
         actionUpload->setEnabled(true);
