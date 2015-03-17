@@ -53,6 +53,7 @@ private slots:
     void on_actionReset_triggered();
     void on_actionReboot_triggered();
     void on_monitorEdit_returnPressed();
+    void on_clearOnReset_toggled(bool checked);
 
     void on_actionMinimalInterface_toggled(bool checked);
 

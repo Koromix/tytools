@@ -118,8 +118,9 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
     resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
 
     monitor_autoscroll_ = true;
-    monitor_cursor_ = QTextCursor();
+    clearOnReset->setChecked(current_board_->clearOnReset());
 
+    monitor_cursor_ = QTextCursor();
     monitorText->setDocument(&current_board_->serialDocument());
     monitorText->moveCursor(QTextCursor::End);
     monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
@@ -181,6 +182,8 @@ void MainWindow::updatePropertyField(const char *name, const QVariant &value)
         firmwarePath->setText(value.toString());
     } else if (strcmp(name, "resetAfter") == 0) {
         resetAfterUpload->setChecked(value.toBool());
+    } else if (strcmp(name, "clearOnReset") == 0) {
+        clearOnReset->setChecked(value.toBool());
     }
 }
 
@@ -326,6 +329,14 @@ void MainWindow::on_monitorEdit_returnPressed()
         current_board_->appendToSerialDocument(s);
 
     current_board_->sendSerial(s.toUtf8());
+}
+
+void MainWindow::on_clearOnReset_toggled(bool checked)
+{
+    if (!current_board_)
+        return;
+
+    current_board_->setClearOnReset(checked);
 }
 
 void MainWindow::on_actionMinimalInterface_toggled(bool checked)

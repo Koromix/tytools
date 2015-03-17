@@ -203,6 +203,17 @@ bool BoardProxy::isSerialAvailable() const
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
 }
 
+bool BoardProxy::clearOnReset() const
+{
+    return clear_on_reset_;
+}
+
+void BoardProxy::setClearOnReset(bool clear)
+{
+    clear_on_reset_ = clear;
+    emit propertyChanged("clearOnReset", clear);
+}
+
 QTextDocument &BoardProxy::serialDocument()
 {
     return serial_document_;
@@ -354,6 +365,9 @@ void BoardProxy::refreshBoard()
 {
     if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL)) {
         if (!serial_available_) {
+            if (clear_on_reset_)
+                serial_document_.clear();
+
             ty_descriptor_set set = {0};
             ty_board_get_descriptors(board_, TY_BOARD_CAPABILITY_SERIAL, &set, 1);
 

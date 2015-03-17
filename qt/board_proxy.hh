@@ -61,6 +61,7 @@ class BoardProxy : public QObject {
 
     DescriptorSetNotifier serial_notifier_;
     bool serial_available_ = false;
+    bool clear_on_reset_ = false;
 
     QTextDocument serial_document_;
 
@@ -93,6 +94,10 @@ public:
     bool isResetAvailable() const;
     bool isRebootAvailable() const;
     bool isSerialAvailable() const;
+
+    bool clearOnReset() const;
+
+    void setClearOnReset(bool clear);
 
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);

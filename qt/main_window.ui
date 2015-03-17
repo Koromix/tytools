@@ -248,6 +248,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="clearOnReset">
+          <property name="text">
+           <string>Clear serial on reset</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -500,6 +507,8 @@
   <tabstop>newlineComboBox</tabstop>
   <tabstop>firmwarePath</tabstop>
   <tabstop>browseButton</tabstop>
+  <tabstop>resetAfterUpload</tabstop>
+  <tabstop>clearOnReset</tabstop>
   <tabstop>logText</tabstop>
  </tabstops>
  <resources>
