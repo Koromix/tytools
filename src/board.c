@@ -56,6 +56,7 @@ extern const ty_board_model _ty_teensy_20_model;
 extern const ty_board_model _ty_teensy_pp20_model;
 extern const ty_board_model _ty_teensy_30_model;
 extern const ty_board_model _ty_teensy_31_model;
+extern const ty_board_model _ty_teensy_lc_model;
 
 const ty_board_model *ty_board_models[] = {
     &_ty_teensy_pp10_model,
@@ -63,6 +64,7 @@ const ty_board_model *ty_board_models[] = {
     &_ty_teensy_pp20_model,
     &_ty_teensy_30_model,
     &_ty_teensy_31_model,
+    &_ty_teensy_lc_model,
     NULL
 };
 
@@ -86,6 +88,7 @@ static const struct firmware_signature signatures[] = {
     {&_ty_teensy_pp20_model, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
     {&_ty_teensy_30_model,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
     {&_ty_teensy_31_model,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
+    {&_ty_teensy_lc_model,   {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}},
     {0}
 };
 

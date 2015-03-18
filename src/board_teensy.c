@@ -111,6 +111,20 @@ const ty_board_model _ty_teensy_31_model = {
     .block_size = 1024
 };
 
+const ty_board_model _ty_teensy_lc_model = {
+    .name = "teensylc",
+    .desc = "Teensy LC",
+    .mcu = "mkl26z64",
+
+    .vtable = &teensy_model_vtable,
+
+    .usage = 0x20,
+
+    .code_size = 63488,
+    .halfkay_version = 3,
+    .block_size = 1024
+};
+
 static const size_t seremu_packet_size = 32;
 
 static const ty_board_model *identify_model(const ty_hid_descriptor *desc)
