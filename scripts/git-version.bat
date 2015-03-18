@@ -6,12 +6,15 @@ set OUTFILE=%1
 if [%OUTFILE%] == [] set OUTFILE=CON
 
 (
+    for /F %%t in ('git describe --tags') do (
+        set tag=%%t
+        goto git_version
+    )
+) 2>NUL
+goto src_version
 
-for /F %%s in ('git describe --tags') do set TY_VERSION=%%s
-
-if DEFINED TY_VERSION (
-    set TY_VERSION=%TY_VERSION:~1%
-
+:git_version
+(
     echo /*
     echo * This Source Code Form is subject to the terms of the Mozilla Public
     echo * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,13 +24,15 @@ if DEFINED TY_VERSION (
     echo #ifndef TY_VERSION_H
     echo #define TY_VERSION_H
     echo.
-    echo #define TY_VERSION "%TY_VERSION%"
+    echo #define TY_VERSION "%tag:~1%"
     echo.
     echo #endif
-) else (
-    type "%~dp0\..\src\version.h"
-)
+) >%OUTFILE%
+goto end
 
-) >%OUTFILE% 2>NUL
+:src_version
+type "%~dp0\..\src\version.h" >%OUTFILE%
+goto end
 
+:end
 endlocal
