@@ -53,6 +53,11 @@ restart:
         goto error;
     }
 
+#ifdef _APPLE
+    if (dev->type == TY_DEVICE_SERIAL)
+        ioctl(h->fd, TIOCSDTR);
+#endif
+
     *rh = h;
     return 0;
 

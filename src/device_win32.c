@@ -955,6 +955,9 @@ static int open_win32_device(ty_device *dev, ty_handle **rh)
 
     SetCommTimeouts(h->handle, &timeouts);
 
+    if (dev->type == TY_DEVICE_SERIAL)
+        EscapeCommFunction(h->handle, SETDTR);
+
     r = ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, &len, h->ov);
     if (!r && GetLastError() != ERROR_IO_PENDING) {
         r = ty_error(TY_ERROR_SYSTEM, "ReadFile() failed: %s", ty_win32_strerror(0));
