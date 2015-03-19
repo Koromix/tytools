@@ -248,7 +248,7 @@ static int open_interface(ty_device *dev, ty_board_interface **riface)
         r = (*vendor->open_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
-            if (r != TY_ERROR_NOT_FOUND)
+            if (r != TY_ERROR_NOT_FOUND && r != TY_ERROR_ACCESS)
                 goto error;
         }
         if (r)
