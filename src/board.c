@@ -241,18 +241,18 @@ static int open_interface(ty_device *dev, ty_board_interface **riface)
         iface->serial = strtoull(serial, NULL, 10);
 
     r = 0;
-    for (const struct _ty_board_vendor **cur = vendors; *cur; cur++) {
+    for (const struct _ty_board_vendor **cur = vendors; *cur && !r; cur++) {
         const struct _ty_board_vendor *vendor = *cur;
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
         r = (*vendor->open_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
-            if (r != TY_ERROR_NOT_FOUND && r != TY_ERROR_ACCESS)
-                goto error;
+            // FIXME: propagate the errors when the initial enumeration abortion problem is fixed
+            if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
+                r = 0;
+            goto error;
         }
-        if (r)
-            break;
     }
     if (!r)
         goto error;
