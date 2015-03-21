@@ -119,6 +119,7 @@ const tyb_board_model _tyb_teensy_lc_model = {
     .vtable = &teensy_model_vtable,
 
     .usage = 0x20,
+    .experimental = true,
 
     .code_size = 63488,
     .halfkay_version = 3,
