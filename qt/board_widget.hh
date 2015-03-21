@@ -11,7 +11,7 @@
 
 #include "ui_board_widget.h"
 
-class BoardManagerProxy;
+class Manager;
 
 class BoardWidget : public QWidget, private Ui::BoardWidget {
     Q_OBJECT
@@ -38,15 +38,15 @@ public:
 class BoardItemDelegate : public QItemDelegate {
     Q_OBJECT
 
-    BoardManagerProxy *model_;
+    Manager *model_;
 
     mutable BoardWidget widget_;
 
 public:
-    BoardItemDelegate(BoardManagerProxy *model);
+    BoardItemDelegate(Manager *model);
 
-    virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-    virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 };
 
 #endif

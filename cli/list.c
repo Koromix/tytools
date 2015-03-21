@@ -35,9 +35,9 @@ void print_list_usage(FILE *f)
 static void print_capabilities(int capabilities)
 {
     bool first = true;
-    for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
+    for (unsigned int i = 0; i < TYB_BOARD_CAPABILITY_COUNT; i++) {
         if (capabilities & (1 << i)) {
-            printf("%s%s", first ? "" : ", ", ty_board_get_capability_name(i));
+            printf("%s%s", first ? "" : ", ", tyb_board_capability_get_name(i));
             first = false;
         }
     }
@@ -46,55 +46,55 @@ static void print_capabilities(int capabilities)
         printf("(none)");
 }
 
-static int print_interface_info(ty_board_interface *iface, void *udata)
+static int print_interface_info(tyb_board_interface *iface, void *udata)
 {
     TY_UNUSED(udata);
 
-    printf("    * %s: %s\n", ty_board_interface_get_desc(iface),
-           ty_device_get_path(ty_board_interface_get_device(iface)));
+    printf("    * %s: %s\n", tyb_board_interface_get_desc(iface),
+           tyd_device_get_path(tyb_board_interface_get_device(iface)));
 
     return 0;
 }
 
-static int list_callback(ty_board *board, ty_board_event event, void *udata)
+static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
 {
     TY_UNUSED(event);
     TY_UNUSED(udata);
 
-    const ty_board_model *model = ty_board_get_model(board);
+    const tyb_board_model *model = tyb_board_get_model(board);
 
     // Suppress spurious warning on MinGW (c may be used undefined)
     int c = 0;
 
     switch (event) {
-    case TY_BOARD_EVENT_ADDED:
+    case TYB_MONITOR_EVENT_ADDED:
         c = '+';
         break;
-    case TY_BOARD_EVENT_CHANGED:
+    case TYB_MONITOR_EVENT_CHANGED:
         c = '=';
         break;
-    case TY_BOARD_EVENT_DISAPPEARED:
+    case TYB_MONITOR_EVENT_DISAPPEARED:
         c = '?';
         break;
-    case TY_BOARD_EVENT_DROPPED:
+    case TYB_MONITOR_EVENT_DROPPED:
         c = '-';
         break;
     }
     assert(c);
 
-    printf("%c %s %s\n", c, ty_board_get_identity(board),
-           model ? ty_board_model_get_name(model) : "(unknown)");
+    printf("%c %s %s\n", c, tyb_board_get_identity(board),
+           model ? tyb_board_model_get_name(model) : "(unknown)");
 
-    if (list_verbose && event != TY_BOARD_EVENT_DROPPED) {
-        printf("  - model: %s\n", model ? ty_board_model_get_desc(model) : "(unknown)");
+    if (list_verbose && event != TYB_MONITOR_EVENT_DROPPED) {
+        printf("  - model: %s\n", model ? tyb_board_model_get_desc(model) : "(unknown)");
 
         printf("  - capabilities: ");
-        print_capabilities(ty_board_get_capabilities(board));
+        print_capabilities(tyb_board_get_capabilities(board));
         printf("\n");
 
-        if (event != TY_BOARD_EVENT_DISAPPEARED) {
+        if (event != TYB_MONITOR_EVENT_DISAPPEARED) {
             printf("  - interfaces: \n");
-            ty_board_list_interfaces(board, print_interface_info, NULL);
+            tyb_board_list_interfaces(board, print_interface_info, NULL);
         } else {
             printf("  - interfaces: (none)\n");
         }
@@ -105,7 +105,7 @@ static int list_callback(ty_board *board, ty_board_event event, void *udata)
 
 int list(int argc, char *argv[])
 {
-    ty_board_manager *manager;
+    tyb_monitor *manager;
     int r;
 
     int c;
@@ -136,16 +136,16 @@ int list(int argc, char *argv[])
     if (r < 0)
         return r;
 
-    r = ty_board_manager_list(manager, list_callback, NULL);
+    r = tyb_monitor_list(manager, list_callback, NULL);
     if (r < 0)
         return r;
 
     if (watch) {
-        r = ty_board_manager_register_callback(manager, list_callback, NULL);
+        r = tyb_monitor_register_callback(manager, list_callback, NULL);
         if (r < 0)
             return r;
 
-        r = ty_board_manager_wait(manager, NULL, NULL, -1);
+        r = tyb_monitor_wait(manager, NULL, NULL, -1);
         if (r < 0)
             return r;
     }

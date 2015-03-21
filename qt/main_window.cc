@@ -17,7 +17,7 @@
 
 using namespace std;
 
-MainWindow::MainWindow(BoardManagerProxy *manager, QWidget *parent)
+MainWindow::MainWindow(Manager *manager, QWidget *parent)
     : QMainWindow(parent), manager_(manager)
 {
     setupUi(this);
@@ -31,7 +31,7 @@ MainWindow::MainWindow(BoardManagerProxy *manager, QWidget *parent)
     boardList->setItemDelegate(new BoardItemDelegate(manager));
 
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
-    connect(manager, &BoardManagerProxy::boardAdded, this, &MainWindow::setBoardDefaults);
+    connect(manager, &Manager::boardAdded, this, &MainWindow::setBoardDefaults);
 
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
     connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
@@ -88,7 +88,7 @@ void MainWindow::uploadCurrentFirmware()
                            current_board_->property("resetAfter").toBool());
 }
 
-void MainWindow::setBoardDefaults(shared_ptr<BoardProxy> board)
+void MainWindow::setBoardDefaults(shared_ptr<Board> board)
 {
     board->setProperty("resetAfter", true);
 
@@ -125,8 +125,8 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
     monitorText->moveCursor(QTextCursor::End);
     monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
 
-    connect(current_board_.get(), &BoardProxy::boardChanged, this, &MainWindow::refreshBoardInfo);
-    connect(current_board_.get(), &BoardProxy::propertyChanged, this, &MainWindow::updatePropertyField);
+    connect(current_board_.get(), &Board::boardChanged, this, &MainWindow::refreshBoardInfo);
+    connect(current_board_.get(), &Board::propertyChanged, this, &MainWindow::updatePropertyField);
 
     refreshBoardInfo();
 }
@@ -148,9 +148,9 @@ void MainWindow::refreshBoardInfo()
         item->setToolTip(1, iface.path);
 
         new QTreeWidgetItem(item, QStringList{tr("capabilities"),
-                            BoardProxy::makeCapabilityList(current_board_->capabilities()).join(", ")});
+                            Board::makeCapabilityList(current_board_->capabilities()).join(", ")});
         new QTreeWidgetItem(item, QStringList{tr("location"),
-                            QString("%1@%2").arg(current_board_->location(), QString::number(iface.number))});
+                            QString("%1:%2").arg(current_board_->location(), QString::number(iface.number))});
 
         interfaceTree->addTopLevelItem(item);
     }

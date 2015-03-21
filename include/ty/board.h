@@ -12,139 +12,139 @@
 
 TY_C_BEGIN
 
-struct ty_firmware;
+struct tyb_firmware;
 
-typedef struct ty_board_manager ty_board_manager;
+typedef struct tyb_monitor tyb_monitor;
 
-typedef struct ty_board ty_board;
-typedef struct ty_board_interface ty_board_interface;
+typedef struct tyb_board tyb_board;
+typedef struct tyb_board_interface tyb_board_interface;
 
-typedef struct ty_board_model ty_board_model;
+typedef struct tyb_board_model tyb_board_model;
 
 // Keep in sync with capability_names in board.c
-typedef enum ty_board_capability {
-    TY_BOARD_CAPABILITY_UPLOAD,
-    TY_BOARD_CAPABILITY_RESET,
-    TY_BOARD_CAPABILITY_REBOOT,
-    TY_BOARD_CAPABILITY_SERIAL,
+typedef enum tyb_board_capability {
+    TYB_BOARD_CAPABILITY_UPLOAD,
+    TYB_BOARD_CAPABILITY_RESET,
+    TYB_BOARD_CAPABILITY_REBOOT,
+    TYB_BOARD_CAPABILITY_SERIAL,
 
-    TY_BOARD_CAPABILITY_COUNT
-} ty_board_capability;
+    TYB_BOARD_CAPABILITY_COUNT
+} tyb_board_capability;
 
-typedef enum ty_board_state {
-    TY_BOARD_STATE_DROPPED,
-    TY_BOARD_STATE_MISSING,
-    TY_BOARD_STATE_ONLINE
-} ty_board_state;
+typedef enum tyb_board_state {
+    TYB_BOARD_STATE_DROPPED,
+    TYB_BOARD_STATE_MISSING,
+    TYB_BOARD_STATE_ONLINE
+} tyb_board_state;
 
-typedef enum ty_board_event {
-    TY_BOARD_EVENT_ADDED,
-    TY_BOARD_EVENT_CHANGED,
-    TY_BOARD_EVENT_DISAPPEARED,
-    TY_BOARD_EVENT_DROPPED
-} ty_board_event;
+typedef enum tyb_monitor_event {
+    TYB_MONITOR_EVENT_ADDED,
+    TYB_MONITOR_EVENT_CHANGED,
+    TYB_MONITOR_EVENT_DISAPPEARED,
+    TYB_MONITOR_EVENT_DROPPED
+} tyb_monitor_event;
 
 enum {
-    TY_BOARD_UPLOAD_NOCHECK = 1
+    TYB_BOARD_UPLOAD_NOCHECK = 1
 };
 
-typedef int ty_board_manager_callback_func(ty_board *board, ty_board_event event, void *udata);
-typedef int ty_board_manager_wait_func(ty_board_manager *manager, void *udata);
+typedef int tyb_monitor_callback_func(tyb_board *board, tyb_monitor_event event, void *udata);
+typedef int tyb_monitor_wait_func(tyb_monitor *manager, void *udata);
 
-typedef int ty_board_list_interfaces_func(ty_board_interface *iface, void *udata);
+typedef int tyb_board_list_interfaces_func(tyb_board_interface *iface, void *udata);
 
-typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *f, size_t uploaded, void *udata);
+typedef int tyb_board_upload_progress_func(const tyb_board *board, const struct tyb_firmware *f, size_t uploaded, void *udata);
 
-TY_PUBLIC extern const ty_board_model *ty_board_models[];
+TY_PUBLIC extern const tyb_board_model *tyb_board_models[];
 
-TY_PUBLIC int ty_board_manager_new(ty_board_manager **rmanager);
-TY_PUBLIC void ty_board_manager_free(ty_board_manager *manager);
+TY_PUBLIC int tyb_monitor_new(tyb_monitor **rmanager);
+TY_PUBLIC void tyb_monitor_free(tyb_monitor *manager);
 
-TY_PUBLIC void ty_board_manager_set_udata(ty_board_manager *manager, void *udata);
-TY_PUBLIC void *ty_board_manager_get_udata(const ty_board_manager *manager);
+TY_PUBLIC void tyb_monitor_set_udata(tyb_monitor *manager, void *udata);
+TY_PUBLIC void *tyb_monitor_get_udata(const tyb_monitor *manager);
 
-TY_PUBLIC void ty_board_manager_get_descriptors(const ty_board_manager *manager, struct ty_descriptor_set *set, int id);
+TY_PUBLIC void tyb_monitor_get_descriptors(const tyb_monitor *manager, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int ty_board_manager_register_callback(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata);
-TY_PUBLIC void ty_board_manager_deregister_callback(ty_board_manager *manager, int id);
+TY_PUBLIC int tyb_monitor_register_callback(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata);
+TY_PUBLIC void tyb_monitor_deregister_callback(tyb_monitor *manager, int id);
 
-TY_PUBLIC int ty_board_manager_refresh(ty_board_manager *manager);
-TY_PUBLIC int ty_board_manager_wait(ty_board_manager *manager, ty_board_manager_wait_func *f, void *udata, int timeout);
+TY_PUBLIC int tyb_monitor_refresh(tyb_monitor *manager);
+TY_PUBLIC int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, void *udata, int timeout);
 
-TY_PUBLIC int ty_board_manager_list(ty_board_manager *manager, ty_board_manager_callback_func *f, void *udata);
+TY_PUBLIC int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata);
 
-TY_PUBLIC const ty_board_model *ty_board_find_model(const char *name);
+TY_PUBLIC const tyb_board_model *tyb_board_model_find(const char *name);
 
-TY_PUBLIC const char *ty_board_model_get_name(const ty_board_model *model);
-TY_PUBLIC const char *ty_board_model_get_mcu(const ty_board_model *model);
-TY_PUBLIC const char *ty_board_model_get_desc(const ty_board_model *model);
-TY_PUBLIC size_t ty_board_model_get_code_size(const ty_board_model *model);
+TY_PUBLIC const char *tyb_board_model_get_name(const tyb_board_model *model);
+TY_PUBLIC const char *tyb_board_model_get_mcu(const tyb_board_model *model);
+TY_PUBLIC const char *tyb_board_model_get_desc(const tyb_board_model *model);
+TY_PUBLIC size_t tyb_board_model_get_code_size(const tyb_board_model *model);
 
-TY_PUBLIC const char *ty_board_get_capability_name(ty_board_capability cap);
+TY_PUBLIC const char *tyb_board_capability_get_name(tyb_board_capability cap);
 
-TY_PUBLIC ty_board *ty_board_ref(ty_board *board);
-TY_PUBLIC void ty_board_unref(ty_board *board);
+TY_PUBLIC tyb_board *tyb_board_ref(tyb_board *board);
+TY_PUBLIC void tyb_board_unref(tyb_board *board);
 
-TY_PUBLIC void ty_board_lock(const ty_board *board);
-TY_PUBLIC void ty_board_unlock(const ty_board *board);
+TY_PUBLIC void tyb_board_lock(const tyb_board *board);
+TY_PUBLIC void tyb_board_unlock(const tyb_board *board);
 
-TY_PUBLIC int ty_board_matches_identity(ty_board *board, const char *id);
+TY_PUBLIC int tyb_board_matches_identity(tyb_board *board, const char *id);
 
-TY_PUBLIC void ty_board_set_udata(ty_board *board, void *udata);
-TY_PUBLIC void *ty_board_get_udata(const ty_board *board);
+TY_PUBLIC void tyb_board_set_udata(tyb_board *board, void *udata);
+TY_PUBLIC void *tyb_board_get_udata(const tyb_board *board);
 
-TY_PUBLIC ty_board_manager *ty_board_get_manager(const ty_board *board);
+TY_PUBLIC tyb_monitor *tyb_board_get_manager(const tyb_board *board);
 
-TY_PUBLIC ty_board_state ty_board_get_state(const ty_board *board);
+TY_PUBLIC tyb_board_state tyb_board_get_state(const tyb_board *board);
 
-TY_PUBLIC const char *ty_board_get_identity(const ty_board *board);
-TY_PUBLIC const char *ty_board_get_location(const ty_board *board);
+TY_PUBLIC const char *tyb_board_get_identity(const tyb_board *board);
+TY_PUBLIC const char *tyb_board_get_location(const tyb_board *board);
 
-TY_PUBLIC const ty_board_model *ty_board_get_model(const ty_board *board);
-TY_PUBLIC const char *ty_board_get_model_name(const ty_board *board);
-TY_PUBLIC const char *ty_board_get_model_desc(const ty_board *board);
+TY_PUBLIC const tyb_board_model *tyb_board_get_model(const tyb_board *board);
+TY_PUBLIC const char *tyb_board_get_model_name(const tyb_board *board);
+TY_PUBLIC const char *tyb_board_get_model_desc(const tyb_board *board);
 
-TY_PUBLIC uint64_t ty_board_get_serial_number(const ty_board *board);
+TY_PUBLIC uint64_t tyb_board_get_serial_number(const tyb_board *board);
 
-TY_PUBLIC int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, void *udata);
-TY_PUBLIC ty_board_interface *ty_board_get_interface(const ty_board *board, ty_board_capability cap);
+TY_PUBLIC int tyb_board_list_interfaces(tyb_board *board, tyb_board_list_interfaces_func *f, void *udata);
+TY_PUBLIC tyb_board_interface *tyb_board_get_interface(const tyb_board *board, tyb_board_capability cap);
 
-TY_PUBLIC int ty_board_get_capabilities(const ty_board *board);
-static inline bool ty_board_has_capability(const ty_board *board, ty_board_capability cap)
+TY_PUBLIC int tyb_board_get_capabilities(const tyb_board *board);
+static inline bool tyb_board_has_capability(const tyb_board *board, tyb_board_capability cap)
 {
-    return ty_board_get_capabilities(board) & (1 << cap);
+    return tyb_board_get_capabilities(board) & (1 << cap);
 }
 
-TY_PUBLIC ty_device *ty_board_get_device(const ty_board *board, ty_board_capability cap);
-TY_PUBLIC ty_handle *ty_board_get_handle(const ty_board *board, ty_board_capability cap);
-TY_PUBLIC void ty_board_get_descriptors(const ty_board *board, ty_board_capability cap, struct ty_descriptor_set *set, int id);
+TY_PUBLIC tyd_device *tyb_board_get_device(const tyb_board *board, tyb_board_capability cap);
+TY_PUBLIC tyd_handle *tyb_board_get_handle(const tyb_board *board, tyb_board_capability cap);
+TY_PUBLIC void tyb_board_get_descriptors(const tyb_board *board, tyb_board_capability cap, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int ty_board_wait_for(ty_board *board, ty_board_capability capability, bool parallel, int timeout);
+TY_PUBLIC int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, bool parallel, int timeout);
 
-TY_PUBLIC int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, int flags);
+TY_PUBLIC int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, int flags);
 
-TY_PUBLIC ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeout);
-TY_PUBLIC ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size);
+TY_PUBLIC ssize_t tyb_board_serial_read(tyb_board *board, char *buf, size_t size, int timeout);
+TY_PUBLIC ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size);
 
-TY_PUBLIC int ty_board_upload(ty_board *board, struct ty_firmware *f, int flags, ty_board_upload_progress_func *pf, void *udata);
-TY_PUBLIC int ty_board_reset(ty_board *board);
+TY_PUBLIC int tyb_board_upload(tyb_board *board, struct tyb_firmware *f, int flags, tyb_board_upload_progress_func *pf, void *udata);
+TY_PUBLIC int tyb_board_reset(tyb_board *board);
 
-TY_PUBLIC int ty_board_reboot(ty_board *board);
+TY_PUBLIC int tyb_board_reboot(tyb_board *board);
 
-TY_PUBLIC const ty_board_model *ty_board_test_firmware(const struct ty_firmware *f);
+TY_PUBLIC const tyb_board_model *tyb_board_test_firmware(const struct tyb_firmware *f);
 
-TY_PUBLIC ty_board_interface *ty_board_interface_ref(ty_board_interface *iface);
-TY_PUBLIC void ty_board_interface_unref(ty_board_interface *iface);
+TY_PUBLIC tyb_board_interface *tyb_board_interface_ref(tyb_board_interface *iface);
+TY_PUBLIC void tyb_board_interface_unref(tyb_board_interface *iface);
 
-TY_PUBLIC const char *ty_board_interface_get_desc(const ty_board_interface *iface);
-TY_PUBLIC int ty_board_interface_get_capabilities(const ty_board_interface *iface);
+TY_PUBLIC const char *tyb_board_interface_get_desc(const tyb_board_interface *iface);
+TY_PUBLIC int tyb_board_interface_get_capabilities(const tyb_board_interface *iface);
 
-TY_PUBLIC uint8_t ty_board_interface_get_interface_number(const ty_board_interface *iface);
-TY_PUBLIC const char *ty_board_interface_get_path(const ty_board_interface *iface);
+TY_PUBLIC uint8_t tyb_board_interface_get_interface_number(const tyb_board_interface *iface);
+TY_PUBLIC const char *tyb_board_interface_get_path(const tyb_board_interface *iface);
 
-TY_PUBLIC ty_device *ty_board_interface_get_device(const ty_board_interface *iface);
-TY_PUBLIC ty_handle *ty_board_interface_get_handle(const ty_board_interface *iface);
-TY_PUBLIC void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct ty_descriptor_set *set, int id);
+TY_PUBLIC tyd_device *tyb_board_interface_get_device(const tyb_board_interface *iface);
+TY_PUBLIC tyd_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface);
+TY_PUBLIC void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struct ty_descriptor_set *set, int id);
 
 TY_C_END
 

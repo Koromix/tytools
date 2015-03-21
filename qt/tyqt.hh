@@ -15,7 +15,7 @@
 #include <functional>
 #include <memory>
 
-#include "board_proxy.hh"
+#include "board.hh"
 #include "main_window.hh"
 #include "session_channel.hh"
 
@@ -30,7 +30,7 @@ class TyQt : public QApplication {
 
     QString last_error_;
 
-    BoardManagerProxy manager_;
+    Manager manager_;
 
     std::vector<MainWindow *> main_windows_;
 
@@ -58,12 +58,6 @@ public slots:
 signals:
     void errorMessage(const QString &msg);
 
-private slots:
-    void trayActivated(QSystemTrayIcon::ActivationReason reason);
-
-    void executeAction(SessionPeer &peer, const QStringList &arguments);
-    void readAnswer(SessionPeer &peer, const QStringList &arguments);
-
 private:
     void setupOptionParser(QCommandLineParser &parser);
 
@@ -71,12 +65,17 @@ private:
     int runServer();
     int runClient();
 
-    std::shared_ptr<BoardProxy> getBoard(std::function<bool(BoardProxy &board)> filter, bool show_selector);
+    std::shared_ptr<Board> getBoard(std::function<bool(Board &board)> filter, bool show_selector);
 
     bool startBackgroundServer();
     void showClientMessage(const QString &msg);
     void showClientError(const QString &msg);
 
+private slots:
+    void trayActivated(QSystemTrayIcon::ActivationReason reason);
+
+    void executeAction(SessionPeer &peer, const QStringList &arguments);
+    void readAnswer(SessionPeer &peer, const QStringList &arguments);
 };
 
 #endif

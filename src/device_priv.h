@@ -16,7 +16,7 @@ TY_C_BEGIN
 
 struct ty_descriptor_set;
 
-#define TY_DEVICE_MONITOR \
+#define TYD_MONITOR \
     ty_list_head callbacks; \
     int callback_id; \
     \
@@ -24,23 +24,23 @@ struct ty_descriptor_set;
     \
     void *udata;
 
-struct _ty_device_vtable {
-    int (*open)(ty_device *dev, ty_handle **rh);
-    void (*close)(ty_handle *h);
+struct _tyd_device_vtable {
+    int (*open)(tyd_device *dev, tyd_handle **rh);
+    void (*close)(tyd_handle *h);
 
-    void (*get_descriptors)(const ty_handle *h, struct ty_descriptor_set *set, int id);
+    void (*get_descriptors)(const tyd_handle *h, struct ty_descriptor_set *set, int id);
 };
 
-struct ty_device {
-    ty_device_monitor *monitor;
+struct tyd_device {
+    tyd_monitor *monitor;
     ty_htable_head hnode;
 
     volatile unsigned int refcount;
 
     char *key;
 
-    ty_device_type type;
-    const struct _ty_device_vtable *vtable;
+    tyd_device_type type;
+    const struct _tyd_device_vtable *vtable;
 
     char *location;
     char *path;
@@ -54,14 +54,14 @@ struct ty_device {
     void *udata;
 };
 
-#define TY_HANDLE \
-    ty_device *dev;
+#define TYD_HANDLE \
+    tyd_device *dev;
 
-int _ty_device_monitor_init(ty_device_monitor *monitor);
-void _ty_device_monitor_release(ty_device_monitor *monitor);
+int _tyd_device_monitor_init(tyd_monitor *monitor);
+void _tyd_device_monitor_release(tyd_monitor *monitor);
 
-int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev);
-void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key);
+int _tyd_device_monitor_add(tyd_monitor *monitor, tyd_device *dev);
+void _tyd_device_monitor_remove(tyd_monitor *monitor, const char *key);
 
 TY_C_END
 

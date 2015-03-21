@@ -9,7 +9,7 @@
 #include "ty/firmware.h"
 
 struct parser_context {
-    ty_firmware *f;
+    tyb_firmware *f;
 
     uint32_t base_offset;
 
@@ -75,9 +75,9 @@ static int parse_line(struct parser_context *ctx, const char *line)
         if (address + length > ctx->f->size) {
             ctx->f->size = address + length;
 
-            if (ctx->f->size > ty_firmware_max_size)
+            if (ctx->f->size > tyb_firmware_max_size)
                 return ty_error(TY_ERROR_RANGE, "Firmware too big (max %zu bytes)",
-                                ty_firmware_max_size);
+                                tyb_firmware_max_size);
         }
 
         for (unsigned int i = 0; i < length; i++)
@@ -122,7 +122,7 @@ static int parse_line(struct parser_context *ctx, const char *line)
     return 1;
 }
 
-int _ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware)
+int _tyb_firmware_load_ihex(const char *filename, tyb_firmware **rfirmware)
 {
     assert(rfirmware);
     assert(filename);
@@ -132,11 +132,11 @@ int _ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware)
     char buf[1024];
     int r;
 
-    ctx.f = malloc(sizeof(ty_firmware) + ty_firmware_max_size);
+    ctx.f = malloc(sizeof(tyb_firmware) + tyb_firmware_max_size);
     if (!ctx.f)
         return ty_error(TY_ERROR_MEMORY, NULL);
     memset(ctx.f, 0, sizeof(*ctx.f));
-    memset(ctx.f->image, 0xFF, ty_firmware_max_size);
+    memset(ctx.f->image, 0xFF, tyb_firmware_max_size);
 
 #ifdef _WIN32
     fp = fopen(filename, "r");

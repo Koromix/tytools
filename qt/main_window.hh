@@ -7,20 +7,20 @@
 #ifndef MAIN_WINDOW_HH
 #define MAIN_WINDOW_HH
 
-#include "board_proxy.hh"
+#include "board.hh"
 #include "ui_main_window.h"
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 
-    BoardManagerProxy *manager_;
-    std::shared_ptr<BoardProxy> current_board_;
+    Manager *manager_;
+    std::shared_ptr<Board> current_board_;
 
     bool monitor_autoscroll_ = true;
     QTextCursor monitor_cursor_;
 
 public:
-    MainWindow(BoardManagerProxy *manager, QWidget *parent = nullptr);
+    MainWindow(Manager *manager, QWidget *parent = nullptr);
 
 public slots:
     void showErrorMessage(const QString &msg);
@@ -32,7 +32,7 @@ private:
     void uploadCurrentFirmware();
 
 private slots:
-    void setBoardDefaults(std::shared_ptr<BoardProxy> board);
+    void setBoardDefaults(std::shared_ptr<Board> board);
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void refreshBoardInfo();
 

@@ -31,7 +31,7 @@ void print_reset_usage(FILE *f)
 
 int reset(int argc, char *argv[])
 {
-    ty_board *board;
+    tyb_board *board;
     int r;
 
     int c;
@@ -58,33 +58,33 @@ int reset(int argc, char *argv[])
     if (r < 0)
         return r;
 
-    if ((bootloader || !ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET))
-            && ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT)) {
+    if ((bootloader || !tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET))
+            && tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_REBOOT)) {
         printf("Triggering board reboot\n");
-        r = ty_board_reboot(board);
+        r = tyb_board_reboot(board);
         if (r < 0)
             goto cleanup;
 
-        r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RESET, false, -1);
+        r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, false, -1);
         if (r < 0)
             goto cleanup;
     }
 
     if (!bootloader) {
-        if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
+        if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET)) {
             r = ty_error(TY_ERROR_MODE, "No way to trigger reset for this board");
             goto cleanup;
         }
 
         printf("Sending reset command\n");
-        r = ty_board_reset(board);
+        r = tyb_board_reset(board);
         if (r < 0)
             goto cleanup;
     }
 
     r = 0;
 cleanup:
-    ty_board_unref(board);
+    tyb_board_unref(board);
     return r;
 
 usage:

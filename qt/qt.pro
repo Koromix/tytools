@@ -13,7 +13,7 @@ FORMS += about_dialog.ui \
     selector_dialog.ui
 
 HEADERS += about_dialog.hh \
-    board_proxy.hh \
+    board.hh \
     board_widget.hh \
     descriptor_set_notifier.hh \
     main_window.hh \
@@ -22,7 +22,7 @@ HEADERS += about_dialog.hh \
     tyqt.hh
 
 SOURCES += about_dialog.cc \
-    board_proxy.cc \
+    board.cc \
     board_widget.cc \
     descriptor_set_notifier.cc \
     main.cc \

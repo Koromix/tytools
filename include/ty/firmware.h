@@ -11,24 +11,24 @@
 
 TY_C_BEGIN
 
-typedef struct ty_firmware {
+typedef struct tyb_firmware {
     size_t size;
     uint8_t image[];
-} ty_firmware;
+} tyb_firmware;
 
-typedef struct ty_firmware_format {
+typedef struct tyb_firmware_format {
     const char *name;
     const char *ext;
 
-    int (*load)(const char *filename, ty_firmware **rfirmware);
-} ty_firmware_format;
+    int (*load)(const char *filename, tyb_firmware **rfirmware);
+} tyb_firmware_format;
 
-TY_PUBLIC extern const ty_firmware_format ty_firmware_formats[];
+TY_PUBLIC extern const tyb_firmware_format tyb_firmware_formats[];
 
-TY_PUBLIC extern const size_t ty_firmware_max_size;
+TY_PUBLIC extern const size_t tyb_firmware_max_size;
 
-TY_PUBLIC int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfirmware);
-TY_PUBLIC void ty_firmware_free(ty_firmware *f);
+TY_PUBLIC int tyb_firmware_load(const char *filename, const char *format_name, tyb_firmware **rfirmware);
+TY_PUBLIC void tyb_firmware_free(tyb_firmware *f);
 
 TY_C_END
 

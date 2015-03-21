@@ -20,8 +20,8 @@
 #include "device_priv.h"
 #include "ty/system.h"
 
-struct ty_device_monitor {
-    TY_DEVICE_MONITOR
+struct tyd_monitor {
+    TYD_MONITOR
 
     ty_list_head controllers;
 
@@ -34,8 +34,8 @@ struct ty_device_monitor {
     HANDLE hwnd;
 };
 
-struct ty_handle {
-    TY_HANDLE
+struct tyd_handle {
+    TYD_HANDLE
 
     HANDLE handle;
     struct _OVERLAPPED *ov;
@@ -49,7 +49,7 @@ struct ty_handle {
 struct device_type {
     char *prefix;
     const GUID *guid;
-    ty_device_type type;
+    tyd_device_type type;
 };
 
 struct usb_controller {
@@ -62,7 +62,7 @@ struct usb_controller {
 struct device_notification {
     ty_list_head list;
 
-    ty_device_event event;
+    tyd_monitor_event event;
     char *key;
 };
 
@@ -79,17 +79,17 @@ __declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA 
 static CancelIoEx_func *CancelIoEx_;
 
 enum { MAX_USB_DEPTH = 8 };
-static const char *monitor_class_name = "ty_device_monitor";
+static const char *monitor_class_name = "tyd_device_monitor";
 
 static const size_t read_buffer_size = 1024;
 
 static GUID hid_guid;
 static const struct device_type device_types[] = {
-    {"HID", &hid_guid, TY_DEVICE_HID},
+    {"HID", &hid_guid, TYD_DEVICE_HID},
     {NULL}
 };
 
-static const struct _ty_device_vtable win32_device_vtable;
+static const struct _tyd_device_vtable win32_device_vtable;
 
 TY_INIT()
 {
@@ -227,7 +227,7 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
     return 1;
 }
 
-static int extract_device_info(DEVINST inst, ty_device *dev)
+static int extract_device_info(DEVINST inst, tyd_device *dev)
 {
     char buf[256];
     ULONG type, len;
@@ -338,7 +338,7 @@ static int build_device_path(const char *id, const GUID *guid, char **rpath)
     return 0;
 }
 
-static int find_device_node(DEVINST inst, ty_device *dev)
+static int find_device_node(DEVINST inst, tyd_device *dev)
 {
     int r;
 
@@ -350,7 +350,7 @@ static int find_device_node(DEVINST inst, ty_device *dev)
         if (r <= 0)
             return r;
 
-        dev->type = TY_DEVICE_SERIAL;
+        dev->type = TYD_DEVICE_SERIAL;
         return 1;
     }
 
@@ -396,9 +396,9 @@ static int extract_device_id(const char *key, char **rid)
     return 0;
 }
 
-static int create_device(ty_device_monitor *monitor, const char *key, DEVINST inst, uint8_t ports[], unsigned int depth)
+static int create_device(tyd_monitor *monitor, const char *key, DEVINST inst, uint8_t ports[], unsigned int depth)
 {
-    ty_device *dev;
+    tyd_device *dev;
     CONFIGRET cret;
     int r;
 
@@ -465,13 +465,13 @@ static int create_device(ty_device_monitor *monitor, const char *key, DEVINST in
 
     dev->vtable = &win32_device_vtable;
 
-    r = _ty_device_monitor_add(monitor, dev);
+    r = _tyd_device_monitor_add(monitor, dev);
 cleanup:
-    ty_device_unref(dev);
+    tyd_device_unref(dev);
     return r;
 }
 
-static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t ports[], unsigned int depth)
+static int recurse_devices(tyd_monitor *monitor, DEVINST inst, uint8_t ports[], unsigned int depth)
 {
     uint8_t port;
     DEVINST child;
@@ -503,7 +503,7 @@ static int recurse_devices(ty_device_monitor *monitor, DEVINST inst, uint8_t por
     return 0;
 }
 
-static int browse_controller_tree(ty_device_monitor *monitor, DEVINST inst, DWORD index)
+static int browse_controller_tree(tyd_monitor *monitor, DEVINST inst, DWORD index)
 {
     struct usb_controller *controller;
     DEVINST roothub_inst;
@@ -557,7 +557,7 @@ error:
      port number is the USB location string
    - for each controller, browse the device tree recursively. The port number for each hub/device
      comes from the device registry (Vista and later) or asking hubs about it (XP) */
-static int list_devices(ty_device_monitor *monitor)
+static int list_devices(tyd_monitor *monitor)
 {
     HDEVINFO set;
     SP_DEVINFO_DATA dev;
@@ -592,7 +592,7 @@ cleanup:
     return 0;
 }
 
-static int post_device_event(ty_device_monitor *monitor, ty_device_event event, DEV_BROADCAST_DEVICEINTERFACE *data)
+static int post_device_event(tyd_monitor *monitor, tyd_monitor_event event, DEV_BROADCAST_DEVICEINTERFACE *data)
 {
     struct device_notification *notification;
     int r;
@@ -622,7 +622,7 @@ error:
 
 static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    ty_device_monitor *monitor = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    tyd_monitor *monitor = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     int r;
 
@@ -631,10 +631,10 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
         r = 0;
         switch (wparam) {
         case DBT_DEVICEARRIVAL:
-            r = post_device_event(monitor, TY_DEVICE_EVENT_ADDED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+            r = post_device_event(monitor, TYD_MONITOR_EVENT_ADDED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
             break;
         case DBT_DEVICEREMOVECOMPLETE:
-            r = post_device_event(monitor, TY_DEVICE_EVENT_REMOVED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+            r = post_device_event(monitor, TYD_MONITOR_EVENT_REMOVED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
             break;
         }
         if (r < 0) {
@@ -656,7 +656,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
 {
     TY_UNUSED(udata);
 
-    ty_device_monitor *monitor = udata;
+    tyd_monitor *monitor = udata;
 
     WNDCLASSEX cls = {0};
     DEV_BROADCAST_DEVICEINTERFACE filter = {0};
@@ -700,7 +700,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
     }
 
     /* Our fake window is created and ready to receive device notifications,
-       ty_device_monitor_new() can go on. */
+       tyd_device_monitor_new() can go on. */
     SetEvent(monitor->event);
 
     while((ret = GetMessage(&msg, NULL, 0, 0)) != 0) {
@@ -742,11 +742,11 @@ static int wait_event(HANDLE event)
    thread message queue. Unfortunately we can't poll on message queues so instead, we make a
    background thread to get device notifications, and tell us about it using Win32 events which
    we can poll. */
-int ty_device_monitor_new(ty_device_monitor **rmonitor)
+int tyd_monitor_new(tyd_monitor **rmonitor)
 {
     assert(rmonitor);
 
-    ty_device_monitor *monitor;
+    tyd_monitor *monitor;
     int r;
 
     if (!ty_win32_test_version(TY_WIN32_VISTA))
@@ -766,7 +766,7 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
         goto error;
     }
 
-    r = _ty_device_monitor_init(monitor);
+    r = _tyd_device_monitor_init(monitor);
     if (r < 0)
         goto error;
 
@@ -795,14 +795,14 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
     return 0;
 
 error:
-    ty_device_monitor_free(monitor);
+    tyd_monitor_free(monitor);
     return r;
 }
 
-void ty_device_monitor_free(ty_device_monitor *monitor)
+void tyd_monitor_free(tyd_monitor *monitor)
 {
     if (monitor) {
-        _ty_device_monitor_release(monitor);
+        _tyd_device_monitor_release(monitor);
 
         if (monitor->thread) {
             if (monitor->hwnd) {
@@ -830,7 +830,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
     free(monitor);
 }
 
-void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, ty_descriptor_set *set, int id)
+void tyd_monitor_get_descriptors(const tyd_monitor *monitor, ty_descriptor_set *set, int id)
 {
     assert(monitor);
     assert(set);
@@ -838,7 +838,7 @@ void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, ty_desc
     ty_descriptor_set_add(set, monitor->event, id);
 }
 
-int ty_device_monitor_refresh(ty_device_monitor *monitor)
+int tyd_monitor_refresh(tyd_monitor *monitor)
 {
     assert(monitor);
 
@@ -862,12 +862,12 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 
         r = 0;
         switch (notification->event) {
-        case TY_DEVICE_EVENT_ADDED:
+        case TYD_MONITOR_EVENT_ADDED:
             r = create_device(monitor, notification->key, 0, NULL, 0);
             break;
 
-        case TY_DEVICE_EVENT_REMOVED:
-            _ty_device_monitor_remove(monitor, notification->key);
+        case TYD_MONITOR_EVENT_REMOVED:
+            _tyd_device_monitor_remove(monitor, notification->key);
             r = 0;
             break;
         }
@@ -893,9 +893,9 @@ cleanup:
     return r;
 }
 
-static int open_win32_device(ty_device *dev, ty_handle **rh)
+static int open_win32_device(tyd_device *dev, tyd_handle **rh)
 {
-    ty_handle *h = NULL;
+    tyd_handle *h = NULL;
     DWORD len;
     COMMTIMEOUTS timeouts;
     int r;
@@ -903,7 +903,7 @@ static int open_win32_device(ty_device *dev, ty_handle **rh)
     h = calloc(1, sizeof(*h));
     if (!h)
         return ty_error(TY_ERROR_MEMORY, NULL);
-    h->dev = ty_device_ref(dev);
+    h->dev = tyd_device_ref(dev);
 
     h->handle = CreateFile(dev->path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                            NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
@@ -955,7 +955,7 @@ static int open_win32_device(ty_device *dev, ty_handle **rh)
 
     SetCommTimeouts(h->handle, &timeouts);
 
-    if (dev->type == TY_DEVICE_SERIAL)
+    if (dev->type == TYD_DEVICE_SERIAL)
         EscapeCommFunction(h->handle, SETDTR);
 
     r = ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, &len, h->ov);
@@ -969,14 +969,14 @@ static int open_win32_device(ty_device *dev, ty_handle **rh)
     return 0;
 
 error:
-    ty_device_close(h);
+    tyd_device_close(h);
     return r;
 }
 
-static void close_win32_device(ty_handle *h);
+static void close_win32_device(tyd_handle *h);
 static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
 {
-    ty_handle *h = udata;
+    tyd_handle *h = udata;
     DWORD ret;
 
     /* Give up if nothing happens, even if it means a leak; we'll get rid of this when XP
@@ -993,10 +993,10 @@ static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
     return 0;
 }
 
-static void close_win32_device(ty_handle *h)
+static void close_win32_device(tyd_handle *h)
 {
     if (h) {
-        ty_device_unref(h->dev);
+        tyd_device_unref(h->dev);
         h->dev = NULL;
 
         if (h->pending_thread) {
@@ -1030,22 +1030,22 @@ static void close_win32_device(ty_handle *h)
     free(h);
 }
 
-static void get_win32_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+static void get_win32_descriptors(const tyd_handle *h, ty_descriptor_set *set, int id)
 {
     ty_descriptor_set_add(set, h->ov->hEvent, id);
 }
 
-static const struct _ty_device_vtable win32_device_vtable = {
+static const struct _tyd_device_vtable win32_device_vtable = {
     .open = open_win32_device,
     .close = close_win32_device,
 
     .get_descriptors = get_win32_descriptors
 };
 
-int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
+int tyd_hid_parse_descriptor(tyd_handle *h, tyd_hid_descriptor *desc)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(desc);
 
     // semi-hidden Hungarian pointers? Really , Microsoft?
@@ -1069,10 +1069,10 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     return 0;
 }
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t tyd_hid_read(tyd_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
     assert(size);
 
@@ -1124,10 +1124,10 @@ ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
     return (ssize_t)size;
 }
 
-ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t tyd_hid_write(tyd_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
 
     if (size < 2)
@@ -1152,10 +1152,10 @@ ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
     return (ssize_t)len;
 }
 
-ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t tyd_hid_send_feature_report(tyd_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
 
     if (size < 2)
@@ -1169,10 +1169,10 @@ ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size
     return (ssize_t)size;
 }
 
-int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
+int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_SERIAL);
+    assert(h->dev->type == TYD_DEVICE_SERIAL);
 
     DCB dcb;
     BOOL r;
@@ -1209,14 +1209,14 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
         assert(false);
     }
 
-    switch (flags & TY_SERIAL_CSIZE_MASK) {
-    case TY_SERIAL_5BITS_CSIZE:
+    switch (flags & TYD_SERIAL_CSIZE_MASK) {
+    case TYD_SERIAL_5BITS_CSIZE:
         dcb.ByteSize = 5;
         break;
-    case TY_SERIAL_6BITS_CSIZE:
+    case TYD_SERIAL_6BITS_CSIZE:
         dcb.ByteSize = 6;
         break;
-    case TY_SERIAL_7BITS_CSIZE:
+    case TYD_SERIAL_7BITS_CSIZE:
         dcb.ByteSize = 7;
         break;
 
@@ -1225,16 +1225,16 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
         break;
     }
 
-    switch (flags & TY_SERIAL_PARITY_MASK) {
+    switch (flags & TYD_SERIAL_PARITY_MASK) {
     case 0:
         dcb.fParity = FALSE;
         dcb.Parity = NOPARITY;
         break;
-    case TY_SERIAL_ODD_PARITY:
+    case TYD_SERIAL_ODD_PARITY:
         dcb.fParity = TRUE;
         dcb.Parity = ODDPARITY;
         break;
-    case TY_SERIAL_EVEN_PARITY:
+    case TYD_SERIAL_EVEN_PARITY:
         dcb.fParity = TRUE;
         dcb.Parity = EVENPARITY;
         break;
@@ -1244,7 +1244,7 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     }
 
     dcb.StopBits = 0;
-    if (flags & TY_SERIAL_2BITS_STOP)
+    if (flags & TYD_SERIAL_2BITS_STOP)
         dcb.StopBits = TWOSTOPBITS;
 
     dcb.fOutxCtsFlow = FALSE;
@@ -1254,14 +1254,14 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     dcb.fOutX = FALSE;
     dcb.fInX = FALSE;
 
-    switch (flags & TY_SERIAL_FLOW_MASK) {
+    switch (flags & TYD_SERIAL_FLOW_MASK) {
     case 0:
         break;
-    case TY_SERIAL_XONXOFF_FLOW:
+    case TYD_SERIAL_XONXOFF_FLOW:
         dcb.fOutX = TRUE;
         dcb.fInX = TRUE;
         break;
-    case TY_SERIAL_RTSCTS_FLOW:
+    case TYD_SERIAL_RTSCTS_FLOW:
         dcb.fOutxCtsFlow = TRUE;
         dcb.fRtsControl = RTS_CONTROL_ENABLE;
         break;
@@ -1277,10 +1277,10 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     return 0;
 }
 
-ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout)
+ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_SERIAL);
+    assert(h->dev->type == TYD_DEVICE_SERIAL);
     assert(buf);
     assert(size);
 
@@ -1351,10 +1351,10 @@ ssize_t ty_serial_read(ty_handle *h, char *buf, size_t size, int timeout)
     return (ssize_t)size;
 }
 
-ssize_t ty_serial_write(ty_handle *h, const char *buf, ssize_t size)
+ssize_t tyd_serial_write(tyd_handle *h, const char *buf, ssize_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_SERIAL);
+    assert(h->dev->type == TYD_DEVICE_SERIAL);
     assert(buf);
 
     if (size < 0)

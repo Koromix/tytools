@@ -4,8 +4,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef BOARD_PROXY_HH
-#define BOARD_PROXY_HH
+#ifndef BOARD_HH
+#define BOARD_HH
 
 #include <QAbstractListModel>
 #include <QTextDocument>
@@ -17,8 +17,8 @@
 #include "ty.h"
 #include "descriptor_set_notifier.hh"
 
-class BoardManagerProxy;
-class BoardProxy;
+class Manager;
+class Board;
 
 struct BoardInterfaceInfo {
     QString desc;
@@ -29,14 +29,14 @@ struct BoardInterfaceInfo {
 };
 
 class BoardCommand;
-class BoardProxyWorker : public QObject
+class BoardWorker : public QObject
 {
     Q_OBJECT
 
     BoardCommand *running_task_ = nullptr;
 
 private:
-    BoardProxyWorker(QObject *parent = nullptr)
+    BoardWorker(QObject *parent = nullptr)
         : QObject(parent) {}
 
     void reportTaskProgress(unsigned int progress, unsigned int total);
@@ -48,16 +48,16 @@ signals:
 protected:
     virtual void customEvent(QEvent *ev) override;
 
-    friend class BoardProxy;
+    friend class Board;
 };
 
-class BoardProxy : public QObject {
+class Board : public QObject {
     Q_OBJECT
 
     QThread *thread_;
-    BoardProxyWorker *worker_;
+    BoardWorker *worker_;
 
-    ty_board *board_;
+    tyb_board *board_;
 
     DescriptorSetNotifier serial_notifier_;
     bool serial_available_ = false;
@@ -70,17 +70,17 @@ class BoardProxy : public QObject {
     unsigned int task_total_ = 0;
 
 public:
-    BoardProxy(ty_board *board, QObject *parent = nullptr);
-    virtual ~BoardProxy();
+    Board(tyb_board *board, QObject *parent = nullptr);
+    virtual ~Board();
 
-    ty_board *board() const;
+    tyb_board *board() const;
 
     bool matchesIdentity(const QString &id);
 
-    ty_board_state state() const;
+    tyb_board_state state() const;
     uint16_t capabilities() const;
 
-    const ty_board_model *model() const;
+    const tyb_board_model *model() const;
     QString modelName() const;
     QString modelDesc() const;
 
@@ -95,9 +95,8 @@ public:
     bool isRebootAvailable() const;
     bool isSerialAvailable() const;
 
-    bool clearOnReset() const;
-
     void setClearOnReset(bool clear);
+    bool clearOnReset() const;
 
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);
@@ -120,7 +119,7 @@ signals:
     void boardChanged();
     void boardDropped();
 
-    void taskProgress(const BoardProxy &board, const QString &msg, size_t progress, size_t total);
+    void taskProgress(const Board &board, const QString &msg, size_t progress, size_t total);
 
     void propertyChanged(const char *name, const QVariant &value);
 
@@ -131,37 +130,37 @@ private slots:
 private:
     void refreshBoard();
 
-    friend class BoardManagerProxy;
-    friend class BoardProxyWorker;
+    friend class Manager;
+    friend class BoardWorker;
 };
 
-class BoardManagerProxy : public QAbstractListModel {
+class Manager : public QAbstractListModel {
     Q_OBJECT
 
-    ty_board_manager *manager_ = nullptr;
+    tyb_monitor *manager_ = nullptr;
     DescriptorSetNotifier manager_notifier_;
 
-    std::vector<std::shared_ptr<BoardProxy>> boards_;
+    std::vector<std::shared_ptr<Board>> boards_;
 
 public:
     typedef decltype(boards_)::iterator iterator;
     typedef decltype(boards_)::const_iterator const_iterator;
 
-    BoardManagerProxy(QObject *parent = nullptr)
+    Manager(QObject *parent = nullptr)
         : QAbstractListModel(parent) {}
-    virtual ~BoardManagerProxy();
+    virtual ~Manager();
 
     bool start();
 
-    ty_board_manager *manager() const { return manager_; }
+    tyb_monitor *manager() const { return manager_; }
 
     iterator begin() { return boards_.begin(); }
     iterator end() { return boards_.end(); }
     const_iterator cbegin() const { return boards_.cbegin(); }
     const_iterator cend() const { return boards_.cend(); }
 
-    std::vector<std::shared_ptr<BoardProxy>> boards();
-    std::shared_ptr<BoardProxy> board(unsigned int i);
+    std::vector<std::shared_ptr<Board>> boards();
+    std::shared_ptr<Board> board(unsigned int i);
     unsigned int boardCount() const;
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -172,17 +171,17 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 signals:
-    void boardAdded(std::shared_ptr<BoardProxy> board);
+    void boardAdded(std::shared_ptr<Board> board);
 
 private slots:
     void refreshManager(ty_descriptor desc);
-    void updateTaskProgress(const BoardProxy &board, const QString &msg, size_t progress, size_t total);
+    void updateTaskProgress(const Board &board, const QString &msg, size_t progress, size_t total);
 
 private:
-    int handleEvent(ty_board *board, ty_board_event event);
-    void handleAddedEvent(ty_board *board);
-    void handleChangedEvent(ty_board *board);
-    void handleDroppedEvent(ty_board *board);
+    int handleEvent(tyb_board *board, tyb_monitor_event event);
+    void handleAddedEvent(tyb_board *board);
+    void handleChangedEvent(tyb_board *board);
+    void handleDroppedEvent(tyb_board *board);
 };
 
 #endif

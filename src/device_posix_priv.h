@@ -11,12 +11,12 @@
 #include "ty/device.h"
 #include "device_priv.h"
 
-struct ty_handle {
-    TY_HANDLE
+struct tyd_handle {
+    TYD_HANDLE
 
     int fd;
 };
 
-extern const struct _ty_device_vtable _ty_posix_device_vtable;
+extern const struct _tyd_device_vtable _tyb_posix_device_vtable;
 
 #endif

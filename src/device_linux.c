@@ -16,8 +16,8 @@
 #include "device_posix_priv.h"
 #include "ty/system.h"
 
-struct ty_device_monitor {
-    TY_DEVICE_MONITOR
+struct tyd_monitor {
+    TYD_MONITOR
 
     struct udev_monitor *monitor;
 };
@@ -62,7 +62,7 @@ static int compute_device_location(struct udev_device *dev, char **rlocation)
     return 1;
 }
 
-static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
+static int fill_device_details(tyd_device *dev, struct udev_aggregate *agg)
 {
     const char *buf;
     int r;
@@ -72,13 +72,13 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
         return 0;
 
     if (strcmp(buf, "hidraw") == 0) {
-        dev->type = TY_DEVICE_HID;
+        dev->type = TYD_DEVICE_HID;
     } else if (strcmp(buf, "tty") == 0) {
-        dev->type = TY_DEVICE_SERIAL;
+        dev->type = TYD_DEVICE_SERIAL;
     } else {
         return 0;
     }
-    dev->vtable = &_ty_posix_device_vtable;
+    dev->vtable = &_tyb_posix_device_vtable;
 
     buf = udev_device_get_devnode(agg->dev);
     if (!buf || access(buf, F_OK) != 0)
@@ -128,10 +128,10 @@ static int fill_device_details(ty_device *dev, struct udev_aggregate *agg)
     return 1;
 }
 
-static int read_device_information(struct udev_device *udev_dev, ty_device **rdev)
+static int read_device_information(struct udev_device *udev_dev, tyd_device **rdev)
 {
     struct udev_aggregate agg;
-    ty_device *dev = NULL;
+    tyd_device *dev = NULL;
     int r;
 
     agg.dev = udev_dev;
@@ -158,11 +158,11 @@ static int read_device_information(struct udev_device *udev_dev, ty_device **rde
 
     r = 1;
 cleanup:
-    ty_device_unref(dev);
+    tyd_device_unref(dev);
     return r;
 }
 
-static int list_devices(ty_device_monitor *monitor)
+static int list_devices(tyd_monitor *monitor)
 {
     assert(monitor);
 
@@ -192,7 +192,7 @@ static int list_devices(ty_device_monitor *monitor)
     struct udev_list_entry *cur;
     udev_list_entry_foreach(cur, udev_enumerate_get_list_entry(enumerate)) {
         struct udev_device *udev_dev;
-        ty_device *dev;
+        tyd_device *dev;
 
         udev_dev = udev_device_new_from_syspath(udev, udev_list_entry_get_name(cur));
         if (!udev_dev) {
@@ -210,8 +210,8 @@ static int list_devices(ty_device_monitor *monitor)
         if (!r)
             continue;
 
-        r = _ty_device_monitor_add(monitor, dev);
-        ty_device_unref(dev);
+        r = _tyd_device_monitor_add(monitor, dev);
+        tyd_device_unref(dev);
 
         if (r < 0)
             goto cleanup;
@@ -228,11 +228,11 @@ static void free_udev(void)
     udev_unref(udev);
 }
 
-int ty_device_monitor_new(ty_device_monitor **rmonitor)
+int tyd_monitor_new(tyd_monitor **rmonitor)
 {
     assert(rmonitor);
 
-    ty_device_monitor *monitor;
+    tyd_monitor *monitor;
     int r;
 
     if (!udev) {
@@ -277,7 +277,7 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
         goto error;
     }
 
-    r = _ty_device_monitor_init(monitor);
+    r = _tyd_device_monitor_init(monitor);
     if (r < 0)
         goto error;
 
@@ -289,21 +289,21 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
     return 0;
 
 error:
-    ty_device_monitor_free(monitor);
+    tyd_monitor_free(monitor);
     return r;
 }
 
-void ty_device_monitor_free(ty_device_monitor *monitor)
+void tyd_monitor_free(tyd_monitor *monitor)
 {
     if (monitor) {
-        _ty_device_monitor_release(monitor);
+        _tyd_device_monitor_release(monitor);
         udev_monitor_unref(monitor->monitor);
     }
 
     free(monitor);
 }
 
-void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, ty_descriptor_set *set, int id)
+void tyd_monitor_get_descriptors(const tyd_monitor *monitor, ty_descriptor_set *set, int id)
 {
     assert(monitor);
     assert(set);
@@ -311,7 +311,7 @@ void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, ty_desc
     ty_descriptor_set_add(set, udev_monitor_get_fd(monitor->monitor), id);
 }
 
-int ty_device_monitor_refresh(ty_device_monitor *monitor)
+int tyd_monitor_refresh(tyd_monitor *monitor)
 {
     assert(monitor);
 
@@ -324,15 +324,15 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
 
         r = 0;
         if (strcmp(action, "add") == 0) {
-            ty_device *dev = NULL;
+            tyd_device *dev = NULL;
 
             r = read_device_information(udev_dev, &dev);
             if (r > 0)
-                r = _ty_device_monitor_add(monitor, dev);
+                r = _tyd_device_monitor_add(monitor, dev);
 
-            ty_device_unref(dev);
+            tyd_device_unref(dev);
         } else if (strcmp(action, "remove") == 0) {
-            _ty_device_monitor_remove(monitor, udev_device_get_devpath(udev_dev));
+            _tyd_device_monitor_remove(monitor, udev_device_get_devpath(udev_dev));
         }
 
         udev_device_unref(udev_dev);
@@ -348,7 +348,7 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
     return 1;
 }
 
-static void parse_descriptor(ty_hid_descriptor *desc, struct hidraw_report_descriptor *report)
+static void parse_descriptor(tyd_hid_descriptor *desc, struct hidraw_report_descriptor *report)
 {
     size_t size;
     for (size_t i = 0; i < report->size; i += size + 1) {
@@ -399,10 +399,10 @@ static void parse_descriptor(ty_hid_descriptor *desc, struct hidraw_report_descr
     }
 }
 
-int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
+int tyd_hid_parse_descriptor(tyd_handle *h, tyd_hid_descriptor *desc)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(desc);
 
     struct hidraw_report_descriptor report;
@@ -425,10 +425,10 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     return 0;
 }
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t tyd_hid_read(tyd_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
     assert(size);
 
@@ -472,10 +472,10 @@ restart:
     return r;
 }
 
-ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t tyd_hid_write(tyd_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
 
     if (size < 2)
@@ -500,10 +500,10 @@ restart:
     return r;
 }
 
-ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t tyd_hid_send_feature_report(tyd_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
 
     if (size < 2)

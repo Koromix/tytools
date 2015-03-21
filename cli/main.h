@@ -11,16 +11,16 @@
 
 TY_C_BEGIN
 
-struct ty_board_manager;
-struct ty_board;
+struct tyb_monitor;
+struct tyb_board;
 
 void print_main_options(FILE *f);
 void print_supported_models(FILE *f);
 
 int parse_main_option(int argc, char *argv[], int c);
 
-int get_manager(ty_board_manager **rmanager);
-int get_board(ty_board **rboard);
+int get_manager(tyb_monitor **rmanager);
+int get_board(tyb_board **rboard);
 
 enum {
     MAIN_OPTION_BOARD = 0x100,

@@ -17,15 +17,15 @@
 #include "device_posix_priv.h"
 #include "ty/system.h"
 
-static int open_posix_device(ty_device *dev, ty_handle **rh)
+static int open_posix_device(tyd_device *dev, tyd_handle **rh)
 {
-    ty_handle *h;
+    tyd_handle *h;
     int r;
 
     h = calloc(1, sizeof(*h));
     if (!h)
         return ty_error(TY_ERROR_MEMORY, NULL);
-    h->dev = ty_device_ref(dev);
+    h->dev = tyd_device_ref(dev);
 
 restart:
     h->fd = open(dev->path, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);
@@ -54,7 +54,7 @@ restart:
     }
 
 #ifdef _APPLE
-    if (dev->type == TY_DEVICE_SERIAL)
+    if (dev->type == TYD_DEVICE_SERIAL)
         ioctl(h->fd, TIOCSDTR);
 #endif
 
@@ -62,37 +62,37 @@ restart:
     return 0;
 
 error:
-    ty_device_close(h);
+    tyd_device_close(h);
     return r;
 }
 
-static void close_posix_device(ty_handle *h)
+static void close_posix_device(tyd_handle *h)
 {
     if (h) {
         if (h->fd >= 0)
             close(h->fd);
-        ty_device_unref(h->dev);
+        tyd_device_unref(h->dev);
     }
 
     free(h);
 }
 
-static void get_posix_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+static void get_posix_descriptors(const tyd_handle *h, ty_descriptor_set *set, int id)
 {
     ty_descriptor_set_add(set, h->fd, id);
 }
 
-const struct _ty_device_vtable _ty_posix_device_vtable = {
+const struct _tyd_device_vtable _tyb_posix_device_vtable = {
     .open = open_posix_device,
     .close = close_posix_device,
 
     .get_descriptors = get_posix_descriptors
 };
 
-int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
+int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_SERIAL);
+    assert(h->dev->type == TYD_DEVICE_SERIAL);
 
     struct termios tio;
     int r;
@@ -171,14 +171,14 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     cfsetospeed(&tio, rate);
 
     tio.c_cflag &= (unsigned int)~CSIZE;
-    switch (flags & TY_SERIAL_CSIZE_MASK) {
-    case TY_SERIAL_5BITS_CSIZE:
+    switch (flags & TYD_SERIAL_CSIZE_MASK) {
+    case TYD_SERIAL_5BITS_CSIZE:
         tio.c_cflag |= CS5;
         break;
-    case TY_SERIAL_6BITS_CSIZE:
+    case TYD_SERIAL_6BITS_CSIZE:
         tio.c_cflag |= CS6;
         break;
-    case TY_SERIAL_7BITS_CSIZE:
+    case TYD_SERIAL_7BITS_CSIZE:
         tio.c_cflag |= CS7;
         break;
 
@@ -188,13 +188,13 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     }
 
     tio.c_cflag &= (unsigned int)~(PARENB | PARODD);
-    switch (flags & TY_SERIAL_PARITY_MASK) {
+    switch (flags & TYD_SERIAL_PARITY_MASK) {
     case 0:
         break;
-    case TY_SERIAL_ODD_PARITY:
+    case TYD_SERIAL_ODD_PARITY:
         tio.c_cflag |= PARENB | PARODD;
         break;
-    case TY_SERIAL_EVEN_PARITY:
+    case TYD_SERIAL_EVEN_PARITY:
         tio.c_cflag |= PARENB;
         break;
 
@@ -203,18 +203,18 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     }
 
     tio.c_cflag &= (unsigned int)~CSTOPB;
-    if (flags & TY_SERIAL_2BITS_STOP)
+    if (flags & TYD_SERIAL_2BITS_STOP)
         tio.c_cflag |= CSTOPB;
 
     tio.c_cflag &= (unsigned int)~CRTSCTS;
     tio.c_iflag &= (unsigned int)~(IXON | IXOFF);
-    switch (flags & TY_SERIAL_FLOW_MASK) {
+    switch (flags & TYD_SERIAL_FLOW_MASK) {
     case 0:
         break;
-    case TY_SERIAL_XONXOFF_FLOW:
+    case TYD_SERIAL_XONXOFF_FLOW:
         tio.c_iflag |= IXON | IXOFF;
         break;
-    case TY_SERIAL_RTSCTS_FLOW:
+    case TYD_SERIAL_RTSCTS_FLOW:
         tio.c_cflag |= CRTSCTS;
         break;
 
@@ -223,7 +223,7 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     }
 
     tio.c_cflag &= (unsigned int)~HUPCL;
-    if (!(flags & TY_SERIAL_NOHUP_CLOSE))
+    if (!(flags & TYD_SERIAL_NOHUP_CLOSE))
         tio.c_cflag |= HUPCL;
 
     r = tcsetattr(h->fd, TCSANOW, &tio);
@@ -234,10 +234,10 @@ int ty_serial_set_attributes(ty_handle *h, uint32_t rate, int flags)
     return 0;
 }
 
-ssize_t ty_serial_read(struct ty_handle *h, char *buf, size_t size, int timeout)
+ssize_t tyd_serial_read(struct tyd_handle *h, char *buf, size_t size, int timeout)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_SERIAL);
+    assert(h->dev->type == TYD_DEVICE_SERIAL);
     assert(buf);
     assert(size);
 
@@ -281,10 +281,10 @@ restart:
     return r;
 }
 
-ssize_t ty_serial_write(struct ty_handle *h, const char *buf, ssize_t size)
+ssize_t tyd_serial_write(struct tyd_handle *h, const char *buf, ssize_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_SERIAL);
+    assert(h->dev->type == TYD_DEVICE_SERIAL);
     assert(buf);
 
     if (size < 0)

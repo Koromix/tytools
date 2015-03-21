@@ -22,8 +22,8 @@
 #include "device_priv.h"
 #include "thread.h"
 
-struct ty_device_monitor {
-    TY_DEVICE_MONITOR
+struct tyd_monitor {
+    TYD_MONITOR
 
     IONotificationPortRef notify_port;
     io_iterator_t attach_it;
@@ -36,8 +36,8 @@ struct ty_device_monitor {
     ty_list_head controllers;
 };
 
-struct ty_handle {
-    TY_HANDLE
+struct tyd_handle {
+    TYD_HANDLE
 
     io_service_t service;
     union {
@@ -62,8 +62,8 @@ struct ty_handle {
     CFRunLoopSourceRef shutdown;
 };
 
-extern const struct _ty_device_vtable _ty_posix_device_vtable;
-static const struct _ty_device_vtable hid_device_vtable;
+extern const struct _tyd_device_vtable _tyb_posix_device_vtable;
+static const struct _tyd_device_vtable hid_device_vtable;
 
 static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, char **rs)
 {
@@ -223,7 +223,7 @@ static int find_hid_device_node(io_service_t service, char **rpath)
     return 1;
 }
 
-static int find_device_node(ty_device *dev, io_service_t service)
+static int find_device_node(tyd_device *dev, io_service_t service)
 {
     io_service_t spec_service;
     kern_return_t kret;
@@ -234,12 +234,12 @@ static int find_device_node(ty_device *dev, io_service_t service)
         return 0;
 
     if (IOObjectConformsTo(spec_service, "IOSerialDriverSync")) {
-        dev->type = TY_DEVICE_SERIAL;
-        dev->vtable = &_ty_posix_device_vtable;
+        dev->type = TYD_DEVICE_SERIAL;
+        dev->vtable = &_tyb_posix_device_vtable;
 
         r = find_serial_device_node(spec_service, &dev->path);
     } else if (IOObjectConformsTo(spec_service, "IOHIDDevice")) {
-        dev->type = TY_DEVICE_HID;
+        dev->type = TYD_DEVICE_HID;
         dev->vtable = &hid_device_vtable;
 
         r = find_hid_device_node(spec_service, &dev->path);
@@ -358,10 +358,10 @@ static int resolve_device_location(struct iokit_device *iodev, ty_list_head *con
     return 1;
 }
 
-static int make_device_for_interface(ty_device_monitor *monitor, struct iokit_device *iodev,
+static int make_device_for_interface(tyd_monitor *monitor, struct iokit_device *iodev,
                                      io_service_t iface_service)
 {
-    ty_device *dev;
+    tyd_device *dev;
     uint64_t session;
     int r;
 
@@ -406,13 +406,13 @@ static int make_device_for_interface(ty_device_monitor *monitor, struct iokit_de
     if (r <= 0)
         goto cleanup;
 
-    r = _ty_device_monitor_add(monitor, dev);
+    r = _tyd_device_monitor_add(monitor, dev);
 cleanup:
-    ty_device_unref(dev);
+    tyd_device_unref(dev);
     return r;
 }
 
-static int process_darwin_device(ty_device_monitor *monitor, io_service_t device_service)
+static int process_darwin_device(tyd_monitor *monitor, io_service_t device_service)
 {
     io_name_t cls;
     struct iokit_device iodev = {0};
@@ -463,7 +463,7 @@ cleanup:
     return r;
 }
 
-static int list_devices(ty_device_monitor *monitor)
+static int list_devices(tyd_monitor *monitor)
 {
     io_service_t service;
     int r;
@@ -488,7 +488,7 @@ static void darwin_devices_attached(void *ptr, io_iterator_t devices)
     // devices == h->attach_t
     TY_UNUSED(devices);
 
-    ty_device_monitor *monitor = ptr;
+    tyd_monitor *monitor = ptr;
 
     int r;
 
@@ -497,7 +497,7 @@ static void darwin_devices_attached(void *ptr, io_iterator_t devices)
         monitor->notify_ret = r;
 }
 
-static void remove_device(ty_device_monitor *monitor, io_service_t device_service)
+static void remove_device(tyd_monitor *monitor, io_service_t device_service)
 {
     uint64_t session;
     char key[16];
@@ -508,12 +508,12 @@ static void remove_device(ty_device_monitor *monitor, io_service_t device_servic
         return;
 
     snprintf(key, sizeof(key), "%"PRIx64, session);
-    _ty_device_monitor_remove(monitor, key);
+    _tyd_device_monitor_remove(monitor, key);
 }
 
 static void darwin_devices_detached(void *ptr, io_iterator_t devices)
 {
-    ty_device_monitor *monitor = ptr;
+    tyd_monitor *monitor = ptr;
 
     io_service_t service;
     while ((service = IOIteratorNext(devices))) {
@@ -522,7 +522,7 @@ static void darwin_devices_detached(void *ptr, io_iterator_t devices)
     }
 }
 
-static int add_controller(ty_device_monitor *monitor, uint8_t i, io_service_t service)
+static int add_controller(tyd_monitor *monitor, uint8_t i, io_service_t service)
 {
     struct usb_controller *controller;
     int r;
@@ -548,7 +548,7 @@ error:
     return r;
 }
 
-static int list_controllers(ty_device_monitor *monitor)
+static int list_controllers(tyd_monitor *monitor)
 {
     io_iterator_t controllers = 0;
     io_service_t service;
@@ -579,11 +579,11 @@ cleanup:
     return r;
 }
 
-int ty_device_monitor_new(ty_device_monitor **rmonitor)
+int tyd_monitor_new(tyd_monitor **rmonitor)
 {
     assert(rmonitor);
 
-    ty_device_monitor *monitor;
+    tyd_monitor *monitor;
     struct kevent kev;
     const struct timespec ts = {0};
     kern_return_t kret;
@@ -649,7 +649,7 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
         goto error;
     }
 
-    r = _ty_device_monitor_init(monitor);
+    r = _tyd_device_monitor_init(monitor);
     if (r < 0)
         goto error;
 
@@ -666,14 +666,14 @@ int ty_device_monitor_new(ty_device_monitor **rmonitor)
     return 0;
 
 error:
-    ty_device_monitor_free(monitor);
+    tyd_monitor_free(monitor);
     return r;
 }
 
-void ty_device_monitor_free(ty_device_monitor *monitor)
+void tyd_monitor_free(tyd_monitor *monitor)
 {
     if (monitor) {
-        _ty_device_monitor_release(monitor);
+        _tyd_device_monitor_release(monitor);
 
         ty_list_foreach(cur, &monitor->controllers) {
             struct usb_controller *controller = ty_container_of(cur, struct usb_controller, list);
@@ -696,8 +696,7 @@ void ty_device_monitor_free(ty_device_monitor *monitor)
     free(monitor);
 }
 
-void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, struct ty_descriptor_set *set,
-                                       int id)
+void tyd_monitor_get_descriptors(const tyd_monitor *monitor, struct ty_descriptor_set *set, int id)
 {
     assert(monitor);
     assert(set);
@@ -705,7 +704,7 @@ void ty_device_monitor_get_descriptors(const ty_device_monitor *monitor, struct 
     ty_descriptor_set_add(set, monitor->kqfd, id);
 }
 
-int ty_device_monitor_refresh(ty_device_monitor *monitor)
+int tyd_monitor_refresh(tyd_monitor *monitor)
 {
     assert(monitor);
 
@@ -751,13 +750,13 @@ int ty_device_monitor_refresh(ty_device_monitor *monitor)
     return r;
 }
 
-static void fire_device_event(ty_handle *h)
+static void fire_device_event(tyd_handle *h)
 {
     char buf = '.';
     write(h->pipe[1], &buf, 1);
 }
 
-static void reset_device_event(ty_handle *h)
+static void reset_device_event(tyd_handle *h)
 {
     char buf;
     read(h->pipe[0], &buf, 1);
@@ -768,7 +767,7 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     TY_UNUSED(result);
     TY_UNUSED(sender);
 
-    ty_handle *h = ctx;
+    tyd_handle *h = ctx;
 
     ty_mutex_lock(&h->mutex);
 
@@ -800,7 +799,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     if (report_type != kIOHIDReportTypeInput)
         return;
 
-    ty_handle *h = ctx;
+    tyd_handle *h = ctx;
 
     struct hid_report *report;
     bool fire;
@@ -856,7 +855,7 @@ cleanup:
 
 static void *device_thread(void *ptr)
 {
-    ty_handle *h = ptr;
+    tyd_handle *h = ptr;
 
     CFRunLoopSourceContext shutdown_ctx = {0};
     int r;
@@ -912,9 +911,9 @@ static bool get_hid_device_property_number(IOHIDDeviceRef dev, CFStringRef prop,
     return CFNumberGetValue(data, type, rn);
 }
 
-static int open_hid_device(ty_device *dev, ty_handle **rh)
+static int open_hid_device(tyd_device *dev, tyd_handle **rh)
 {
-    ty_handle *h;
+    tyd_handle *h;
     kern_return_t kret;
     int r;
 
@@ -923,7 +922,7 @@ static int open_hid_device(ty_device *dev, ty_handle **rh)
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
-    h->dev = ty_device_ref(dev);
+    h->dev = tyd_device_ref(dev);
 
     h->pipe[0] = -1;
     h->pipe[1] = -1;
@@ -1002,11 +1001,11 @@ static int open_hid_device(ty_device *dev, ty_handle **rh)
     return 0;
 
 error:
-    ty_device_close(h);
+    tyd_device_close(h);
     return r;
 }
 
-static void close_hid_device(ty_handle *h)
+static void close_hid_device(tyd_handle *h)
 {
     if (h) {
         if (h->shutdown) {
@@ -1044,25 +1043,25 @@ static void close_hid_device(ty_handle *h)
         if (h->service)
             IOObjectRelease(h->service);
 
-        ty_device_unref(h->dev);
+        tyd_device_unref(h->dev);
     }
 
     free(h);
 }
 
-static void get_hid_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+static void get_hid_descriptors(const tyd_handle *h, ty_descriptor_set *set, int id)
 {
     ty_descriptor_set_add(set, h->pipe[0], id);
 }
 
-static const struct _ty_device_vtable hid_device_vtable = {
+static const struct _tyd_device_vtable hid_device_vtable = {
     .open = open_hid_device,
     .close = close_hid_device,
 
     .get_descriptors = get_hid_descriptors
 };
 
-int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
+int tyd_hid_parse_descriptor(tyd_handle *h, tyd_hid_descriptor *desc)
 {
     if (!h->hid)
         return ty_error(TY_ERROR_IO, "Device '%s' was removed", h->dev->path);
@@ -1077,10 +1076,10 @@ int ty_hid_parse_descriptor(ty_handle *h, ty_hid_descriptor *desc)
     return 0;
 }
 
-ssize_t ty_hid_read(ty_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t tyd_hid_read(tyd_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
     assert(size);
 
@@ -1146,7 +1145,7 @@ cleanup:
     return r;
 }
 
-static ssize_t send_report(ty_handle *h, IOHIDReportType type, const uint8_t *buf, size_t size)
+static ssize_t send_report(tyd_handle *h, IOHIDReportType type, const uint8_t *buf, size_t size)
 {
     uint8_t report;
     kern_return_t kret;
@@ -1171,19 +1170,19 @@ static ssize_t send_report(ty_handle *h, IOHIDReportType type, const uint8_t *bu
     return (ssize_t)size + !report;
 }
 
-ssize_t ty_hid_write(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t tyd_hid_write(tyd_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
 
     return send_report(h, kIOHIDReportTypeOutput, buf, size);
 }
 
-ssize_t ty_hid_send_feature_report(ty_handle *h, const uint8_t *buf, size_t size)
+ssize_t tyd_hid_send_feature_report(tyd_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
-    assert(h->dev->type == TY_DEVICE_HID);
+    assert(h->dev->type == TYD_DEVICE_HID);
     assert(buf);
 
     return send_report(h, kIOHIDReportTypeFeature, buf, size);

@@ -9,30 +9,30 @@
 
 #include <memory>
 
-#include "board_proxy.hh"
+#include "board.hh"
 #include "ui_selector_dialog.h"
 
 class SelectorDialog : public QDialog, private Ui::SelectorDialog {
     Q_OBJECT
 
-    BoardManagerProxy *manager_;
-    std::shared_ptr<BoardProxy> current_board_;
+    Manager *manager_;
+    std::shared_ptr<Board> current_board_;
 
 public:
-    SelectorDialog(BoardManagerProxy *manager, QWidget *parent = nullptr);
+    SelectorDialog(Manager *manager, QWidget *parent = nullptr);
 
-    std::shared_ptr<BoardProxy> currentBoard() const;
-    std::shared_ptr<BoardProxy> selectedBoard() const;
+    std::shared_ptr<Board> currentBoard() const;
+    std::shared_ptr<Board> selectedBoard() const;
 
-    static std::shared_ptr<BoardProxy> getBoard(BoardManagerProxy *manager, QWidget *parent = nullptr);
+    static std::shared_ptr<Board> getBoard(Manager *manager, QWidget *parent = nullptr);
 
 protected slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void done(int result) override;
 
 signals:
-    void currentChanged(std::shared_ptr<BoardProxy> board);
-    void boardSelected(std::shared_ptr<BoardProxy> board);
+    void currentChanged(std::shared_ptr<Board> board);
+    void boardSelected(std::shared_ptr<Board> board);
 };
 
 #endif

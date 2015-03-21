@@ -170,10 +170,10 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
         auto firmware = arguments[1];
         auto identity = arguments[2];
 
-        shared_ptr<BoardProxy> board;
+        shared_ptr<Board> board;
 
         if (!identity.isEmpty()) {
-            board = getBoard([=](BoardProxy &board) { return board.matchesIdentity(identity); }, false);
+            board = getBoard([=](Board &board) { return board.matchesIdentity(identity); }, false);
             if (!board) {
                 peer.send(tr("Board '%1' not found").arg(identity));
                 return;
@@ -184,7 +184,7 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
             // Don't let the client wait because a selector dialog may show up
             peer.send("OK");
 
-            board = getBoard([=](BoardProxy &board) { return board.property("firmware") == firmware; }, true);
+            board = getBoard([=](Board &board) { return board.property("firmware") == firmware; }, true);
             if (!board)
                 return;
         }
@@ -342,7 +342,7 @@ int TyQt::runClient()
     return QApplication::exec();
 }
 
-shared_ptr<BoardProxy> TyQt::getBoard(function<bool(BoardProxy &board)> filter, bool show_selector)
+shared_ptr<Board> TyQt::getBoard(function<bool(Board &board)> filter, bool show_selector)
 {
     auto board = find_if(manager_.begin(), manager_.end(), [&](auto ptr) { return filter(*ptr); });
 

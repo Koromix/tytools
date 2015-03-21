@@ -39,8 +39,8 @@ static const struct command commands[] = {
     {0}
 };
 
-static ty_board_manager *board_manager;
-static ty_board *main_board;
+static tyb_monitor *board_manager;
+static tyb_board *main_board;
 
 static const struct command *current_command;
 static const char *board_identity = NULL;
@@ -87,36 +87,36 @@ void print_main_options(FILE *f)
 void print_supported_models(FILE *f)
 {
     fprintf(f, "Supported models:\n");
-    for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
-        const ty_board_model *model = *cur;
-        fprintf(f, "   - %-22s (%s, %s)\n", ty_board_model_get_desc(model),
-                ty_board_model_get_name(model), ty_board_model_get_mcu(model));
+    for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
+        const tyb_board_model *model = *cur;
+        fprintf(f, "   - %-22s (%s, %s)\n", tyb_board_model_get_desc(model),
+                tyb_board_model_get_name(model), tyb_board_model_get_mcu(model));
     }
 }
 
-static int board_callback(ty_board *board, ty_board_event event, void *udata)
+static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata)
 {
     TY_UNUSED(udata);
 
     switch (event) {
-    case TY_BOARD_EVENT_ADDED:
+    case TYB_MONITOR_EVENT_ADDED:
         if (!main_board) {
-            int r = ty_board_matches_identity(board, board_identity);
+            int r = tyb_board_matches_identity(board, board_identity);
             if (r < 0)
                 return r;
 
             if (r)
-                main_board = ty_board_ref(board);
+                main_board = tyb_board_ref(board);
         }
         break;
 
-    case TY_BOARD_EVENT_CHANGED:
-    case TY_BOARD_EVENT_DISAPPEARED:
+    case TYB_MONITOR_EVENT_CHANGED:
+    case TYB_MONITOR_EVENT_DISAPPEARED:
         break;
 
-    case TY_BOARD_EVENT_DROPPED:
+    case TYB_MONITOR_EVENT_DROPPED:
         if (main_board == board) {
-            ty_board_unref(main_board);
+            tyb_board_unref(main_board);
             main_board = NULL;
         }
         break;
@@ -130,18 +130,18 @@ static int init_manager()
     if (board_manager)
         return 0;
 
-    ty_board_manager *manager = NULL;
+    tyb_monitor *manager = NULL;
     int r;
 
-    r = ty_board_manager_new(&manager);
+    r = tyb_monitor_new(&manager);
     if (r < 0)
         goto error;
 
-    r = ty_board_manager_register_callback(manager, board_callback, NULL);
+    r = tyb_monitor_register_callback(manager, board_callback, NULL);
     if (r < 0)
         goto error;
 
-    r = ty_board_manager_refresh(manager);
+    r = tyb_monitor_refresh(manager);
     if (r < 0)
         goto error;
 
@@ -149,11 +149,11 @@ static int init_manager()
     return 0;
 
 error:
-    ty_board_manager_free(manager);
+    tyb_monitor_free(manager);
     return r;
 }
 
-int get_manager(ty_board_manager **rmanager)
+int get_manager(tyb_monitor **rmanager)
 {
     int r = init_manager();
     if (r < 0)
@@ -163,7 +163,7 @@ int get_manager(ty_board_manager **rmanager)
     return 0;
 }
 
-int get_board(ty_board **rboard)
+int get_board(tyb_board **rboard)
 {
     int r = init_manager();
     if (r < 0)
@@ -177,13 +177,13 @@ int get_board(ty_board **rboard)
         }
     }
 
-    static ty_board *previous_board = NULL;
+    static tyb_board *previous_board = NULL;
     if (main_board != previous_board) {
-        printf("Board at '%s'\n", ty_board_get_identity(main_board));
+        printf("Board at '%s'\n", tyb_board_get_identity(main_board));
         previous_board = main_board;
     }
 
-    *rboard = ty_board_ref(main_board);
+    *rboard = tyb_board_ref(main_board);
     return 0;
 }
 
@@ -290,7 +290,8 @@ int main(int argc, char *argv[])
 
     r = (*current_command->f)(argc - 1, argv + 1);
 
-    ty_board_unref(main_board);
-    ty_board_manager_free(board_manager);
+    tyb_board_unref(main_board);
+    tyb_monitor_free(board_manager);
+
     return !!r;
 }

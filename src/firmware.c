@@ -9,23 +9,23 @@
 #include "ty/firmware.h"
 #include "ty/system.h"
 
-int _ty_firmware_load_elf(const char *filename, ty_firmware **rfirmware);
-int _ty_firmware_load_ihex(const char *filename, ty_firmware **rfirmware);
+int _tyb_firmware_load_elf(const char *filename, tyb_firmware **rfirmware);
+int _tyb_firmware_load_ihex(const char *filename, tyb_firmware **rfirmware);
 
-const ty_firmware_format ty_firmware_formats[] = {
-    {"elf",  ".elf", _ty_firmware_load_elf},
-    {"ihex", ".hex", _ty_firmware_load_ihex},
+const tyb_firmware_format tyb_firmware_formats[] = {
+    {"elf",  ".elf", _tyb_firmware_load_elf},
+    {"ihex", ".hex", _tyb_firmware_load_ihex},
     {0}
 };
 
-const size_t ty_firmware_max_size = 1024 * 1024;
+const size_t tyb_firmware_max_size = 1024 * 1024;
 
-int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfirmware)
+int tyb_firmware_load(const char *filename, const char *format_name, tyb_firmware **rfirmware)
 {
     assert(filename);
     assert(rfirmware);
 
-    const ty_firmware_format *format = ty_firmware_formats;
+    const tyb_firmware_format *format = tyb_firmware_formats;
 
     if (format_name) {
         for (; format->name; format++) {
@@ -48,7 +48,7 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
     return (*format->load)(filename, rfirmware);
 }
 
-void ty_firmware_free(ty_firmware *f)
+void tyb_firmware_free(tyb_firmware *f)
 {
     free(f);
 }

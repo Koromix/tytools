@@ -15,50 +15,50 @@
 
 TY_C_BEGIN
 
-struct _ty_board_interface_vtable {
-    int (*serial_set_attributes)(ty_board_interface *iface, uint32_t rate, int flags);
-    ssize_t (*serial_read)(ty_board_interface *iface, char *buf, size_t size, int timeout);
-    ssize_t (*serial_write)(ty_board_interface *iface, const char *buf, size_t size);
+struct _tyb_board_interface_vtable {
+    int (*serial_set_attributes)(tyb_board_interface *iface, uint32_t rate, int flags);
+    ssize_t (*serial_read)(tyb_board_interface *iface, char *buf, size_t size, int timeout);
+    ssize_t (*serial_write)(tyb_board_interface *iface, const char *buf, size_t size);
 
-    int (*reset)(ty_board_interface *iface);
-    int (*upload)(ty_board_interface *iface, struct ty_firmware *firmware, int flags, ty_board_upload_progress_func *pf, void *udata);
+    int (*reset)(tyb_board_interface *iface);
+    int (*upload)(tyb_board_interface *iface, struct tyb_firmware *firmware, int flags, tyb_board_upload_progress_func *pf, void *udata);
 
-    int (*reboot)(ty_board_interface *iface);
+    int (*reboot)(tyb_board_interface *iface);
 };
 
-struct ty_board_interface {
+struct tyb_board_interface {
     ty_htable_head hnode;
 
-    ty_board *board;
+    tyb_board *board;
     ty_list_head list;
 
     volatile unsigned int refcount;
 
-    const struct _ty_board_interface_vtable *vtable;
+    const struct _tyb_board_interface_vtable *vtable;
 
     const char *desc;
 
-    const ty_board_model *model;
+    const tyb_board_model *model;
     uint64_t serial;
 
-    ty_device *dev;
-    ty_handle *h;
+    tyd_device *dev;
+    tyd_handle *h;
 
     int capabilities;
 };
 
-struct _ty_board_vendor {
-    int (*open_interface)(ty_board_interface *iface);
+struct _tyb_board_vendor {
+    int (*open_interface)(tyb_board_interface *iface);
 };
 
-struct ty_board {
-    ty_board_manager *manager;
+struct tyb_board {
+    tyb_monitor *manager;
     ty_list_head list;
 
     volatile unsigned int refcount;
     ty_mutex mutex;
 
-    ty_board_state state;
+    tyb_board_state state;
 
     char *identity;
     char *location;
@@ -70,25 +70,25 @@ struct ty_board {
     ty_list_head interfaces;
 
     int capabilities;
-    ty_board_interface *cap2iface[16];
+    tyb_board_interface *cap2iface[16];
 
     ty_list_head missing;
     uint64_t missing_since;
 
-    const ty_board_model *model;
+    const tyb_board_model *model;
 
     void *udata;
 };
 
-struct _ty_board_model_vtable {
+struct _tyb_board_model_vtable {
 };
 
-#define TY_BOARD_MODEL \
+#define TYB_BOARD_MODEL \
     const char *name; \
     const char *mcu; \
     const char *desc; \
     \
-    const struct _ty_board_model_vtable *vtable; \
+    const struct _tyb_board_model_vtable *vtable; \
     \
     size_t code_size;
 

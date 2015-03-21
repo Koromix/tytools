@@ -11,8 +11,8 @@
 #include "ty/firmware.h"
 #include "ty/system.h"
 
-struct ty_board_model {
-    TY_BOARD_MODEL
+struct tyb_board_model {
+    TYB_BOARD_MODEL
 
     // Identifcation
     uint8_t usage;
@@ -30,15 +30,15 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
-static const struct _ty_board_interface_vtable teensy_vtable;
-static const struct _ty_board_model_vtable teensy_model_vtable;
+static const struct _tyb_board_interface_vtable teensy_vtable;
+static const struct _tyb_board_model_vtable teensy_model_vtable;
 
-static const ty_board_model teensy_unknown_model = {
+static const tyb_board_model teensy_unknown_model = {
     .name = "teensy",
     .desc = "Teensy"
 };
 
-const ty_board_model _ty_teensy_pp10_model = {
+const tyb_board_model _tyb_teensy_pp10_model = {
     .name = "teensy++10",
     .desc = "Teensy++ 1.0",
     .mcu = "at90usb646",
@@ -53,7 +53,7 @@ const ty_board_model _ty_teensy_pp10_model = {
     .block_size = 256
 };
 
-const ty_board_model _ty_teensy_20_model = {
+const tyb_board_model _tyb_teensy_20_model = {
     .name = "teensy20",
     .desc = "Teensy 2.0",
     .mcu = "atmega32u4",
@@ -68,7 +68,7 @@ const ty_board_model _ty_teensy_20_model = {
     .block_size = 128
 };
 
-const ty_board_model _ty_teensy_pp20_model = {
+const tyb_board_model _tyb_teensy_pp20_model = {
     .name = "teensy++20",
     .desc = "Teensy++ 2.0",
     .mcu = "at90usb1286",
@@ -83,7 +83,7 @@ const ty_board_model _ty_teensy_pp20_model = {
     .block_size = 256
 };
 
-const ty_board_model _ty_teensy_30_model = {
+const tyb_board_model _tyb_teensy_30_model = {
     .name = "teensy30",
     .desc = "Teensy 3.0",
     .mcu = "mk20dx128",
@@ -97,7 +97,7 @@ const ty_board_model _ty_teensy_30_model = {
     .block_size = 1024
 };
 
-const ty_board_model _ty_teensy_31_model = {
+const tyb_board_model _tyb_teensy_31_model = {
     .name = "teensy31",
     .desc = "Teensy 3.1",
     .mcu = "mk20dx256",
@@ -111,7 +111,7 @@ const ty_board_model _ty_teensy_31_model = {
     .block_size = 1024
 };
 
-const ty_board_model _ty_teensy_lc_model = {
+const tyb_board_model _tyb_teensy_lc_model = {
     .name = "teensylc",
     .desc = "Teensy LC",
     .mcu = "mkl26z64",
@@ -127,13 +127,13 @@ const ty_board_model _ty_teensy_lc_model = {
 
 static const size_t seremu_packet_size = 32;
 
-static const ty_board_model *identify_model(const ty_hid_descriptor *desc)
+static const tyb_board_model *identify_model(const tyd_hid_descriptor *desc)
 {
     if (desc->usage_page != TEENSY_USAGE_PAGE_BOOTLOADER)
         return NULL;
 
-    for (const ty_board_model **cur = ty_board_models; *cur; cur++) {
-        const ty_board_model *model = *cur;
+    for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
+        const tyb_board_model *model = *cur;
 
         if (model->vtable != &teensy_model_vtable)
             continue;
@@ -167,15 +167,15 @@ static uint64_t parse_bootloader_serial(const char *s)
     return serial;
 }
 
-static int teensy_open_interface(ty_board_interface *iface)
+static int teensy_open_interface(tyb_board_interface *iface)
 {
-    ty_hid_descriptor desc;
+    tyd_hid_descriptor desc;
     int r;
 
-    if (ty_device_get_vid(iface->dev) != teensy_vid)
+    if (tyd_device_get_vid(iface->dev) != teensy_vid)
         return 0;
 
-    switch (ty_device_get_pid(iface->dev)) {
+    switch (tyd_device_get_pid(iface->dev)) {
     case 0x478:
     case 0x482:
     case 0x483:
@@ -191,44 +191,44 @@ static int teensy_open_interface(ty_board_interface *iface)
     }
 
     if (!iface->h) {
-        r = ty_device_open(iface->dev, &iface->h);
+        r = tyd_device_open(iface->dev, &iface->h);
         if (r < 0)
             return r;
     }
 
-    switch (ty_device_get_type(iface->dev)) {
-    case TY_DEVICE_SERIAL:
+    switch (tyd_device_get_type(iface->dev)) {
+    case TYD_DEVICE_SERIAL:
         /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
            around and reuse them. The device will keep rebooting if 134 is what stays around,
            so try to break the loop here. */
-        ty_serial_set_attributes(iface->h, 115200, 0);
+        tyd_serial_set_attributes(iface->h, 115200, 0);
 
         iface->desc = "Serial";
-        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
-        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
+        iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
+        iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
         break;
 
-    case TY_DEVICE_HID:
-        r = ty_hid_parse_descriptor(iface->h, &desc);
+    case TYD_DEVICE_HID:
+        r = tyd_hid_parse_descriptor(iface->h, &desc);
         if (r < 0)
             return r;
 
         switch (desc.usage_page) {
         case TEENSY_USAGE_PAGE_BOOTLOADER:
             iface->model = identify_model(&desc);
-            iface->serial = parse_bootloader_serial(ty_device_get_serial_number(iface->dev));
+            iface->serial = parse_bootloader_serial(tyd_device_get_serial_number(iface->dev));
 
             iface->desc = "HalfKay Bootloader";
             if (iface->model) {
-                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
-                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
+                iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_UPLOAD;
+                iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RESET;
             }
             break;
 
         case TEENSY_USAGE_PAGE_SEREMU:
             iface->desc = "Seremu";
-            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
-            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
+            iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
+            iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
             break;
 
         default:
@@ -245,24 +245,24 @@ static int teensy_open_interface(ty_board_interface *iface)
     return 1;
 }
 
-static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate, int flags)
+static int teensy_serial_set_attributes(tyb_board_interface *iface, uint32_t rate, int flags)
 {
-    if (ty_device_get_type(iface->dev) != TY_DEVICE_SERIAL)
+    if (tyd_device_get_type(iface->dev) != TYD_DEVICE_SERIAL)
         return 0;
 
-    return ty_serial_set_attributes(iface->h, rate, flags);
+    return tyd_serial_set_attributes(iface->h, rate, flags);
 }
 
-static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
+static ssize_t teensy_serial_read(tyb_board_interface *iface, char *buf, size_t size, int timeout)
 {
     ssize_t r;
 
-    switch (ty_device_get_type(iface->dev)) {
-    case TY_DEVICE_SERIAL:
-        return ty_serial_read(iface->h, buf, size, timeout);
+    switch (tyd_device_get_type(iface->dev)) {
+    case TYD_DEVICE_SERIAL:
+        return tyd_serial_read(iface->h, buf, size, timeout);
 
-    case TY_DEVICE_HID:
-        r = ty_hid_read(iface->h, (uint8_t *)buf, size, timeout);
+    case TYD_DEVICE_HID:
+        r = tyd_hid_read(iface->h, (uint8_t *)buf, size, timeout);
         if (r < 0)
             return r;
         if (!r)
@@ -274,24 +274,24 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
     __builtin_unreachable();
 }
 
-static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, size_t size)
+static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, size_t size)
 {
     uint8_t report[seremu_packet_size + 1];
     size_t total = 0;
     ssize_t r;
 
-    switch (ty_device_get_type(iface->dev)) {
-    case TY_DEVICE_SERIAL:
-        return ty_serial_write(iface->h, buf, (ssize_t)size);
+    switch (tyd_device_get_type(iface->dev)) {
+    case TYD_DEVICE_SERIAL:
+        return tyd_serial_write(iface->h, buf, (ssize_t)size);
 
-    case TY_DEVICE_HID:
+    case TYD_DEVICE_HID:
         /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so no binary
            transfers. */
         for (size_t i = 0; i < size;) {
             memset(report, 0, sizeof(report));
             memcpy(report + 1, buf + i, TY_MIN(seremu_packet_size, size - i));
 
-            r = ty_hid_write(iface->h, report, sizeof(report));
+            r = tyd_hid_write(iface->h, report, sizeof(report));
             if (r < 0)
                 return r;
             if (!r)
@@ -307,7 +307,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
     __builtin_unreachable();
 }
 
-static int halfkay_send(ty_board_interface *iface, size_t addr, void *data, size_t size, unsigned int timeout)
+static int halfkay_send(tyb_board_interface *iface, size_t addr, void *data, size_t size, unsigned int timeout)
 {
     uint8_t buf[2048] = {0};
     uint64_t start;
@@ -355,7 +355,7 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, void *data, size
     /* We may get errors along the way (while the bootloader works) so try again
        until timeout expires. */
     do {
-        r = ty_hid_write(iface->h, buf, size);
+        r = tyd_hid_write(iface->h, buf, size);
         if (r >= 0)
             return 0;
 
@@ -367,7 +367,7 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, void *data, size
     return 0;
 }
 
-static int teensy_upload(ty_board_interface *iface, ty_firmware *f, int flags, ty_board_upload_progress_func *pf, void *udata)
+static int teensy_upload(tyb_board_interface *iface, tyb_firmware *f, int flags, tyb_board_upload_progress_func *pf, void *udata)
 {
     TY_UNUSED(flags);
 
@@ -403,7 +403,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *f, int flags, t
     return 0;
 }
 
-static int teensy_reset(ty_board_interface *iface)
+static int teensy_reset(tyb_board_interface *iface)
 {
     if (iface->model->experimental && !ty_config_experimental)
         return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, use --experimental", iface->model->desc);
@@ -411,25 +411,25 @@ static int teensy_reset(ty_board_interface *iface)
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }
 
-static int teensy_reboot(ty_board_interface *iface)
+static int teensy_reboot(tyb_board_interface *iface)
 {
     static unsigned char seremu_magic[] = {0, 0xA9, 0x45, 0xC2, 0x6B};
 
     int r;
 
     r = TY_ERROR_UNSUPPORTED;
-    switch (ty_device_get_type(iface->dev)) {
-    case TY_DEVICE_SERIAL:
-        r = ty_serial_set_attributes(iface->h, 134, 0);
+    switch (tyd_device_get_type(iface->dev)) {
+    case TYD_DEVICE_SERIAL:
+        r = tyd_serial_set_attributes(iface->h, 134, 0);
         if (!r) {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
                the device will keep rebooting when opened. */
-            ty_serial_set_attributes(iface->h, 115200, 0);
+            tyd_serial_set_attributes(iface->h, 115200, 0);
         }
         break;
 
-    case TY_DEVICE_HID:
-        r = (int)ty_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
+    case TYD_DEVICE_HID:
+        r = (int)tyd_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
         if (r >= 0) {
             assert(r == sizeof(seremu_magic));
             r = 0;
@@ -443,7 +443,7 @@ static int teensy_reboot(ty_board_interface *iface)
     return r;
 }
 
-static const struct _ty_board_interface_vtable teensy_vtable = {
+static const struct _tyb_board_interface_vtable teensy_vtable = {
     .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,
@@ -454,9 +454,9 @@ static const struct _ty_board_interface_vtable teensy_vtable = {
     .reboot = teensy_reboot
 };
 
-static const struct _ty_board_model_vtable teensy_model_vtable = {
+static const struct _tyb_board_model_vtable teensy_model_vtable = {
 };
 
-const struct _ty_board_vendor _ty_teensy_vendor = {
+const struct _tyb_board_vendor _tyb_teensy_vendor = {
     .open_interface = teensy_open_interface
 };

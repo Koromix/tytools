@@ -11,23 +11,23 @@
 #include "device_priv.h"
 #include "ty/system.h"
 
-struct ty_device_monitor {
-    TY_DEVICE_MONITOR
+struct tyd_monitor {
+    TYD_MONITOR
 };
 
-struct ty_handle {
-    TY_HANDLE
+struct tyd_handle {
+    TYD_HANDLE
 };
 
 struct callback {
     ty_list_head list;
     int id;
 
-    ty_device_callback_func *f;
+    tyd_device_callback_func *f;
     void *udata;
 };
 
-int _ty_device_monitor_init(ty_device_monitor *monitor)
+int _tyd_device_monitor_init(tyd_monitor *monitor)
 {
     int r;
 
@@ -40,7 +40,7 @@ int _ty_device_monitor_init(ty_device_monitor *monitor)
     return 0;
 }
 
-void _ty_device_monitor_release(ty_device_monitor *monitor)
+void _tyd_device_monitor_release(tyd_monitor *monitor)
 {
     ty_list_foreach(cur, &monitor->callbacks) {
         struct callback *callback = ty_container_of(cur, struct callback, list);
@@ -48,27 +48,27 @@ void _ty_device_monitor_release(ty_device_monitor *monitor)
     }
 
     ty_htable_foreach(cur, &monitor->devices) {
-        ty_device *dev = ty_container_of(cur, ty_device, hnode);
+        tyd_device *dev = ty_container_of(cur, tyd_device, hnode);
 
         dev->monitor = NULL;
-        ty_device_unref(dev);
+        tyd_device_unref(dev);
     }
     ty_htable_release(&monitor->devices);
 }
 
-void ty_device_monitor_set_udata(ty_device_monitor *monitor, void *udata)
+void tyd_monitor_set_udata(tyd_monitor *monitor, void *udata)
 {
     assert(monitor);
     monitor->udata = udata;
 }
 
-void *ty_device_monitor_get_udata(const ty_device_monitor *monitor)
+void *tyd_monitor_get_udata(const tyd_monitor *monitor)
 {
     assert(monitor);
     return monitor->udata;
 }
 
-int ty_device_monitor_register_callback(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata)
+int tyd_monitor_register_callback(tyd_monitor *monitor, tyd_device_callback_func *f, void *udata)
 {
     assert(monitor);
     assert(f);
@@ -92,7 +92,7 @@ static void drop_callback(struct callback *callback)
     free(callback);
 }
 
-void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
+void tyd_monitor_deregister_callback(tyd_monitor *monitor, int id)
 {
     assert(monitor);
     assert(id >= 0);
@@ -106,7 +106,7 @@ void ty_device_monitor_deregister_callback(ty_device_monitor *monitor, int id)
     }
 }
 
-static int trigger_callbacks(ty_device *dev, ty_device_event event)
+static int trigger_callbacks(tyd_device *dev, tyd_monitor_event event)
 {
     ty_list_foreach(cur, &dev->monitor->callbacks) {
         struct callback *callback = ty_container_of(cur, struct callback, list);
@@ -124,49 +124,49 @@ static int trigger_callbacks(ty_device *dev, ty_device_event event)
     return 0;
 }
 
-int _ty_device_monitor_add(ty_device_monitor *monitor, ty_device *dev)
+int _tyd_device_monitor_add(tyd_monitor *monitor, tyd_device *dev)
 {
     ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(dev->key)) {
-        ty_device *dev2 = ty_container_of(cur, ty_device, hnode);
+        tyd_device *dev2 = ty_container_of(cur, tyd_device, hnode);
 
         if (strcmp(dev2->key, dev->key) == 0 && dev2->iface == dev->iface)
             return 0;
     }
 
-    ty_device_ref(dev);
+    tyd_device_ref(dev);
 
     dev->monitor = monitor;
     ty_htable_add(&monitor->devices, ty_htable_hash_str(dev->key), &dev->hnode);
 
-    return trigger_callbacks(dev, TY_DEVICE_EVENT_ADDED);
+    return trigger_callbacks(dev, TYD_MONITOR_EVENT_ADDED);
 }
 
-void _ty_device_monitor_remove(ty_device_monitor *monitor, const char *key)
+void _tyd_device_monitor_remove(tyd_monitor *monitor, const char *key)
 {
     ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(key)) {
-        ty_device *dev = ty_container_of(cur, ty_device, hnode);
+        tyd_device *dev = ty_container_of(cur, tyd_device, hnode);
 
         if (strcmp(dev->key, key) == 0) {
-            trigger_callbacks(dev, TY_DEVICE_EVENT_REMOVED);
+            trigger_callbacks(dev, TYD_MONITOR_EVENT_REMOVED);
 
             ty_htable_remove(&dev->hnode);
             dev->monitor = NULL;
 
-            ty_device_unref(dev);
+            tyd_device_unref(dev);
         }
     }
 }
 
-int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *f, void *udata)
+int tyd_monitor_list(tyd_monitor *monitor, tyd_device_callback_func *f, void *udata)
 {
     assert(monitor);
     assert(f);
 
     ty_htable_foreach(cur, &monitor->devices) {
-        ty_device *dev = ty_container_of(cur, ty_device, hnode);
+        tyd_device *dev = ty_container_of(cur, tyd_device, hnode);
         int r;
 
-        r = (*f)(dev, TY_DEVICE_EVENT_ADDED, udata);
+        r = (*f)(dev, TYD_MONITOR_EVENT_ADDED, udata);
         if (r)
             return r;
     }
@@ -174,7 +174,7 @@ int ty_device_monitor_list(ty_device_monitor *monitor, ty_device_callback_func *
     return 0;
 }
 
-ty_device *ty_device_ref(ty_device *dev)
+tyd_device *tyd_device_ref(tyd_device *dev)
 {
     assert(dev);
 
@@ -182,7 +182,7 @@ ty_device *ty_device_ref(ty_device *dev)
     return dev;
 }
 
-void ty_device_unref(ty_device *dev)
+void tyd_device_unref(tyd_device *dev)
 {
     if (dev) {
         if (__atomic_fetch_sub(&dev->refcount, 1, __ATOMIC_RELEASE) > 1)
@@ -198,19 +198,19 @@ void ty_device_unref(ty_device *dev)
     free(dev);
 }
 
-void ty_device_set_udata(ty_device *dev, void *udata)
+void tyd_device_set_udata(tyd_device *dev, void *udata)
 {
     assert(dev);
     dev->udata = udata;
 }
 
-void *ty_device_get_udata(const ty_device *dev)
+void *tyd_device_get_udata(const tyd_device *dev)
 {
     assert(dev);
     return dev->udata;
 }
 
-int ty_device_open(ty_device *dev, ty_handle **rh)
+int tyd_device_open(tyd_device *dev, tyd_handle **rh)
 {
     assert(dev);
     assert(rh);
@@ -218,7 +218,7 @@ int ty_device_open(ty_device *dev, ty_handle **rh)
     return (*dev->vtable->open)(dev, rh);
 }
 
-void ty_device_close(ty_handle *h)
+void tyd_device_close(tyd_handle *h)
 {
     if (!h)
         return;
@@ -226,7 +226,7 @@ void ty_device_close(ty_handle *h)
     (*h->dev->vtable->close)(h);
 }
 
-void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int id)
+void tyd_device_get_descriptors(const tyd_handle *h, ty_descriptor_set *set, int id)
 {
     assert(h);
     assert(set);
@@ -234,43 +234,43 @@ void ty_device_get_descriptors(const ty_handle *h, ty_descriptor_set *set, int i
     (*h->dev->vtable->get_descriptors)(h, set, id);
 }
 
-ty_device_type ty_device_get_type(const ty_device *dev)
+tyd_device_type tyd_device_get_type(const tyd_device *dev)
 {
     assert(dev);
     return dev->type;
 }
 
-const char *ty_device_get_location(const ty_device *dev)
+const char *tyd_device_get_location(const tyd_device *dev)
 {
     assert(dev);
     return dev->location;
 }
 
-const char *ty_device_get_path(const ty_device *dev)
+const char *tyd_device_get_path(const tyd_device *dev)
 {
     assert(dev);
     return dev->path;
 }
 
-uint16_t ty_device_get_vid(const ty_device *dev)
+uint16_t tyd_device_get_vid(const tyd_device *dev)
 {
     assert(dev);
     return dev->vid;
 }
 
-uint16_t ty_device_get_pid(const ty_device *dev)
+uint16_t tyd_device_get_pid(const tyd_device *dev)
 {
     assert(dev);
     return dev->pid;
 }
 
-const char *ty_device_get_serial_number(const ty_device *dev)
+const char *tyd_device_get_serial_number(const tyd_device *dev)
 {
     assert(dev);
     return dev->serial;
 }
 
-uint8_t ty_device_get_interface_number(const ty_device *dev)
+uint8_t tyd_device_get_interface_number(const tyd_device *dev)
 {
     assert(dev);
     return dev->iface;

@@ -14,7 +14,7 @@
 #include <functional>
 
 #include "ty.h"
-#include "board_proxy.hh"
+#include "board.hh"
 
 using namespace std;
 
@@ -23,26 +23,26 @@ static const int manual_reboot_delay = 5000;
 class BoardCommand : public QEvent {
     QString msg_;
 
-    ty_board *board_;
-    const function<void(BoardProxyWorker *, ty_board *)> f_;
+    tyb_board *board_;
+    const function<void(BoardWorker *, tyb_board *)> f_;
 
 public:
-    BoardCommand(ty_board *board, function<void(BoardProxyWorker *, ty_board *)> f, QString msg = QString());
+    BoardCommand(tyb_board *board, function<void(BoardWorker *, tyb_board *)> f, QString msg = QString());
     ~BoardCommand();
 
     QString msg() const;
 
-    void execute(BoardProxyWorker *worker);
+    void execute(BoardWorker *worker);
 };
 
-BoardCommand::BoardCommand(ty_board *board, function<void(BoardProxyWorker *, ty_board *)> f, QString msg)
-    : QEvent(QEvent::User), msg_(msg), board_(ty_board_ref(board)), f_(f)
+BoardCommand::BoardCommand(tyb_board *board, function<void(BoardWorker *, tyb_board *)> f, QString msg)
+    : QEvent(QEvent::User), msg_(msg), board_(tyb_board_ref(board)), f_(f)
 {
 }
 
 BoardCommand::~BoardCommand()
 {
-    ty_board_unref(board_);
+    tyb_board_unref(board_);
 }
 
 QString BoardCommand::msg() const
@@ -50,13 +50,13 @@ QString BoardCommand::msg() const
     return msg_;
 }
 
-void BoardCommand::execute(BoardProxyWorker *worker)
+void BoardCommand::execute(BoardWorker *worker)
 {
     f_(worker, board_);
     emit worker->taskProgress("", 0, 0);
 }
 
-void BoardProxyWorker::customEvent(QEvent *ev)
+void BoardWorker::customEvent(QEvent *ev)
 {
     if (ev->type() != QEvent::User)
         return;
@@ -67,7 +67,7 @@ void BoardProxyWorker::customEvent(QEvent *ev)
     running_task_ = nullptr;
 }
 
-void BoardProxyWorker::reportTaskProgress(unsigned int progress, unsigned int total)
+void BoardWorker::reportTaskProgress(unsigned int progress, unsigned int total)
 {
     if (!running_task_)
         return;
@@ -75,104 +75,104 @@ void BoardProxyWorker::reportTaskProgress(unsigned int progress, unsigned int to
     emit taskProgress(running_task_->msg(), progress, total);
 }
 
-BoardProxy::BoardProxy(ty_board *board, QObject *parent)
-    : QObject(parent), board_(ty_board_ref(board))
+Board::Board(tyb_board *board, QObject *parent)
+    : QObject(parent), board_(tyb_board_ref(board))
 {
     thread_ = new QThread(parent);
     thread_->start();
 
-    worker_ = new BoardProxyWorker();
+    worker_ = new BoardWorker();
     worker_->moveToThread(thread_);
 
     // This construct has been valid since Qt 4.8
     connect(thread_, &QThread::finished, worker_, &QThread::deleteLater);
     connect(thread_, &QThread::finished, thread_, &QThread::deleteLater);
 
-    connect(worker_, &BoardProxyWorker::taskProgress, this, &BoardProxy::reportTaskProgress);
+    connect(worker_, &BoardWorker::taskProgress, this, &Board::reportTaskProgress);
 
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(100000);
 
     serial_notifier_.setMinInterval(5);
-    connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &BoardProxy::serialReceived);
+    connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &Board::serialReceived);
 
     refreshBoard();
 }
 
-BoardProxy::~BoardProxy()
+Board::~Board()
 {
-    ty_board_unref(board_);
+    tyb_board_unref(board_);
     thread_->quit();
 }
 
-ty_board *BoardProxy::board() const
+tyb_board *Board::board() const
 {
     return board_;
 }
 
-bool BoardProxy::matchesIdentity(const QString &id)
+bool Board::matchesIdentity(const QString &id)
 {
-    return ty_board_matches_identity(board_, id.toLocal8Bit().constData()) == 1;
+    return tyb_board_matches_identity(board_, id.toLocal8Bit().constData()) == 1;
 }
 
-ty_board_state BoardProxy::state() const
+tyb_board_state Board::state() const
 {
-    return ty_board_get_state(board_);
+    return tyb_board_get_state(board_);
 }
 
-uint16_t BoardProxy::capabilities() const
+uint16_t Board::capabilities() const
 {
-    return ty_board_get_capabilities(board_);
+    return tyb_board_get_capabilities(board_);
 }
 
-const ty_board_model *BoardProxy::model() const
+const tyb_board_model *Board::model() const
 {
-    return ty_board_get_model(board_);
+    return tyb_board_get_model(board_);
 }
 
-QString BoardProxy::modelName() const
+QString Board::modelName() const
 {
-    auto model = ty_board_get_model(board_);
+    auto model = tyb_board_get_model(board_);
     if (!model)
         return tr("(unknown)");
 
-    return ty_board_model_get_name(model);
+    return tyb_board_model_get_name(model);
 }
 
-QString BoardProxy::modelDesc() const
+QString Board::modelDesc() const
 {
-    auto model = ty_board_get_model(board_);
+    auto model = tyb_board_get_model(board_);
     if (!model)
         return tr("(unknown)");
 
-    return ty_board_model_get_desc(model);
+    return tyb_board_model_get_desc(model);
 }
 
-QString BoardProxy::identity() const
+QString Board::identity() const
 {
-    return ty_board_get_identity(board_);
+    return tyb_board_get_identity(board_);
 }
 
-QString BoardProxy::location() const
+QString Board::location() const
 {
-    return ty_board_get_location(board_);
+    return tyb_board_get_location(board_);
 }
 
-uint64_t BoardProxy::serialNumber() const
+uint64_t Board::serialNumber() const
 {
-    return ty_board_get_serial_number(board_);
+    return tyb_board_get_serial_number(board_);
 }
 
-std::vector<BoardInterfaceInfo> BoardProxy::interfaces() const
+std::vector<BoardInterfaceInfo> Board::interfaces() const
 {
     std::vector<BoardInterfaceInfo> vec;
 
-    ty_board_list_interfaces(board_, [](ty_board_interface *iface, void *udata) {
+    tyb_board_list_interfaces(board_, [](tyb_board_interface *iface, void *udata) {
         BoardInterfaceInfo info;
-        info.desc = ty_board_interface_get_desc(iface);
-        info.path = ty_board_interface_get_path(iface);
-        info.capabilities = ty_board_interface_get_capabilities(iface);
-        info.number = ty_board_interface_get_interface_number(iface);
+        info.desc = tyb_board_interface_get_desc(iface);
+        info.path = tyb_board_interface_get_path(iface);
+        info.capabilities = tyb_board_interface_get_capabilities(iface);
+        info.number = tyb_board_interface_get_interface_number(iface);
 
         auto vec = reinterpret_cast<std::vector<BoardInterfaceInfo> *>(udata);
         vec->push_back(info);
@@ -183,43 +183,43 @@ std::vector<BoardInterfaceInfo> BoardProxy::interfaces() const
     return vec;
 }
 
-bool BoardProxy::isUploadAvailable() const
+bool Board::isUploadAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();
+    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();
 }
 
-bool BoardProxy::isResetAvailable() const
+bool Board::isResetAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || isRebootAvailable();
+    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RESET) || isRebootAvailable();
 }
 
-bool BoardProxy::isRebootAvailable() const
+bool Board::isRebootAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
+    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL);
 }
 
-bool BoardProxy::isSerialAvailable() const
+bool Board::isSerialAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
+    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL);
 }
 
-bool BoardProxy::clearOnReset() const
-{
-    return clear_on_reset_;
-}
-
-void BoardProxy::setClearOnReset(bool clear)
+void Board::setClearOnReset(bool clear)
 {
     clear_on_reset_ = clear;
     emit propertyChanged("clearOnReset", clear);
 }
 
-QTextDocument &BoardProxy::serialDocument()
+bool Board::clearOnReset() const
+{
+    return clear_on_reset_;
+}
+
+QTextDocument &Board::serialDocument()
 {
     return serial_document_;
 }
 
-void BoardProxy::appendToSerialDocument(const QString &s)
+void Board::appendToSerialDocument(const QString &s)
 {
     QTextCursor cursor(&serial_document_);
     cursor.movePosition(QTextCursor::End);
@@ -227,7 +227,7 @@ void BoardProxy::appendToSerialDocument(const QString &s)
     cursor.insertText(s);
 }
 
-QString BoardProxy::runningTask(unsigned int *progress, unsigned int *total) const
+QString Board::runningTask(unsigned int *progress, unsigned int *total) const
 {
     if (progress)
         *progress = task_progress_;
@@ -237,7 +237,7 @@ QString BoardProxy::runningTask(unsigned int *progress, unsigned int *total) con
     return task_msg_;
 }
 
-bool BoardProxy::event(QEvent *e)
+bool Board::event(QEvent *e)
 {
     if (e->type() == QEvent::DynamicPropertyChange) {
         QDynamicPropertyChangeEvent *ce = static_cast<QDynamicPropertyChangeEvent *>(e);
@@ -249,19 +249,19 @@ bool BoardProxy::event(QEvent *e)
     return QObject::event(e);
 }
 
-QStringList BoardProxy::makeCapabilityList(uint16_t capabilities)
+QStringList Board::makeCapabilityList(uint16_t capabilities)
 {
     QStringList list;
 
-    for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
+    for (unsigned int i = 0; i < TYB_BOARD_CAPABILITY_COUNT; i++) {
         if (capabilities & (1 << i))
-            list.append(ty_board_get_capability_name(static_cast<ty_board_capability>(i)));
+            list.append(tyb_board_capability_get_name(static_cast<tyb_board_capability>(i)));
     }
 
     return list;
 }
 
-QString BoardProxy::makeCapabilityString(uint16_t capabilities, QString empty_str)
+QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
 {
     QStringList list = makeCapabilityList(capabilities);
 
@@ -272,17 +272,17 @@ QString BoardProxy::makeCapabilityString(uint16_t capabilities, QString empty_st
     }
 }
 
-void BoardProxy::upload(const QString &filename, bool reset_after)
+void Board::upload(const QString &filename, bool reset_after)
 {
-    BoardCommand *cmd = new BoardCommand(board_, [filename, reset_after](BoardProxyWorker *worker, ty_board *board) {
-        ty_firmware *firmware;
+    BoardCommand *cmd = new BoardCommand(board_, [filename, reset_after](BoardWorker *worker, tyb_board *board) {
+        tyb_firmware *firmware;
 
         emit worker->reportTaskProgress();
 
-        if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
-            ty_board_reboot(board);
+        if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_UPLOAD)) {
+            tyb_board_reboot(board);
 
-            int r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_UPLOAD, true, manual_reboot_delay);
+            int r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, true, manual_reboot_delay);
             if (r < 0)
                 return;
             if (!r) {
@@ -291,15 +291,15 @@ void BoardProxy::upload(const QString &filename, bool reset_after)
             }
         }
 
-        int r = ty_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
+        int r = tyb_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
         if (r < 0)
             return;
-        unique_ptr<ty_firmware, decltype(ty_firmware_free) *> firmware_ptr(firmware, ty_firmware_free);
+        unique_ptr<tyb_firmware, decltype(tyb_firmware_free) *> firmware_ptr(firmware, tyb_firmware_free);
 
-        r = ty_board_upload(board, firmware, 0, [](const ty_board *board, const ty_firmware *f, size_t uploaded, void *udata) {
+        r = tyb_board_upload(board, firmware, 0, [](const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata) {
             TY_UNUSED(board);
 
-            BoardProxyWorker *worker = static_cast<BoardProxyWorker *>(udata);
+            BoardWorker *worker = static_cast<BoardWorker *>(udata);
             worker->reportTaskProgress(uploaded, f->size);
 
             return 0;
@@ -307,23 +307,23 @@ void BoardProxy::upload(const QString &filename, bool reset_after)
         if (r < 0)
             return;
         if (reset_after) {
-            ty_board_reset(board);
+            tyb_board_reset(board);
             QThread::msleep(400);
         }
     }, tr("Uploading"));
     QCoreApplication::postEvent(worker_, cmd);
 }
 
-void BoardProxy::reset()
+void Board::reset()
 {
     // this can be deleted while the worker thread is working, don't capture it!
-    BoardCommand *cmd = new BoardCommand(board_, [](BoardProxyWorker *worker, ty_board *board) {
+    BoardCommand *cmd = new BoardCommand(board_, [](BoardWorker *worker, tyb_board *board) {
         worker->reportTaskProgress();
 
-        if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
-            ty_board_reboot(board);
+        if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET)) {
+            tyb_board_reboot(board);
 
-            int r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RESET, true, manual_reboot_delay);
+            int r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, true, manual_reboot_delay);
             if (r < 0)
                 return;
             if (!r) {
@@ -332,44 +332,44 @@ void BoardProxy::reset()
             }
         }
 
-        ty_board_reset(board);
+        tyb_board_reset(board);
         QThread::msleep(800);
     }, tr("Resetting"));
     QCoreApplication::postEvent(worker_, cmd);
 }
 
-void BoardProxy::reboot()
+void Board::reboot()
 {
-    BoardCommand *cmd = new BoardCommand(board_, [](BoardProxyWorker *worker, ty_board *board) {
+    BoardCommand *cmd = new BoardCommand(board_, [](BoardWorker *worker, tyb_board *board) {
         TY_UNUSED(worker);
 
         worker->reportTaskProgress();
 
-        ty_board_reboot(board);
+        tyb_board_reboot(board);
         QThread::msleep(800);
     }, tr("Rebooting"));
     QCoreApplication::postEvent(worker_, cmd);
 }
 
-void BoardProxy::sendSerial(const QByteArray &buf)
+void Board::sendSerial(const QByteArray &buf)
 {
-    BoardCommand *cmd = new BoardCommand(board_, [buf](BoardProxyWorker *worker, ty_board *board) {
+    BoardCommand *cmd = new BoardCommand(board_, [buf](BoardWorker *worker, tyb_board *board) {
         TY_UNUSED(worker);
 
-        ty_board_serial_write(board, buf.data(), buf.size());
+        tyb_board_serial_write(board, buf.data(), buf.size());
     });
     QCoreApplication::postEvent(worker_, cmd);
 }
 
-void BoardProxy::refreshBoard()
+void Board::refreshBoard()
 {
-    if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL)) {
+    if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL)) {
         if (!serial_available_) {
             if (clear_on_reset_)
                 serial_document_.clear();
 
             ty_descriptor_set set = {0};
-            ty_board_get_descriptors(board_, TY_BOARD_CAPABILITY_SERIAL, &set, 1);
+            tyb_board_get_descriptors(board_, TYB_BOARD_CAPABILITY_SERIAL, &set, 1);
 
             serial_notifier_.setDescriptorSet(&set);
             serial_available_ = true;
@@ -382,13 +382,13 @@ void BoardProxy::refreshBoard()
     }
 }
 
-void BoardProxy::serialReceived(ty_descriptor desc)
+void Board::serialReceived(ty_descriptor desc)
 {
     TY_UNUSED(desc);
 
     char buf[1024];
 
-    ssize_t r = ty_board_serial_read(board_, buf, sizeof(buf), 0);
+    ssize_t r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
     if (r < 0) {
         serial_notifier_.clear();
         return;
@@ -399,7 +399,7 @@ void BoardProxy::serialReceived(ty_descriptor desc)
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
 }
 
-void BoardProxy::reportTaskProgress(const QString &msg, unsigned int progress, unsigned int total)
+void Board::reportTaskProgress(const QString &msg, unsigned int progress, unsigned int total)
 {
     task_msg_ = msg;
     task_progress_ = progress;
@@ -408,51 +408,51 @@ void BoardProxy::reportTaskProgress(const QString &msg, unsigned int progress, u
     emit taskProgress(*this, msg, progress, total);
 }
 
-BoardManagerProxy::~BoardManagerProxy()
+Manager::~Manager()
 {
     // Just making sure nothing depends on the manager when it's destroyed
     manager_notifier_.clear();
     boards_.clear();
 
-    ty_board_manager_free(manager_);
+    tyb_monitor_free(manager_);
 }
 
-bool BoardManagerProxy::start()
+bool Manager::start()
 {
     if (manager_)
         return true;
 
-    int r = ty_board_manager_new(&manager_);
+    int r = tyb_monitor_new(&manager_);
     if (r < 0)
         return false;
-    r = ty_board_manager_register_callback(manager_, [](ty_board *board, ty_board_event event, void *udata) {
-        BoardManagerProxy *model = static_cast<BoardManagerProxy *>(udata);
+    r = tyb_monitor_register_callback(manager_, [](tyb_board *board, tyb_monitor_event event, void *udata) {
+        Manager *model = static_cast<Manager *>(udata);
         return model->handleEvent(board, event);
     }, this);
     if (r < 0) {
-        ty_board_manager_free(manager_);
+        tyb_monitor_free(manager_);
         manager_ = nullptr;
 
         return false;
     }
 
     ty_descriptor_set set = {0};
-    ty_board_manager_get_descriptors(manager_, &set, 1);
+    tyb_monitor_get_descriptors(manager_, &set, 1);
 
     manager_notifier_.setDescriptorSet(&set);
-    connect(&manager_notifier_, &DescriptorSetNotifier::activated, this, &BoardManagerProxy::refreshManager);
+    connect(&manager_notifier_, &DescriptorSetNotifier::activated, this, &Manager::refreshManager);
 
-    ty_board_manager_refresh(manager_);
+    tyb_monitor_refresh(manager_);
 
     return true;
 }
 
-vector<shared_ptr<BoardProxy>> BoardManagerProxy::boards()
+vector<shared_ptr<Board>> Manager::boards()
 {
     return boards_;
 }
 
-shared_ptr<BoardProxy> BoardManagerProxy::board(unsigned int i)
+shared_ptr<Board> Manager::board(unsigned int i)
 {
     if (i >= boards_.size())
         return nullptr;
@@ -460,26 +460,26 @@ shared_ptr<BoardProxy> BoardManagerProxy::board(unsigned int i)
     return boards_[i];
 }
 
-unsigned int BoardManagerProxy::boardCount() const
+unsigned int Manager::boardCount() const
 {
     return boards_.size();
 }
 
-int BoardManagerProxy::rowCount(const QModelIndex &parent) const
+int Manager::rowCount(const QModelIndex &parent) const
 {
     TY_UNUSED(parent);
 
     return boards_.size();
 }
 
-int BoardManagerProxy::columnCount(const QModelIndex &parent) const
+int Manager::columnCount(const QModelIndex &parent) const
 {
     TY_UNUSED(parent);
 
     return 2;
 }
 
-QVariant BoardManagerProxy::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant Manager::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Vertical)
         return QVariant();
@@ -496,7 +496,7 @@ QVariant BoardManagerProxy::headerData(int section, Qt::Orientation orientation,
     return QVariant();
 }
 
-QVariant BoardManagerProxy::data(const QModelIndex &index, int role) const
+QVariant Manager::data(const QModelIndex &index, int role) const
 {
     if (index.row() >= static_cast<int>(boards_.size()))
         return QVariant();
@@ -512,7 +512,7 @@ QVariant BoardManagerProxy::data(const QModelIndex &index, int role) const
         case Qt::ToolTipRole:
             return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4"))
                            .arg(board->modelDesc())
-                           .arg(BoardProxy::makeCapabilityString(board->capabilities(), tr("(none)")))
+                           .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")))
                            .arg(board->location())
                            .arg(QString::number(board->serialNumber()));
         case Qt::SizeHintRole:
@@ -534,26 +534,26 @@ QVariant BoardManagerProxy::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-Qt::ItemFlags BoardManagerProxy::flags(const QModelIndex &index) const
+Qt::ItemFlags Manager::flags(const QModelIndex &index) const
 {
     if (index.row() >= static_cast<int>(boards_.size()))
         return 0;
 
-    if (boards_[index.row()]->state() == TY_BOARD_STATE_ONLINE) {
+    if (boards_[index.row()]->state() == TYB_BOARD_STATE_ONLINE) {
         return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
     } else {
         return Qt::ItemIsSelectable;
     }
 }
 
-void BoardManagerProxy::refreshManager(ty_descriptor desc)
+void Manager::refreshManager(ty_descriptor desc)
 {
     TY_UNUSED(desc);
 
-    ty_board_manager_refresh(manager_);
+    tyb_monitor_refresh(manager_);
 }
 
-void BoardManagerProxy::updateTaskProgress(const BoardProxy &board, const QString &msg, size_t progress, size_t total)
+void Manager::updateTaskProgress(const Board &board, const QString &msg, size_t progress, size_t total)
 {
     TY_UNUSED(msg);
     TY_UNUSED(progress);
@@ -565,19 +565,19 @@ void BoardManagerProxy::updateTaskProgress(const BoardProxy &board, const QStrin
     dataChanged(index, index);
 }
 
-int BoardManagerProxy::handleEvent(ty_board *board, ty_board_event event)
+int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
 {
     switch (event) {
-    case TY_BOARD_EVENT_ADDED:
+    case TYB_MONITOR_EVENT_ADDED:
         handleAddedEvent(board);
         break;
 
-    case TY_BOARD_EVENT_CHANGED:
-    case TY_BOARD_EVENT_DISAPPEARED:
+    case TYB_MONITOR_EVENT_CHANGED:
+    case TYB_MONITOR_EVENT_DISAPPEARED:
         handleChangedEvent(board);
         break;
 
-    case TY_BOARD_EVENT_DROPPED:
+    case TYB_MONITOR_EVENT_DROPPED:
         handleDroppedEvent(board);
         break;
     }
@@ -585,11 +585,11 @@ int BoardManagerProxy::handleEvent(ty_board *board, ty_board_event event)
     return 0;
 }
 
-void BoardManagerProxy::handleAddedEvent(ty_board *board)
+void Manager::handleAddedEvent(tyb_board *board)
 {
-    auto board_proxy = make_shared<BoardProxy>(board);
+    auto board_proxy = make_shared<Board>(board);
 
-    connect(board_proxy.get(), &BoardProxy::taskProgress, this, &BoardManagerProxy::updateTaskProgress);
+    connect(board_proxy.get(), &Board::taskProgress, this, &Manager::updateTaskProgress);
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
     boards_.push_back(board_proxy);
@@ -598,7 +598,7 @@ void BoardManagerProxy::handleAddedEvent(ty_board *board)
     emit boardAdded(board_proxy);
 }
 
-void BoardManagerProxy::handleChangedEvent(ty_board *board)
+void Manager::handleChangedEvent(tyb_board *board)
 {
     auto it = find_if(boards_.begin(), boards_.end(), [=](auto &ptr) { return ptr->board() == board; });
     if (it == boards_.end())
@@ -613,7 +613,7 @@ void BoardManagerProxy::handleChangedEvent(ty_board *board)
     emit proxy->boardChanged();
 }
 
-void BoardManagerProxy::handleDroppedEvent(ty_board *board)
+void Manager::handleDroppedEvent(tyb_board *board)
 {
     auto it = find_if(boards_.begin(), boards_.end(), [=](auto &ptr) { return ptr->board() == board; });
     if (it == boards_.end())

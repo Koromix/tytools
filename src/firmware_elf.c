@@ -53,7 +53,7 @@ typedef struct Elf32_Phdr {
 #define PT_LOAD 1
 
 struct loader_context {
-    ty_firmware *f;
+    tyb_firmware *f;
 
     FILE *fp;
     const char *filename;
@@ -148,9 +148,9 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     if (phdr.p_paddr + phdr.p_filesz > ctx->f->size) {
         ctx->f->size = phdr.p_paddr + phdr.p_filesz;
 
-        if (ctx->f->size > ty_firmware_max_size)
+        if (ctx->f->size > tyb_firmware_max_size)
             return ty_error(TY_ERROR_RANGE, "Firmware too big (max %zu bytes) in '%s'",
-                            ty_firmware_max_size, ctx->filename);
+                            tyb_firmware_max_size, ctx->filename);
     }
 
     r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, ctx->f->image + phdr.p_paddr);
@@ -160,7 +160,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     return 1;
 }
 
-int _ty_firmware_load_elf(const char *filename, ty_firmware **rfirmware)
+int _tyb_firmware_load_elf(const char *filename, tyb_firmware **rfirmware)
 {
     assert(rfirmware);
     assert(filename);
@@ -168,11 +168,11 @@ int _ty_firmware_load_elf(const char *filename, ty_firmware **rfirmware)
     struct loader_context ctx = {0};
     int r;
 
-    ctx.f = malloc(sizeof(ty_firmware) + ty_firmware_max_size);
+    ctx.f = malloc(sizeof(tyb_firmware) + tyb_firmware_max_size);
     if (!ctx.f)
         return ty_error(TY_ERROR_MEMORY, NULL);
     memset(ctx.f, 0, sizeof(*ctx.f));
-    memset(ctx.f->image, 0xFF, ty_firmware_max_size);
+    memset(ctx.f->image, 0xFF, tyb_firmware_max_size);
 
 #ifdef _WIN32
     ctx.fp = fopen(filename, "rb");

@@ -7,7 +7,7 @@
 #include <QPainter>
 
 #include "ty.h"
-#include "board_proxy.hh"
+#include "board.hh"
 #include "board_widget.hh"
 
 using namespace std;
@@ -77,7 +77,7 @@ bool BoardWidget::available() const
     return boardIcon->isEnabled();
 }
 
-BoardItemDelegate::BoardItemDelegate(BoardManagerProxy *model)
+BoardItemDelegate::BoardItemDelegate(Manager *model)
     : QItemDelegate(model), model_(model)
 {
 }
@@ -91,10 +91,10 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.resize(option.rect.size());
 
-    widget_.setAvailable(board->state() == TY_BOARD_STATE_ONLINE);
+    widget_.setAvailable(board->state() == TYB_BOARD_STATE_ONLINE);
 
     widget_.setModel(board->modelDesc());
-    widget_.setCapabilities(BoardProxy::makeCapabilityString(board->capabilities(), tr("(none)")));
+    widget_.setCapabilities(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
     widget_.setIdentity(board->identity());
 
     unsigned int progress, total;

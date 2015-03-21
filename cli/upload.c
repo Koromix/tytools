@@ -46,15 +46,15 @@ void print_upload_usage(FILE *f)
                "   -w, --wait               Wait for the bootloader instead of rebooting\n\n");
 
     fprintf(f, "Supported firmware formats: ");
-    for (const ty_firmware_format *format = ty_firmware_formats; format->name; format++)
-        fprintf(f, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
+    for (const tyb_firmware_format *format = tyb_firmware_formats; format->name; format++)
+        fprintf(f, "%s%s", format != tyb_firmware_formats ? ", " : "", format->name);
     fprintf(f, "\n");
 }
 
-static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64_t *rmtime)
+static int reload_firmware(tyb_firmware **rfirmware, const char *filename, uint64_t *rmtime)
 {
     ty_file_info info;
-    ty_firmware *firmware;
+    tyb_firmware *firmware;
     int r;
 
     r = ty_stat(filename, &info, true);
@@ -62,12 +62,12 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
         return r;
 
     if (!*rfirmware || info.mtime != *rmtime) {
-        r = ty_firmware_load(filename, image_format, &firmware);
+        r = tyb_firmware_load(filename, image_format, &firmware);
         if (r < 0)
             return r;
 
         if (*rfirmware)
-            ty_firmware_free(*rfirmware);
+            tyb_firmware_free(*rfirmware);
         *rfirmware = firmware;
         *rmtime = info.mtime;
 
@@ -77,7 +77,7 @@ static int reload_firmware(ty_firmware **rfirmware, const char *filename, uint64
     return 0;
 }
 
-static int progress_callback(const ty_board *board, const ty_firmware *f, size_t uploaded, void *udata)
+static int progress_callback(const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata)
 {
     TY_UNUSED(board);
     TY_UNUSED(udata);
@@ -90,9 +90,9 @@ static int progress_callback(const ty_board *board, const ty_firmware *f, size_t
 
 int upload(int argc, char *argv[])
 {
-    ty_board *board = NULL;
-    ty_firmware *firmware = NULL;
-    const ty_board_model *model;
+    tyb_board *board = NULL;
+    tyb_firmware *firmware = NULL;
+    const tyb_board_model *model;
     uint64_t mtime = 0;
     int r;
 
@@ -141,20 +141,20 @@ int upload(int argc, char *argv[])
         goto cleanup;
 
     // Can't upload directly, should we try to reboot or wait?
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
+    if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_UPLOAD)) {
         if (wait_device) {
             printf("Waiting for device...\n"
                    "  (hint: press button to reboot)\n");
         } else {
             printf("Triggering board reboot\n");
-            r = ty_board_reboot(board);
+            r = tyb_board_reboot(board);
             if (r < 0)
                 goto cleanup;
         }
     }
 
 wait:
-    r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_UPLOAD, false, wait_device ? -1 : manual_reboot_delay);
+    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, false, wait_device ? -1 : manual_reboot_delay);
     if (r < 0)
         goto cleanup;
     if (!r) {
@@ -169,33 +169,33 @@ wait:
     if (r < 0)
         goto cleanup;
 
-    model = ty_board_get_model(board);
+    model = tyb_board_get_model(board);
     if (!model) {
         r = ty_error(TY_ERROR_MODE, "Unknown board model");
         goto cleanup;
     }
 
-    printf("Model: %s\n", ty_board_model_get_desc(model));
+    printf("Model: %s\n", tyb_board_model_get_desc(model));
     printf("Firmware: %s\n", image_filename);
 
-    printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)ty_board_model_get_code_size(model) * 100.0,
+    printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)tyb_board_model_get_code_size(model) * 100.0,
            firmware->size);
 
     if (show_progress) {
-        r = ty_board_upload(board, firmware, 0, progress_callback, NULL);
+        r = tyb_board_upload(board, firmware, 0, progress_callback, NULL);
         if (r < 0)
             goto cleanup;
         printf("\n");
     } else {
         printf("Uploading firmware...\n");
-        r = ty_board_upload(board, firmware, 0, NULL, NULL);
+        r = tyb_board_upload(board, firmware, 0, NULL, NULL);
         if (r < 0)
             goto cleanup;
     }
 
     if (reset_after) {
         printf("Sending reset command\n");
-        r = ty_board_reset(board);
+        r = tyb_board_reset(board);
         if (r < 0)
             goto cleanup;
     } else {
@@ -204,8 +204,8 @@ wait:
 
     r = 0;
 cleanup:
-    ty_firmware_free(firmware);
-    ty_board_unref(board);
+    tyb_firmware_free(firmware);
+    tyb_board_unref(board);
     return r;
 
 usage:

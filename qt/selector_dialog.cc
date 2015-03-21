@@ -10,7 +10,7 @@
 
 using namespace std;
 
-SelectorDialog::SelectorDialog(BoardManagerProxy *manager, QWidget *parent)
+SelectorDialog::SelectorDialog(Manager *manager, QWidget *parent)
     : QDialog(parent), manager_(manager)
 {
     setupUi(this);
@@ -30,12 +30,12 @@ SelectorDialog::SelectorDialog(BoardManagerProxy *manager, QWidget *parent)
     }
 }
 
-std::shared_ptr<BoardProxy> SelectorDialog::currentBoard() const
+std::shared_ptr<Board> SelectorDialog::currentBoard() const
 {
     return current_board_;
 }
 
-std::shared_ptr<BoardProxy> SelectorDialog::selectedBoard() const
+std::shared_ptr<Board> SelectorDialog::selectedBoard() const
 {
     return result() ? current_board_ : nullptr;
 }
@@ -61,7 +61,7 @@ void SelectorDialog::done(int result)
     emit boardSelected(result ? currentBoard() : nullptr);
 }
 
-shared_ptr<BoardProxy> SelectorDialog::getBoard(BoardManagerProxy *manager, QWidget *parent)
+shared_ptr<Board> SelectorDialog::getBoard(Manager *manager, QWidget *parent)
 {
     SelectorDialog dialog(manager, parent);
 

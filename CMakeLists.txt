@@ -155,7 +155,7 @@ set(TYC_SOURCES cli/list.c
 set(TYQ_SOURCES qt/about_dialog.cc
                 qt/main.cc
                 qt/main_window.cc
-                qt/board_proxy.cc
+                qt/board.cc
                 qt/board_widget.cc
                 qt/descriptor_set_notifier.cc
                 qt/selector_dialog.cc
