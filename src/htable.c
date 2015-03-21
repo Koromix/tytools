@@ -15,8 +15,7 @@ int ty_htable_init(ty_htable *table, unsigned int size)
         return ty_error(TY_ERROR_MEMORY, NULL);
     table->size = size;
 
-    for (unsigned int i = 0; i < table->size; i++)
-        table->heads[i] = (ty_htable_head *)&table->heads[i];
+    ty_htable_clear(table);
 
     return 0;
 }
@@ -59,4 +58,10 @@ void ty_htable_remove(ty_htable_head *head)
             break;
         }
     }
+}
+
+void ty_htable_clear(ty_htable *table)
+{
+    for (unsigned int i = 0; i < table->size; i++)
+        table->heads[i] = (ty_htable_head *)&table->heads[i];
 }

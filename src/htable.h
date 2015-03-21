@@ -29,8 +29,9 @@ ty_htable_head *ty_htable_get_head(ty_htable *table, uint32_t key);
 
 void ty_htable_add(ty_htable *table, uint32_t key, ty_htable_head *head);
 void ty_htable_insert(ty_htable_head *prev, ty_htable_head *head);
-
 void ty_htable_remove(ty_htable_head *head);
+
+void ty_htable_clear(ty_htable *table);
 
 static inline uint32_t ty_htable_hash_str(const char *s)
 {
