@@ -25,9 +25,6 @@ Pre-built binaries are available for Windows and Mac OS X.
 
 ty can be built using GCC or Clang.
 
-Experimental features are disabled by default, enable them by turning on the EXPERIMENTAL option
-in cmake with `-DEXPERIMENTAL=1`.
-
 <a name="build_linux"/>
 ## Linux
 
