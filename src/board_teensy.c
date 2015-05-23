@@ -123,7 +123,7 @@ const tyb_board_model _tyb_teensy_lc_model = {
 
     .code_size = 63488,
     .halfkay_version = 3,
-    .block_size = 1024
+    .block_size = 512
 };
 
 static const size_t seremu_packet_size = 32;
