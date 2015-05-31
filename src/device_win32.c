@@ -893,10 +893,51 @@ cleanup:
     return r;
 }
 
+static void start_async_read(tyd_handle *h)
+{
+    DWORD ret;
+
+    h->len = 0;
+    ResetEvent(h->ov->hEvent);
+
+    ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
+    if (!ret && GetLastError() != ERROR_IO_PENDING) {
+        CancelIo(h->handle);
+        h->len = -1;
+    }
+
+    h->pending_thread = GetCurrentThreadId();
+}
+
+static ssize_t finalize_async_read(tyd_handle *h, int timeout)
+{
+    DWORD len, ret;
+
+    if (timeout > 0) {
+        ret = WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
+        if (ret != WAIT_OBJECT_0) {
+            if (ret == WAIT_TIMEOUT)
+                return 0;
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        }
+    }
+
+    ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
+    if (!ret) {
+        if (GetLastError() == ERROR_IO_PENDING)
+            return 0;
+
+        h->pending_thread = 0;
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+    }
+    h->pending_thread = 0;
+
+    return (ssize_t)len;
+}
+
 static int open_win32_device(tyd_device *dev, tyd_handle **rh)
 {
     tyd_handle *h = NULL;
-    DWORD len;
     COMMTIMEOUTS timeouts;
     int r;
 
@@ -958,12 +999,7 @@ static int open_win32_device(tyd_device *dev, tyd_handle **rh)
     if (dev->type == TYD_DEVICE_SERIAL)
         EscapeCommFunction(h->handle, SETDTR);
 
-    r = ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, &len, h->ov);
-    if (!r && GetLastError() != ERROR_IO_PENDING) {
-        r = ty_error(TY_ERROR_SYSTEM, "ReadFile() failed: %s", ty_win32_strerror(0));
-        goto error;
-    }
-    h->pending_thread = GetCurrentThreadId();
+    start_async_read(h);
 
     *rh = h;
     return 0;
@@ -1076,36 +1112,28 @@ ssize_t tyd_hid_read(tyd_handle *h, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    DWORD len, ret;
+    ssize_t len;
 
-    if (timeout > 0) {
-        ret = WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
-        if (ret != WAIT_OBJECT_0) {
-            if (ret == WAIT_TIMEOUT)
-                return 0;
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-        }
-    }
+    if (h->len < 0) {
+        // Could be a transient error, try to restart it
+        start_async_read(h);
 
-    ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
-    if (!ret) {
-        if (GetLastError() == ERROR_IO_PENDING)
-            return 0;
-
-        h->pending_thread = 0;
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
-    h->pending_thread = 0;
+
+    len = finalize_async_read(h, timeout);
+    if (len <= 0)
+        return len;
 
     /* HID communication is message-based. So if the caller does not provide a big enough
        buffer, we can just discard the extra data, unlike for serial communication. */
     if (len) {
         if (h->buf[0]) {
-            if (size > len)
+            if (size > (size_t)len)
                 size = (size_t)len;
             memcpy(buf, h->buf, size);
         } else {
-            if (size > --len)
+            if (size > (size_t)--len)
                 size = (size_t)len;
             memcpy(buf, h->buf + 1, size);
         }
@@ -1113,13 +1141,7 @@ ssize_t tyd_hid_read(tyd_handle *h, uint8_t *buf, size_t size, int timeout)
         size = 0;
     }
 
-    ResetEvent(h->ov->hEvent);
-    ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
-    if (!ret && GetLastError() != ERROR_IO_PENDING) {
-        CancelIo(h->handle);
-        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-    }
-    h->pending_thread = GetCurrentThreadId();
+    start_async_read(h);
 
     return (ssize_t)size;
 }
@@ -1284,19 +1306,9 @@ ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    DWORD len, ret;
-
     if (h->len < 0) {
-        h->len = 0;
-
         // Could be a transient error, try to restart it
-        ResetEvent(h->ov->hEvent);
-        ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
-        if (!ret && GetLastError() != ERROR_IO_PENDING) {
-            CancelIo(h->handle);
-            h->len = -1;
-        }
-        h->pending_thread = GetCurrentThreadId();
+        start_async_read(h);
 
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
@@ -1305,27 +1317,12 @@ ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
        read request has returned anything. Then we can just give the user the data we have, until
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
     if (!h->len) {
-        if (timeout > 0) {
-            ret = WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
-            if (ret != WAIT_OBJECT_0) {
-                if (ret == WAIT_TIMEOUT)
-                    return 0;
-                return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-            }
-        }
-
-        ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
-        if (!ret) {
-            if (GetLastError() == ERROR_IO_PENDING)
-                return 0;
-
-            h->pending_thread = 0;
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-        }
-        h->pending_thread = 0;
+        ssize_t r = finalize_async_read(h, timeout);
+        if (r <= 0)
+            return r;
 
         h->ptr = h->buf;
-        h->len = (ssize_t)len;
+        h->len = r;
     }
 
     if (size > (size_t)h->len)
@@ -1338,15 +1335,8 @@ ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
     /* Our buffer has been fully read, start a new asynchonous request. I don't know how
        much latency this brings. Maybe double buffering would help, but not before any concrete
        benchmarking is done. */
-    if (!h->len) {
-        ResetEvent(h->ov->hEvent);
-        ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
-        if (!ret && GetLastError() != ERROR_IO_PENDING) {
-            CancelIo(h->handle);
-            h->len = -1;
-        }
-        h->pending_thread = GetCurrentThreadId();
-    }
+    if (!h->len)
+        start_async_read(h);
 
     return (ssize_t)size;
 }
