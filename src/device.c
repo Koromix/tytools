@@ -27,7 +27,7 @@ struct callback {
     void *udata;
 };
 
-int _tyd_device_monitor_init(tyd_monitor *monitor)
+int _tyd_monitor_init(tyd_monitor *monitor)
 {
     int r;
 
@@ -40,7 +40,7 @@ int _tyd_device_monitor_init(tyd_monitor *monitor)
     return 0;
 }
 
-void _tyd_device_monitor_release(tyd_monitor *monitor)
+void _tyd_monitor_release(tyd_monitor *monitor)
 {
     ty_list_foreach(cur, &monitor->callbacks) {
         struct callback *callback = ty_container_of(cur, struct callback, list);
@@ -124,7 +124,7 @@ static int trigger_callbacks(tyd_device *dev, tyd_monitor_event event)
     return 0;
 }
 
-int _tyd_device_monitor_add(tyd_monitor *monitor, tyd_device *dev)
+int _tyd_monitor_add(tyd_monitor *monitor, tyd_device *dev)
 {
     ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(dev->key)) {
         tyd_device *dev2 = ty_container_of(cur, tyd_device, hnode);
@@ -141,7 +141,7 @@ int _tyd_device_monitor_add(tyd_monitor *monitor, tyd_device *dev)
     return trigger_callbacks(dev, TYD_MONITOR_EVENT_ADDED);
 }
 
-void _tyd_device_monitor_remove(tyd_monitor *monitor, const char *key)
+void _tyd_monitor_remove(tyd_monitor *monitor, const char *key)
 {
     ty_htable_foreach_hash(cur, &monitor->devices, ty_htable_hash_str(key)) {
         tyd_device *dev = ty_container_of(cur, tyd_device, hnode);

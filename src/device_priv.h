@@ -57,11 +57,11 @@ struct tyd_device {
 #define TYD_HANDLE \
     tyd_device *dev;
 
-int _tyd_device_monitor_init(tyd_monitor *monitor);
-void _tyd_device_monitor_release(tyd_monitor *monitor);
+int _tyd_monitor_init(tyd_monitor *monitor);
+void _tyd_monitor_release(tyd_monitor *monitor);
 
-int _tyd_device_monitor_add(tyd_monitor *monitor, tyd_device *dev);
-void _tyd_device_monitor_remove(tyd_monitor *monitor, const char *key);
+int _tyd_monitor_add(tyd_monitor *monitor, tyd_device *dev);
+void _tyd_monitor_remove(tyd_monitor *monitor, const char *key);
 
 TY_C_END
 

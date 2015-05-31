@@ -79,7 +79,7 @@ __declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA 
 static CancelIoEx_func *CancelIoEx_;
 
 enum { MAX_USB_DEPTH = 8 };
-static const char *monitor_class_name = "tyd_device_monitor";
+static const char *monitor_class_name = "tyd_monitor";
 
 static const size_t read_buffer_size = 1024;
 
@@ -465,7 +465,7 @@ static int create_device(tyd_monitor *monitor, const char *key, DEVINST inst, ui
 
     dev->vtable = &win32_device_vtable;
 
-    r = _tyd_device_monitor_add(monitor, dev);
+    r = _tyd_monitor_add(monitor, dev);
 cleanup:
     tyd_device_unref(dev);
     return r;
@@ -700,7 +700,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
     }
 
     /* Our fake window is created and ready to receive device notifications,
-       tyd_device_monitor_new() can go on. */
+       tyd_monitor_new() can go on. */
     SetEvent(monitor->event);
 
     while((ret = GetMessage(&msg, NULL, 0, 0)) != 0) {
@@ -766,7 +766,7 @@ int tyd_monitor_new(tyd_monitor **rmonitor)
         goto error;
     }
 
-    r = _tyd_device_monitor_init(monitor);
+    r = _tyd_monitor_init(monitor);
     if (r < 0)
         goto error;
 
@@ -802,7 +802,7 @@ error:
 void tyd_monitor_free(tyd_monitor *monitor)
 {
     if (monitor) {
-        _tyd_device_monitor_release(monitor);
+        _tyd_monitor_release(monitor);
 
         if (monitor->thread) {
             if (monitor->hwnd) {
@@ -867,7 +867,7 @@ int tyd_monitor_refresh(tyd_monitor *monitor)
             break;
 
         case TYD_MONITOR_EVENT_REMOVED:
-            _tyd_device_monitor_remove(monitor, notification->key);
+            _tyd_monitor_remove(monitor, notification->key);
             r = 0;
             break;
         }

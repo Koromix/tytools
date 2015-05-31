@@ -406,7 +406,7 @@ static int make_device_for_interface(tyd_monitor *monitor, struct iokit_device *
     if (r <= 0)
         goto cleanup;
 
-    r = _tyd_device_monitor_add(monitor, dev);
+    r = _tyd_monitor_add(monitor, dev);
 cleanup:
     tyd_device_unref(dev);
     return r;
@@ -508,7 +508,7 @@ static void remove_device(tyd_monitor *monitor, io_service_t device_service)
         return;
 
     snprintf(key, sizeof(key), "%"PRIx64, session);
-    _tyd_device_monitor_remove(monitor, key);
+    _tyd_monitor_remove(monitor, key);
 }
 
 static void darwin_devices_detached(void *ptr, io_iterator_t devices)
@@ -649,7 +649,7 @@ int tyd_monitor_new(tyd_monitor **rmonitor)
         goto error;
     }
 
-    r = _tyd_device_monitor_init(monitor);
+    r = _tyd_monitor_init(monitor);
     if (r < 0)
         goto error;
 
@@ -673,7 +673,7 @@ error:
 void tyd_monitor_free(tyd_monitor *monitor)
 {
     if (monitor) {
-        _tyd_device_monitor_release(monitor);
+        _tyd_monitor_release(monitor);
 
         ty_list_foreach(cur, &monitor->controllers) {
             struct usb_controller *controller = ty_container_of(cur, struct usb_controller, list);

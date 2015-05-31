@@ -210,7 +210,7 @@ static int list_devices(tyd_monitor *monitor)
         if (!r)
             continue;
 
-        r = _tyd_device_monitor_add(monitor, dev);
+        r = _tyd_monitor_add(monitor, dev);
         tyd_device_unref(dev);
 
         if (r < 0)
@@ -277,7 +277,7 @@ int tyd_monitor_new(tyd_monitor **rmonitor)
         goto error;
     }
 
-    r = _tyd_device_monitor_init(monitor);
+    r = _tyd_monitor_init(monitor);
     if (r < 0)
         goto error;
 
@@ -296,7 +296,7 @@ error:
 void tyd_monitor_free(tyd_monitor *monitor)
 {
     if (monitor) {
-        _tyd_device_monitor_release(monitor);
+        _tyd_monitor_release(monitor);
         udev_monitor_unref(monitor->monitor);
     }
 
@@ -328,11 +328,11 @@ int tyd_monitor_refresh(tyd_monitor *monitor)
 
             r = read_device_information(udev_dev, &dev);
             if (r > 0)
-                r = _tyd_device_monitor_add(monitor, dev);
+                r = _tyd_monitor_add(monitor, dev);
 
             tyd_device_unref(dev);
         } else if (strcmp(action, "remove") == 0) {
-            _tyd_device_monitor_remove(monitor, udev_device_get_devpath(udev_dev));
+            _tyd_monitor_remove(monitor, udev_device_get_devpath(udev_dev));
         }
 
         udev_device_unref(udev_dev);
