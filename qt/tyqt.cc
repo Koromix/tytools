@@ -82,6 +82,11 @@ void TyQt::newMainWindow()
         auto it = find(main_windows_.begin(), main_windows_.end(), win);
         if (it != main_windows_.end())
             main_windows_.erase(it);
+
+        /* Some environments (such as KDE Plasma) keep the application running when a tray
+           icon/status notifier exists, and we don't want that. */
+        if (main_windows_.empty())
+            tyQt->quit();
     });
     main_windows_.push_back(win);
 
