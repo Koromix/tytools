@@ -10,11 +10,13 @@
 #include <windows.h>
 #include <cfgmgr32.h>
 #include <dbt.h>
+#include <devioctl.h>
 #include <hidsdi.h>
 #include <hidpi.h>
 #include <process.h>
 #include <setupapi.h>
 #include <usb.h>
+#include <usbioctl.h>
 #include <usbuser.h>
 #include "ty/device.h"
 #include "device_priv.h"
@@ -127,7 +129,33 @@ static uint8_t find_controller_index(ty_list_head *controllers, const char *id)
     return 0;
 }
 
-static uint8_t find_device_port(DEVINST inst)
+static int build_device_path(const char *id, const GUID *guid, char **rpath)
+{
+    char *path, *ptr;
+
+    path = malloc(4 + strlen(id) + 41);
+    if (!path)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    ptr = stpcpy(path, "\\\\.\\");
+    while (*id) {
+        if (*id == '\\') {
+            *ptr++ = '#';
+            id++;
+        } else {
+            *ptr++ = *id++;
+        }
+    }
+
+    sprintf(ptr, "#{%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            guid->Data1, guid->Data2, guid->Data3, guid->Data4[0], guid->Data4[1],
+            guid->Data4[2], guid->Data4[3], guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
+
+    *rpath = path;
+    return 0;
+}
+
+static uint8_t find_device_port_vista(DEVINST inst)
 {
     char buf[256];
     DWORD len;
@@ -176,13 +204,186 @@ static int build_location_string(uint8_t ports[], unsigned int depth, char **rpa
     return 0;
 }
 
+static int wide_to_cstring(const wchar_t *wide, size_t size, char **rs)
+{
+    wchar_t *tmp = NULL;
+    char *s = NULL;
+    int len, r;
+
+    tmp = calloc(1, size + sizeof(wchar_t));
+    if (!tmp)
+        return ty_error(TY_ERROR_MEMORY, NULL);
+
+    memcpy(tmp, wide, size);
+
+    len = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, tmp, -1, NULL, 0, NULL, NULL);
+    if (!len) {
+        r = ty_error(TY_ERROR_PARSE, "Failed to convert UTF-16 string to local codepage: %s",
+                     ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    s = malloc((size_t)len);
+    if (!s) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto cleanup;
+    }
+
+    len = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, tmp, -1, s, len, NULL, NULL);
+    if (!len) {
+        r = ty_error(TY_ERROR_PARSE, "Failed to convert UTF-16 string to local codepage: %s",
+                     ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    *rs = s;
+    s = NULL;
+
+    r = 0;
+cleanup:
+    free(s);
+    free(tmp);
+    return r;
+}
+
+static int get_port_driverkey(HANDLE hub, uint8_t port, char **rkey)
+{
+    DWORD len;
+    USB_NODE_CONNECTION_INFORMATION_EX *node;
+    USB_NODE_CONNECTION_DRIVERKEY_NAME pseudo = {0};
+    USB_NODE_CONNECTION_DRIVERKEY_NAME *wide = NULL;
+    BOOL success;
+    int r;
+
+    len = sizeof(node) + (sizeof(USB_PIPE_INFO) * 30);
+    node = calloc(1, len);
+    if (!node) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto cleanup;
+    }
+
+    node->ConnectionIndex = port;
+    pseudo.ConnectionIndex = port;
+
+    success = DeviceIoControl(hub, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, node, len,
+                              node, len, &len, NULL);
+    if (!success) {
+        r = 0;
+        goto cleanup;
+    }
+
+    if (node->ConnectionStatus != DeviceConnected) {
+        r = 0;
+        goto cleanup;
+    }
+
+    success = DeviceIoControl(hub, IOCTL_USB_GET_NODE_CONNECTION_DRIVERKEY_NAME, &pseudo, sizeof(pseudo),
+                              &pseudo, sizeof(pseudo), &len, NULL);
+    if (!success) {
+        r = 0;
+        goto cleanup;
+    }
+
+    wide = calloc(1, pseudo.ActualLength);
+    if (!wide) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto cleanup;
+    }
+
+    wide->ConnectionIndex = port;
+
+    success = DeviceIoControl(hub, IOCTL_USB_GET_NODE_CONNECTION_DRIVERKEY_NAME, wide, pseudo.ActualLength,
+                              wide, pseudo.ActualLength, &len, NULL);
+    if (!success) {
+        r = 0;
+        goto cleanup;
+    }
+
+    r = wide_to_cstring(wide->DriverKeyName, len - sizeof(pseudo) + 1, rkey);
+    if (r < 0)
+        goto cleanup;
+
+    r = 1;
+cleanup:
+    free(wide);
+    free(node);
+    return r;
+}
+
+static int find_device_port_xp(const char *hub_id, const char *child_key)
+{
+    char *path = NULL;
+    HANDLE h = NULL;
+    USB_NODE_INFORMATION node;
+    DWORD len;
+    BOOL success;
+    int r;
+
+    r = build_device_path(hub_id, &GUID_DEVINTERFACE_USB_HUB, &path);
+    if (r < 0)
+        goto cleanup;
+
+    h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if (!h) {
+        r = ty_error(TY_ERROR_SYSTEM, "Failed to open USB hub '%s': %s", path, ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, NULL, 0, &node, sizeof(node),
+                              &len, NULL);
+    if (!success) {
+        r = 0;
+        goto cleanup;
+    }
+
+    for (uint8_t port = 1; port <= node.u.HubInformation.HubDescriptor.bNumberOfPorts; port++) {
+        char *key = NULL;
+
+        r = get_port_driverkey(h, port, &key);
+        if (r < 0)
+            goto cleanup;
+        if (!r)
+            continue;
+
+        if (strcmp(key, child_key) == 0) {
+            free(key);
+
+            r = port;
+            break;
+        } else {
+            free(key);
+        }
+    }
+
+cleanup:
+    if (h)
+        CloseHandle(h);
+    free(path);
+    return r;
+}
+
 static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char **rpath)
 {
-    char buf[256];
+    DEVINST parent;
+    char id[256];
     uint8_t ports[MAX_USB_DEPTH];
     unsigned int depth;
     CONFIGRET cret;
     int r;
+
+    // skip nodes until we get to the USB ones
+    parent = inst;
+    do {
+        inst = parent;
+
+        cret = CM_Get_Device_ID(inst, id, sizeof(id), 0);
+        if (cret != CR_SUCCESS)
+            return 0;
+
+        cret = CM_Get_Parent(&parent, inst, 0);
+    } while (cret == CR_SUCCESS && strncmp(id, "USB\\", 4) != 0);
+    if (cret != CR_SUCCESS)
+        return 0;
 
     depth = 0;
     do {
@@ -191,27 +392,40 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
             return 0;
         }
 
-        cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
+        cret = CM_Get_Device_ID(parent, id, sizeof(id), 0);
         if (cret != CR_SUCCESS)
             return 0;
 
-        if (strstr(buf, "\\ROOT_HUB")) {
-            ports[depth++] = find_controller_index(controllers, buf);
+        if (ty_win32_test_version(TY_WIN32_VISTA)) {
+            ports[depth] = find_device_port_vista(inst);
+            if (ports[depth])
+                depth++;
+        } else {
+            char child_key[256];
+            DWORD len;
+
+            len = sizeof(child_key);
+            cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_DRIVER, NULL, child_key, &len, 0);
+            if (cret != CR_SUCCESS)
+                return 0;
+
+            r = find_device_port_xp(id, child_key);
+            if (r < 0)
+                return 0;
+            if (r)
+                ports[depth++] = (uint8_t)r;
+        }
+
+        if (strstr(id, "\\ROOT_HUB")) {
+            ports[depth++] = find_controller_index(controllers, id);
             if (depth == 1)
                 return 0;
             break;
-        } else if (depth && strncmp(buf, "USB\\", 4) != 0) {
-            return 0;
         }
 
-        ports[depth] = find_device_port(inst);
-        if (ports[depth])
-            depth++;
-
-        cret = CM_Get_Parent(&inst, inst, 0);
+        inst = parent;
+        cret = CM_Get_Parent(&parent, parent, 0);
     } while (cret == CR_SUCCESS);
-    if (cret != CR_SUCCESS)
-        return 0;
 
     for (unsigned int i = 0; i < depth / 2; i++) {
         uint8_t tmp = ports[i];
@@ -312,32 +526,6 @@ static int get_device_comport(DEVINST inst, char **rnode)
     return 1;
 }
 
-static int build_device_path(const char *id, const GUID *guid, char **rpath)
-{
-    char *path, *ptr;
-
-    path = malloc(4 + strlen(id) + 41);
-    if (!path)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    ptr = stpcpy(path, "\\\\.\\");
-    while (*id) {
-        if (*id == '\\') {
-            *ptr++ = '#';
-            id++;
-        } else {
-            *ptr++ = *id++;
-        }
-    }
-
-    sprintf(ptr, "#{%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            guid->Data1, guid->Data2, guid->Data3, guid->Data4[0], guid->Data4[1],
-            guid->Data4[2], guid->Data4[3], guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
-
-    *rpath = path;
-    return 0;
-}
-
 static int find_device_node(DEVINST inst, tyd_device *dev)
 {
     int r;
@@ -396,7 +584,7 @@ static int extract_device_id(const char *key, char **rid)
     return 0;
 }
 
-static int create_device(tyd_monitor *monitor, const char *key, DEVINST inst, uint8_t ports[], unsigned int depth)
+static int create_device(tyd_monitor *monitor, const char *id, DEVINST inst, uint8_t ports[], unsigned int depth)
 {
     tyd_device *dev;
     CONFIGRET cret;
@@ -409,19 +597,7 @@ static int create_device(tyd_monitor *monitor, const char *key, DEVINST inst, ui
     }
     dev->refcount = 1;
 
-    if (!key) {
-        char buf[256];
-
-        cret = CM_Get_Device_ID(inst, buf, sizeof(buf), 0);
-        if (cret != CR_SUCCESS) {
-            r = 0;
-            goto cleanup;
-        }
-
-        r = extract_device_id(buf, &dev->key);
-    } else {
-        r = extract_device_id(key, &dev->key);
-    }
+    r = extract_device_id(id, &dev->key);
     if (r < 0)
         return r;
 
@@ -473,27 +649,53 @@ cleanup:
 
 static int recurse_devices(tyd_monitor *monitor, DEVINST inst, uint8_t ports[], unsigned int depth)
 {
-    uint8_t port;
+    char id[256];
     DEVINST child;
+    uint8_t port;
     CONFIGRET cret;
     int r;
 
-    port = find_device_port(inst);
-    if (port) {
-        if (depth == MAX_USB_DEPTH) {
-            ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
-            return 0;
-        }
-        ports[depth++] = port;
-    }
+    cret = CM_Get_Device_ID(inst, id, sizeof(id), 0);
+    if (cret != CR_SUCCESS)
+        return 0;
 
     cret = CM_Get_Child(&child, inst, 0);
     // Leaf = actual device, so just try to create a device struct for it
     if (cret != CR_SUCCESS)
-        return create_device(monitor, NULL, inst, ports, depth);
+        return create_device(monitor, id, inst, ports, depth);
 
     do {
-        r = recurse_devices(monitor, child, ports, depth);
+        if (ty_win32_test_version(TY_WIN32_VISTA)) {
+            port = find_device_port_vista(child);
+        } else {
+            char key[256];
+            DWORD len;
+
+            len = sizeof(key);
+            cret = CM_Get_DevNode_Registry_Property(child, CM_DRP_DRIVER, NULL, key, &len, 0);
+            if (cret != CR_SUCCESS)
+                return 0;
+
+            r = find_device_port_xp(id, key);
+            if (r < 0)
+                return r;
+            if (r) {
+                port = (uint8_t)r;
+            } else {
+                port = 0;
+            }
+        }
+        if (port) {
+            if (depth == MAX_USB_DEPTH) {
+                ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
+                return 0;
+            }
+            ports[depth] = port;
+
+            r = recurse_devices(monitor, child, ports, depth + 1);
+        } else {
+            r = recurse_devices(monitor, child, ports, depth);
+        }
         if (r < 0)
             return r;
 
@@ -748,9 +950,6 @@ int tyd_monitor_new(tyd_monitor **rmonitor)
 
     tyd_monitor *monitor;
     int r;
-
-    if (!ty_win32_test_version(TY_WIN32_VISTA))
-        return ty_error(TY_ERROR_UNSUPPORTED, "Device monitor requires at least Windows Vista to work");
 
     monitor = calloc(1, sizeof(*monitor));
     if (!monitor)
