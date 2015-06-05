@@ -74,25 +74,23 @@ int ty_cond_init(ty_cond *cond)
             return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
 
         InitializeCriticalSection(&cond->xp.mutex);
-
-        cond->xp.init = true;
     }
+    cond->init = true;
 
     return 0;
 }
 
 void ty_cond_release(ty_cond *cond)
 {
+    if (!cond->init)
+        return;
+
     // Apparently, there is no need for a DeleteConditionVariable() on Windows >= Vista
     if (!InitializeConditionVariable_) {
-        if (!cond->xp.init)
-            return;
-
         DeleteCriticalSection(&cond->xp.mutex);
         CloseHandle(cond->xp.ev);
-
-        cond->xp.init = false;
     }
+    cond->init = false;
 }
 
 void ty_cond_signal(ty_cond *cond)

@@ -31,27 +31,23 @@ typedef struct ty_mutex {
     bool init;
 } ty_mutex;
 
-#ifdef _WIN32
 typedef struct ty_cond {
+#ifdef _WIN32
     union {
         CONDITION_VARIABLE cv;
         struct {
             HANDLE ev;
-            CRITICAL_SECTION mutex;
 
+            CRITICAL_SECTION mutex;
             volatile unsigned int waiting;
             volatile unsigned int wakeup;
-
-            bool init;
         } xp;
     };
-} ty_cond;
 #else
-typedef struct ty_cond {
     pthread_cond_t cond;
+#endif
     bool init;
 } ty_cond;
-#endif
 
 int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type);
 void ty_mutex_release(ty_mutex *mutex);
