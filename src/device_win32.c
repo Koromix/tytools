@@ -396,7 +396,8 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
         if (cret != CR_SUCCESS)
             return 0;
 
-        if (ty_win32_test_version(TY_WIN32_VISTA)) {
+        // Test for Vista, CancelIoEx() is needed elsewhere so no need for VerifyVersionInfo()
+        if (CancelIoEx_) {
             r = find_device_port_vista(inst);
         } else {
             char child_key[256];
@@ -668,7 +669,8 @@ static int recurse_devices(tyd_monitor *monitor, DEVINST inst, uint8_t ports[], 
         return create_device(monitor, id, inst, ports, depth);
 
     do {
-        if (ty_win32_test_version(TY_WIN32_VISTA)) {
+        // Test for Vista, CancelIoEx() is needed elsewhere so no need for VerifyVersionInfo()
+        if (CancelIoEx_) {
             r = find_device_port_vista(child);
         } else {
             char key[256];

@@ -57,35 +57,6 @@ char *ty_win32_strerror(DWORD err)
     return buf;
 }
 
-bool ty_win32_test_version(ty_win32_version version)
-{
-    OSVERSIONINFOEX info = {0};
-    DWORDLONG cond = 0;
-
-    switch (version) {
-    case TY_WIN32_XP:
-        info.dwMajorVersion = 5;
-        info.dwMinorVersion = 1;
-        break;
-    case TY_WIN32_VISTA:
-        info.dwMajorVersion = 6;
-        break;
-    case TY_WIN32_SEVEN:
-        info.dwMajorVersion = 6;
-        info.dwMinorVersion = 1;
-        break;
-    case TY_WIN32_EIGHT:
-        info.dwMajorVersion = 6;
-        info.dwMinorVersion = 2;
-        break;
-    }
-
-    VER_SET_CONDITION(cond, VER_MAJORVERSION, VER_GREATER_EQUAL);
-    VER_SET_CONDITION(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-    return VerifyVersionInfo(&info, VER_MAJORVERSION | VER_MINORVERSION, cond);
-}
-
 static ULONGLONG WINAPI GetTickCount64_fallback(void)
 {
     static LARGE_INTEGER freq;

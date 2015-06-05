@@ -51,17 +51,7 @@ enum {
 };
 
 #ifdef _WIN32
-
-typedef enum ty_win32_version {
-    TY_WIN32_XP,
-    TY_WIN32_VISTA,
-    TY_WIN32_SEVEN,
-    TY_WIN32_EIGHT
-} ty_win32_version;
-
 TY_PUBLIC char *ty_win32_strerror(unsigned long err);
-TY_PUBLIC bool ty_win32_test_version(ty_win32_version version);
-
 #endif
 
 TY_PUBLIC uint64_t ty_millis(void);
