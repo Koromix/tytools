@@ -397,9 +397,7 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
             return 0;
 
         if (ty_win32_test_version(TY_WIN32_VISTA)) {
-            ports[depth] = find_device_port_vista(inst);
-            if (ports[depth])
-                depth++;
+            r = find_device_port_vista(inst);
         } else {
             char child_key[256];
             DWORD len;
@@ -410,16 +408,17 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
                 return 0;
 
             r = find_device_port_xp(id, child_key);
-            if (r < 0)
-                return 0;
-            if (r)
-                ports[depth++] = (uint8_t)r;
         }
+        if (r < 0)
+            return r;
+        if (r)
+            ports[depth++] = (uint8_t)r;
 
         if (strstr(id, "\\ROOT_HUB")) {
-            ports[depth++] = find_controller_index(controllers, id);
-            if (depth == 1)
+            if (!depth)
                 return 0;
+
+            ports[depth++] = find_controller_index(controllers, id);
             break;
         }
 
@@ -427,9 +426,9 @@ static int resolve_device_location(DEVINST inst, ty_list_head *controllers, char
         cret = CM_Get_Parent(&parent, parent, 0);
     } while (cret == CR_SUCCESS);
 
+    // The ports are in the wrong order
     for (unsigned int i = 0; i < depth / 2; i++) {
         uint8_t tmp = ports[i];
-
         ports[i] = ports[depth - i - 1];
         ports[depth - i - 1] = tmp;
     }
@@ -651,9 +650,13 @@ static int recurse_devices(tyd_monitor *monitor, DEVINST inst, uint8_t ports[], 
 {
     char id[256];
     DEVINST child;
-    uint8_t port;
     CONFIGRET cret;
     int r;
+
+    if (depth == MAX_USB_DEPTH) {
+        ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
+        return 0;
+    }
 
     cret = CM_Get_Device_ID(inst, id, sizeof(id), 0);
     if (cret != CR_SUCCESS)
@@ -666,7 +669,7 @@ static int recurse_devices(tyd_monitor *monitor, DEVINST inst, uint8_t ports[], 
 
     do {
         if (ty_win32_test_version(TY_WIN32_VISTA)) {
-            port = find_device_port_vista(child);
+            r = find_device_port_vista(child);
         } else {
             char key[256];
             DWORD len;
@@ -677,25 +680,12 @@ static int recurse_devices(tyd_monitor *monitor, DEVINST inst, uint8_t ports[], 
                 return 0;
 
             r = find_device_port_xp(id, key);
-            if (r < 0)
-                return r;
-            if (r) {
-                port = (uint8_t)r;
-            } else {
-                port = 0;
-            }
         }
-        if (port) {
-            if (depth == MAX_USB_DEPTH) {
-                ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
-                return 0;
-            }
-            ports[depth] = port;
+        if (r < 0)
+            return r;
 
-            r = recurse_devices(monitor, child, ports, depth + 1);
-        } else {
-            r = recurse_devices(monitor, child, ports, depth);
-        }
+        ports[depth] = (uint8_t)r;
+        r = recurse_devices(monitor, child, ports, depth + !!r);
         if (r < 0)
             return r;
 
