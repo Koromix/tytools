@@ -14,10 +14,10 @@
 #include <unistd.h>
 #include <termios.h>
 #ifdef __APPLE__
-#include <mach/mach_time.h>
-#include <sys/select.h>
+    #include <mach/mach_time.h>
+    #include <sys/select.h>
 #else
-#include <poll.h>
+    #include <poll.h>
 #endif
 #include "ty/system.h"
 

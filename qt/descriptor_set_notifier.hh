@@ -8,9 +8,9 @@
 #define DESCRIPTOR_SET_NOTIFIER_HH
 
 #ifdef _WIN32
-#include <QWinEventNotifier>
+    #include <QWinEventNotifier>
 #else
-#include <QSocketNotifier>
+    #include <QSocketNotifier>
 #endif
 #include <QTimer>
 

@@ -6,8 +6,8 @@
 
 #include <getopt.h>
 #ifndef _WIN32
-#include <signal.h>
-#include <sys/wait.h>
+    #include <signal.h>
+    #include <sys/wait.h>
 #endif
 #include "ty.h"
 #include "main.h"

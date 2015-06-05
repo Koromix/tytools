@@ -28,15 +28,15 @@ typedef struct ty_file_info {
 } ty_file_info;
 
 #ifdef _WIN32
-#define TY_PATH_SEPARATORS "\\/"
+    #define TY_PATH_SEPARATORS "\\/"
 #else
-#define TY_PATH_SEPARATORS "/"
+    #define TY_PATH_SEPARATORS "/"
 #endif
 
 #ifdef _WIN32
-    typedef void *ty_descriptor; // HANDLE
+typedef void *ty_descriptor; // HANDLE
 #else
-    typedef int ty_descriptor;
+typedef int ty_descriptor;
 #endif
 
 typedef struct ty_descriptor_set {

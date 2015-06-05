@@ -9,10 +9,10 @@
 
 #include "ty/common.h"
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
 #else
-#include <pthread.h>
+    #include <pthread.h>
 #endif
 
 TY_C_BEGIN
