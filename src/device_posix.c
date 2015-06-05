@@ -82,7 +82,7 @@ static void get_posix_descriptors(const tyd_handle *h, ty_descriptor_set *set, i
     ty_descriptor_set_add(set, h->fd, id);
 }
 
-const struct _tyd_device_vtable _tyb_posix_device_vtable = {
+const struct _tyd_device_vtable _tyd_posix_device_vtable = {
     .open = open_posix_device,
     .close = close_posix_device,
 

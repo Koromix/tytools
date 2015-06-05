@@ -78,7 +78,7 @@ static int fill_device_details(tyd_device *dev, struct udev_aggregate *agg)
     } else {
         return 0;
     }
-    dev->vtable = &_tyb_posix_device_vtable;
+    dev->vtable = &_tyd_posix_device_vtable;
 
     buf = udev_device_get_devnode(agg->dev);
     if (!buf || access(buf, F_OK) != 0)

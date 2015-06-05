@@ -17,6 +17,6 @@ struct tyd_handle {
     int fd;
 };
 
-extern const struct _tyd_device_vtable _tyb_posix_device_vtable;
+extern const struct _tyd_device_vtable _tyd_posix_device_vtable;
 
 #endif

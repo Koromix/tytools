@@ -62,7 +62,7 @@ struct tyd_handle {
     CFRunLoopSourceRef shutdown;
 };
 
-extern const struct _tyd_device_vtable _tyb_posix_device_vtable;
+extern const struct _tyd_device_vtable _tyd_posix_device_vtable;
 static const struct _tyd_device_vtable hid_device_vtable;
 
 static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, char **rs)
@@ -235,7 +235,7 @@ static int find_device_node(tyd_device *dev, io_service_t service)
 
     if (IOObjectConformsTo(spec_service, "IOSerialDriverSync")) {
         dev->type = TYD_DEVICE_SERIAL;
-        dev->vtable = &_tyb_posix_device_vtable;
+        dev->vtable = &_tyd_posix_device_vtable;
 
         r = find_serial_device_node(spec_service, &dev->path);
     } else if (IOObjectConformsTo(spec_service, "IOHIDDevice")) {
