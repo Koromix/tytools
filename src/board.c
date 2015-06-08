@@ -92,7 +92,7 @@ static const struct firmware_signature signatures[] = {
     {0}
 };
 
-static const int drop_board_delay = 5000;
+static const int drop_board_delay = 7000;
 
 static void drop_callback(struct callback *callback)
 {
