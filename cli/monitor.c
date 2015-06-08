@@ -139,6 +139,9 @@ static int loop(tyb_board *board, int outfd)
                 return (int)r;
 
             if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_SERIAL)) {
+                if (!reconnect)
+                    return 0;
+
                 printf("Waiting for device...\n");
                 r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_SERIAL, false, -1);
                 if (r < 0)
