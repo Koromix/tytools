@@ -832,8 +832,12 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
             break;
         }
         if (r < 0) {
+            EnterCriticalSection(&monitor->mutex);
+
             monitor->ret = r;
             SetEvent(monitor->event);
+
+            LeaveCriticalSection(&monitor->mutex);
         }
 
         break;
@@ -1041,7 +1045,9 @@ int tyd_monitor_refresh(tyd_monitor *monitor)
     /* We don't want to keep the lock for too long, so move all notifications to our own list
        and let the background thread work and process Win32 events. */
     ty_list_replace(&monitor->notifications, &notifications);
+
     r = monitor->ret;
+    monitor->ret = 0;
 
     LeaveCriticalSection(&monitor->mutex);
 
@@ -1084,38 +1090,30 @@ cleanup:
     return r;
 }
 
-static void start_async_read(tyd_handle *h)
+static int start_async_read(tyd_handle *h)
 {
     DWORD ret;
-
-    h->len = 0;
-    ResetEvent(h->ov->hEvent);
 
     ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(h->handle);
-        h->len = -1;
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
     }
 
     h->pending_thread = GetCurrentThreadId();
+    return 0;
 }
 
 static ssize_t finalize_async_read(tyd_handle *h, int timeout)
 {
     DWORD len, ret;
 
-    if (timeout > 0) {
-        ret = WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
-        if (ret != WAIT_OBJECT_0) {
-            if (ret == WAIT_TIMEOUT)
-                return 0;
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-        }
-    }
+    if (timeout > 0)
+        WaitForSingleObject(h->ov->hEvent, (DWORD)timeout);
 
     ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
     if (!ret) {
-        if (GetLastError() == ERROR_IO_PENDING)
+        if (GetLastError() == ERROR_IO_INCOMPLETE)
             return 0;
 
         h->pending_thread = 0;
@@ -1204,13 +1202,16 @@ static void close_win32_device(tyd_handle *h);
 static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
 {
     tyd_handle *h = udata;
-    DWORD ret;
+    DWORD len;
+    BOOL success;
 
     /* Give up if nothing happens, even if it means a leak; we'll get rid of this when XP
        becomes irrelevant anyway. Hope this happens within my lifetime. */
-    ret = WaitForSingleObject(h->ov->hEvent, 300000);
-    if (ret != WAIT_OBJECT_0) {
-        ty_error(TY_ERROR_SYSTEM, "Failed to cleanup OVERLAPPED structure, leaking memory");
+    WaitForSingleObject(h->ov->hEvent, 300000);
+
+    success = GetOverlappedResult(h->handle, h->ov, &len, FALSE);
+    if (!success && GetLastError() == ERROR_IO_INCOMPLETE) {
+        ty_error(TY_ERROR_SYSTEM, "Cannot stop asynchronous read request, leaking handle and memory");
         return 0;
     }
 
@@ -1231,9 +1232,6 @@ static void close_win32_device(tyd_handle *h)
                 CancelIoEx_(h->handle, NULL);
             } else {
                 CancelIo(h->handle);
-
-                CloseHandle(h->handle);
-                h->handle = NULL;
 
                 /* CancelIoEx does not exist on XP, so instead we create a new thread to cleanup
                    when pending I/O stops. And if the thread cannot be created, just leaking seems
@@ -1303,36 +1301,36 @@ ssize_t tyd_hid_read(tyd_handle *h, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    ssize_t len;
-
     if (h->len < 0) {
         // Could be a transient error, try to restart it
-        start_async_read(h);
-
-        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        h->len = start_async_read(h);
+        if (h->len < 0)
+            return h->len;
     }
 
-    len = finalize_async_read(h, timeout);
-    if (len <= 0)
-        return len;
+    h->len = finalize_async_read(h, timeout);
+    if (h->len <= 0)
+        return h->len;
 
     /* HID communication is message-based. So if the caller does not provide a big enough
        buffer, we can just discard the extra data, unlike for serial communication. */
-    if (len) {
+    if (h->len) {
         if (h->buf[0]) {
-            if (size > (size_t)len)
-                size = (size_t)len;
+            if (size > (size_t)h->len)
+                size = (size_t)h->len;
             memcpy(buf, h->buf, size);
         } else {
-            if (size > (size_t)--len)
-                size = (size_t)len;
+            if (size > (size_t)--h->len)
+                size = (size_t)h->len;
             memcpy(buf, h->buf + 1, size);
         }
     } else {
         size = 0;
     }
 
-    start_async_read(h);
+    ty_error_mask(TY_ERROR_IO);
+    h->len = start_async_read(h);
+    ty_error_unmask();
 
     return (ssize_t)size;
 }
@@ -1348,17 +1346,17 @@ ssize_t tyd_hid_write(tyd_handle *h, const uint8_t *buf, size_t size)
 
     OVERLAPPED ov = {0};
     DWORD len;
-    BOOL r;
+    BOOL success;
 
-    r = WriteFile(h->handle, buf, (DWORD)size, &len, &ov);
-    if (!r) {
+    success = WriteFile(h->handle, buf, (DWORD)size, &len, &ov);
+    if (!success) {
         if (GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
             return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
 
-        r = GetOverlappedResult(h->handle, &ov, &len, TRUE);
-        if (!r)
+        success = GetOverlappedResult(h->handle, &ov, &len, TRUE);
+        if (!success)
             return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
     }
 
@@ -1375,8 +1373,8 @@ ssize_t tyd_hid_send_feature_report(tyd_handle *h, const uint8_t *buf, size_t si
         return 0;
 
     // Timeout behavior?
-    BOOL r = HidD_SetFeature(h->handle, (char *)buf, (DWORD)size);
-    if (!r)
+    BOOL success = HidD_SetFeature(h->handle, (char *)buf, (DWORD)size);
+    if (!success)
         return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
 
     return (ssize_t)size;
@@ -1388,12 +1386,12 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
     assert(h->dev->type == TYD_DEVICE_SERIAL);
 
     DCB dcb;
-    BOOL r;
+    BOOL success;
 
     dcb.DCBlength = sizeof(dcb);
 
-    r = GetCommState(h->handle, &dcb);
-    if (!r)
+    success = GetCommState(h->handle, &dcb);
+    if (!success)
         return ty_error(TY_ERROR_SYSTEM, "GetCommState() failed: %s", ty_win32_strerror(0));
 
     switch (rate) {
@@ -1483,8 +1481,8 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
         assert(false);
     }
 
-    r = SetCommState(h->handle, &dcb);
-    if (!r)
+    success = SetCommState(h->handle, &dcb);
+    if (!success)
         return ty_error(TY_ERROR_SYSTEM, "SetCommState() failed: %s", ty_win32_strerror(0));
 
     return 0;
@@ -1499,21 +1497,20 @@ ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
 
     if (h->len < 0) {
         // Could be a transient error, try to restart it
-        start_async_read(h);
-
-        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        h->len = start_async_read(h);
+        if (h->len < 0)
+            return h->len;
     }
 
     /* Serial devices are stream-based. If we don't have any data yet, see if our asynchronous
        read request has returned anything. Then we can just give the user the data we have, until
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
     if (!h->len) {
-        ssize_t r = finalize_async_read(h, timeout);
-        if (r <= 0)
-            return r;
+        h->len = finalize_async_read(h, timeout);
+        if (h->len <= 0)
+            return h->len;
 
         h->ptr = h->buf;
-        h->len = r;
     }
 
     if (size > (size_t)h->len)
@@ -1526,8 +1523,11 @@ ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
     /* Our buffer has been fully read, start a new asynchonous request. I don't know how
        much latency this brings. Maybe double buffering would help, but not before any concrete
        benchmarking is done. */
-    if (!h->len)
-        start_async_read(h);
+    if (!h->len) {
+        ty_error_mask(TY_ERROR_IO);
+        h->len = start_async_read(h);
+        ty_error_unmask();
+    }
 
     return (ssize_t)size;
 }
@@ -1545,17 +1545,17 @@ ssize_t tyd_serial_write(tyd_handle *h, const char *buf, ssize_t size)
 
     OVERLAPPED ov = {0};
     DWORD len;
-    BOOL r;
+    BOOL success;
 
-    r = WriteFile(h->handle, buf, (DWORD)size, &len, &ov);
-    if (!r) {
+    success = WriteFile(h->handle, buf, (DWORD)size, &len, &ov);
+    if (!success) {
         if (GetLastError() != ERROR_IO_PENDING) {
             CancelIo(h->handle);
             return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
         }
 
-        r = GetOverlappedResult(h->handle, &ov, &len, TRUE);
-        if (!r)
+        success = GetOverlappedResult(h->handle, &ov, &len, TRUE);
+        if (!success)
             return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
     }
 
