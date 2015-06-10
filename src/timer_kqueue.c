@@ -32,9 +32,8 @@ int ty_timer_new(ty_timer **rtimer)
 
     timer->fd = kqueue();
     if (timer->fd < 0) {
-        if (errno == ENOMEM)
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        return ty_error(TY_ERROR_SYSTEM, "kqueue() failed: %s", strerror(errno));
+        r = ty_error(TY_ERROR_SYSTEM, "kqueue() failed: %s", strerror(errno));
+        goto error;
     }
 
     *rtimer = timer;
@@ -81,11 +80,8 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
     }
 
     r = kevent(timer->fd, &kev, 1, NULL, 0, &ts);
-    if (r < 0) {
-        if (errno == ENOMEM)
-            return ty_error(TY_ERROR_MEMORY, NULL);
+    if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "kevent() failed: %s", strerror(errno));
-    }
 
     return 0;
 }

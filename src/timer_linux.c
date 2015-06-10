@@ -30,9 +30,8 @@ int ty_timer_new(ty_timer **rtimer)
 
     timer->fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
     if (timer->fd < 0) {
-        if (errno == ENOMEM)
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        return ty_error(TY_ERROR_SYSTEM, "timerfd_create() failed: %s", strerror(errno));
+        r = ty_error(TY_ERROR_SYSTEM, "timerfd_create() failed: %s", strerror(errno));
+        goto error;
     }
 
     *rtimer = timer;
