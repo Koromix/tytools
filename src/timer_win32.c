@@ -106,6 +106,9 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
 
     EnterCriticalSection(&timer->mutex);
 
+    timer->ticks = 0;
+    ResetEvent(timer->event);
+
     if (value > 0) {
         due = (DWORD)value;
 
