@@ -63,6 +63,7 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
     assert(timer);
 
     struct itimerspec ispec = {{0}};
+    int tfd_flags = 0;
     int r;
 
     if (value > 0) {
@@ -72,10 +73,11 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
         if (!(flags & TY_TIMER_ONESHOT))
             ispec.it_interval = ispec.it_value;
     } else if (!value) {
+        tfd_flags |= TFD_TIMER_ABSTIME;
         ispec.it_value.tv_nsec = 1;
     }
 
-    r = timerfd_settime(timer->fd, 0, &ispec, NULL);
+    r = timerfd_settime(timer->fd, tfd_flags, &ispec, NULL);
     if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "timerfd_settime() failed: %s", strerror(errno));
 
