@@ -64,22 +64,25 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
 {
     assert(timer);
 
-    struct kevent kev;
+    struct kevent kev[2];
+    int count = 1;
     const struct timespec ts = {0};
     int r;
 
-    if (value >= 0) {
-        if (!value)
-            value = 1;
-
-        EV_SET(&kev, 1, EVFILT_TIMER, EV_ADD, 0, value, NULL);
+    if (value > 0) {
+        EV_SET(&kev[0], 1, EVFILT_TIMER, EV_ADD, 0, value, NULL);
         if (flags & TY_TIMER_ONESHOT)
-            kev.flags |= EV_ONESHOT;
+            kev[0].flags |= EV_ONESHOT;
     } else {
-        EV_SET(&kev, 1, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+        EV_SET(&kev[0], 1, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+
+        if (!value) {
+            EV_SET(&kev[1], 0, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER | NOTE_FFNOP, 0, NULL);
+            count++;
+        }
     }
 
-    r = kevent(timer->fd, &kev, 1, NULL, 0, &ts);
+    r = kevent(timer->fd, kev, count, NULL, 0, &ts);
     if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "kevent() failed: %s", strerror(errno));
 
@@ -97,7 +100,14 @@ uint64_t ty_timer_rearm(ty_timer *timer)
     r = kevent(timer->fd, NULL, 0, &kev, 1, &ts);
     if (r <= 0)
         return 0;
-    assert(kev.ident == 1);
 
-    return (uint64_t)kev.data;
+    switch (kev.ident) {
+    case 0:
+        return 1;
+    case 1:
+        return (uint64_t)kev.data;
+    }
+
+    assert(false);
+    __builtin_unreachable();
 }
