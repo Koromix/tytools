@@ -108,6 +108,7 @@ set(TY_SOURCES include/ty.h
                include/ty/device.h
                include/ty/firmware.h
                include/ty/system.h
+               include/ty/thread.h
                include/ty/timer.h
 
                src/board.c
@@ -122,8 +123,7 @@ set(TY_SOURCES include/ty.h
                src/firmware_ihex.c
                src/htable.c
                src/list.h
-               src/system.c
-               src/thread.h)
+               src/system.c)
 if(WIN32)
     list(APPEND TY_SOURCES src/device_win32.c
                            src/system_win32.c

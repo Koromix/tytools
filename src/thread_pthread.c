@@ -8,7 +8,7 @@
 #include "compat.h"
 #include <time.h>
 #include "ty/system.h"
-#include "thread.h"
+#include "ty/thread.h"
 
 int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
 {

@@ -49,19 +49,19 @@ typedef struct ty_cond {
     bool init;
 } ty_cond;
 
-int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type);
-void ty_mutex_release(ty_mutex *mutex);
+TY_PUBLIC int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type);
+TY_PUBLIC void ty_mutex_release(ty_mutex *mutex);
 
-void ty_mutex_lock(ty_mutex *mutex);
-void ty_mutex_unlock(ty_mutex *mutex);
+TY_PUBLIC void ty_mutex_lock(ty_mutex *mutex);
+TY_PUBLIC void ty_mutex_unlock(ty_mutex *mutex);
 
-int ty_cond_init(ty_cond *cond);
-void ty_cond_release(ty_cond *cond);
+TY_PUBLIC int ty_cond_init(ty_cond *cond);
+TY_PUBLIC void ty_cond_release(ty_cond *cond);
 
-void ty_cond_signal(ty_cond *cond);
-void ty_cond_broadcast(ty_cond *cond);
+TY_PUBLIC void ty_cond_signal(ty_cond *cond);
+TY_PUBLIC void ty_cond_broadcast(ty_cond *cond);
 
-bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout);
+TY_PUBLIC bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout);
 
 TY_C_END
 

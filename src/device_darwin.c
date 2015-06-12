@@ -20,7 +20,7 @@
 #include "list.h"
 #include "ty/system.h"
 #include "device_priv.h"
-#include "thread.h"
+#include "ty/thread.h"
 
 struct tyd_monitor {
     TYD_MONITOR

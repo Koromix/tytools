@@ -14,6 +14,7 @@ HEADERS += ../include/ty.h \
     ../include/ty/device.h \
     ../include/ty/firmware.h \
     ../include/ty/system.h \
+    ../include/ty/thread.h \
     ../include/ty/timer.h \
     board_priv.h \
     compat.h \
@@ -21,8 +22,7 @@ HEADERS += ../include/ty.h \
     device_priv.h \
     device_posix_priv.h \
     htable.h \
-    list.h \
-    thread.h
+    list.h
 
 SOURCES += board.c \
     board_teensy.c \

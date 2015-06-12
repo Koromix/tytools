@@ -7,7 +7,7 @@
 #include "ty/common.h"
 #include "compat.h"
 #include "ty/system.h"
-#include "thread.h"
+#include "ty/thread.h"
 
 typedef void WINAPI InitializeConditionVariable_func(CONDITION_VARIABLE *cv);
 typedef BOOL WINAPI SleepConditionVariableCS_func(CONDITION_VARIABLE *cv, CRITICAL_SECTION *cs, DWORD timeout);

@@ -11,7 +11,7 @@
 #include "ty/board.h"
 #include "htable.h"
 #include "list.h"
-#include "thread.h"
+#include "ty/thread.h"
 
 TY_C_BEGIN
 
