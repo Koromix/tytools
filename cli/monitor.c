@@ -224,11 +224,19 @@ static void fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
 static int loop(tyb_board *board, int outfd)
 {
     ty_descriptor_set set = {0};
-    int timeout = -1;
+    int timeout;
     char buf[BUFFER_SIZE];
     ssize_t r;
 
+restart:
+    r = tyb_board_serial_set_attributes(board, device_rate, device_flags);
+    if (r < 0)
+        return (int)r;
+
     fill_descriptor_set(&set, board);
+    timeout = -1;
+
+    printf("Connection ready\n");
 
     while (true) {
         if (!set.count)
@@ -256,10 +264,7 @@ static int loop(tyb_board *board, int outfd)
                 if (r < 0)
                     return (int)r;
 
-                fill_descriptor_set(&set, board);
-                timeout = -1;
-
-                printf("Connection ready\n");
+                goto restart;
             }
 
             break;
@@ -481,10 +486,6 @@ int monitor(int argc, char *argv[])
         goto cleanup;
 
     r = get_board(&board);
-    if (r < 0)
-        goto cleanup;
-
-    r = tyb_board_serial_set_attributes(board, device_rate, device_flags);
     if (r < 0)
         goto cleanup;
 
