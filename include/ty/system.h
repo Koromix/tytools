@@ -81,6 +81,7 @@ TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
 TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
 
+TY_PUBLIC bool ty_terminal_available(ty_descriptor desc);
 TY_PUBLIC int ty_terminal_setup(int flags);
 TY_PUBLIC void ty_terminal_restore(void);
 

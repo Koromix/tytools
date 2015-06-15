@@ -245,6 +245,11 @@ restart:
 
 #endif
 
+bool ty_terminal_available(ty_descriptor desc)
+{
+    return isatty(desc);
+}
+
 int ty_terminal_setup(int flags)
 {
     struct termios tio;
