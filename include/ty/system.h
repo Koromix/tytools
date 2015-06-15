@@ -39,6 +39,16 @@ typedef void *ty_descriptor; // HANDLE
 typedef int ty_descriptor;
 #endif
 
+#ifdef _WIN32
+    #define TY_DESCRIPTOR_STDIN (_ty_win32_descriptors[0])
+    #define TY_DESCRIPTOR_STDOUT (_ty_win32_descriptors[1])
+    #define TY_DESCRIPTOR_STDERR (_ty_win32_descriptors[2])
+#else
+    #define TY_DESCRIPTOR_STDIN 0
+    #define TY_DESCRIPTOR_STDOUT 1
+    #define TY_DESCRIPTOR_STDERR 2
+#endif
+
 typedef struct ty_descriptor_set {
     unsigned int count;
     ty_descriptor desc[64];
@@ -49,6 +59,10 @@ enum {
     TY_TERMINAL_RAW = 0x1,
     TY_TERMINAL_SILENT = 0x2
 };
+
+#ifdef _WIN32
+TY_PUBLIC extern void *_ty_win32_descriptors[3]; // HANDLE
+#endif
 
 #ifdef _WIN32
 TY_PUBLIC char *ty_win32_strerror(unsigned long err);

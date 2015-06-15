@@ -17,6 +17,8 @@ typedef ULONGLONG WINAPI GetTickCount64_func(void);
 
 static ULONGLONG WINAPI GetTickCount64_fallback(void);
 
+HANDLE _ty_win32_descriptors[3];
+
 static GetTickCount64_func *GetTickCount64_;
 
 static DWORD orig_console_mode;
@@ -30,6 +32,10 @@ TY_INIT()
     GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(h, "GetTickCount64");
     if (!GetTickCount64_)
         GetTickCount64_ = GetTickCount64_fallback;
+
+    _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
+    _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
+    _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
 }
 
 char *ty_win32_strerror(DWORD err)
