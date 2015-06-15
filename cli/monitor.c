@@ -40,17 +40,28 @@ enum {
     DIRECTION_OUTPUT = 2
 };
 
+#define BUFFER_SIZE 1024
 static const int error_io_timeout = 5000;
 
 static int terminal_flags = 0;
-#ifdef _WIN32
-static bool fake_echo = false;
-#endif
 static uint32_t device_rate = 115200;
 static int device_flags = 0;
 static int directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
 static bool reconnect = false;
 static int timeout_eof = 200;
+
+#ifdef _WIN32
+static bool fake_echo;
+
+static bool input_run = true;
+static HANDLE input_thread;
+
+static HANDLE input_available;
+static HANDLE input_processed;
+
+static char input_line[BUFFER_SIZE];
+static ssize_t input_ret;
+#endif
 
 void print_monitor_usage(FILE *f)
 {
@@ -96,6 +107,99 @@ static int redirect_stdout(int *routfd)
     return 0;
 }
 
+#ifdef _WIN32
+
+static unsigned int __stdcall stdin_thread(void *udata)
+{
+    TY_UNUSED(udata);
+
+    DWORD len;
+    BOOL success;
+    int r;
+
+    while (input_run) {
+        WaitForSingleObject(input_processed, INFINITE);
+        ResetEvent(input_processed);
+
+        success = ReadFile(GetStdHandle(STD_INPUT_HANDLE), input_line, sizeof(input_line), &len, NULL);
+        if (!success) {
+            r = ty_error(TY_ERROR_IO, "I/O error while reading standard input");
+            goto error;
+        }
+        if (!len) {
+            r = 0;
+            goto error;
+        }
+
+        input_ret = (ssize_t)len;
+        SetEvent(input_available);
+    }
+
+    return 0;
+
+error:
+    input_ret = r;
+    SetEvent(input_available);
+    return 0;
+}
+
+static int start_stdin_thread(void)
+{
+    input_available = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!input_available)
+        return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
+
+    input_processed = CreateEvent(NULL, TRUE, TRUE, NULL);
+    if (!input_processed)
+        return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
+
+    input_thread = (HANDLE)_beginthreadex(NULL, 0, stdin_thread, NULL, 0, NULL);
+    if (!input_thread)
+        return ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
+
+    return 0;
+}
+
+static void stop_stdin_thread(void)
+{
+    if (input_thread) {
+        CONSOLE_SCREEN_BUFFER_INFO sb;
+        INPUT_RECORD ir = {0};
+        DWORD written;
+
+        // This is not enough because the background thread may be blocked in ReadFile
+        input_run = false;
+        SetEvent(input_processed);
+
+        /* We'll soon push VK_RETURN to the console input, which will result in a newline,
+           so move the cursor up one line to avoid showing it. */
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &sb);
+        if (sb.dwCursorPosition.Y > 0) {
+            sb.dwCursorPosition.Y--;
+            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), sb.dwCursorPosition);
+        }
+
+        ir.EventType = KEY_EVENT;
+        ir.Event.KeyEvent.bKeyDown = TRUE;
+        ir.Event.KeyEvent.dwControlKeyState = 0;
+        ir.Event.KeyEvent.uChar.AsciiChar = '\r';
+        ir.Event.KeyEvent.wRepeatCount = 1;
+
+        // Write a newline to snap the background thread out of the blocking ReadFile call
+        WriteConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &ir, 1, &written);
+
+        WaitForSingleObject(input_thread, INFINITE);
+        CloseHandle(input_thread);
+    }
+
+    if (input_processed)
+        CloseHandle(input_processed);
+    if (input_available)
+        CloseHandle(input_available);
+}
+
+#endif
+
 static void fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
 {
     ty_descriptor_set_clear(set);
@@ -104,8 +208,13 @@ static void fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
     if (directions & DIRECTION_INPUT)
         tyb_board_get_descriptors(board, TYB_BOARD_CAPABILITY_SERIAL, set, 2);
 #ifdef _WIN32
-    if (directions & DIRECTION_OUTPUT)
-        ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
+    if (directions & DIRECTION_OUTPUT) {
+        if (input_available) {
+            ty_descriptor_set_add(set, input_available, 3);
+        } else {
+            ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
+        }
+    }
 #else
     if (directions & DIRECTION_OUTPUT)
         ty_descriptor_set_add(set, STDIN_FILENO, 3);
@@ -116,7 +225,7 @@ static int loop(tyb_board *board, int outfd)
 {
     ty_descriptor_set set = {0};
     int timeout = -1;
-    char buf[1024];
+    char buf[BUFFER_SIZE];
     ssize_t r;
 
     fill_descriptor_set(&set, board);
@@ -182,7 +291,22 @@ static int loop(tyb_board *board, int outfd)
             break;
 
         case 3:
+#ifdef _WIN32
+            if (input_available) {
+                if (input_ret < 0)
+                    return input_ret;
+
+                memcpy(buf, input_line, (size_t)input_ret);
+                r = input_ret;
+
+                ResetEvent(input_available);
+                SetEvent(input_processed);
+            } else {
+                r = read(STDIN_FILENO, buf, sizeof(buf));
+            }
+#else
             r = read(STDIN_FILENO, buf, sizeof(buf));
+#endif
             if (r < 0) {
                 if (errno == EIO)
                     return ty_error(TY_ERROR_IO, "I/O error on standard input");
@@ -321,27 +445,35 @@ int monitor(int argc, char *argv[])
         goto usage;
     }
 
+    if (ty_terminal_available(TY_DESCRIPTOR_STDIN)) {
 #ifdef _WIN32
-    if (terminal_flags & TY_TERMINAL_RAW && !(terminal_flags & TY_TERMINAL_SILENT)) {
-        terminal_flags |= TY_TERMINAL_SILENT;
+        if (terminal_flags & TY_TERMINAL_RAW && !(terminal_flags & TY_TERMINAL_SILENT)) {
+            terminal_flags |= TY_TERMINAL_SILENT;
 
-        DWORD mode;
-        if (GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &mode))
-            fake_echo = true;
-    }
+            if (ty_terminal_available(TY_DESCRIPTOR_STDOUT))
+                fake_echo = true;
+        }
+
+        /* Unlike POSIX platforms, Windows does not implement the console line editing behavior
+         * at the tty layer. Instead, ReadFile() takes care of it and blocks until return is hit.
+         * The problem is that the Wait functions will return the stdin descriptor as soon as
+         * something is typed but then, ReadFile() will block until return is pressed.
+         * Overlapped I/O cannot be used because it is not supported on console descriptors.
+         *
+         * So the best way I found is to have a background thread handle the blocking ReadFile()
+         * and pass the lines in a buffer. When a new line is entered, the input_available
+         * event is set to signal the poll in loop(). I also tried to use an anonymous pipe to
+         * make it simpler, but the Wait functions do not support them. */
+        if (directions & DIRECTION_OUTPUT && !(terminal_flags & TY_TERMINAL_RAW)) {
+            r = start_stdin_thread();
+            if (r < 0)
+                goto cleanup;
+        }
 #endif
 
-    ty_error_mask(TY_ERROR_UNSUPPORTED);
-    r = ty_terminal_setup(terminal_flags);
-    ty_error_unmask();
-    if (r < 0) {
-        if (r != TY_ERROR_UNSUPPORTED)
+        r = ty_terminal_setup(terminal_flags);
+        if (r < 0)
             goto cleanup;
-
-#ifdef _WIN32
-        // We're not in a console, don't echo
-        fake_echo = false;
-#endif
     }
 
     r = redirect_stdout(&outfd);
@@ -359,6 +491,9 @@ int monitor(int argc, char *argv[])
     r = loop(board, outfd);
 
 cleanup:
+#ifdef _WIN32
+    stop_stdin_thread();
+#endif
     tyb_board_unref(board);
     return r;
 
