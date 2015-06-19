@@ -7,6 +7,6 @@
 #ifndef TY_VERSION_H
 #define TY_VERSION_H
 
-#define TY_VERSION "0.6.2"
+#define TY_VERSION "0.6.3"
 
 #endif
