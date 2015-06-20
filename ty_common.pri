@@ -7,7 +7,7 @@ QMAKE_RPATHDIR = $$OUT_PWD/..
 
 QMAKE_CFLAGS += -std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
     -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2
-QMAKE_CXXFLAGS += -std=gnu++1y -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
+QMAKE_CXXFLAGS += -std=gnu++11 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
     -Wall -Wextra -Wno-missing-field-initializers -Wold-style-cast -Wformat=2
 
 win32 {

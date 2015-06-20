@@ -119,7 +119,7 @@ signals:
     void boardChanged();
     void boardDropped();
 
-    void taskProgress(const Board &board, const QString &msg, size_t progress, size_t total);
+    void taskProgress(const Board *board, const QString &msg, size_t progress, size_t total);
 
     void propertyChanged(const char *name, const QVariant &value);
 
@@ -175,7 +175,7 @@ signals:
 
 private slots:
     void refreshManager(ty_descriptor desc);
-    void updateTaskProgress(const Board &board, const QString &msg, size_t progress, size_t total);
+    void updateTaskProgress(const Board *board, const QString &msg, size_t progress, size_t total);
 
 private:
     int handleEvent(tyb_board *board, tyb_monitor_event event);

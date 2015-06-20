@@ -405,7 +405,7 @@ void Board::reportTaskProgress(const QString &msg, unsigned int progress, unsign
     task_progress_ = progress;
     task_total_ = total;
 
-    emit taskProgress(*this, msg, progress, total);
+    emit taskProgress(this, msg, progress, total);
 }
 
 Manager::~Manager()
@@ -553,13 +553,13 @@ void Manager::refreshManager(ty_descriptor desc)
     tyb_monitor_refresh(manager_);
 }
 
-void Manager::updateTaskProgress(const Board &board, const QString &msg, size_t progress, size_t total)
+void Manager::updateTaskProgress(const Board *board, const QString &msg, size_t progress, size_t total)
 {
     TY_UNUSED(msg);
     TY_UNUSED(progress);
     TY_UNUSED(total);
 
-    auto it = find_if(boards_.begin(), boards_.end(), [&](auto &ptr) { return ptr.get() == &board; });
+    auto it = find_if(boards_.begin(), boards_.end(), [&](std::shared_ptr<Board> &ptr) { return ptr.get() == board; });
 
     QModelIndex index = createIndex(it - boards_.begin(), 0);
     dataChanged(index, index);
@@ -600,7 +600,7 @@ void Manager::handleAddedEvent(tyb_board *board)
 
 void Manager::handleChangedEvent(tyb_board *board)
 {
-    auto it = find_if(boards_.begin(), boards_.end(), [=](auto &ptr) { return ptr->board() == board; });
+    auto it = find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
     if (it == boards_.end())
         return;
 
@@ -615,7 +615,7 @@ void Manager::handleChangedEvent(tyb_board *board)
 
 void Manager::handleDroppedEvent(tyb_board *board)
 {
-    auto it = find_if(boards_.begin(), boards_.end(), [=](auto &ptr) { return ptr->board() == board; });
+    auto it = find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
     if (it == boards_.end())
         return;
 
