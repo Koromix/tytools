@@ -113,7 +113,7 @@ bool SessionChannel::lock()
     if (!lock_) {
         QString lockName = QString("%1/%2-%3.lock").arg(QDir::tempPath(), id_, QString::number(getuid()));
 
-        lock_ = make_unique<QLockFile>(lockName);
+        lock_ = unique_ptr<QLockFile>(new QLockFile(lockName));
         lock_->setStaleLockTime(0);
 
         locked_ = lock_->tryLock(100);

@@ -349,7 +349,7 @@ int TyQt::runClient()
 
 shared_ptr<Board> TyQt::getBoard(function<bool(Board &board)> filter, bool show_selector)
 {
-    auto board = find_if(manager_.begin(), manager_.end(), [&](auto ptr) { return filter(*ptr); });
+    auto board = find_if(manager_.begin(), manager_.end(), [&](std::shared_ptr<Board> &ptr) { return filter(*ptr); });
 
     if (board == manager_.end()) {
         if (show_selector && manager_.boardCount()) {

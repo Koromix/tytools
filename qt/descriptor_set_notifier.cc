@@ -28,10 +28,10 @@ void DescriptorSetNotifier::addDescriptorSet(ty_descriptor_set *set)
 {
     for (unsigned int i = 0; i < set->count; i++) {
 #ifdef _WIN32
-        auto notifier = make_unique<QWinEventNotifier>(set->desc[i]);
+        auto notifier = unique_ptr<QWinEventNotifier>(new QWinEventNotifier(set->desc[i]));
         connect(notifier.get(), &QWinEventNotifier::activated, this, &DescriptorSetNotifier::activatedDesc);
 #else
-        auto notifier = make_unique<QSocketNotifier>(set->desc[i], QSocketNotifier::Read);
+        auto notifier = unique_ptr<QSocketNotifier>(new QSocketNotifier(set->desc[i], QSocketNotifier::Read));
         connect(notifier.get(), &QSocketNotifier::activated, this, &DescriptorSetNotifier::activatedDesc);
 #endif
 
