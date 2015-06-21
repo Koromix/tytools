@@ -1,3 +1,5 @@
+![TyQt Logo](/resources/images/banner.png)
+
 # Introduction
 
 ty is a collection of tools to manage Teensy devices (or teensies). It provides:
