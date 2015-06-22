@@ -74,6 +74,7 @@ TY_PUBLIC int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, v
 TY_PUBLIC int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata);
 
 TY_PUBLIC const tyb_board_model *tyb_board_model_find(const char *name);
+TY_PUBLIC const tyb_board_model *tyb_board_model_guess(const struct tyb_firmware *f);
 
 TY_PUBLIC const char *tyb_board_model_get_name(const tyb_board_model *model);
 TY_PUBLIC const char *tyb_board_model_get_mcu(const tyb_board_model *model);
@@ -130,8 +131,6 @@ TY_PUBLIC int tyb_board_upload(tyb_board *board, struct tyb_firmware *f, int fla
 TY_PUBLIC int tyb_board_reset(tyb_board *board);
 
 TY_PUBLIC int tyb_board_reboot(tyb_board *board);
-
-TY_PUBLIC const tyb_board_model *tyb_board_test_firmware(const struct tyb_firmware *f);
 
 TY_PUBLIC tyb_board_interface *tyb_board_interface_ref(tyb_board_interface *iface);
 TY_PUBLIC void tyb_board_interface_unref(tyb_board_interface *iface);
