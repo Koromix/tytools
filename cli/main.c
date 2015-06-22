@@ -50,6 +50,16 @@ static void print_version(FILE *f)
     fprintf(f, "tyc "TY_VERSION"\n");
 }
 
+static int print_family_model(const tyb_board_model *model, void *udata)
+{
+    FILE *f = udata;
+
+    fprintf(f, "   - %-22s (%s, %s)\n", tyb_board_model_get_desc(model),
+            tyb_board_model_get_name(model), tyb_board_model_get_mcu(model));
+
+    return 0;
+}
+
 static void print_main_usage(FILE *f)
 {
     fprintf(f, "usage: tyc <command> [options]\n\n");
@@ -62,7 +72,12 @@ static void print_main_usage(FILE *f)
         fprintf(f, "   %-24s %s\n", c->name, c->description);
     fputc('\n', f);
 
-    print_supported_models(f);
+    fprintf(f, "Supported models:\n");
+    for (const tyb_board_family **cur = tyb_board_families; *cur; cur++) {
+        const tyb_board_family *family = *cur;
+
+        tyb_board_family_list_models(family, print_family_model, f);
+    }
 }
 
 static void print_usage(FILE *f, const struct command *cmd)
@@ -82,16 +97,6 @@ void print_main_options(FILE *f)
 
                "       --board <id>         Work with board <id> instead of first detected\n"
                "       --experimental       Enable experimental features (use with caution)\n");
-}
-
-void print_supported_models(FILE *f)
-{
-    fprintf(f, "Supported models:\n");
-    for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
-        const tyb_board_model *model = *cur;
-        fprintf(f, "   - %-22s (%s, %s)\n", tyb_board_model_get_desc(model),
-                tyb_board_model_get_name(model), tyb_board_model_get_mcu(model));
-    }
 }
 
 static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata)

@@ -15,7 +15,6 @@ struct tyb_monitor;
 struct tyb_board;
 
 void print_main_options(FILE *f);
-void print_supported_models(FILE *f);
 
 int parse_main_option(int argc, char *argv[], int c);
 
