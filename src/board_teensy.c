@@ -26,7 +26,7 @@ struct tyb_board_model {
     uint8_t signature[8];
 };
 
-static const uint16_t teensy_vid = 0x16C0;
+#define TEENSY_VID 0x16C0
 
 enum {
     TEENSY_USAGE_PAGE_BOOTLOADER = 0xFF9C,
@@ -182,7 +182,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
     tyd_hid_descriptor desc;
     int r;
 
-    if (tyd_device_get_vid(iface->dev) != teensy_vid)
+    if (tyd_device_get_vid(iface->dev) != TEENSY_VID)
         return 0;
 
     switch (tyd_device_get_pid(iface->dev)) {

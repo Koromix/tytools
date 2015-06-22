@@ -24,7 +24,7 @@ static const struct option long_options[] = {
     {0}
 };
 
-static const int manual_reboot_delay = 5000;
+#define MANUAL_REBOOT_DELAY 5000
 
 static bool show_progress = true;
 static bool reset_after = true;
@@ -154,7 +154,7 @@ int upload(int argc, char *argv[])
     }
 
 wait:
-    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, false, wait_device ? -1 : manual_reboot_delay);
+    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, false, wait_device ? -1 : MANUAL_REBOOT_DELAY);
     if (r < 0)
         goto cleanup;
     if (!r) {

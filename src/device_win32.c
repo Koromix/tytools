@@ -80,10 +80,10 @@ __declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA 
 
 static CancelIoEx_func *CancelIoEx_;
 
-enum { MAX_USB_DEPTH = 8 };
-static const char *monitor_class_name = "tyd_monitor";
+#define MAX_USB_DEPTH 8
+#define MONITOR_CLASS_NAME "tyd_monitor"
 
-static const size_t read_buffer_size = 1024;
+#define READ_BUFFER_SIZE 1024
 
 static GUID hid_guid;
 static const struct device_type device_types[] = {
@@ -866,7 +866,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     cls.cbSize = sizeof(cls);
     cls.hInstance = GetModuleHandle(NULL);
-    cls.lpszClassName = monitor_class_name;
+    cls.lpszClassName = MONITOR_CLASS_NAME;
     cls.lpfnWndProc = window_proc;
 
     atom = RegisterClassEx(&cls);
@@ -875,7 +875,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
         goto cleanup;
     }
 
-    monitor->hwnd = CreateWindow(monitor_class_name, monitor_class_name, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL);
+    monitor->hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL);
     if (!monitor->hwnd) {
         r = ty_error(TY_ERROR_SYSTEM, "CreateWindow() failed: %s", ty_win32_strerror(0));
         goto cleanup;
@@ -917,7 +917,7 @@ cleanup:
         UnregisterDeviceNotification(notify);
     if (monitor->hwnd)
         DestroyWindow(monitor->hwnd);
-    UnregisterClass(monitor_class_name, NULL);
+    UnregisterClass(MONITOR_CLASS_NAME, NULL);
     if (r < 0) {
         monitor->ret = r;
         SetEvent(monitor->event);
@@ -1094,7 +1094,7 @@ static int start_async_read(tyd_handle *h)
 {
     DWORD ret;
 
-    ret = (DWORD)ReadFile(h->handle, h->buf, (DWORD)read_buffer_size, NULL, h->ov);
+    ret = (DWORD)ReadFile(h->handle, h->buf, READ_BUFFER_SIZE, NULL, h->ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(h->handle);
         return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
@@ -1171,7 +1171,7 @@ static int open_win32_device(tyd_device *dev, tyd_handle **rh)
         goto error;
     }
 
-    h->buf = malloc(read_buffer_size);
+    h->buf = malloc(READ_BUFFER_SIZE);
     if (!h->buf) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;

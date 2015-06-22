@@ -41,7 +41,7 @@ enum {
 };
 
 #define BUFFER_SIZE 1024
-static const int error_io_timeout = 5000;
+#define ERROR_IO_TIMEOUT 5000
 
 static int terminal_flags = 0;
 static uint32_t device_rate = 115200;
@@ -273,7 +273,7 @@ restart:
             r = tyb_board_serial_read(board, buf, sizeof(buf), 0);
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
-                    timeout = error_io_timeout;
+                    timeout = ERROR_IO_TIMEOUT;
                     ty_descriptor_set_remove(&set, 2);
                     ty_descriptor_set_remove(&set, 3);
                     break;
@@ -340,7 +340,7 @@ restart:
             r = tyb_board_serial_write(board, buf, (size_t)r);
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
-                    timeout = error_io_timeout;
+                    timeout = ERROR_IO_TIMEOUT;
                     ty_descriptor_set_remove(&set, 2);
                     ty_descriptor_set_remove(&set, 3);
                     break;

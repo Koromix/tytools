@@ -60,7 +60,7 @@ static const char *capability_names[] = {
     "serial"
 };
 
-static const int drop_board_delay = 7000;
+#define DROP_BOARD_DELAY 7000
 
 static void drop_callback(struct callback *callback)
 {
@@ -161,7 +161,7 @@ static int add_missing_board(tyb_board *board)
     // There may be other boards waiting to be dropped, set timeout for the next in line
     board = ty_list_get_first(&board->manager->missing_boards, tyb_board, missing);
 
-    return ty_timer_set(board->manager->timer, ty_adjust_timeout(drop_board_delay, board->missing_since), TY_TIMER_ONESHOT);
+    return ty_timer_set(board->manager->timer, ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since), TY_TIMER_ONESHOT);
 }
 
 static void drop_board(tyb_board *board)
@@ -534,7 +534,7 @@ int tyb_monitor_refresh(tyb_monitor *manager)
             tyb_board *board = ty_container_of(cur, tyb_board, missing);
             int timeout;
 
-            timeout = ty_adjust_timeout(drop_board_delay, board->missing_since);
+            timeout = ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since);
             if (timeout) {
                 r = ty_timer_set(manager->timer, timeout, TY_TIMER_ONESHOT);
                 if (r < 0)
