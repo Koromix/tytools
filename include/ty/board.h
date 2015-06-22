@@ -52,11 +52,13 @@ enum {
 typedef int tyb_monitor_callback_func(tyb_board *board, tyb_monitor_event event, void *udata);
 typedef int tyb_monitor_wait_func(tyb_monitor *manager, void *udata);
 
+typedef int tyb_board_family_list_models_func(const tyb_board_model *model, void *udata);
+
 typedef int tyb_board_list_interfaces_func(tyb_board_interface *iface, void *udata);
 
 typedef int tyb_board_upload_progress_func(const tyb_board *board, const struct tyb_firmware *f, size_t uploaded, void *udata);
 
-TY_PUBLIC extern const tyb_board_model *tyb_board_models[];
+TY_PUBLIC extern const tyb_board_family *tyb_board_families[];
 
 TY_PUBLIC int tyb_monitor_new(tyb_monitor **rmanager);
 TY_PUBLIC void tyb_monitor_free(tyb_monitor *manager);
@@ -74,7 +76,9 @@ TY_PUBLIC int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, v
 
 TY_PUBLIC int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata);
 
-TY_PUBLIC const tyb_board_model *tyb_board_model_find(const char *name);
+TY_PUBLIC const char *tyb_board_family_get_name(const tyb_board_family *family);
+TY_PUBLIC int tyb_board_family_list_models(const tyb_board_family *family, tyb_board_family_list_models_func *f, void *udata);
+
 TY_PUBLIC const tyb_board_model *tyb_board_model_guess(const struct tyb_firmware *f);
 
 TY_PUBLIC const char *tyb_board_model_get_name(const tyb_board_model *model);

@@ -42,7 +42,7 @@ static const tyb_board_model teensy_unknown_model = {
     .desc = "Teensy"
 };
 
-const tyb_board_model _tyb_teensy_pp10_model = {
+static const tyb_board_model teensy_pp10_model = {
     .family = &_tyb_teensy_family,
     .name = "teensy++10",
     .desc = "Teensy++ 1.0",
@@ -58,7 +58,7 @@ const tyb_board_model _tyb_teensy_pp10_model = {
     .signature = {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
-const tyb_board_model _tyb_teensy_20_model = {
+static const tyb_board_model teensy_20_model = {
     .family = &_tyb_teensy_family,
     .name = "teensy20",
     .desc = "Teensy 2.0",
@@ -74,7 +74,7 @@ const tyb_board_model _tyb_teensy_20_model = {
     .signature = {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
-const tyb_board_model _tyb_teensy_pp20_model = {
+static const tyb_board_model teensy_pp20_model = {
     .family = &_tyb_teensy_family,
     .name = "teensy++20",
     .desc = "Teensy++ 2.0",
@@ -90,7 +90,7 @@ const tyb_board_model _tyb_teensy_pp20_model = {
     .signature = {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
-const tyb_board_model _tyb_teensy_30_model = {
+static const tyb_board_model teensy_30_model = {
     .family = &_tyb_teensy_family,
     .name = "teensy30",
     .desc = "Teensy 3.0",
@@ -105,7 +105,7 @@ const tyb_board_model _tyb_teensy_30_model = {
     .signature = {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
-const tyb_board_model _tyb_teensy_31_model = {
+static const tyb_board_model teensy_31_model = {
     .family = &_tyb_teensy_family,
     .name = "teensy31",
     .desc = "Teensy 3.1",
@@ -120,7 +120,7 @@ const tyb_board_model _tyb_teensy_31_model = {
     .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
-const tyb_board_model _tyb_teensy_lc_model = {
+static const tyb_board_model teensy_lc_model = {
     .family = &_tyb_teensy_family,
     .name = "teensylc",
     .desc = "Teensy LC",
@@ -135,6 +135,16 @@ const tyb_board_model _tyb_teensy_lc_model = {
     .signature = {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}
 };
 
+static const tyb_board_model *teensy_models[] = {
+    &teensy_pp10_model,
+    &teensy_20_model,
+    &teensy_pp20_model,
+    &teensy_30_model,
+    &teensy_31_model,
+    &teensy_lc_model,
+    NULL
+};
+
 static const size_t seremu_packet_size = 32;
 
 static const tyb_board_model *identify_model(const tyd_hid_descriptor *desc)
@@ -142,10 +152,10 @@ static const tyb_board_model *identify_model(const tyd_hid_descriptor *desc)
     if (desc->usage_page != TEENSY_USAGE_PAGE_BOOTLOADER)
         return NULL;
 
-    for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
+    for (const tyb_board_model **cur = teensy_models; *cur; cur++) {
         const tyb_board_model *model = *cur;
 
-        if (model->family == &_tyb_teensy_family && model->usage == desc->usage)
+        if (model->usage == desc->usage)
             return *cur;
     }
 
@@ -260,11 +270,10 @@ static const tyb_board_model *teensy_guess_model(const tyb_firmware *f)
     /* Naive search with each board's signature, not pretty but unless
        thousands of models appear this is good enough. */
     for (size_t i = 0; i < f->size - ty_member_sizeof(tyb_board_model, signature); i++) {
-        for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
+        for (const tyb_board_model **cur = teensy_models; *cur; cur++) {
             const tyb_board_model *model = *cur;
 
-            if (model->family == &_tyb_teensy_family
-                    && memcmp(f->image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0)
+            if (memcmp(f->image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0)
                 return model;
         }
     }
@@ -471,6 +480,9 @@ static int teensy_reboot(tyb_board_interface *iface)
 }
 
 const tyb_board_family _tyb_teensy_family = {
+    .name = "Teensy",
+    .models = teensy_models,
+
     .open_interface = teensy_open_interface,
     .guess_model = teensy_guess_model
 };

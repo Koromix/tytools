@@ -46,26 +46,9 @@ struct callback {
     void *udata;
 };
 
-extern const tyb_board_model _tyb_teensy_pp10_model;
-extern const tyb_board_model _tyb_teensy_20_model;
-extern const tyb_board_model _tyb_teensy_pp20_model;
-extern const tyb_board_model _tyb_teensy_30_model;
-extern const tyb_board_model _tyb_teensy_31_model;
-extern const tyb_board_model _tyb_teensy_lc_model;
-
-const tyb_board_model *tyb_board_models[] = {
-    &_tyb_teensy_pp10_model,
-    &_tyb_teensy_20_model,
-    &_tyb_teensy_pp20_model,
-    &_tyb_teensy_30_model,
-    &_tyb_teensy_31_model,
-    &_tyb_teensy_lc_model,
-    NULL
-};
-
 extern const tyb_board_family _tyb_teensy_family;
 
-static const tyb_board_family *families[] = {
+const tyb_board_family *tyb_board_families[] = {
     &_tyb_teensy_family,
     NULL
 };
@@ -226,7 +209,7 @@ static int open_interface(tyd_device *dev, tyb_board_interface **riface)
         iface->serial = strtoull(serial, NULL, 10);
 
     r = 0;
-    for (const tyb_board_family **cur = families; *cur && !r; cur++) {
+    for (const tyb_board_family **cur = tyb_board_families; *cur && !r; cur++) {
         const tyb_board_family *family = *cur;
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
@@ -634,24 +617,33 @@ int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *u
     return 0;
 }
 
-const tyb_board_model *tyb_board_model_find(const char *name)
+const char *tyb_board_family_get_name(const tyb_board_family *family)
 {
-    assert(name);
+    assert(family);
+    return family->name;
+}
 
-    for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
+int tyb_board_family_list_models(const tyb_board_family *family, tyb_board_family_list_models_func *f, void *udata)
+{
+    assert(family);
+    assert(f);
+
+    for (const tyb_board_model **cur = family->models; *cur; cur++) {
         const tyb_board_model *model = *cur;
-        if (strcmp(model->name, name) == 0 || strcmp(model->mcu, name) == 0)
-            return model;
+
+        int r = (*f)(model, udata);
+        if (r)
+            return r;
     }
 
-    return NULL;
+    return 0;
 }
 
 const tyb_board_model *tyb_board_model_guess(const tyb_firmware *f)
 {
     assert(f);
 
-    for (const tyb_board_family **cur = families; *cur; cur++) {
+    for (const tyb_board_family **cur = tyb_board_families; *cur; cur++) {
         const tyb_board_family *family = *cur;
 
         const tyb_board_model *model = (*family->guess_model)(f);
