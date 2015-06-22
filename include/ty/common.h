@@ -66,6 +66,8 @@
 #define ty_container_of(head, type, member) \
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
+#define ty_member_sizeof(type, member) sizeof(((type *)0)->member)
+
 TY_C_BEGIN
 
 typedef enum ty_err {
