@@ -78,6 +78,7 @@ struct tyb_board {
 
 struct _tyb_board_family {
     int (*open_interface)(tyb_board_interface *iface);
+    const tyb_board_model *(*guess_model)(const struct tyb_firmware *f);
 };
 
 #define TYB_BOARD_MODEL \

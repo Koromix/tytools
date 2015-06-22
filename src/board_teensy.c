@@ -21,6 +21,9 @@ struct tyb_board_model {
     // Upload settings
     unsigned int halfkay_version;
     size_t block_size;
+
+    // Firmware signature
+    uint8_t signature[8];
 };
 
 static const uint16_t teensy_vid = 0x16C0;
@@ -50,7 +53,9 @@ const tyb_board_model _tyb_teensy_pp10_model = {
 
     .code_size = 64512,
     .halfkay_version = 1,
-    .block_size = 256
+    .block_size = 256,
+
+    .signature = {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
 const tyb_board_model _tyb_teensy_20_model = {
@@ -64,7 +69,9 @@ const tyb_board_model _tyb_teensy_20_model = {
 
     .code_size = 32256,
     .halfkay_version = 1,
-    .block_size = 128
+    .block_size = 128,
+
+    .signature = {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
 const tyb_board_model _tyb_teensy_pp20_model = {
@@ -78,7 +85,9 @@ const tyb_board_model _tyb_teensy_pp20_model = {
 
     .code_size = 130048,
     .halfkay_version = 2,
-    .block_size = 256
+    .block_size = 256,
+
+    .signature = {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
 const tyb_board_model _tyb_teensy_30_model = {
@@ -91,7 +100,9 @@ const tyb_board_model _tyb_teensy_30_model = {
 
     .code_size = 131072,
     .halfkay_version = 3,
-    .block_size = 1024
+    .block_size = 1024,
+
+    .signature = {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
 const tyb_board_model _tyb_teensy_31_model = {
@@ -104,7 +115,9 @@ const tyb_board_model _tyb_teensy_31_model = {
 
     .code_size = 262144,
     .halfkay_version = 3,
-    .block_size = 1024
+    .block_size = 1024,
+
+    .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
 const tyb_board_model _tyb_teensy_lc_model = {
@@ -117,7 +130,9 @@ const tyb_board_model _tyb_teensy_lc_model = {
 
     .code_size = 63488,
     .halfkay_version = 3,
-    .block_size = 512
+    .block_size = 512,
+
+    .signature = {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}
 };
 
 static const size_t seremu_packet_size = 32;
@@ -235,6 +250,26 @@ static int teensy_open_interface(tyb_board_interface *iface)
     iface->vtable = &teensy_vtable;
 
     return 1;
+}
+
+static const tyb_board_model *teensy_guess_model(const tyb_firmware *f)
+{
+    if (f->size < ty_member_sizeof(tyb_board_model, signature))
+        return NULL;
+
+    /* Naive search with each board's signature, not pretty but unless
+       thousands of models appear this is good enough. */
+    for (size_t i = 0; i < f->size - ty_member_sizeof(tyb_board_model, signature); i++) {
+        for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
+            const tyb_board_model *model = *cur;
+
+            if (model->family == &_tyb_teensy_family
+                    && memcmp(f->image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0)
+                return model;
+        }
+    }
+
+    return NULL;
 }
 
 static int teensy_serial_set_attributes(tyb_board_interface *iface, uint32_t rate, int flags)
@@ -436,7 +471,8 @@ static int teensy_reboot(tyb_board_interface *iface)
 }
 
 const struct _tyb_board_family _tyb_teensy_family = {
-    .open_interface = teensy_open_interface
+    .open_interface = teensy_open_interface,
+    .guess_model = teensy_guess_model
 };
 
 static const struct _tyb_board_interface_vtable teensy_vtable = {
