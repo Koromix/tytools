@@ -68,10 +68,10 @@ const tyb_board_model *tyb_board_models[] = {
     NULL
 };
 
-extern const struct _tyb_board_vendor _tyb_teensy_vendor;
+extern const struct _tyb_board_family _tyb_teensy_family;
 
-static const struct _tyb_board_vendor *vendors[] = {
-    &_tyb_teensy_vendor,
+static const struct _tyb_board_family *families[] = {
+    &_tyb_teensy_family,
     NULL
 };
 
@@ -241,11 +241,11 @@ static int open_interface(tyd_device *dev, tyb_board_interface **riface)
         iface->serial = strtoull(serial, NULL, 10);
 
     r = 0;
-    for (const struct _tyb_board_vendor **cur = vendors; *cur && !r; cur++) {
-        const struct _tyb_board_vendor *vendor = *cur;
+    for (const struct _tyb_board_family **cur = families; *cur && !r; cur++) {
+        const struct _tyb_board_family *family = *cur;
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*vendor->open_interface)(iface);
+        r = (*family->open_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
             // FIXME: propagate the errors when the initial enumeration abortion problem is fixed

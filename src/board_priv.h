@@ -47,10 +47,6 @@ struct tyb_board_interface {
     int capabilities;
 };
 
-struct _tyb_board_vendor {
-    int (*open_interface)(tyb_board_interface *iface);
-};
-
 struct tyb_board {
     tyb_monitor *manager;
     ty_list_head list;
@@ -80,15 +76,16 @@ struct tyb_board {
     void *udata;
 };
 
-struct _tyb_board_model_vtable {
+struct _tyb_board_family {
+    int (*open_interface)(tyb_board_interface *iface);
 };
 
 #define TYB_BOARD_MODEL \
+    const struct _tyb_board_family *family; \
+    \
     const char *name; \
     const char *mcu; \
     const char *desc; \
-    \
-    const struct _tyb_board_model_vtable *vtable; \
     \
     size_t code_size;
 
