@@ -33,7 +33,7 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
-const struct _tyb_board_family _tyb_teensy_family;
+const tyb_board_family _tyb_teensy_family;
 static const struct _tyb_board_interface_vtable teensy_vtable;
 
 static const tyb_board_model teensy_unknown_model = {
@@ -470,7 +470,7 @@ static int teensy_reboot(tyb_board_interface *iface)
     return r;
 }
 
-const struct _tyb_board_family _tyb_teensy_family = {
+const tyb_board_family _tyb_teensy_family = {
     .open_interface = teensy_open_interface,
     .guess_model = teensy_guess_model
 };

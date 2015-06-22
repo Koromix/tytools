@@ -76,13 +76,13 @@ struct tyb_board {
     void *udata;
 };
 
-struct _tyb_board_family {
+struct tyb_board_family {
     int (*open_interface)(tyb_board_interface *iface);
     const tyb_board_model *(*guess_model)(const struct tyb_firmware *f);
 };
 
 #define TYB_BOARD_MODEL \
-    const struct _tyb_board_family *family; \
+    const tyb_board_family *family; \
     \
     const char *name; \
     const char *mcu; \

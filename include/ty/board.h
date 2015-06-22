@@ -19,6 +19,7 @@ typedef struct tyb_monitor tyb_monitor;
 typedef struct tyb_board tyb_board;
 typedef struct tyb_board_interface tyb_board_interface;
 
+typedef struct tyb_board_family tyb_board_family;
 typedef struct tyb_board_model tyb_board_model;
 
 // Keep in sync with capability_names in board.c

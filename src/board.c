@@ -63,9 +63,9 @@ const tyb_board_model *tyb_board_models[] = {
     NULL
 };
 
-extern const struct _tyb_board_family _tyb_teensy_family;
+extern const tyb_board_family _tyb_teensy_family;
 
-static const struct _tyb_board_family *families[] = {
+static const tyb_board_family *families[] = {
     &_tyb_teensy_family,
     NULL
 };
@@ -226,8 +226,8 @@ static int open_interface(tyd_device *dev, tyb_board_interface **riface)
         iface->serial = strtoull(serial, NULL, 10);
 
     r = 0;
-    for (const struct _tyb_board_family **cur = families; *cur && !r; cur++) {
-        const struct _tyb_board_family *family = *cur;
+    for (const tyb_board_family **cur = families; *cur && !r; cur++) {
+        const tyb_board_family *family = *cur;
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
         r = (*family->open_interface)(iface);
@@ -651,8 +651,8 @@ const tyb_board_model *tyb_board_model_guess(const tyb_firmware *f)
 {
     assert(f);
 
-    for (const struct _tyb_board_family **cur = families; *cur; cur++) {
-        const struct _tyb_board_family *family = *cur;
+    for (const tyb_board_family **cur = families; *cur; cur++) {
+        const tyb_board_family *family = *cur;
 
         const tyb_board_model *model = (*family->guess_model)(f);
         if (model)
