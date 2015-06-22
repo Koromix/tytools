@@ -46,11 +46,6 @@ struct callback {
     void *udata;
 };
 
-struct firmware_signature {
-    const tyb_board_model *model;
-    uint8_t magic[8];
-};
-
 extern const tyb_board_model _tyb_teensy_pp10_model;
 extern const tyb_board_model _tyb_teensy_20_model;
 extern const tyb_board_model _tyb_teensy_pp20_model;
@@ -80,16 +75,6 @@ static const char *capability_names[] = {
     "reset",
     "reboot",
     "serial"
-};
-
-static const struct firmware_signature signatures[] = {
-    {&_tyb_teensy_pp10_model, {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&_tyb_teensy_20_model,   {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&_tyb_teensy_pp20_model, {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}},
-    {&_tyb_teensy_30_model,   {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
-    {&_tyb_teensy_31_model,   {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}},
-    {&_tyb_teensy_lc_model,   {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}},
-    {0}
 };
 
 static const int drop_board_delay = 7000;
@@ -666,18 +651,12 @@ const tyb_board_model *tyb_board_model_guess(const tyb_firmware *f)
 {
     assert(f);
 
-    size_t magic_size = sizeof(signatures[0].magic);
+    for (const struct _tyb_board_family **cur = families; *cur; cur++) {
+        const struct _tyb_board_family *family = *cur;
 
-    if (f->size < magic_size)
-        return NULL;
-
-    /* Naive search with each board's signature, not pretty but unless
-       thousands of models appear this is good enough. */
-    for (size_t i = 0; i < f->size - magic_size; i++) {
-        for (const struct firmware_signature *sig = signatures; sig->model; sig++) {
-            if (memcmp(f->image + i, sig->magic, magic_size) == 0)
-                return sig->model;
-        }
+        const tyb_board_model *model = (*family->guess_model)(f);
+        if (model)
+            return model;
     }
 
     return NULL;
