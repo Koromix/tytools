@@ -56,7 +56,7 @@ struct tyb_board {
 
     tyb_board_state state;
 
-    char *identity;
+    char *tag;
     char *location;
 
     uint16_t vid;

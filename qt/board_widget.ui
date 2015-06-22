@@ -131,9 +131,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="identityLabel">
+          <widget class="QLabel" name="tagLabel">
            <property name="text">
-            <string>identity</string>
+            <string>tag</string>
            </property>
           </widget>
          </item>

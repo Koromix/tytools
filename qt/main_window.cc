@@ -135,7 +135,7 @@ void MainWindow::refreshBoardInfo()
 {
     setWindowTitle(QString("TyQt - %1 - %2")
                    .arg(current_board_->modelDesc())
-                   .arg(current_board_->identity()));
+                   .arg(current_board_->tag()));
 
     infoTab->setEnabled(true);
     modelText->setText(current_board_->modelDesc());

@@ -43,7 +43,7 @@ static tyb_monitor *board_manager;
 static tyb_board *main_board;
 
 static const struct command *current_command;
-static const char *board_identity = NULL;
+static const char *board_tag = NULL;
 
 static void print_version(FILE *f)
 {
@@ -101,7 +101,7 @@ static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata
     switch (event) {
     case TYB_MONITOR_EVENT_ADDED:
         if (!main_board) {
-            int r = tyb_board_matches_identity(board, board_identity);
+            int r = tyb_board_matches_tag(board, board_tag);
             if (r < 0)
                 return r;
 
@@ -170,8 +170,8 @@ int get_board(tyb_board **rboard)
         return r;
 
     if (!main_board) {
-        if (board_identity) {
-            return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' not found", board_identity);
+        if (board_tag) {
+            return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' not found", board_tag);
         } else {
             return ty_error(TY_ERROR_NOT_FOUND, "No board available");
         }
@@ -179,7 +179,7 @@ int get_board(tyb_board **rboard)
 
     static tyb_board *previous_board = NULL;
     if (main_board != previous_board) {
-        printf("Board at '%s'\n", tyb_board_get_identity(main_board));
+        printf("Board at '%s'\n", tyb_board_get_tag(main_board));
         previous_board = main_board;
     }
 
@@ -226,7 +226,7 @@ int parse_main_option(int argc, char *argv[], int c)
         return 1;
 
     case MAIN_OPTION_BOARD:
-        board_identity = optarg;
+        board_tag = optarg;
         return 1;
     }
 

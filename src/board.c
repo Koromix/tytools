@@ -146,7 +146,7 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
     board->vid = tyd_device_get_vid(iface->dev);
     board->pid = tyd_device_get_pid(iface->dev);
 
-    r = asprintf(&board->identity, "%s#%"PRIu64, board->location, board->serial);
+    r = asprintf(&board->tag, "%s#%"PRIu64, board->location, board->serial);
     if (r < 0) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
@@ -709,7 +709,7 @@ void tyb_board_unref(tyb_board *board)
 
         ty_mutex_release(&board->mutex);
 
-        free(board->identity);
+        free(board->tag);
         free(board->location);
 
         ty_list_foreach(cur, &board->interfaces) {
@@ -739,7 +739,7 @@ void tyb_board_unlock(const tyb_board *board)
     ty_mutex_unlock(&((tyb_board *)board)->mutex);
 }
 
-static int parse_identity(const char *id, char **rlocation, uint64_t *rserial)
+static int parse_tag(const char *id, char **rlocation, uint64_t *rserial)
 {
     char *location = NULL;
     uint64_t serial = 0;
@@ -778,7 +778,7 @@ error:
     return r;
 }
 
-int tyb_board_matches_identity(tyb_board *board, const char *id)
+int tyb_board_matches_tag(tyb_board *board, const char *id)
 {
     assert(board);
 
@@ -789,7 +789,7 @@ int tyb_board_matches_identity(tyb_board *board, const char *id)
     uint64_t serial = 0;
     int r;
 
-    r = parse_identity(id, &location, &serial);
+    r = parse_tag(id, &location, &serial);
     if (r < 0)
         return r;
 
@@ -829,10 +829,10 @@ tyb_board_state tyb_board_get_state(const tyb_board *board)
     return board->state;
 }
 
-const char *tyb_board_get_identity(const tyb_board *board)
+const char *tyb_board_get_tag(const tyb_board *board)
 {
     assert(board);
-    return board->identity;
+    return board->tag;
 }
 
 const char *tyb_board_get_location(const tyb_board *board)

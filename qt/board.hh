@@ -75,7 +75,7 @@ public:
 
     tyb_board *board() const;
 
-    bool matchesIdentity(const QString &id);
+    bool matchesTag(const QString &id);
 
     tyb_board_state state() const;
     uint16_t capabilities() const;
@@ -84,7 +84,7 @@ public:
     QString modelName() const;
     QString modelDesc() const;
 
-    QString identity() const;
+    QString tag() const;
     QString location() const;
     uint64_t serialNumber() const;
 

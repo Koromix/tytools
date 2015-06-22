@@ -82,7 +82,7 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
     }
     assert(c);
 
-    printf("%c %s %s\n", c, tyb_board_get_identity(board),
+    printf("%c %s %s\n", c, tyb_board_get_tag(board),
            model ? tyb_board_model_get_name(model) : "(unknown)");
 
     if (list_verbose && event != TYB_MONITOR_EVENT_DROPPED) {

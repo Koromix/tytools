@@ -173,14 +173,14 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
         }
 
         auto firmware = arguments[1];
-        auto identity = arguments[2];
+        auto tag = arguments[2];
 
         shared_ptr<Board> board;
 
-        if (!identity.isEmpty()) {
-            board = getBoard([=](Board &board) { return board.matchesIdentity(identity); }, false);
+        if (!tag.isEmpty()) {
+            board = getBoard([=](Board &board) { return board.matchesTag(tag); }, false);
             if (!board) {
-                peer.send(tr("Board '%1' not found").arg(identity));
+                peer.send(tr("Board '%1' not found").arg(tag));
                 return;
             }
 
@@ -328,9 +328,9 @@ int TyQt::runClient()
             showClientError(tr("Firmware '%1' does not exist").arg(parser_.value("upload")));
             return 1;
         }
-        auto identity = parser_.value("board");
+        auto tag = parser_.value("board");
 
-        channel_.send({"upload", firmware, identity});
+        channel_.send({"upload", firmware, tag});
     } else {
         channel_.send("new");
     }

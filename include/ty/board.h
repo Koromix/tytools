@@ -88,7 +88,7 @@ TY_PUBLIC void tyb_board_unref(tyb_board *board);
 TY_PUBLIC void tyb_board_lock(const tyb_board *board);
 TY_PUBLIC void tyb_board_unlock(const tyb_board *board);
 
-TY_PUBLIC int tyb_board_matches_identity(tyb_board *board, const char *id);
+TY_PUBLIC int tyb_board_matches_tag(tyb_board *board, const char *id);
 
 TY_PUBLIC void tyb_board_set_udata(tyb_board *board, void *udata);
 TY_PUBLIC void *tyb_board_get_udata(const tyb_board *board);
@@ -97,7 +97,7 @@ TY_PUBLIC tyb_monitor *tyb_board_get_manager(const tyb_board *board);
 
 TY_PUBLIC tyb_board_state tyb_board_get_state(const tyb_board *board);
 
-TY_PUBLIC const char *tyb_board_get_identity(const tyb_board *board);
+TY_PUBLIC const char *tyb_board_get_tag(const tyb_board *board);
 TY_PUBLIC const char *tyb_board_get_location(const tyb_board *board);
 
 TY_PUBLIC const tyb_board_model *tyb_board_get_model(const tyb_board *board);

@@ -28,9 +28,9 @@ void BoardWidget::setCapabilities(const QString &capabilities)
     capabilityLabel->setText(capabilities);
 }
 
-void BoardWidget::setIdentity(const QString &identity)
+void BoardWidget::setTag(const QString &tag)
 {
-    identityLabel->setText(identity);
+    tagLabel->setText(tag);
 }
 
 void BoardWidget::setAvailable(bool available)
@@ -67,9 +67,9 @@ QString BoardWidget::capabilities() const
     return capabilityLabel->text();
 }
 
-QString BoardWidget::identity() const
+QString BoardWidget::tag() const
 {
-    return identityLabel->text();
+    return tagLabel->text();
 }
 
 bool BoardWidget::available() const
@@ -95,7 +95,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.setModel(board->modelDesc());
     widget_.setCapabilities(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
-    widget_.setIdentity(board->identity());
+    widget_.setTag(board->tag());
 
     unsigned int progress, total;
     QString msg = board->runningTask(&progress, &total);

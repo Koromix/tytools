@@ -110,9 +110,9 @@ tyb_board *Board::board() const
     return board_;
 }
 
-bool Board::matchesIdentity(const QString &id)
+bool Board::matchesTag(const QString &id)
 {
-    return tyb_board_matches_identity(board_, id.toLocal8Bit().constData()) == 1;
+    return tyb_board_matches_tag(board_, id.toLocal8Bit().constData()) == 1;
 }
 
 tyb_board_state Board::state() const
@@ -148,9 +148,9 @@ QString Board::modelDesc() const
     return tyb_board_model_get_desc(model);
 }
 
-QString Board::identity() const
+QString Board::tag() const
 {
-    return tyb_board_get_identity(board_);
+    return tyb_board_get_tag(board_);
 }
 
 QString Board::location() const
@@ -523,7 +523,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
            make a proxy later if there's a problem. */
         switch (role) {
         case Qt::DisplayRole:
-            return board->identity();
+            return board->tag();
         case Qt::ForegroundRole:
             return QBrush(Qt::lightGray);
         case Qt::TextAlignmentRole:
