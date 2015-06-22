@@ -83,7 +83,6 @@ TY_PUBLIC const tyb_board_model *tyb_board_model_guess(const struct tyb_firmware
 
 TY_PUBLIC const char *tyb_board_model_get_name(const tyb_board_model *model);
 TY_PUBLIC const char *tyb_board_model_get_mcu(const tyb_board_model *model);
-TY_PUBLIC const char *tyb_board_model_get_desc(const tyb_board_model *model);
 TY_PUBLIC size_t tyb_board_model_get_code_size(const tyb_board_model *model);
 
 TY_PUBLIC const char *tyb_board_capability_get_name(tyb_board_capability cap);
@@ -108,7 +107,6 @@ TY_PUBLIC const char *tyb_board_get_location(const tyb_board *board);
 
 TY_PUBLIC const tyb_board_model *tyb_board_get_model(const tyb_board *board);
 TY_PUBLIC const char *tyb_board_get_model_name(const tyb_board *board);
-TY_PUBLIC const char *tyb_board_get_model_desc(const tyb_board *board);
 
 TY_PUBLIC uint64_t tyb_board_get_serial_number(const tyb_board *board);
 

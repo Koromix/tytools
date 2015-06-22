@@ -86,8 +86,6 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
            model ? tyb_board_model_get_name(model) : "(unknown)");
 
     if (list_verbose && event != TYB_MONITOR_EVENT_DROPPED) {
-        printf("  - model: %s\n", model ? tyb_board_model_get_desc(model) : "(unknown)");
-
         printf("  - capabilities: ");
         print_capabilities(tyb_board_get_capabilities(board));
         printf("\n");

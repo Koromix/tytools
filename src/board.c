@@ -666,12 +666,6 @@ const char *tyb_board_model_get_mcu(const tyb_board_model *model)
     return model->mcu;
 }
 
-const char *tyb_board_model_get_desc(const tyb_board_model *model)
-{
-    assert(model);
-    return model->desc;
-}
-
 size_t tyb_board_model_get_code_size(const tyb_board_model *model)
 {
     assert(model);
@@ -848,17 +842,6 @@ const char *tyb_board_get_model_name(const tyb_board *board)
         return NULL;
 
     return model->name;
-}
-
-const char *tyb_board_get_model_desc(const tyb_board *board)
-{
-    assert(board);
-
-    const tyb_board_model *model = board->model;
-    if (!model)
-        return NULL;
-
-    return model->desc;
 }
 
 tyb_board_interface *tyb_board_get_interface(const tyb_board *board, tyb_board_capability cap)
@@ -1090,7 +1073,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
 
     // FIXME: detail error message (max allowed, ratio)
     if (f->size > board->model->code_size) {
-        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->desc);
+        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->name);
         goto cleanup;
     }
 
@@ -1104,7 +1087,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
         }
 
         if (guess != board->model) {
-            r = ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->desc);
+            r = ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->name);
             goto cleanup;
         }
     }

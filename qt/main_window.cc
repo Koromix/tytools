@@ -134,11 +134,11 @@ void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSel
 void MainWindow::refreshBoardInfo()
 {
     setWindowTitle(QString("TyQt - %1 - %2")
-                   .arg(current_board_->modelDesc())
+                   .arg(current_board_->modelName())
                    .arg(current_board_->tag()));
 
     infoTab->setEnabled(true);
-    modelText->setText(current_board_->modelDesc());
+    modelText->setText(current_board_->modelName());
     locationText->setText(current_board_->location());
     serialText->setText(QString::number(current_board_->serialNumber()));
 

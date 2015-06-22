@@ -175,7 +175,7 @@ wait:
         goto cleanup;
     }
 
-    printf("Model: %s\n", tyb_board_model_get_desc(model));
+    printf("Model: %s\n", tyb_board_model_get_name(model));
     printf("Firmware: %s\n", image_filename);
 
     printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)tyb_board_model_get_code_size(model) * 100.0,

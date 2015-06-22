@@ -54,9 +54,7 @@ static int print_family_model(const tyb_board_model *model, void *udata)
 {
     FILE *f = udata;
 
-    fprintf(f, "   - %-22s (%s, %s)\n", tyb_board_model_get_desc(model),
-            tyb_board_model_get_name(model), tyb_board_model_get_mcu(model));
-
+    fprintf(f, "   - %-22s (%s)\n", tyb_board_model_get_name(model), tyb_board_model_get_mcu(model));
     return 0;
 }
 

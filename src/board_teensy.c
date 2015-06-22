@@ -38,14 +38,12 @@ static const struct _tyb_board_interface_vtable teensy_vtable;
 
 static const tyb_board_model teensy_unknown_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensy",
-    .desc = "Teensy"
+    .name = "Teensy"
 };
 
 static const tyb_board_model teensy_pp10_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensy++10",
-    .desc = "Teensy++ 1.0",
+    .name = "Teensy++ 1.0",
     .mcu = "at90usb646",
 
     .usage = 0x1A,
@@ -60,8 +58,7 @@ static const tyb_board_model teensy_pp10_model = {
 
 static const tyb_board_model teensy_20_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensy20",
-    .desc = "Teensy 2.0",
+    .name = "Teensy 2.0",
     .mcu = "atmega32u4",
 
     .usage = 0x1B,
@@ -76,8 +73,7 @@ static const tyb_board_model teensy_20_model = {
 
 static const tyb_board_model teensy_pp20_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensy++20",
-    .desc = "Teensy++ 2.0",
+    .name = "Teensy++ 2.0",
     .mcu = "at90usb1286",
 
     .usage = 0x1C,
@@ -92,8 +88,7 @@ static const tyb_board_model teensy_pp20_model = {
 
 static const tyb_board_model teensy_30_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensy30",
-    .desc = "Teensy 3.0",
+    .name = "Teensy 3.0",
     .mcu = "mk20dx128",
 
     .usage = 0x1D,
@@ -107,8 +102,7 @@ static const tyb_board_model teensy_30_model = {
 
 static const tyb_board_model teensy_31_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensy31",
-    .desc = "Teensy 3.1",
+    .name = "Teensy 3.1",
     .mcu = "mk20dx256",
 
     .usage = 0x1E,
@@ -122,8 +116,7 @@ static const tyb_board_model teensy_31_model = {
 
 static const tyb_board_model teensy_lc_model = {
     .family = &_tyb_teensy_family,
-    .name = "teensylc",
-    .desc = "Teensy LC",
+    .name = "Teensy LC",
     .mcu = "mkl26z64",
 
     .usage = 0x20,
@@ -408,7 +401,7 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *f, int flags,
     TY_UNUSED(flags);
 
     if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, use --experimental", iface->model->desc);
+        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, use --experimental", iface->model->name);
 
     int r;
 
@@ -442,7 +435,7 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *f, int flags,
 static int teensy_reset(tyb_board_interface *iface)
 {
     if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, use --experimental", iface->model->desc);
+        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, use --experimental", iface->model->name);
 
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }

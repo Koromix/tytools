@@ -93,7 +93,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.setAvailable(board->state() == TYB_BOARD_STATE_ONLINE);
 
-    widget_.setModel(board->modelDesc());
+    widget_.setModel(board->modelName());
     widget_.setCapabilities(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
     widget_.setTag(board->tag());
 

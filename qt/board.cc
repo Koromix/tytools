@@ -139,15 +139,6 @@ QString Board::modelName() const
     return tyb_board_model_get_name(model);
 }
 
-QString Board::modelDesc() const
-{
-    auto model = tyb_board_get_model(board_);
-    if (!model)
-        return tr("(unknown)");
-
-    return tyb_board_model_get_desc(model);
-}
-
 QString Board::tag() const
 {
     return tyb_board_get_tag(board_);
@@ -506,12 +497,12 @@ QVariant Manager::data(const QModelIndex &index, int role) const
     if (index.column() == 0) {
         switch (role) {
         case Qt::DisplayRole:
-            return board->modelDesc();
+            return board->modelName();
         case Qt::DecorationRole:
             return QIcon(":/board");
         case Qt::ToolTipRole:
             return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4"))
-                           .arg(board->modelDesc())
+                           .arg(board->modelName())
                            .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")))
                            .arg(board->location())
                            .arg(QString::number(board->serialNumber()));

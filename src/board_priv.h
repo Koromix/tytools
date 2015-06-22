@@ -90,7 +90,6 @@ struct tyb_board_family {
     \
     const char *name; \
     const char *mcu; \
-    const char *desc; \
     \
     size_t code_size;
 

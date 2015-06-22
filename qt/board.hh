@@ -82,7 +82,6 @@ public:
 
     const tyb_board_model *model() const;
     QString modelName() const;
-    QString modelDesc() const;
 
     QString tag() const;
     QString location() const;
