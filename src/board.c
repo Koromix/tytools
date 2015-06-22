@@ -662,6 +662,27 @@ const tyb_board_model *tyb_board_model_find(const char *name)
     return NULL;
 }
 
+const tyb_board_model *tyb_board_model_guess(const tyb_firmware *f)
+{
+    assert(f);
+
+    size_t magic_size = sizeof(signatures[0].magic);
+
+    if (f->size < magic_size)
+        return NULL;
+
+    /* Naive search with each board's signature, not pretty but unless
+       thousands of models appear this is good enough. */
+    for (size_t i = 0; i < f->size - magic_size; i++) {
+        for (const struct firmware_signature *sig = signatures; sig->model; sig++) {
+            if (memcmp(f->image + i, sig->magic, magic_size) == 0)
+                return sig->model;
+        }
+    }
+
+    return NULL;
+}
+
 const char *tyb_board_model_get_name(const tyb_board_model *model)
 {
     assert(model);
@@ -1105,7 +1126,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
     if (!(flags & TYB_BOARD_UPLOAD_NOCHECK)) {
         const tyb_board_model *guess;
 
-        guess = tyb_board_test_firmware(f);
+        guess = tyb_board_model_guess(f);
         if (!guess) {
             r = ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
             goto cleanup;
@@ -1156,27 +1177,6 @@ int tyb_board_reboot(tyb_board *board)
 
     tyb_board_interface_unref(iface);
     return r;
-}
-
-const tyb_board_model *tyb_board_test_firmware(const tyb_firmware *f)
-{
-    assert(f);
-
-    size_t magic_size = sizeof(signatures[0].magic);
-
-    if (f->size < magic_size)
-        return NULL;
-
-    /* Naive search with each board's signature, not pretty but unless
-       thousands of models appear this is good enough. */
-    for (size_t i = 0; i < f->size - magic_size; i++) {
-        for (const struct firmware_signature *sig = signatures; sig->model; sig++) {
-            if (memcmp(f->image + i, sig->magic, magic_size) == 0)
-                return sig->model;
-        }
-    }
-
-    return NULL;
 }
 
 tyb_board_interface *tyb_board_interface_ref(tyb_board_interface *iface)
