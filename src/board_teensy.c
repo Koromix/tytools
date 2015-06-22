@@ -30,20 +30,20 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
+const struct _tyb_board_family _tyb_teensy_family;
 static const struct _tyb_board_interface_vtable teensy_vtable;
-static const struct _tyb_board_model_vtable teensy_model_vtable;
 
 static const tyb_board_model teensy_unknown_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensy",
     .desc = "Teensy"
 };
 
 const tyb_board_model _tyb_teensy_pp10_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensy++10",
     .desc = "Teensy++ 1.0",
     .mcu = "at90usb646",
-
-    .vtable = &teensy_model_vtable,
 
     .usage = 0x1A,
     .experimental = true,
@@ -54,11 +54,10 @@ const tyb_board_model _tyb_teensy_pp10_model = {
 };
 
 const tyb_board_model _tyb_teensy_20_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensy20",
     .desc = "Teensy 2.0",
     .mcu = "atmega32u4",
-
-    .vtable = &teensy_model_vtable,
 
     .usage = 0x1B,
     .experimental = true,
@@ -69,11 +68,10 @@ const tyb_board_model _tyb_teensy_20_model = {
 };
 
 const tyb_board_model _tyb_teensy_pp20_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensy++20",
     .desc = "Teensy++ 2.0",
     .mcu = "at90usb1286",
-
-    .vtable = &teensy_model_vtable,
 
     .usage = 0x1C,
     .experimental = true,
@@ -84,11 +82,10 @@ const tyb_board_model _tyb_teensy_pp20_model = {
 };
 
 const tyb_board_model _tyb_teensy_30_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensy30",
     .desc = "Teensy 3.0",
     .mcu = "mk20dx128",
-
-    .vtable = &teensy_model_vtable,
 
     .usage = 0x1D,
 
@@ -98,11 +95,10 @@ const tyb_board_model _tyb_teensy_30_model = {
 };
 
 const tyb_board_model _tyb_teensy_31_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensy31",
     .desc = "Teensy 3.1",
     .mcu = "mk20dx256",
-
-    .vtable = &teensy_model_vtable,
 
     .usage = 0x1E,
 
@@ -112,11 +108,10 @@ const tyb_board_model _tyb_teensy_31_model = {
 };
 
 const tyb_board_model _tyb_teensy_lc_model = {
+    .family = &_tyb_teensy_family,
     .name = "teensylc",
     .desc = "Teensy LC",
     .mcu = "mkl26z64",
-
-    .vtable = &teensy_model_vtable,
 
     .usage = 0x20,
 
@@ -135,10 +130,7 @@ static const tyb_board_model *identify_model(const tyd_hid_descriptor *desc)
     for (const tyb_board_model **cur = tyb_board_models; *cur; cur++) {
         const tyb_board_model *model = *cur;
 
-        if (model->vtable != &teensy_model_vtable)
-            continue;
-
-        if (model->usage == desc->usage)
+        if (model->family == &_tyb_teensy_family && model->usage == desc->usage)
             return *cur;
     }
 
@@ -443,6 +435,10 @@ static int teensy_reboot(tyb_board_interface *iface)
     return r;
 }
 
+const struct _tyb_board_family _tyb_teensy_family = {
+    .open_interface = teensy_open_interface
+};
+
 static const struct _tyb_board_interface_vtable teensy_vtable = {
     .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
@@ -452,11 +448,4 @@ static const struct _tyb_board_interface_vtable teensy_vtable = {
     .reset = teensy_reset,
 
     .reboot = teensy_reboot
-};
-
-static const struct _tyb_board_model_vtable teensy_model_vtable = {
-};
-
-const struct _tyb_board_vendor _tyb_teensy_vendor = {
-    .open_interface = teensy_open_interface
 };
