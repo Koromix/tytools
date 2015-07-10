@@ -419,8 +419,9 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *f, int flags,
         if (r < 0)
             return r;
 
-        // HalfKay generates STALL if you go too fast (translates to EPIPE on Linux)
-        ty_delay(addr ? 30 : 300);
+        /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
+           first write takes longer because it triggers a complete erase of all blocks. */
+        ty_delay(addr ? 10 : 100);
 
         if (pf) {
             r = (*pf)(iface->board, f, addr + size, udata);
