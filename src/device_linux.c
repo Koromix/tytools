@@ -345,7 +345,7 @@ int tyd_monitor_refresh(tyd_monitor *monitor)
     if (errno == ENOMEM)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    return 1;
+    return 0;
 }
 
 static void parse_descriptor(tyd_hid_descriptor *desc, struct hidraw_report_descriptor *report)
