@@ -199,7 +199,7 @@ qt5_wrap_ui(TYQ_FORMS_HEADERS ${TYQ_FORMS})
 qt5_add_resources(TYQ_RESOURCES_RCC ${TYQ_RESOURCES})
 
 add_executable(tyqt WIN32 ${TYQ_SOURCES} ${TYQ_FORMS_HEADERS} ${TYQ_RESOURCES_RCC})
-target_link_libraries(tyqt ${TY_LIBRARIES} Qt5::Widgets Qt5::Network)
+target_link_libraries(tyqt ${TY_LIBRARIES} Qt5::Core Qt5::Widgets Qt5::Network)
 set_target_properties(tyqt PROPERTIES AUTOMOC ON)
 
 get_target_property(QT5_TYPE Qt5::Core TYPE)
@@ -218,11 +218,17 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
         find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
             HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
             NO_CMAKE_FIND_ROOT_PATH)
+        find_library(qtpcre_LIBRARIES_DEBUG qtpcred
+            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+            NO_CMAKE_FIND_ROOT_PATH)
+        find_library(qtpcre_LIBRARIES_OPTIMIZED qtpcre
+            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+            NO_CMAKE_FIND_ROOT_PATH)
 
         target_link_libraries(tyqt
             Qt5::QWindowsIntegrationPlugin imm32 winmm
-            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG}
-            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED})
+            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG} ${qtpcre_LIBRARIES_DEBUG}
+            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED} ${qtpcre_LIBRARIES_OPTIMIZED})
     elseif(APPLE)
         find_library(COCOA_LIBRARIES Cocoa)
         find_library(CARBON_LIBRARIES Carbon)
