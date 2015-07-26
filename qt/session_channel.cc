@@ -5,6 +5,7 @@
  */
 
 #include <QCoreApplication>
+#include <QDataStream>
 #include <QDir>
 
 #include <unistd.h>
