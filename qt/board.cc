@@ -10,6 +10,7 @@
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
 #include <QTextCursor>
+#include <QThreadPool>
 
 #include <functional>
 
@@ -20,76 +21,63 @@ using namespace std;
 
 static const int manual_reboot_delay = 5000;
 
-class BoardCommand : public QEvent {
-    QString msg_;
+class BoardTask : public QRunnable {
+    QFutureInterface<void> intf_;
 
-    tyb_board *board_;
-    const function<void(BoardWorker *, tyb_board *)> f_;
+    shared_ptr<Board> board_;
+    function<void(BoardTask &)> f_;
+
+    unsigned int progress_ = 0, total_ = 0;
 
 public:
-    BoardCommand(tyb_board *board, function<void(BoardWorker *, tyb_board *)> f, QString msg = QString());
-    ~BoardCommand();
+    BoardTask(Board &board, function<void(BoardTask &)> f);
 
-    QString msg() const;
+    QFuture<void> start();
+    void run();
 
-    void execute(BoardWorker *worker);
+    void setProgress(unsigned int progress, unsigned int total);
 };
 
-BoardCommand::BoardCommand(tyb_board *board, function<void(BoardWorker *, tyb_board *)> f, QString msg)
-    : QEvent(QEvent::User), msg_(msg), board_(tyb_board_ref(board)), f_(f)
+BoardTask::BoardTask(Board &board, function<void(BoardTask &)> f)
+    : board_(board.getSharedPtr()), f_(f)
 {
 }
 
-BoardCommand::~BoardCommand()
+QFuture<void> BoardTask::start()
 {
-    tyb_board_unref(board_);
+    QThreadPool::globalInstance()->start(this);
+    return intf_.future();
 }
 
-QString BoardCommand::msg() const
+void BoardTask::run()
 {
-    return msg_;
+    intf_.reportStarted();
+
+    f_(*this);
+
+    intf_.reportFinished();
+    if (progress_ < total_)
+        emit board_->taskProgress(0, 0);
 }
 
-void BoardCommand::execute(BoardWorker *worker)
+void BoardTask::setProgress(unsigned int progress, unsigned int total)
 {
-    f_(worker, board_);
-    emit worker->taskProgress("", 0, 0);
-}
-
-void BoardWorker::customEvent(QEvent *ev)
-{
-    if (ev->type() != QEvent::User)
+    if (progress < progress_)
         return;
 
-    running_task_ = static_cast<BoardCommand *>(ev);
-    running_task_->execute(this);
+    if (total != total_) {
+        total_ = total;
+        intf_.setProgressRange(0, total);
+    }
 
-    running_task_ = nullptr;
-}
-
-void BoardWorker::reportTaskProgress(unsigned int progress, unsigned int total)
-{
-    if (!running_task_)
-        return;
-
-    emit taskProgress(running_task_->msg(), progress, total);
+    progress_ = progress;
+    intf_.setProgressValue(progress);
+    emit board_->taskProgress(progress, total);
 }
 
 Board::Board(tyb_board *board, QObject *parent)
     : QObject(parent), board_(tyb_board_ref(board))
 {
-    thread_ = new QThread(parent);
-    thread_->start();
-
-    worker_ = new BoardWorker();
-    worker_->moveToThread(thread_);
-
-    // This construct has been valid since Qt 4.8
-    connect(thread_, &QThread::finished, worker_, &QThread::deleteLater);
-    connect(thread_, &QThread::finished, thread_, &QThread::deleteLater);
-
-    connect(worker_, &BoardWorker::taskProgress, this, &Board::reportTaskProgress);
-
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(100000);
 
@@ -99,10 +87,26 @@ Board::Board(tyb_board *board, QObject *parent)
     refreshBoard();
 }
 
+shared_ptr<Board> Board::createBoard(tyb_board *board)
+{
+    // Workaround the private constructor for make_shared()
+    struct BoardSharedEnabler : public Board
+    {
+        BoardSharedEnabler(tyb_board *board)
+            : Board(board) {}
+    };
+
+    return make_shared<BoardSharedEnabler>(board);
+}
+
 Board::~Board()
 {
     tyb_board_unref(board_);
-    thread_->quit();
+}
+
+shared_ptr<Board> Board::getSharedPtr()
+{
+    return shared_from_this();
 }
 
 tyb_board *Board::board() const
@@ -218,14 +222,9 @@ void Board::appendToSerialDocument(const QString &s)
     cursor.insertText(s);
 }
 
-QString Board::runningTask(unsigned int *progress, unsigned int *total) const
+QFuture<void> Board::runningTask() const
 {
-    if (progress)
-        *progress = task_progress_;
-    if (total)
-        *total = task_total_;
-
-    return task_msg_;
+    return running_task_;
 }
 
 bool Board::event(QEvent *e)
@@ -263,95 +262,6 @@ QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
     }
 }
 
-void Board::upload(const QString &filename, bool reset_after)
-{
-    BoardCommand *cmd = new BoardCommand(board_, [filename, reset_after](BoardWorker *worker, tyb_board *board) {
-        tyb_firmware *firmware;
-
-        emit worker->reportTaskProgress();
-
-        if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_UPLOAD)) {
-            tyb_board_reboot(board);
-
-            int r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, true, manual_reboot_delay);
-            if (r < 0)
-                return;
-            if (!r) {
-                ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work, trigger manually");
-                return;
-            }
-        }
-
-        int r = tyb_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
-        if (r < 0)
-            return;
-        unique_ptr<tyb_firmware, decltype(tyb_firmware_free) *> firmware_ptr(firmware, tyb_firmware_free);
-
-        r = tyb_board_upload(board, firmware, 0, [](const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata) {
-            TY_UNUSED(board);
-
-            BoardWorker *worker = static_cast<BoardWorker *>(udata);
-            worker->reportTaskProgress(uploaded, f->size);
-
-            return 0;
-        }, worker);
-        if (r < 0)
-            return;
-        if (reset_after) {
-            tyb_board_reset(board);
-            QThread::msleep(400);
-        }
-    }, tr("Uploading"));
-    QCoreApplication::postEvent(worker_, cmd);
-}
-
-void Board::reset()
-{
-    // this can be deleted while the worker thread is working, don't capture it!
-    BoardCommand *cmd = new BoardCommand(board_, [](BoardWorker *worker, tyb_board *board) {
-        worker->reportTaskProgress();
-
-        if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET)) {
-            tyb_board_reboot(board);
-
-            int r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, true, manual_reboot_delay);
-            if (r < 0)
-                return;
-            if (!r) {
-                ty_error(TY_ERROR_TIMEOUT, "Cannot reset board");
-                return;
-            }
-        }
-
-        tyb_board_reset(board);
-        QThread::msleep(800);
-    }, tr("Resetting"));
-    QCoreApplication::postEvent(worker_, cmd);
-}
-
-void Board::reboot()
-{
-    BoardCommand *cmd = new BoardCommand(board_, [](BoardWorker *worker, tyb_board *board) {
-        TY_UNUSED(worker);
-
-        worker->reportTaskProgress();
-
-        tyb_board_reboot(board);
-        QThread::msleep(800);
-    }, tr("Rebooting"));
-    QCoreApplication::postEvent(worker_, cmd);
-}
-
-void Board::sendSerial(const QByteArray &buf)
-{
-    BoardCommand *cmd = new BoardCommand(board_, [buf](BoardWorker *worker, tyb_board *board) {
-        TY_UNUSED(worker);
-
-        tyb_board_serial_write(board, buf.data(), buf.size());
-    });
-    QCoreApplication::postEvent(worker_, cmd);
-}
-
 void Board::refreshBoard()
 {
     if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL)) {
@@ -373,6 +283,87 @@ void Board::refreshBoard()
     }
 }
 
+QFuture<void> Board::upload(const QString &filename, bool reset_after)
+{
+    return startAsync([=](BoardTask &task) {
+        tyb_firmware *firmware;
+
+        if (!tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_UPLOAD)) {
+            tyb_board_reboot(board_);
+
+            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_UPLOAD, true, manual_reboot_delay);
+            if (r < 0)
+                return;
+            if (!r) {
+                ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work, trigger manually");
+                return;
+            }
+        }
+
+        int r = tyb_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
+        if (r < 0)
+            return;
+        unique_ptr<tyb_firmware, decltype(tyb_firmware_free) *> firmware_ptr(firmware, tyb_firmware_free);
+
+        r = tyb_board_upload(board_, firmware, 0, [](const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata) {
+            TY_UNUSED(board);
+
+            BoardTask *task = static_cast<BoardTask *>(udata);
+            task->setProgress(uploaded, f->size);
+
+            return 0;
+        }, &task);
+        if (r < 0)
+            return;
+
+        if (reset_after) {
+            tyb_board_reset(board_);
+            QThread::msleep(400);
+        }
+    });
+}
+
+QFuture<void> Board::reset()
+{
+    return startAsync([=](BoardTask &task) {
+        TY_UNUSED(task);
+
+        if (!tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RESET)) {
+            tyb_board_reboot(board_);
+
+            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_RESET, true, manual_reboot_delay);
+            if (r < 0)
+                return;
+            if (!r) {
+                ty_error(TY_ERROR_TIMEOUT, "Cannot reset board");
+                return;
+            }
+        }
+
+        tyb_board_reset(board_);
+        QThread::msleep(800);
+    });
+}
+
+QFuture<void> Board::reboot()
+{
+    return startAsync([=](BoardTask &task) {
+        TY_UNUSED(task);
+
+        tyb_board_reboot(board_);
+        QThread::msleep(800);
+    });
+}
+
+QFuture<void> Board::sendSerial(const QByteArray &buf)
+{
+    return startAsync([=](BoardTask &task) {
+        TY_UNUSED(task);
+
+        tyb_board_serial_write(board_, buf.data(), buf.size());
+    });
+}
+
 void Board::serialReceived(ty_descriptor desc)
 {
     TY_UNUSED(desc);
@@ -390,13 +381,18 @@ void Board::serialReceived(ty_descriptor desc)
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
 }
 
-void Board::reportTaskProgress(const QString &msg, unsigned int progress, unsigned int total)
+/* startAsync/BoardTask make sure Board will exist for as long as the task is running,
+   you can capture 'this' safely. */
+QFuture<void> Board::startAsync(function<void(BoardTask &)> f)
 {
-    task_msg_ = msg;
-    task_progress_ = progress;
-    task_total_ = total;
+    if (running_task_.isRunning()) {
+        ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'",
+                 tag().toLocal8Bit().constData());
+        return QFuture<void>();
+    }
 
-    emit taskProgress(this, msg, progress, total);
+    running_task_ = (new BoardTask(*this, f))->start();
+    return running_task_;
 }
 
 Manager::~Manager()
@@ -544,18 +540,6 @@ void Manager::refreshManager(ty_descriptor desc)
     tyb_monitor_refresh(manager_);
 }
 
-void Manager::updateTaskProgress(const Board *board, const QString &msg, size_t progress, size_t total)
-{
-    TY_UNUSED(msg);
-    TY_UNUSED(progress);
-    TY_UNUSED(total);
-
-    auto it = find_if(boards_.begin(), boards_.end(), [&](std::shared_ptr<Board> &ptr) { return ptr.get() == board; });
-
-    QModelIndex index = createIndex(it - boards_.begin(), 0);
-    dataChanged(index, index);
-}
-
 int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
 {
     switch (event) {
@@ -578,15 +562,21 @@ int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
 
 void Manager::handleAddedEvent(tyb_board *board)
 {
-    auto board_proxy = make_shared<Board>(board);
+    auto proxy_ptr = Board::createBoard(board);
+    Board *proxy = proxy_ptr.get();
 
-    connect(board_proxy.get(), &Board::taskProgress, this, &Manager::updateTaskProgress);
+    connect(proxy, &Board::taskProgress, this, [=](unsigned int progress, unsigned int total) {
+        TY_UNUSED(progress);
+        TY_UNUSED(total);
+
+        refreshBoardItem(proxy);
+    });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
-    boards_.push_back(board_proxy);
+    boards_.push_back(proxy_ptr);
     endInsertRows();
 
-    emit boardAdded(board_proxy);
+    emit boardAdded(proxy_ptr);
 }
 
 void Manager::handleChangedEvent(tyb_board *board)
@@ -618,4 +608,14 @@ void Manager::handleDroppedEvent(tyb_board *board)
     endRemoveRows();
 
     emit proxy->boardDropped();
+}
+
+void Manager::refreshBoardItem(Board *board)
+{
+    auto it = find_if(boards_.begin(), boards_.end(), [&](std::shared_ptr<Board> &ptr) { return ptr.get() == board; });
+    if (it == boards_.end())
+        return;
+
+    QModelIndex index = createIndex(it - boards_.begin(), 0);
+    dataChanged(index, index);
 }

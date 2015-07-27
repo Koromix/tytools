@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QThread>
+#include <QThreadPool>
 #include <QTimer>
 
 #include "selector_dialog.hh"
@@ -292,6 +293,8 @@ int TyQt::runServer()
         QMessageBox::critical(nullptr, tr("TyQt (critical error)"), last_error_, QMessageBox::Close);
         return 1;
     }
+
+    QThreadPool::globalInstance()->setMaxThreadCount(16);
 
     tray_icon_.show();
     newMainWindow();

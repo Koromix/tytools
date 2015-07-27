@@ -8,6 +8,8 @@
 #define BOARD_HH
 
 #include <QAbstractListModel>
+#include <QFuture>
+#include <QRunnable>
 #include <QTextDocument>
 #include <QThread>
 
@@ -20,6 +22,8 @@
 class Manager;
 class Board;
 
+class BoardTask;
+
 struct BoardInterfaceInfo {
     QString desc;
     QString path;
@@ -28,34 +32,8 @@ struct BoardInterfaceInfo {
     uint8_t number;
 };
 
-class BoardCommand;
-class BoardWorker : public QObject
-{
+class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_OBJECT
-
-    BoardCommand *running_task_ = nullptr;
-
-private:
-    BoardWorker(QObject *parent = nullptr)
-        : QObject(parent) {}
-
-    void reportTaskProgress(unsigned int progress, unsigned int total);
-    void reportTaskProgress() { reportTaskProgress(0, 0); }
-
-signals:
-    void taskProgress(const QString &msg, unsigned int progress, unsigned int total);
-
-protected:
-    virtual void customEvent(QEvent *ev) override;
-
-    friend class Board;
-};
-
-class Board : public QObject {
-    Q_OBJECT
-
-    QThread *thread_;
-    BoardWorker *worker_;
 
     tyb_board *board_;
 
@@ -65,13 +43,13 @@ class Board : public QObject {
 
     QTextDocument serial_document_;
 
-    QString task_msg_;
-    unsigned int task_progress_ = 0;
-    unsigned int task_total_ = 0;
+    QFuture<void> running_task_;
 
 public:
-    Board(tyb_board *board, QObject *parent = nullptr);
+    static std::shared_ptr<Board> createBoard(tyb_board *board);
     virtual ~Board();
+
+    std::shared_ptr<Board> getSharedPtr();
 
     tyb_board *board() const;
 
@@ -100,37 +78,37 @@ public:
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);
 
-    void sendSerial(const QByteArray &buf);
-
-    QString runningTask(unsigned int *progress, unsigned int *total) const;
+    QFuture<void> runningTask() const;
 
     virtual bool event(QEvent *e) override;
 
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
+    void refreshBoard();
+
 public slots:
-    void upload(const QString &filename, bool reset_after = true);
-    void reset();
-    void reboot();
+    QFuture<void> upload(const QString &filename, bool reset_after = true);
+    QFuture<void> reset();
+    QFuture<void> reboot();
+
+    QFuture<void> sendSerial(const QByteArray &buf);
 
 signals:
     void boardChanged();
     void boardDropped();
 
-    void taskProgress(const Board *board, const QString &msg, size_t progress, size_t total);
-
     void propertyChanged(const char *name, const QVariant &value);
+
+    void taskProgress(unsigned int progress, unsigned int total);
 
 private slots:
     void serialReceived(ty_descriptor desc);
-    void reportTaskProgress(const QString &msg, unsigned int progress, unsigned int total);
 
 private:
-    void refreshBoard();
+    Board(tyb_board *board, QObject *parent = nullptr);
 
-    friend class Manager;
-    friend class BoardWorker;
+    QFuture<void> startAsync(std::function<void(BoardTask &)> f);
 };
 
 class Manager : public QAbstractListModel {
@@ -174,13 +152,14 @@ signals:
 
 private slots:
     void refreshManager(ty_descriptor desc);
-    void updateTaskProgress(const Board *board, const QString &msg, size_t progress, size_t total);
 
 private:
     int handleEvent(tyb_board *board, tyb_monitor_event event);
     void handleAddedEvent(tyb_board *board);
     void handleChangedEvent(tyb_board *board);
     void handleDroppedEvent(tyb_board *board);
+
+    void refreshBoardItem(Board *board);
 };
 
 #endif

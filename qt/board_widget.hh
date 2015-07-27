@@ -25,7 +25,6 @@ public:
     void setCapabilities(const QString &capabilities);
     void setTag(const QString &tag);
 
-    void setTask(const QString &msg);
     void setProgress(unsigned int progress, unsigned int total);
 
     bool available() const;

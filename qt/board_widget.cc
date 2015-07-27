@@ -38,23 +38,16 @@ void BoardWidget::setAvailable(bool available)
     boardIcon->setEnabled(available);
 }
 
-void BoardWidget::setTask(const QString &msg)
+void BoardWidget::setProgress(unsigned int progress, unsigned int total)
 {
-    if (!msg.isEmpty()) {
+    if (total) {
         stackedWidget->setCurrentIndex(1);
-        taskProgress->setFormat(msg);
+
+        taskProgress->setRange(0, total);
+        taskProgress->setValue(progress);
     } else {
         stackedWidget->setCurrentIndex(0);
     }
-}
-
-void BoardWidget::setProgress(unsigned int progress, unsigned int total)
-{
-    if (!total)
-        total = 1;
-
-    taskProgress->setRange(0, total);
-    taskProgress->setValue(progress);
 }
 
 QString BoardWidget::model() const
@@ -97,11 +90,12 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setCapabilities(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
     widget_.setTag(board->tag());
 
-    unsigned int progress, total;
-    QString msg = board->runningTask(&progress, &total);
-    widget_.setTask(msg);
-    if (!msg.isEmpty())
-        widget_.setProgress(progress, total);
+    auto task = board->runningTask();
+    if (task.isRunning()) {
+        widget_.setProgress(task.progressValue(), task.progressMaximum());
+    } else {
+        widget_.setProgress(0, 0);
+    }
 
     QPalette pal = option.palette;
     if (option.state & QStyle::State_Selected) {
