@@ -307,12 +307,13 @@
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>&amp;File</string>
+     <string>&amp;Actions</string>
     </property>
-    <addaction name="actionNewWindow"/>
     <addaction name="separator"/>
     <addaction name="actionUpload"/>
     <addaction name="actionUploadNew"/>
+    <addaction name="separator"/>
+    <addaction name="actionUploadAll"/>
     <addaction name="separator"/>
     <addaction name="actionReset"/>
     <addaction name="actionReboot"/>
@@ -332,6 +333,8 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <addaction name="actionNewWindow"/>
+    <addaction name="separator"/>
     <addaction name="actionMinimalInterface"/>
    </widget>
    <addaction name="menuFile"/>
@@ -491,6 +494,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionUploadAll">
+   <property name="text">
+    <string>Upload All</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
    </property>
   </action>
  </widget>

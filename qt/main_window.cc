@@ -7,6 +7,7 @@
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QScrollBar>
+#include <QToolButton>
 #include <QUrl>
 
 #include "ty.h"
@@ -23,6 +24,20 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     setupUi(this);
 
     connect(actionQuit, &QAction::triggered, TyQt::instance(), &TyQt::quit);
+
+    QObject *obj = toolBar->widgetForAction(actionUpload);
+    if (obj) {
+        QToolButton* uploadButton = qobject_cast<QToolButton *>(obj);
+        if (uploadButton) {
+            QMenu *menu = new QMenu(this);
+            menu->addAction(actionUploadNew);
+            menu->addSeparator();
+            menu->addAction(actionUploadAll);
+
+            uploadButton->setMenu(menu);
+            uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
+        }
+    }
 
     disableBoardWidgets();
     monitorText->setWordWrapMode(QTextOption::WrapAnywhere);
@@ -280,6 +295,22 @@ void MainWindow::on_actionUploadNew_triggered()
         return;
 
     uploadCurrentFirmware();
+}
+
+void MainWindow::on_actionUploadAll_triggered()
+{
+    unsigned int uploaded = 0;
+    for (auto &board: manager_->boards()) {
+        if (board->property("firmware").toString().isEmpty())
+            continue;
+
+        board->upload(board->property("firmware").toString(),
+                      board->property("resetAfter").toBool());
+        uploaded++;
+    }
+
+    if (!uploaded)
+        ty_error(TY_ERROR_PARAM, "Select a firmware for at least one board to use this functionality");
 }
 
 void MainWindow::on_actionReset_triggered()

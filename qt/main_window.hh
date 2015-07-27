@@ -50,6 +50,7 @@ private slots:
 
     void on_actionUpload_triggered();
     void on_actionUploadNew_triggered();
+    void on_actionUploadAll_triggered();
     void on_actionReset_triggered();
     void on_actionReboot_triggered();
     void on_monitorEdit_returnPressed();
