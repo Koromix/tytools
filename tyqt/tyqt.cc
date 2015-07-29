@@ -106,7 +106,7 @@ void TyQt::openMainWindow()
         /* Some environments (such as KDE Plasma) keep the application running when a tray
            icon/status notifier exists, and we don't want that. */
         if (main_windows_.empty())
-            tyQt->quit();
+            quit();
     });
     main_windows_.push_back(win);
 
@@ -117,7 +117,7 @@ void TyQt::openMainWindow()
 
 void TyQt::activateMainWindow()
 {
-    if (tyQt->main_windows_.empty())
+    if (main_windows_.empty())
         return;
 
     auto win = main_windows_.front();
@@ -350,7 +350,7 @@ int TyQt::runServer()
     openMainWindow();
 
     if (!channel_.listen())
-        tyQt->reportError(tr("Failed to start session channel, single-instance mode won't work"));
+        reportError(tr("Failed to start session channel, single-instance mode won't work"));
 
     return QApplication::exec();
 }

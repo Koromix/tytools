@@ -23,7 +23,7 @@ if [ -n "$TY_VERSION" ]; then
     echo
     echo "#endif"
 else
-    cat "$(dirname $0)/../src/version.h"
+    cat "$(dirname $0)/../libty/version.h"
 fi
 
 ) >$OUTFILE 2>/dev/null

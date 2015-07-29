@@ -32,7 +32,7 @@ echo #endif
 goto end
 
 :src_version
-type "%~dp0\..\src\version.h"
+type "%~dp0\..\libty\version.h"
 goto end
 
 :end
