@@ -17,6 +17,7 @@
 
 #include "board.hh"
 #include "main_window.hh"
+#include "selector_dialog.hh"
 #include "session_channel.hh"
 
 #define tyQt (TyQt::instance())
@@ -53,13 +54,18 @@ public:
 
     static TyQt *instance();
 
+    Manager *manager();
+    SelectorDialog *openSelector();
+
     bool visible() const;
 
     void setClientConsole(bool console);
     bool clientConsole() const;
 
 public slots:
-    void newMainWindow();
+    void openMainWindow();
+    void activateMainWindow();
+
     void reportError(const QString &msg);
 
     void setVisible(bool visible);

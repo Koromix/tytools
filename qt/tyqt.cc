@@ -11,7 +11,6 @@
 #include <QThreadPool>
 #include <QTimer>
 
-#include "selector_dialog.hh"
 #include "tyqt.hh"
 
 using namespace std;
@@ -74,7 +73,25 @@ TyQt *TyQt::instance()
     return static_cast<TyQt *>(QCoreApplication::instance());
 }
 
-void TyQt::newMainWindow()
+Manager *TyQt::manager()
+{
+    return &manager_;
+}
+
+SelectorDialog *TyQt::openSelector()
+{
+    if (main_windows_.empty())
+        return nullptr;
+
+    auto dialog = new SelectorDialog(&manager_, main_windows_.front());
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    activateMainWindow();
+
+    return dialog;
+}
+
+void TyQt::openMainWindow()
 {
     MainWindow *win = new MainWindow(&manager_);
 
@@ -94,6 +111,17 @@ void TyQt::newMainWindow()
     connect(this, &TyQt::errorMessage, win, &MainWindow::showErrorMessage);
 
     win->show();
+}
+
+void TyQt::activateMainWindow()
+{
+    if (tyQt->main_windows_.empty())
+        return;
+
+    auto win = main_windows_.front();
+    win->setWindowState(win->windowState() & ~Qt::WindowMinimized);
+    win->raise();
+    win->activateWindow();
 }
 
 void TyQt::reportError(const QString &msg)
@@ -160,7 +188,7 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
     auto command = arguments[0];
 
     if (command == "new") {
-        newMainWindow();
+        openMainWindow();
         peer.send("OK");
     } else if (command == "activate") {
         if (!main_windows_.empty()) {
@@ -314,7 +342,7 @@ int TyQt::runServer()
     QThreadPool::globalInstance()->setMaxThreadCount(16);
 
     tray_icon_.show();
-    newMainWindow();
+    openMainWindow();
 
     if (!channel_.listen())
         tyQt->reportError(tr("Failed to start session channel, single-instance mode won't work"));

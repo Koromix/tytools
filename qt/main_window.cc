@@ -268,7 +268,7 @@ void MainWindow::on_resetAfterUpload_toggled(bool checked)
 
 void MainWindow::on_actionNewWindow_triggered()
 {
-    tyQt->newMainWindow();
+    tyQt->openMainWindow();
 }
 
 void MainWindow::on_actionUpload_triggered()

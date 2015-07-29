@@ -140,6 +140,8 @@ public:
     std::shared_ptr<Board> board(unsigned int i);
     unsigned int boardCount() const;
 
+    std::shared_ptr<Board> find(std::function<bool(Board &board)> filter);
+
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 

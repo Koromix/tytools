@@ -483,6 +483,16 @@ unsigned int Manager::boardCount() const
     return boards_.size();
 }
 
+shared_ptr<Board> Manager::find(function<bool(Board &board)> filter)
+{
+    auto board = find_if(boards_.begin(), boards_.end(), [&](shared_ptr<Board> &ptr) { return filter(*ptr); });
+
+    if (board == boards_.end())
+        return nullptr;
+
+    return *board;
+}
+
 int Manager::rowCount(const QModelIndex &parent) const
 {
     TY_UNUSED(parent);
