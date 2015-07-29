@@ -92,7 +92,7 @@ endif()
 file(WRITE "${CMAKE_BINARY_DIR}/ty/version.h" "${TY_VERSION_HEADER}")
 string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(\\-[0-9]+-[a-zA-Z0-9]+)?" TY_VERSION "${TY_VERSION_HEADER}")
 
-configure_file(src/config.h.in config.h)
+configure_file(libty/config.h.in config.h)
 if (APPLE)
     configure_file(resources/tyqt_osx.plist.in tyqt_osx.plist)
 elseif (NOT WIN32)
@@ -100,72 +100,72 @@ elseif (NOT WIN32)
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-include_directories(include)
+include_directories(libty/include)
 
-set(TY_SOURCES include/ty.h
-               include/ty/board.h
-               include/ty/common.h
-               include/ty/device.h
-               include/ty/firmware.h
-               include/ty/system.h
-               include/ty/thread.h
-               include/ty/timer.h
+set(TY_SOURCES libty/include/ty.h
+               libty/include/ty/board.h
+               libty/include/ty/common.h
+               libty/include/ty/device.h
+               libty/include/ty/firmware.h
+               libty/include/ty/system.h
+               libty/include/ty/thread.h
+               libty/include/ty/timer.h
 
-               src/board.c
-               src/board_teensy.c
-               src/board_priv.h
-               src/common.c
-               src/compat.c
-               src/device.c
-               src/device_priv.h
-               src/firmware.c
-               src/firmware_elf.c
-               src/firmware_ihex.c
-               src/htable.c
-               src/list.h
-               src/system.c)
+               libty/board.c
+               libty/board_teensy.c
+               libty/board_priv.h
+               libty/common.c
+               libty/compat.c
+               libty/device.c
+               libty/device_priv.h
+               libty/firmware.c
+               libty/firmware_elf.c
+               libty/firmware_ihex.c
+               libty/htable.c
+               libty/list.h
+               libty/system.c)
 if(WIN32)
-    list(APPEND TY_SOURCES src/device_win32.c
-                           src/system_win32.c
-                           src/thread_win32.c
-                           src/timer_win32.c)
+    list(APPEND TY_SOURCES libty/device_win32.c
+                           libty/system_win32.c
+                           libty/thread_win32.c
+                           libty/timer_win32.c)
 else()
-    list(APPEND TY_SOURCES src/device_posix.c
-                           src/device_posix_priv.h
-                           src/system_posix.c
-                           src/thread_pthread.c)
+    list(APPEND TY_SOURCES libty/device_posix.c
+                           libty/device_posix_priv.h
+                           libty/system_posix.c
+                           libty/thread_pthread.c)
 
     if(LINUX)
-        list(APPEND TY_SOURCES src/device_linux.c
-                               src/timer_linux.c)
+        list(APPEND TY_SOURCES libty/device_linux.c
+                               libty/timer_linux.c)
     elseif(APPLE)
-        list(APPEND TY_SOURCES src/device_darwin.c
-                               src/timer_kqueue.c)
+        list(APPEND TY_SOURCES libty/device_darwin.c
+                               libty/timer_kqueue.c)
     else()
         message(FATAL_ERROR "Unsupported platform")
     endif()
 endif()
 
-set(TYC_SOURCES cli/list.c
-                cli/main.c
-                cli/monitor.c
-                cli/reset.c
-                cli/upload.c)
+set(TYC_SOURCES tyc/list.c
+                tyc/main.c
+                tyc/monitor.c
+                tyc/reset.c
+                tyc/upload.c)
 
-set(TYQ_SOURCES qt/about_dialog.cc
-                qt/main.cc
-                qt/main_window.cc
-                qt/board.cc
-                qt/board_widget.cc
-                qt/commands.cc
-                qt/descriptor_set_notifier.cc
-                qt/selector_dialog.cc
-                qt/session_channel.cc
-                qt/tyqt.cc)
-set(TYQ_FORMS qt/about_dialog.ui
-              qt/main_window.ui
-              qt/board_widget.ui
-              qt/selector_dialog.ui)
+set(TYQ_SOURCES tyqt/about_dialog.cc
+                tyqt/main.cc
+                tyqt/main_window.cc
+                tyqt/board.cc
+                tyqt/board_widget.cc
+                tyqt/commands.cc
+                tyqt/descriptor_set_notifier.cc
+                tyqt/selector_dialog.cc
+                tyqt/session_channel.cc
+                tyqt/tyqt.cc)
+set(TYQ_FORMS tyqt/about_dialog.ui
+              tyqt/main_window.ui
+              tyqt/board_widget.ui
+              tyqt/selector_dialog.ui)
 set(TYQ_RESOURCES resources/tyqt.qrc)
 if(WIN32)
     list(APPEND TYQ_SOURCES resources/tyqt_win32.rc)
@@ -253,7 +253,7 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
 endif()
 
 if(WIN32)
-    add_executable(tyqtc qt/tyqtc.c)
+    add_executable(tyqtc tyqt/tyqtc.c)
 endif()
 
 set(CPACK_PACKAGE_NAME "TyQt")
@@ -310,7 +310,7 @@ elseif(APPLE)
 else()
     install(TARGETS ty_shared DESTINATION lib)
     install(TARGETS ty_static DESTINATION lib)
-    install(DIRECTORY include/ DESTINATION include)
+    install(DIRECTORY libty/include/ DESTINATION include)
     install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
 
     install(TARGETS tyc tyqt RUNTIME DESTINATION bin)

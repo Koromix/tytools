@@ -1,9 +1,9 @@
 CONFIG -= warn_on debug_and_release app_bundle
 
-INCLUDEPATH = $$PWD/include $$OUT_PWD/..
+INCLUDEPATH = $$PWD/libty/include $$OUT_PWD/..
 
-QMAKE_LIBDIR = $$OUT_PWD/..
-QMAKE_RPATHDIR = $$OUT_PWD/..
+QMAKE_LIBDIR = $$OUT_PWD/../libty
+QMAKE_RPATHDIR = $$OUT_PWD/../libty
 
 QMAKE_CFLAGS += -std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
     -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2

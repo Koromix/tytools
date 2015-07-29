@@ -3,7 +3,7 @@ include(../ty_common.pri)
 TEMPLATE = app
 QT += widgets network
 
-TARGET = ../tyqt
+TARGET = tyqt
 
 LIBS = -lty
 

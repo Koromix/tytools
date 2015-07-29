@@ -4,7 +4,7 @@ TEMPLATE = app
 CONFIG -= qt
 CONFIG += console
 
-TARGET = ../tyc
+TARGET = tyc
 
 LIBS = -lty
 

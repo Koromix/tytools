@@ -1,11 +1,11 @@
 TEMPLATE = subdirs
 
-SUBDIRS = src cli qt
+SUBDIRS = libty tyc tyqt
 CONFIG += ordered
 
 win32 {
     SUBDIRS += tyqtc
-    tyqtc.file = qt/tyqtc.pro
+    tyqtc.file = tyqt/tyqtc.pro
 
     system($$QMAKE_MKDIR "\"$$OUT_PWD/ty\"" 2>NUL)
     system(scripts\git-version.bat $$OUT_PWD/ty/version.h)

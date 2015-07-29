@@ -4,18 +4,16 @@ TEMPLATE = lib
 CONFIG -= qt
 CONFIG += dll
 
-TARGET = ../ty
+TARGET = ty
 
-INCLUDEPATH = ../include
-
-HEADERS += ../include/ty.h \
-    ../include/ty/board.h \
-    ../include/ty/common.h \
-    ../include/ty/device.h \
-    ../include/ty/firmware.h \
-    ../include/ty/system.h \
-    ../include/ty/thread.h \
-    ../include/ty/timer.h \
+HEADERS += include/ty.h \
+    include/ty/board.h \
+    include/ty/common.h \
+    include/ty/device.h \
+    include/ty/firmware.h \
+    include/ty/system.h \
+    include/ty/thread.h \
+    include/ty/timer.h \
     board_priv.h \
     compat.h \
     config.h \
