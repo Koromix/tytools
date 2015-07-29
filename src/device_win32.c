@@ -1237,7 +1237,10 @@ static void close_win32_device(tyd_handle *h)
                    when pending I/O stops. And if the thread cannot be created, just leaking seems
                    better than a potential segmentation fault. */
                 if (h->pending_thread != GetCurrentThreadId()) {
-                    _beginthreadex(NULL, 0, overlapped_cleanup_thread, h, 0, NULL);
+                    HANDLE thread = (HANDLE)_beginthreadex(NULL, 0, overlapped_cleanup_thread,
+                                                           h, 0, NULL);
+                    if (thread)
+                        CloseHandle(thread);
                     return;
                 }
             }
