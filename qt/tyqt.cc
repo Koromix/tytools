@@ -121,7 +121,7 @@ void TyQt::setVisible(bool visible)
     action_visible_->setChecked(visible);
 }
 
-bool TyQt::visible()
+bool TyQt::visible() const
 {
     return action_visible_->isChecked();
 }

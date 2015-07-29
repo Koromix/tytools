@@ -53,7 +53,7 @@ public:
 
     static TyQt *instance();
 
-    bool visible();
+    bool visible() const;
 
     void setClientConsole(bool console);
     bool clientConsole() const;
