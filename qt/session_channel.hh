@@ -85,6 +85,8 @@ public:
 signals:
     void received(SessionPeer &peer, const QStringList &arguments);
 
+    void masterClosed();
+
 private:
     QString makeSocketName() const;
 

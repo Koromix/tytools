@@ -46,6 +46,9 @@ SessionChannel::SessionChannel(const QString &id, QObject *parent)
 
 SessionChannel::~SessionChannel()
 {
+    if (client_)
+        disconnect(client_, &QObject::destroyed, this, &SessionChannel::masterClosed);
+
     close();
     unlock();
 }
@@ -167,6 +170,7 @@ bool SessionChannel::connectToMaster()
             return true;
     } else {
         client_ = new SessionPeer(this);
+        connect(client_, &QObject::destroyed, this, &SessionChannel::masterClosed);
     }
 
     return client_->connect(makeSocketName());
