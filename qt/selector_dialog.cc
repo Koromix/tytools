@@ -52,13 +52,13 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
     }
 
-    emit currentChanged(current_board_);
+    emit currentChanged(current_board_.get());
 }
 
 void SelectorDialog::done(int result)
 {
     QDialog::done(result);
-    emit boardSelected(result ? currentBoard() : nullptr);
+    emit boardSelected(result ? current_board_.get() : nullptr);
 }
 
 shared_ptr<Board> SelectorDialog::getBoard(Manager *manager, QWidget *parent)

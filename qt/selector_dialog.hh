@@ -31,8 +31,8 @@ protected slots:
     void done(int result) override;
 
 signals:
-    void currentChanged(std::shared_ptr<Board> board);
-    void boardSelected(std::shared_ptr<Board> board);
+    void currentChanged(Board *board);
+    void boardSelected(Board *board);
 };
 
 #endif
