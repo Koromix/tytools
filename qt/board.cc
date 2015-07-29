@@ -16,48 +16,56 @@
 
 #include "ty.h"
 #include "board.hh"
+#include "tyqt.hh"
 
 using namespace std;
-
-static const int manual_reboot_delay = 5000;
 
 class BoardTask : public QRunnable {
     QFutureInterface<QString> intf_;
 
     shared_ptr<Board> board_;
-    function<void(BoardTask &)> f_;
+
+    QMetaObject::Connection conn_;
+    QThread *thread_ = nullptr;
+    function<bool(BoardTask &)> f_;
 
     unsigned int progress_ = 0, total_ = 0;
+    QString error_message_;
 
 public:
-    BoardTask(Board &board, function<void(BoardTask &)> f);
+    BoardTask(Board &board, function<bool(BoardTask &)> f);
+    ~BoardTask();
 
-    void run();
     QFuture<QString> start();
 
     void setProgress(unsigned int progress, unsigned int total);
+
+private:
+    void run();
 };
 
-BoardTask::BoardTask(Board &board, function<void(BoardTask &)> f)
+static const int manual_reboot_delay = 5000;
+
+BoardTask::BoardTask(Board &board, function<bool(BoardTask &)> f)
     : board_(board.getSharedPtr()), f_(f)
 {
+    conn_ = QObject::connect(tyQt, &TyQt::errorMessage, [=](const QString &msg) {
+        if (QThread::currentThread() == thread_)
+            error_message_ = msg;
+    });
+}
+
+BoardTask::~BoardTask()
+{
+    QObject::disconnect(conn_);
 }
 
 QFuture<QString> BoardTask::start()
 {
-    QThreadPool::globalInstance()->start(this);
-    return intf_.future();
-}
-
-void BoardTask::run()
-{
     intf_.reportStarted();
+    QThreadPool::globalInstance()->start(this);
 
-    f_(*this);
-
-    intf_.reportFinished();
-    if (progress_ < total_)
-        emit board_->taskProgress(0, 0);
+    return intf_.future();
 }
 
 void BoardTask::setProgress(unsigned int progress, unsigned int total)
@@ -73,6 +81,24 @@ void BoardTask::setProgress(unsigned int progress, unsigned int total)
     progress_ = progress;
     intf_.setProgressValue(progress);
     emit board_->taskProgress(progress, total);
+}
+
+void BoardTask::run()
+{
+    thread_ = QThread::currentThread();
+
+    bool ret = f_(*this);
+    if (!ret) {
+        if (!error_message_.isEmpty()) {
+            intf_.reportResult(error_message_);
+        } else {
+            intf_.reportResult("Task failed");
+        }
+    }
+
+    intf_.reportFinished();
+    if (progress_ < total_)
+        emit board_->taskProgress(0, 0);
 }
 
 Board::Board(tyb_board *board, QObject *parent)
