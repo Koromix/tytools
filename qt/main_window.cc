@@ -80,9 +80,6 @@ void MainWindow::disableBoardWidgets()
 
 QString MainWindow::browseForFirmware()
 {
-    if (!current_board_)
-        return QString();
-
     QString filename = QFileDialog::getOpenFileName(this, tr("Open Firmware"), QString(),
                                                     tr("Binary Files (*.elf *.hex);;All Files (*)"));
     if (filename.isEmpty())
