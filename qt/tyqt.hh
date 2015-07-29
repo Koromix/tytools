@@ -39,6 +39,12 @@ class TyQt : public QApplication {
     QSystemTrayIcon tray_icon_;
     QMenu tray_menu_;
 
+#ifdef _WIN32
+    bool client_console_ = false;
+#else
+    bool client_console_ = true;
+#endif
+
 public:
     TyQt(int &argc, char *argv[]);
     virtual ~TyQt();
@@ -48,6 +54,9 @@ public:
     static TyQt *instance();
 
     bool visible();
+
+    void setClientConsole(bool console);
+    bool clientConsole() const;
 
 public slots:
     void newMainWindow();

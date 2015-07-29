@@ -251,6 +251,10 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
     endif()
 endif()
 
+if(WIN32)
+    add_executable(tyqtc qt/tyqtc.c)
+endif()
+
 set(CPACK_PACKAGE_NAME "TyQt")
 set(CPACK_PACKAGE_VENDOR "Koromix")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GUI and command-line tools to manage Teensy devices")

@@ -126,6 +126,16 @@ bool TyQt::visible()
     return action_visible_->isChecked();
 }
 
+void TyQt::setClientConsole(bool console)
+{
+    client_console_ = console;
+}
+
+bool TyQt::clientConsole() const
+{
+    return client_console_;
+}
+
 void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 {
     switch (reason) {
@@ -267,6 +277,13 @@ int TyQt::run()
         return 1;
     }
 
+#ifdef _WIN32
+    if (client_console_ && !commandCount) {
+        showClientMessage(parser_.helpText());
+        return 0;
+    }
+#endif
+
     if (parser_.isSet("experimental")) {
         ty_config_experimental = true;
 
@@ -309,6 +326,13 @@ int TyQt::runClient()
 {
     if (channel_.isLocked()) {
         channel_.unlock();
+
+#ifdef _WIN32
+        if (client_console_) {
+            showClientError("Cannot find main TyQt instance");
+            return false;
+        }
+#endif
 
         if (!startBackgroundServer()) {
             showClientError(tr("Failed to start TyQt main instance"));
@@ -372,18 +396,18 @@ bool TyQt::startBackgroundServer()
 
 void TyQt::showClientMessage(const QString &msg)
 {
-#ifdef _WIN32
-    QMessageBox::information(nullptr, "TyQt", msg);
-#else
-    printf("%s\n", qPrintable(msg));
-#endif
+    if (client_console_) {
+        printf("%s\n", qPrintable(msg));
+    } else {
+        QMessageBox::information(nullptr, "TyQt", msg);
+    }
 }
 
 void TyQt::showClientError(const QString &msg)
 {
-#ifdef _WIN32
-    QMessageBox::critical(nullptr, tr("TyQt (error)"), msg);
-#else
-    fprintf(stderr, "%s\n", qPrintable(msg));
-#endif
+    if (client_console_) {
+        fprintf(stderr, "%s\n", qPrintable(msg));
+    } else {
+        QMessageBox::critical(nullptr, tr("TyQt (error)"), msg);
+    }
 }
