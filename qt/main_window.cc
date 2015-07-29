@@ -13,6 +13,7 @@
 #include "ty.h"
 #include "about_dialog.hh"
 #include "board_widget.hh"
+#include "commands.hh"
 #include "main_window.hh"
 #include "tyqt.hh"
 
@@ -91,16 +92,6 @@ QString MainWindow::browseForFirmware()
     emit firmwarePath->editingFinished();
 
     return filename;
-}
-
-void MainWindow::uploadCurrentFirmware()
-{
-    if (!current_board_)
-        return;
-
-    // FIXME: the firmware/resetAfter handling should be integrated into BoardProxy itself (maybe)
-    current_board_->upload(current_board_->property("firmware").toString(),
-                           current_board_->property("resetAfter").toBool());
 }
 
 void MainWindow::setBoardDefaults(shared_ptr<Board> board)
@@ -280,9 +271,11 @@ void MainWindow::on_actionUpload_triggered()
         QString filename = browseForFirmware();
         if (filename.isEmpty())
             return;
-    }
 
-    uploadCurrentFirmware();
+        Commands::upload(*current_board_, filename);
+    } else {
+        Commands::upload(*current_board_, "");
+    }
 }
 
 void MainWindow::on_actionUploadNew_triggered()
@@ -294,7 +287,7 @@ void MainWindow::on_actionUploadNew_triggered()
     if (filename.isEmpty())
         return;
 
-    uploadCurrentFirmware();
+    Commands::upload(*current_board_, filename);
 }
 
 void MainWindow::on_actionUploadAll_triggered()

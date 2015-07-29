@@ -29,7 +29,6 @@ private:
     void disableBoardWidgets();
 
     QString browseForFirmware();
-    void uploadCurrentFirmware();
 
 private slots:
     void setBoardDefaults(std::shared_ptr<Board> board);
