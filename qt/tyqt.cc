@@ -5,12 +5,14 @@
  */
 
 #include <QFileInfo>
+#include <QFutureWatcher>
 #include <QMessageBox>
 #include <QProcess>
 #include <QThread>
 #include <QThreadPool>
 #include <QTimer>
 
+#include "commands.hh"
 #include "tyqt.hh"
 
 using namespace std;
@@ -181,87 +183,90 @@ void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
 {
     if (arguments.isEmpty()) {
-        peer.send(tr("Command not specified"));
+        peer.send({"error", tr("Command not specified")});
+        peer.send({"exit", "1"});
         return;
     }
 
-    auto command = arguments[0];
+    QStringList parameters = arguments;
+    QString cmd = parameters.takeFirst();
 
-    if (command == "new") {
-        openMainWindow();
-        peer.send("OK");
-    } else if (command == "activate") {
-        if (!main_windows_.empty()) {
-            auto win = main_windows_.front();
+    auto future = Commands::execute(cmd, parameters);
+    auto watcher = new QFutureWatcher<QString>(&peer);
 
-            win->setWindowState(win->windowState() & ~Qt::WindowMinimized);
-            win->raise();
-            win->activateWindow();
-        }
-
-        peer.send("OK");
-    } else if (command == "upload") {
-        if (arguments.count() < 3) {
-            peer.send(tr("Not enough arguments for command 'upload'"));
-            return;
-        }
-
-        if (!manager_.boardCount()) {
-            peer.send(tr("No board available"));
-            return;
-        }
-
-        auto firmware = arguments[1];
-        auto tag = arguments[2];
-
-        shared_ptr<Board> board;
-
-        if (!tag.isEmpty()) {
-            board = getBoard([=](Board &board) { return board.matchesTag(tag); }, false);
-            if (!board) {
-                peer.send(tr("Board '%1' not found").arg(tag));
-                return;
-            }
-
-            peer.send("OK");
+    connect(watcher, &QFutureWatcher<QString>::started, &peer, [&peer]() {
+        peer.send({"progress"});
+    });
+    connect(watcher, &QFutureWatcher<QString>::progressValueChanged, &peer, [=,&peer](int value) {
+        if (future.progressMaximum())
+            peer.send({"progress",  QString::number(value), QString::number(future.progressMaximum())});
+    });
+    connect(watcher, &QFutureWatcher<QString>::finished, &peer, [=,&peer]() {
+        if (!future.resultCount()) {
+            peer.send({"exit", "2"});
+        } else if (!future.result().isEmpty()) {
+            peer.send({"error", future.result()});
+            peer.send({"exit", "1"});
         } else {
-            // Don't let the client wait because a selector dialog may show up
-            peer.send("OK");
-
-            board = getBoard([=](Board &board) { return board.property("firmware") == firmware; }, true);
-            if (!board)
-                return;
+            peer.send({"exit", "0"});
         }
-
-        board->setProperty("firmware", firmware);
-        board->upload(firmware, board->property("resetAfter").toBool());
-    } else {
-        peer.send(tr("Unknown command '%1'").arg(command));
-    }
+    });
+    watcher->setFuture(future);
 }
 
 void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
 {
     TY_UNUSED(peer);
 
-    if (arguments.isEmpty()) {
-        showClientError(tr("Got empty answer from main TyQt instance"));
-        exit(1);
-    }
+    QStringList parameters = arguments;
+    QString cmd;
 
-    if (arguments[0] == "OK") {
-        quit();
-    } else {
-        for (auto line: arguments)
-            showClientError(line);
-        exit(1);
+    if (!arguments.count())
+        goto error;
+    cmd = parameters.takeFirst();
+
+    if (cmd == "exit") {
+        exit(parameters.value(0, "0").toInt());
+    } else if (cmd == "progress") {
+        if (!parser_.isSet("wait"))
+            exit(0);
+
+        if (client_console_ && parameters.count() >= 2) {
+            unsigned int progress = parameters[0].toUInt();
+            unsigned int total = parameters[1].toUInt();
+
+            if (total) {
+                printf("Processing... %u%%\r", 100 * progress / total);
+                if (progress == total)
+                    printf("\n");
+                fflush(stdout);
+            }
+        }
+    } else if (cmd == "message") {
+        if (parameters.isEmpty())
+            goto error;
+
+        showClientMessage(parameters[0]);
+    } else if (cmd == "error") {
+        if (parameters.isEmpty())
+            goto error;
+
+        showClientError(parameters[0]);
     }
+    return;
+
+error:
+    showClientError(tr("Received incorrect data from main TyQt instance"));
+    exit(1);
 }
 
 void TyQt::setupOptionParser(QCommandLineParser &parser)
 {
     parser.addHelpOption();
     parser.addVersionOption();
+
+    QCommandLineOption waitOption(QStringList{"w", "wait"}, tr("Wait until task completion."));
+    parser.addOption(waitOption);
 
     QCommandLineOption deviceOption(QStringList{"b", "board"}, tr("Work with specific board."),
                                     tr("id"));
@@ -378,43 +383,24 @@ int TyQt::runClient()
     if (parser_.isSet("activate")) {
         channel_.send("activate");
     } else if (parser_.isSet("upload")) {
+        auto tag = parser_.value("board");
         auto firmware = QFileInfo(parser_.value("upload")).canonicalFilePath();
         if (firmware.isEmpty()) {
             showClientError(tr("Firmware '%1' does not exist").arg(parser_.value("upload")));
             return 1;
         }
-        auto tag = parser_.value("board");
 
-        channel_.send({"upload", firmware, tag});
+        channel_.send({"upload", tag, firmware});
     } else {
-        channel_.send("new");
+        channel_.send("open");
     }
 
-    QTimer timeout;
-    timeout.setSingleShot(true);
-
-    QObject::connect(&timeout, &QTimer::timeout, this, [=]() {
-        showClientError(tr("Main TyQt instance is not responding"));
+    connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
+        showClientError(tr("Main TyQt instance closed the connection"));
         exit(1);
     });
-    timeout.start(3000);
 
     return QApplication::exec();
-}
-
-shared_ptr<Board> TyQt::getBoard(function<bool(Board &board)> filter, bool show_selector)
-{
-    auto board = find_if(manager_.begin(), manager_.end(), [&](std::shared_ptr<Board> &ptr) { return filter(*ptr); });
-
-    if (board == manager_.end()) {
-        if (show_selector && manager_.boardCount()) {
-            return SelectorDialog::getBoard(&manager_, main_windows_.front());
-        } else {
-            return nullptr;
-        }
-    }
-
-    return *board;
 }
 
 bool TyQt::startBackgroundServer()

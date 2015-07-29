@@ -12,7 +12,6 @@
 #include <QCommandLineParser>
 #include <QSystemTrayIcon>
 
-#include <functional>
 #include <memory>
 
 #include "board.hh"
@@ -79,8 +78,6 @@ private:
     int run();
     int runServer();
     int runClient();
-
-    std::shared_ptr<Board> getBoard(std::function<bool(Board &board)> filter, bool show_selector);
 
     bool startBackgroundServer();
     void showClientMessage(const QString &msg);
