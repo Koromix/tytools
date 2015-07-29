@@ -36,7 +36,7 @@ private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void refreshBoardInfo();
 
-    void updatePropertyField(const char *name, const QVariant &value);
+    void updatePropertyField(const QByteArray &name, const QVariant &value);
 
     void monitorTextChanged();
     void monitorTextScrolled(const QRect &rect, int dy);

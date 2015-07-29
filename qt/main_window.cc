@@ -187,13 +187,13 @@ void MainWindow::refreshBoardInfo()
     actionReboot->setEnabled(current_board_->isRebootAvailable());
 }
 
-void MainWindow::updatePropertyField(const char *name, const QVariant &value)
+void MainWindow::updatePropertyField(const QByteArray &name, const QVariant &value)
 {
-    if (strcmp(name, "firmware") == 0) {
+    if (name == "firmware") {
         firmwarePath->setText(value.toString());
-    } else if (strcmp(name, "resetAfter") == 0) {
+    } else if (name == "resetAfter") {
         resetAfterUpload->setChecked(value.toBool());
-    } else if (strcmp(name, "clearOnReset") == 0) {
+    } else if (name == "clearOnReset") {
         clearOnReset->setChecked(value.toBool());
     }
 }

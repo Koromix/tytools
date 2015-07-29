@@ -231,9 +231,7 @@ bool Board::event(QEvent *e)
 {
     if (e->type() == QEvent::DynamicPropertyChange) {
         QDynamicPropertyChangeEvent *ce = static_cast<QDynamicPropertyChangeEvent *>(e);
-        const char *name = ce->propertyName().constData();
-
-        emit propertyChanged(name, property(name));
+        emit propertyChanged(ce->propertyName(), property(ce->propertyName()));
     }
 
     return QObject::event(e);

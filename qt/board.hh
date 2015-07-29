@@ -98,7 +98,7 @@ signals:
     void boardChanged();
     void boardDropped();
 
-    void propertyChanged(const char *name, const QVariant &value);
+    void propertyChanged(const QByteArray &name, const QVariant &value);
 
     void taskProgress(unsigned int progress, unsigned int total);
 
