@@ -22,7 +22,7 @@ using namespace std;
 static const int manual_reboot_delay = 5000;
 
 class BoardTask : public QRunnable {
-    QFutureInterface<void> intf_;
+    QFutureInterface<QString> intf_;
 
     shared_ptr<Board> board_;
     function<void(BoardTask &)> f_;
@@ -32,8 +32,8 @@ class BoardTask : public QRunnable {
 public:
     BoardTask(Board &board, function<void(BoardTask &)> f);
 
-    QFuture<void> start();
     void run();
+    QFuture<QString> start();
 
     void setProgress(unsigned int progress, unsigned int total);
 };
@@ -43,7 +43,7 @@ BoardTask::BoardTask(Board &board, function<void(BoardTask &)> f)
 {
 }
 
-QFuture<void> BoardTask::start()
+QFuture<QString> BoardTask::start()
 {
     QThreadPool::globalInstance()->start(this);
     return intf_.future();
@@ -222,7 +222,7 @@ void Board::appendToSerialDocument(const QString &s)
     cursor.insertText(s);
 }
 
-QFuture<void> Board::runningTask() const
+QFuture<QString> Board::runningTask() const
 {
     return running_task_;
 }
@@ -281,7 +281,7 @@ void Board::refreshBoard()
     }
 }
 
-QFuture<void> Board::upload(const QString &filename, bool reset_after)
+QFuture<QString> Board::upload(const QString &filename, bool reset_after)
 {
     return startAsync([=](BoardTask &task) {
         tyb_firmware *firmware;
@@ -291,16 +291,16 @@ QFuture<void> Board::upload(const QString &filename, bool reset_after)
 
             int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_UPLOAD, true, manual_reboot_delay);
             if (r < 0)
-                return;
+                return false;
             if (!r) {
                 ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work, trigger manually");
-                return;
+                return false;
             }
         }
 
         int r = tyb_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
         if (r < 0)
-            return;
+            return false;
         unique_ptr<tyb_firmware, decltype(tyb_firmware_free) *> firmware_ptr(firmware, tyb_firmware_free);
 
         r = tyb_board_upload(board_, firmware, 0, [](const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata) {
@@ -312,16 +312,18 @@ QFuture<void> Board::upload(const QString &filename, bool reset_after)
             return 0;
         }, &task);
         if (r < 0)
-            return;
+            return false;
 
         if (reset_after) {
             tyb_board_reset(board_);
             QThread::msleep(400);
         }
+
+        return true;
     });
 }
 
-QFuture<void> Board::reset()
+QFuture<QString> Board::reset()
 {
     return startAsync([=](BoardTask &task) {
         TY_UNUSED(task);
@@ -331,34 +333,39 @@ QFuture<void> Board::reset()
 
             int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_RESET, true, manual_reboot_delay);
             if (r < 0)
-                return;
+                return false;
             if (!r) {
                 ty_error(TY_ERROR_TIMEOUT, "Cannot reset board");
-                return;
+                return false;
             }
         }
 
         tyb_board_reset(board_);
         QThread::msleep(800);
+
+        return true;
     });
 }
 
-QFuture<void> Board::reboot()
+QFuture<QString> Board::reboot()
 {
     return startAsync([=](BoardTask &task) {
         TY_UNUSED(task);
 
         tyb_board_reboot(board_);
         QThread::msleep(800);
+
+        return true;
     });
 }
 
-QFuture<void> Board::sendSerial(const QByteArray &buf)
+QFuture<QString> Board::sendSerial(const QByteArray &buf)
 {
     return startAsync([=](BoardTask &task) {
         TY_UNUSED(task);
 
         tyb_board_serial_write(board_, buf.data(), buf.size());
+        return true;
     });
 }
 
@@ -381,12 +388,12 @@ void Board::serialReceived(ty_descriptor desc)
 
 /* startAsync/BoardTask make sure Board will exist for as long as the task is running,
    you can capture 'this' safely. */
-QFuture<void> Board::startAsync(function<void(BoardTask &)> f)
+QFuture<QString> Board::startAsync(function<bool(BoardTask &)> f)
 {
     if (running_task_.isRunning()) {
         ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'",
                  tag().toLocal8Bit().constData());
-        return QFuture<void>();
+        return QFuture<QString>();
     }
 
     running_task_ = (new BoardTask(*this, f))->start();

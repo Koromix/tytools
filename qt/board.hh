@@ -43,7 +43,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     QTextDocument serial_document_;
 
-    QFuture<void> running_task_;
+    QFuture<QString> running_task_;
 
 public:
     static std::shared_ptr<Board> createBoard(tyb_board *board);
@@ -78,7 +78,7 @@ public:
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);
 
-    QFuture<void> runningTask() const;
+    QFuture<QString> runningTask() const;
 
     virtual bool event(QEvent *e) override;
 
@@ -88,11 +88,11 @@ public:
     void refreshBoard();
 
 public slots:
-    QFuture<void> upload(const QString &filename, bool reset_after = true);
-    QFuture<void> reset();
-    QFuture<void> reboot();
+    QFuture<QString> upload(const QString &filename, bool reset_after = true);
+    QFuture<QString> reset();
+    QFuture<QString> reboot();
 
-    QFuture<void> sendSerial(const QByteArray &buf);
+    QFuture<QString> sendSerial(const QByteArray &buf);
 
 signals:
     void boardChanged();
@@ -108,7 +108,7 @@ private slots:
 private:
     Board(tyb_board *board, QObject *parent = nullptr);
 
-    QFuture<void> startAsync(std::function<void(BoardTask &)> f);
+    QFuture<QString> startAsync(std::function<bool(BoardTask &)> f);
 };
 
 class Manager : public QAbstractListModel {
