@@ -120,7 +120,7 @@ bool SessionChannel::lock()
         lock_ = unique_ptr<QLockFile>(new QLockFile(lockName));
         lock_->setStaleLockTime(0);
 
-        locked_ = lock_->tryLock(100);
+        locked_ = lock_->tryLock(5);
     }
 
     return locked_;
