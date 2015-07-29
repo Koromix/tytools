@@ -157,6 +157,7 @@ set(TYQ_SOURCES qt/about_dialog.cc
                 qt/main_window.cc
                 qt/board.cc
                 qt/board_widget.cc
+                qt/commands.cc
                 qt/descriptor_set_notifier.cc
                 qt/selector_dialog.cc
                 qt/session_channel.cc
