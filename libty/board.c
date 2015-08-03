@@ -15,6 +15,8 @@
 #include "ty/timer.h"
 
 struct tyb_monitor {
+    int flags;
+
     tyd_monitor *monitor;
     ty_timer *timer;
 
@@ -394,7 +396,7 @@ static int device_callback(tyd_device *dev, tyd_monitor_event event, void *udata
     __builtin_unreachable();
 }
 
-int tyb_monitor_new(tyb_monitor **rmanager)
+int tyb_monitor_new(int flags, tyb_monitor **rmanager)
 {
     assert(rmanager);
 
@@ -406,6 +408,8 @@ int tyb_monitor_new(tyb_monitor **rmanager)
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
+
+    manager->flags = flags;
 
     r = tyd_monitor_new(&manager->monitor);
     if (r < 0)
@@ -574,29 +578,41 @@ int tyb_monitor_refresh(tyb_monitor *manager)
 int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, void *udata, int timeout)
 {
     assert(manager);
+    assert(f || !(manager->flags & TYB_MONITOR_PARALLEL_WAIT));
 
     ty_descriptor_set set = {0};
     uint64_t start;
     int r;
 
-    tyb_monitor_get_descriptors(manager, &set, 1);
-
     start = ty_millis();
-    do {
-        r = tyb_monitor_refresh(manager);
-        if (r < 0)
-            return (int)r;
-
-        if (f) {
-            r = (*f)(manager, udata);
-            if (r)
-                return (int)r;
+    if (manager->flags & TYB_MONITOR_PARALLEL_WAIT) {
+        ty_mutex_lock(&manager->refresh_mutex);
+        while (!(r = (*f)(manager, udata))) {
+            r = ty_cond_wait(&manager->refresh_cond, &manager->refresh_mutex, ty_adjust_timeout(timeout, start));
+            if (!r)
+                break;
         }
+        ty_mutex_unlock(&manager->refresh_mutex);
 
-        r = ty_poll(&set, ty_adjust_timeout(timeout, start));
-    } while (r > 0);
+        return r;
+    } else {
+        tyb_monitor_get_descriptors(manager, &set, 1);
 
-    return r;
+        do {
+            r = tyb_monitor_refresh(manager);
+            if (r < 0)
+                return (int)r;
+
+            if (f) {
+                r = (*f)(manager, udata);
+                if (r)
+                    return r;
+            }
+
+            r = ty_poll(&set, ty_adjust_timeout(timeout, start));
+        } while (r > 0);
+        return r;
+    }
 }
 
 int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata)
@@ -934,14 +950,12 @@ static int wait_for_callback(tyb_monitor *manager, void *udata)
     return tyb_board_has_capability(ctx->board, ctx->capability);
 }
 
-int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, bool parallel, int timeout)
+int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int timeout)
 {
     assert(board);
 
     tyb_monitor *manager = board->manager;
-
     struct wait_for_context ctx;
-    int r;
 
     if (!manager)
         return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
@@ -949,24 +963,7 @@ int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, bool p
     ctx.board = board;
     ctx.capability = capability;
 
-    if (parallel) {
-        uint64_t start;
-
-        ty_mutex_lock(&manager->refresh_mutex);
-
-        start = ty_millis();
-        while (!(r = wait_for_callback(manager, &ctx))) {
-            r = ty_cond_wait(&manager->refresh_cond, &manager->refresh_mutex, ty_adjust_timeout(timeout, start));
-            if (!r)
-                break;
-        }
-
-        ty_mutex_unlock(&manager->refresh_mutex);
-
-        return r;
-    } else {
-        return tyb_monitor_wait(manager, wait_for_callback, &ctx, timeout);
-    }
+    return tyb_monitor_wait(manager, wait_for_callback, &ctx, timeout);
 }
 
 int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, int flags)

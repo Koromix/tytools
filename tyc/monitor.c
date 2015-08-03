@@ -260,7 +260,7 @@ restart:
                     return 0;
 
                 printf("Waiting for device...\n");
-                r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_SERIAL, false, -1);
+                r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_SERIAL, -1);
                 if (r < 0)
                     return (int)r;
 

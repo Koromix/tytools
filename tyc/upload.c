@@ -154,7 +154,7 @@ int upload(int argc, char *argv[])
     }
 
 wait:
-    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, false, wait_device ? -1 : MANUAL_REBOOT_DELAY);
+    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, wait_device ? -1 : MANUAL_REBOOT_DELAY);
     if (r < 0)
         goto cleanup;
     if (!r) {

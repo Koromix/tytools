@@ -65,7 +65,7 @@ int reset(int argc, char *argv[])
         if (r < 0)
             goto cleanup;
 
-        r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, false, -1);
+        r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, -1);
         if (r < 0)
             goto cleanup;
     }

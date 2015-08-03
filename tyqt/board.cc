@@ -315,7 +315,7 @@ QFuture<QString> Board::upload(const QString &filename, bool reset_after)
         if (!tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_UPLOAD)) {
             tyb_board_reboot(board_);
 
-            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_UPLOAD, true, manual_reboot_delay);
+            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_UPLOAD, manual_reboot_delay);
             if (r < 0)
                 return false;
             if (!r) {
@@ -357,7 +357,7 @@ QFuture<QString> Board::reset()
         if (!tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RESET)) {
             tyb_board_reboot(board_);
 
-            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_RESET, true, manual_reboot_delay);
+            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_RESET, manual_reboot_delay);
             if (r < 0)
                 return false;
             if (!r) {
@@ -440,7 +440,7 @@ bool Manager::start()
     if (manager_)
         return true;
 
-    int r = tyb_monitor_new(&manager_);
+    int r = tyb_monitor_new(TYB_MONITOR_PARALLEL_WAIT, &manager_);
     if (r < 0)
         return false;
     r = tyb_monitor_register_callback(manager_, [](tyb_board *board, tyb_monitor_event event, void *udata) {

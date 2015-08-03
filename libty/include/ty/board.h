@@ -38,6 +38,10 @@ typedef enum tyb_board_state {
     TYB_BOARD_STATE_ONLINE
 } tyb_board_state;
 
+enum {
+    TYB_MONITOR_PARALLEL_WAIT = 1
+};
+
 typedef enum tyb_monitor_event {
     TYB_MONITOR_EVENT_ADDED,
     TYB_MONITOR_EVENT_CHANGED,
@@ -60,7 +64,7 @@ typedef int tyb_board_upload_progress_func(const tyb_board *board, const struct 
 
 TY_PUBLIC extern const tyb_board_family *tyb_board_families[];
 
-TY_PUBLIC int tyb_monitor_new(tyb_monitor **rmanager);
+TY_PUBLIC int tyb_monitor_new(int flags, tyb_monitor **rmanager);
 TY_PUBLIC void tyb_monitor_free(tyb_monitor *manager);
 
 TY_PUBLIC void tyb_monitor_set_udata(tyb_monitor *manager, void *udata);
@@ -124,7 +128,7 @@ TY_PUBLIC tyd_device *tyb_board_get_device(const tyb_board *board, tyb_board_cap
 TY_PUBLIC tyd_handle *tyb_board_get_handle(const tyb_board *board, tyb_board_capability cap);
 TY_PUBLIC void tyb_board_get_descriptors(const tyb_board *board, tyb_board_capability cap, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, bool parallel, int timeout);
+TY_PUBLIC int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int timeout);
 
 TY_PUBLIC int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, int flags);
 

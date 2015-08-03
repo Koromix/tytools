@@ -131,7 +131,7 @@ static int init_manager()
     tyb_monitor *manager = NULL;
     int r;
 
-    r = tyb_monitor_new(&manager);
+    r = tyb_monitor_new(0, &manager);
     if (r < 0)
         goto error;
 
