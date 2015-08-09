@@ -1,4 +1,4 @@
-![TyQt Logo](/resources/images/banner.png)
+![TyQt Logo](/tyqt/images/banner.png)
 
 # Introduction
 

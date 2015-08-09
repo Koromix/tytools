@@ -14,7 +14,7 @@
    <string>TyQt</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../resources/tyqt.qrc">
+   <iconset resource="tyqt.qrc">
     <normaloff>:/tyqt</normaloff>:/tyqt</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -409,7 +409,7 @@
   </widget>
   <action name="actionUpload">
    <property name="icon">
-    <iconset resource="../resources/tyqt.qrc">
+    <iconset resource="tyqt.qrc">
      <normaloff>:/upload</normaloff>:/upload</iconset>
    </property>
    <property name="text">
@@ -421,7 +421,7 @@
   </action>
   <action name="actionReset">
    <property name="icon">
-    <iconset resource="../resources/tyqt.qrc">
+    <iconset resource="tyqt.qrc">
      <normaloff>:/reset</normaloff>:/reset</iconset>
    </property>
    <property name="text">
@@ -446,7 +446,7 @@
   </action>
   <action name="actionReboot">
    <property name="icon">
-    <iconset resource="../resources/tyqt.qrc">
+    <iconset resource="tyqt.qrc">
      <normaloff>:/reboot</normaloff>:/reboot</iconset>
    </property>
    <property name="text">
@@ -523,7 +523,7 @@
   <tabstop>logText</tabstop>
  </tabstops>
  <resources>
-  <include location="../resources/tyqt.qrc"/>
+  <include location="tyqt.qrc"/>
  </resources>
  <connections/>
 </ui>

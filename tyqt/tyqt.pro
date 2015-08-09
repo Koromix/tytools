@@ -33,4 +33,4 @@ SOURCES += about_dialog.cc \
     session_channel.cc \
     tyqt.cc
 
-RESOURCES += ../resources/tyqt.qrc
+RESOURCES += tyqt.qrc
