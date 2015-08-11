@@ -85,9 +85,15 @@ position in the host USB topology. Meaning if it stays on the same USB port, it 
 for ty. That's necessary because across reboots and resets, Teensies look completely different to
 the host.
 
-When you want to target a specific device, use `tyc <command> --board "<location>#<serial>"`.
-The format of <location> is specific to ty and can be found using `tyc list`, <serial> is the
-USB serial number. Either can be omitted.
+When you want to target a specific device, use `tyc <command> --board "[<serial>][@<location>]"`.
+_serial_ is the USB serial number, _location_ is specific to ty and can be found using `tyc list`.
+Either can be omitted.
+
+Tag filter       | Result
+---------------- | ---------------------------------------------------------------------------
+714230           | Select board with serial number 714230
+@usb-1-2-2       | Select the board plugged in USB port 'usb-1-2-2'
+714230@usb-1-2-2 | Select the board plugged in 'usb-1-2-2' only if its serial number is 714230
 
 You can learn about the various commands using `tyc help`. Get specific help for them using
 `tyc help <command>`.
@@ -97,15 +103,14 @@ You can learn about the various commands using `tyc help`. Get specific help for
 
 `tyc list` lists plugged Teensy devices. Here is how it looks:
 ```
-+ usb-1-2#34130 teensy31
-+ usb-4-2#29460 teensy
-+ usb-4-3#32250 teensy30
++ 34130@usb-1-2 Teensy 3.1
++ 29460@usb-4-2 Teensy
++ 32250@usb-4-3 Teensy 3.0
 ```
 
 If you want detailed information about plugged devices, use `--verbose`:
 ```
-+ usb-4-3#32250 teensy30
-  - model: Teensy 3.0
++ 32250@usb-4-3 Teensy 3.0
   - capabilities: upload, reset
   - interfaces:
       * HalfKay Bootloader: /dev/hidraw2

@@ -93,7 +93,8 @@ void print_main_options(FILE *f)
                "       --help               Show help message\n"
                "       --version            Display version information\n\n"
 
-               "       --board <id>         Work with board <id> instead of first detected\n"
+               "       --board <tag>        Work with board <tag> instead of first detected\n\n"
+
                "       --experimental       Enable experimental features (use with caution)\n");
 }
 
@@ -103,14 +104,8 @@ static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata
 
     switch (event) {
     case TYB_MONITOR_EVENT_ADDED:
-        if (!main_board) {
-            int r = tyb_board_matches_tag(board, board_tag);
-            if (r < 0)
-                return r;
-
-            if (r)
-                main_board = tyb_board_ref(board);
-        }
+        if (!main_board && tyb_board_matches_tag(board, board_tag))
+            main_board = tyb_board_ref(board);
         break;
 
     case TYB_MONITOR_EVENT_CHANGED:

@@ -114,7 +114,7 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
     board->vid = tyd_device_get_vid(iface->dev);
     board->pid = tyd_device_get_pid(iface->dev);
 
-    r = asprintf(&board->tag, "%s#%"PRIu64, board->location, board->serial);
+    r = asprintf(&board->tag, "%"PRIu64"@%s", board->serial, board->location);
     if (r < 0) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
@@ -714,81 +714,37 @@ void tyb_board_unref(tyb_board *board)
 void tyb_board_lock(const tyb_board *board)
 {
     assert(board);
-
     ty_mutex_lock(&((tyb_board *)board)->mutex);
 }
 
 void tyb_board_unlock(const tyb_board *board)
 {
     assert(board);
-
     ty_mutex_unlock(&((tyb_board *)board)->mutex);
 }
 
-static int parse_tag(const char *id, char **rlocation, uint64_t *rserial)
-{
-    char *location = NULL;
-    uint64_t serial = 0;
-    char *ptr;
-    int r;
-
-    ptr = strchr(id, '#');
-
-    if (ptr != id) {
-        if (ptr) {
-            location = strndup(id, (size_t)(ptr - id));
-        } else {
-            location = strdup(id);
-        }
-        if (!location) {
-            r = ty_error(TY_ERROR_MEMORY, NULL);
-            goto error;
-        }
-    }
-
-    if (ptr) {
-        char *end;
-        serial = strtoull(++ptr, &end, 10);
-        if (end == ptr || *end) {
-            r = ty_error(TY_ERROR_PARAM, "#<serial> must be a number");
-            goto error;
-        }
-    }
-
-    *rlocation = location;
-    *rserial = serial;
-    return 0;
-
-error:
-    free(location);
-    return r;
-}
-
-int tyb_board_matches_tag(tyb_board *board, const char *id)
+bool tyb_board_matches_tag(tyb_board *board, const char *id)
 {
     assert(board);
 
-    if (!id || !*id)
-        return 1;
+    uint64_t serial;
+    char *location;
 
-    char *location = NULL;
-    uint64_t serial = 0;
-    int r;
+    if (!id)
+        return true;
 
-    r = parse_tag(id, &location, &serial);
-    if (r < 0)
-        return r;
+    serial = strtoull(id, &location, 10);
+    if (*location == '@' && location[1]) {
+        location++;
+    } else if (!*location) {
+        location = NULL;
+    } else {
+        ty_error(TY_ERROR_PARAM, "Incorrect board tag '%s', use [<serial>][@<location>]", id);
+        return false;
+    }
 
-    r = 0;
-    if (location && strcmp(location, board->location) != 0)
-        goto cleanup;
-    if (serial && serial != board->serial)
-        goto cleanup;
-
-    r = 1;
-cleanup:
-    free(location);
-    return r;
+    return ((!location || strcmp(location, board->location) != 0)
+            && (!serial || serial != board->serial));
 }
 
 void tyb_board_set_udata(tyb_board *board, void *udata)

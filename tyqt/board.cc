@@ -142,7 +142,7 @@ tyb_board *Board::board() const
 
 bool Board::matchesTag(const QString &id)
 {
-    return tyb_board_matches_tag(board_, id.toLocal8Bit().constData()) == 1;
+    return tyb_board_matches_tag(board_, id.toLocal8Bit().constData());
 }
 
 tyb_board_state Board::state() const
