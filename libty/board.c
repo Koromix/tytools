@@ -743,8 +743,8 @@ bool tyb_board_matches_tag(tyb_board *board, const char *id)
         return false;
     }
 
-    return ((!location || strcmp(location, board->location) != 0)
-            && (!serial || serial != board->serial));
+    return (!location || strcmp(location, board->location) == 0) &&
+           (!serial || serial == board->serial);
 }
 
 void tyb_board_set_udata(tyb_board *board, void *udata)
