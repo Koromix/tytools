@@ -5,20 +5,37 @@
  */
 
 #include <getopt.h>
+#include <stdarg.h>
 #include "ty.h"
 #include "main.h"
 
-static const char *short_options = MAIN_SHORT_OPTIONS "vw";
+static const char *short_options = MAIN_SHORT_OPTIONS "O:vw";
 static const struct option long_options[] = {
     MAIN_LONG_OPTIONS
 
-    {"verbose", no_argument, NULL, 'v'},
-    {"watch",   no_argument, NULL, 'w'},
+    {"output",  required_argument, NULL, 'O'},
+    {"verbose", no_argument,       NULL, 'v'},
+    {"watch",   no_argument,       NULL, 'w'},
     {0}
 };
 
-static bool list_verbose = false;
+enum output_format {
+    OUTPUT_PLAIN,
+    OUTPUT_JSON
+};
+
+enum collection_type {
+    COLLECTION_LIST = '[',
+    COLLECTION_OBJECT = '{'
+};
+
+static enum output_format output = OUTPUT_PLAIN;
+static bool verbose = false;
 static bool watch = false;
+
+static enum collection_type collections[8];
+static unsigned int collection_depth;
+static bool collection_started;
 
 void print_list_usage(FILE *f)
 {
@@ -28,30 +45,102 @@ void print_list_usage(FILE *f)
     fprintf(f, "\n");
 
     fprintf(f, "List options:\n"
-               "   -v, --verbose            Print detailed information about devices\n"
+               "   -O, --output <format>    Output format, must be plain (default) or json\n"
+               "   -v, --verbose            Print detailed information about devices\n\n"
+
                "   -w, --watch              Watch devices dynamically\n");
 }
 
-static void print_capabilities(int capabilities)
+static void print_field(const char *key, const char *format, ...)
 {
-    bool first = true;
-    for (unsigned int i = 0; i < TYB_BOARD_CAPABILITY_COUNT; i++) {
-        if (capabilities & (1 << i)) {
-            printf("%s%s", first ? "" : ", ", tyb_board_capability_get_name(i));
-            first = false;
-        }
+    char value[256];
+    bool numeric;
+
+    numeric = false;
+    if (format) {
+        va_list ap;
+        int dummy;
+        char dummy2;
+
+        va_start(ap, format);
+        vsnprintf(value, sizeof(value), format, ap);
+        va_end(ap);
+
+        if (sscanf(value, "%d%c", &dummy, &dummy2) == 1)
+            numeric = true;
+    } else {
+        value[0] = 0;
     }
 
-    if (first)
-        printf("(none)");
+    switch (output) {
+    case OUTPUT_PLAIN:
+        if (key || format)
+            printf("\n%*s%c ", collection_depth * 2, "", collection_depth % 2 ? '+' : '-');
+        if (key)
+            printf("%s: ", key);
+        printf("%s", value);
+        break;
+
+    case OUTPUT_JSON:
+        if (collection_started)
+            printf(", ");
+        if (collection_depth && collections[collection_depth - 1] == COLLECTION_LIST && key && format) {
+            if (numeric) {
+                printf("[\"%s\", %s]", key, value);
+            } else {
+                printf("[\"%s\", \"%s\"]", key, value);
+            }
+        } else {
+            if (key)
+                printf("\"%s\": ", key);
+            if (numeric) {
+                printf("%s", value);
+            } else if (format) {
+                printf("\"%s\"", value);
+            }
+        }
+        break;
+    }
+
+    collection_started = true;
+}
+
+static void start_collection(const char *key, enum collection_type type)
+{
+    print_field(key, NULL);
+    if (output == OUTPUT_JSON)
+        printf("%c", type);
+
+    assert(collection_depth < TY_COUNTOF(collections));
+    collections[collection_depth++] = type;
+
+    collection_started = false;
+}
+
+static void end_collection(void)
+{
+    assert(collection_depth);
+    collection_depth--;
+
+    switch (output) {
+    case OUTPUT_PLAIN:
+        if (!collection_started && collections[collection_depth] == COLLECTION_LIST)
+            printf("(none)");
+        break;
+    case OUTPUT_JSON:
+        printf("%c", collections[collection_depth] + 2);
+        break;
+    }
+
+    collection_started = !!collection_depth;
 }
 
 static int print_interface_info(tyb_board_interface *iface, void *udata)
 {
     TY_UNUSED(udata);
 
-    printf("    * %s: %s\n", tyb_board_interface_get_desc(iface),
-           tyd_device_get_path(tyb_board_interface_get_device(iface)));
+    print_field(tyb_board_interface_get_desc(iface), "%s",
+                tyd_device_get_path(tyb_board_interface_get_device(iface)));
 
     return 0;
 }
@@ -62,41 +151,55 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
     TY_UNUSED(udata);
 
     const tyb_board_model *model = tyb_board_get_model(board);
-
-    // Suppress spurious warning on MinGW (c may be used undefined)
-    int c = 0;
+    const char *action = "";
 
     switch (event) {
     case TYB_MONITOR_EVENT_ADDED:
-        c = '+';
+        action = "add";
         break;
     case TYB_MONITOR_EVENT_CHANGED:
-        c = '=';
+        action = "change";
         break;
     case TYB_MONITOR_EVENT_DISAPPEARED:
-        c = '?';
+        action = "miss";
         break;
     case TYB_MONITOR_EVENT_DROPPED:
-        c = '-';
+        action = "remove";
         break;
     }
-    assert(c);
 
-    printf("%c %s %s\n", c, tyb_board_get_tag(board),
-           model ? tyb_board_model_get_name(model) : "(unknown)");
+    start_collection(NULL, COLLECTION_OBJECT);
 
-    if (list_verbose && event != TYB_MONITOR_EVENT_DROPPED) {
-        printf("  - capabilities: ");
-        print_capabilities(tyb_board_get_capabilities(board));
-        printf("\n");
-
-        if (event != TYB_MONITOR_EVENT_DISAPPEARED) {
-            printf("  - interfaces: \n");
-            tyb_board_list_interfaces(board, print_interface_info, NULL);
-        } else {
-            printf("  - interfaces: (none)\n");
-        }
+    if (output == OUTPUT_PLAIN) {
+        printf("%s %s %s", action, tyb_board_get_tag(board),
+               model ? tyb_board_model_get_name(model) : "(unknown)");
+    } else {
+        print_field("action", "%s", action);
+        print_field("tag", "%s", tyb_board_get_tag(board));
+        print_field("serial", "%"PRIu64, tyb_board_get_serial_number(board));
+        print_field("location", "%s", tyb_board_get_location(board));
+        if (model)
+            print_field("model", "%s", tyb_board_model_get_name(model));
     }
+
+    if (verbose && ((event != TYB_MONITOR_EVENT_DROPPED && event != TYB_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {
+        int capabilities = tyb_board_get_capabilities(board);
+
+        start_collection("capabilities", COLLECTION_LIST);
+        for (unsigned int i = 0; i < TYB_BOARD_CAPABILITY_COUNT; i++) {
+            if (capabilities & (1 << i))
+                print_field(NULL, "%s", tyb_board_capability_get_name(i));
+        }
+        end_collection();
+
+        start_collection("interfaces", COLLECTION_LIST);
+        tyb_board_list_interfaces(board, print_interface_info, NULL);
+        end_collection();
+    }
+
+    end_collection();
+    printf("\n");
+    fflush(stdout);
 
     return 0;
 }
@@ -109,8 +212,17 @@ int list(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
+        case 'O':
+            if (strcmp(optarg, "plain") == 0) {
+                output = OUTPUT_PLAIN;
+            } else if (strcmp(optarg, "json") == 0) {
+                output = OUTPUT_JSON;
+            } else {
+                return ty_error(TY_ERROR_PARAM, "--output must be one off plain or json");
+            }
+            break;
         case 'v':
-            list_verbose = true;
+            verbose = true;
             break;
 
         case 'w':

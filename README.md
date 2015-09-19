@@ -103,20 +103,35 @@ You can learn about the various commands using `tyc help`. Get specific help for
 
 `tyc list` lists plugged Teensy devices. Here is how it looks:
 ```
-+ 34130@usb-1-2 Teensy 3.1
-+ 29460@usb-4-2 Teensy
-+ 32250@usb-4-3 Teensy 3.0
+add 34130@usb-1-2 Teensy 3.1
+add 29460@usb-4-2 Teensy
+add 32250@usb-4-3 Teensy 3.0
 ```
 
-If you want detailed information about plugged devices, use `--verbose`:
+Use `--verbose` if you want detailed information about available devices:
 ```
-+ 32250@usb-4-3 Teensy 3.0
-  - capabilities: upload, reset
-  - interfaces:
-      * HalfKay Bootloader: /dev/hidraw2
+add 32250@usb-4-3 Teensy 3.0
+  + capabilities:
+    - upload
+    - reset
+  + interfaces:
+    - HalfKay Bootloader: /dev/hidraw2
 ```
 
-You can also watch device changes with `--watch`.
+If you need to read structured information in your scripts, you can set the output to JSON with `--output json`:
+```
+{"action": "add", "tag": "714230@usb-6-3", "serial": 714230, "location": "usb-6-3", "model": "Teensy", "capabilities": ["reboot", "serial"], "interfaces": [["Seremu", "/dev/hidraw4"]]}
+{"action": "add", "tag": "1126140@usb-6-2", "serial": 1126140, "location": "usb-6-2", "model": "Teensy LC", "capabilities": ["upload", "reset"], "interfaces": [["HalfKay Bootloader", "/dev/hidraw3"]]}
+```
+
+You can also watch device changes with `--watch`, both in plain and JSON mode.
+
+Action | Meaning
+------ | ------------------------------------------------------------------------------
+add    | This board was plugged in or was already there
+change | Something changed, maybe the board rebooted
+miss   | This board is missing, either it was unplugged (remove) or it is changing mode
+remove | This board has been missing for some time, consider it removed
 
 <a name="usage_upload"/>
 ## Upload firmware
