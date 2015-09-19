@@ -278,7 +278,8 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
 
             board = NULL;
         } else if (board->vid != tyd_device_get_vid(dev) || board->pid != tyd_device_get_pid(dev)) {
-            close_board(board);
+            if (board->state == TYB_BOARD_STATE_ONLINE)
+                close_board(board);
 
             board->vid = tyd_device_get_vid(dev);
             board->pid = tyd_device_get_pid(dev);
