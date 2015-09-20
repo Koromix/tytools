@@ -169,6 +169,6 @@ int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 
 error:
     // No kidding
-    fprintf(stderr, "tyqtc failed");
+    fprintf(stderr, "tyqtc failed\n");
     return 3;
 }
