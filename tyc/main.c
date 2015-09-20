@@ -39,11 +39,11 @@ static const struct command commands[] = {
     {0}
 };
 
-static tyb_monitor *board_manager;
-static tyb_board *main_board;
-
 static const struct command *current_command;
 static const char *board_tag = NULL;
+
+static tyb_monitor *board_manager;
+static tyb_board *main_board;
 
 static void print_version(FILE *f)
 {
@@ -219,12 +219,12 @@ int parse_main_option(int argc, char *argv[], int c)
         print_version(stdout);
         return 0;
 
-    case MAIN_OPTION_EXPERIMENTAL:
-        ty_config_experimental = true;
-        return 1;
-
     case MAIN_OPTION_BOARD:
         board_tag = optarg;
+        return 1;
+
+    case MAIN_OPTION_EXPERIMENTAL:
+        ty_config_experimental = true;
         return 1;
     }
 

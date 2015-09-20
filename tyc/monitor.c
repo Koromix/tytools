@@ -299,7 +299,7 @@ restart:
 #ifdef _WIN32
             if (input_available) {
                 if (input_ret < 0)
-                    return input_ret;
+                    return (int)input_ret;
 
                 memcpy(buf, input_line, (size_t)input_ret);
                 r = input_ret;

@@ -62,7 +62,7 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
 {
     assert(timer);
 
-    struct itimerspec ispec = {{0}};
+    struct itimerspec ispec = {0};
     int tfd_flags = 0;
     int r;
 

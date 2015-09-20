@@ -221,7 +221,6 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
         timeout = -1;
 
     start = ty_millis();
-
 restart:
     r = poll(pfd, (nfds_t)set->count, ty_adjust_timeout(timeout, start));
     if (r < 0) {

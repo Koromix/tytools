@@ -8,7 +8,7 @@
 #include "ty.h"
 #include "main.h"
 
-static const char *short_options = "b" MAIN_SHORT_OPTIONS;
+static const char *short_options = MAIN_SHORT_OPTIONS "b";
 static const struct option long_options[] = {
     MAIN_LONG_OPTIONS
 

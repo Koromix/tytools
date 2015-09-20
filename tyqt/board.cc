@@ -293,7 +293,7 @@ void Board::refreshBoard()
             if (clear_on_reset_)
                 serial_document_.clear();
 
-            ty_descriptor_set set = {0};
+            ty_descriptor_set set = {};
             tyb_board_get_descriptors(board_, TYB_BOARD_CAPABILITY_SERIAL, &set, 1);
 
             serial_notifier_.setDescriptorSet(&set);
@@ -454,7 +454,7 @@ bool Manager::start()
         return false;
     }
 
-    ty_descriptor_set set = {0};
+    ty_descriptor_set set = {};
     tyb_monitor_get_descriptors(manager_, &set, 1);
 
     manager_notifier_.setDescriptorSet(&set);

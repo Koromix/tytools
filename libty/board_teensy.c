@@ -379,10 +379,9 @@ static int halfkay_send(tyb_board_interface *iface, size_t addr, void *data, siz
         assert(false);
     }
 
-    start = ty_millis();
-
     /* We may get errors along the way (while the bootloader works) so try again
        until timeout expires. */
+    start = ty_millis();
     do {
         r = tyd_hid_write(iface->h, buf, size);
         if (r >= 0)

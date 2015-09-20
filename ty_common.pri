@@ -6,7 +6,7 @@ QMAKE_LIBDIR = $$OUT_PWD/../libty
 QMAKE_RPATHDIR = $$OUT_PWD/../libty
 
 QMAKE_CFLAGS += -std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
-    -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2
+    -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces -Wshadow -Wconversion -Wformat=2
 QMAKE_CXXFLAGS += -std=gnu++11 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
     -Wall -Wextra -Wno-missing-field-initializers -Wold-style-cast -Wformat=2
 

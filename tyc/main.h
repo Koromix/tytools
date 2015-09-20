@@ -22,10 +22,11 @@ int get_manager(tyb_monitor **rmanager);
 int get_board(tyb_board **rboard);
 
 enum {
-    MAIN_OPTION_BOARD = 0x100,
-    MAIN_OPTION_EXPERIMENTAL,
-    MAIN_OPTION_HELP,
-    MAIN_OPTION_VERSION
+    MAIN_OPTION_HELP = 0x100,
+    MAIN_OPTION_VERSION,
+
+    MAIN_OPTION_BOARD,
+    MAIN_OPTION_EXPERIMENTAL
 };
 
 #define MAIN_SHORT_OPTIONS
