@@ -35,6 +35,9 @@
     #define TY_INIT() \
         __attribute__((constructor)) \
         static void TY_UNIQUE_ID(init_)(void)
+    #define TY_EXIT() \
+        __attribute__((destructor)) \
+        static void TY_UNIQUE_ID(exit_)(void)
 
     #define TY_WARNING_DISABLE_SIGN_CONVERSION \
         _Pragma("GCC diagnostic push"); \
