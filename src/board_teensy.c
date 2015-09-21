@@ -135,6 +135,21 @@ static const tyb_board_model teensy_lc_model = {
     .signature = {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}
 };
 
+static const tyb_board_model teensy_32_model = {
+    .family = &_tyb_teensy_family,
+    .name = "teensy32",
+    .desc = "Teensy 3.2",
+    .mcu = "mk20dx256",
+
+    .usage = 0x21,
+
+    .code_size = 262144,
+    .halfkay_version = 3,
+    .block_size = 1024,
+
+    .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
+};
+
 static const tyb_board_model *teensy_models[] = {
     &teensy_pp10_model,
     &teensy_20_model,
@@ -142,6 +157,7 @@ static const tyb_board_model *teensy_models[] = {
     &teensy_30_model,
     &teensy_31_model,
     &teensy_lc_model,
+    &teensy_32_model,
     NULL
 };
 
