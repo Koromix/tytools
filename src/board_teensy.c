@@ -262,23 +262,29 @@ static int teensy_open_interface(tyb_board_interface *iface)
     return 1;
 }
 
-static const tyb_board_model *teensy_guess_model(const tyb_firmware *f)
+static unsigned int teensy_guess_models(const tyb_firmware *fw,
+                                        const tyb_board_model **rguesses, unsigned int size)
 {
-    if (f->size < ty_member_sizeof(tyb_board_model, signature))
+    unsigned int count = 0;
+
+    if (fw->size < ty_member_sizeof(tyb_board_model, signature))
         return NULL;
 
     /* Naive search with each board's signature, not pretty but unless
        thousands of models appear this is good enough. */
-    for (size_t i = 0; i < f->size - ty_member_sizeof(tyb_board_model, signature); i++) {
+    for (size_t i = 0; i < fw->size - ty_member_sizeof(tyb_board_model, signature); i++) {
         for (const tyb_board_model **cur = teensy_models; *cur; cur++) {
             const tyb_board_model *model = *cur;
 
-            if (memcmp(f->image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0)
-                return model;
+            if (memcmp(fw->image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0) {
+                rguesses[count++] = model;
+                if (count == size)
+                    return count;
+            }
         }
     }
 
-    return NULL;
+    return count;
 }
 
 static int teensy_serial_set_attributes(tyb_board_interface *iface, uint32_t rate, int flags)
@@ -484,7 +490,7 @@ const tyb_board_family _tyb_teensy_family = {
     .models = teensy_models,
 
     .open_interface = teensy_open_interface,
-    .guess_model = teensy_guess_model
+    .guess_models = teensy_guess_models
 };
 
 static const struct _tyb_board_interface_vtable teensy_vtable = {
