@@ -17,6 +17,7 @@
        these features. */
     #if defined(_WIN32)
         /* #undef HAVE_STPCPY */
+        /* #undef HAVE_STPNCPY */
         /* #undef HAVE_STRNDUP */
         /* #undef HAVE_MEMRCHR */
         #define HAVE_ASPRINTF
@@ -26,6 +27,7 @@
         /* #undef HAVE_PIPE2 */
     #elif defined(__APPLE__)
         #define HAVE_STPCPY
+        #define HAVE_STPNCPY
         #define HAVE_STRNDUP
         /* #undef HAVE_MEMRCHR */
         #define HAVE_ASPRINTF
@@ -39,6 +41,7 @@
         #define HAVE_STAT_MTIMESPEC
     #elif defined(__linux__)
         #define HAVE_STPCPY
+        #define HAVE_STPNCPY
         #define HAVE_STRNDUP
         #define HAVE_MEMRCHR
         #define HAVE_ASPRINTF
@@ -61,6 +64,10 @@ char *strrpbrk(const char *s, const char *accept);
 
 #ifndef HAVE_STPCPY
 char *stpcpy(char *dest, const char *src);
+#endif
+
+#ifndef HAVE_STPNCPY
+char *stpncpy(char *dest, const char *src, size_t n);
 #endif
 
 #ifndef HAVE_STRNDUP

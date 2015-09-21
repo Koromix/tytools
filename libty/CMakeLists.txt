@@ -61,6 +61,7 @@ endif()
 
 include(CheckSymbolExists)
 check_symbol_exists(stpcpy string.h HAVE_STPCPY)
+check_symbol_exists(stpncpy string.h HAVE_STPNCPY)
 check_symbol_exists(strndup string.h HAVE_STRNDUP)
 check_symbol_exists(memrchr string.h HAVE_MEMRCHR)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
