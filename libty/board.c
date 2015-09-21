@@ -640,19 +640,36 @@ int tyb_board_family_list_models(const tyb_board_family *family, tyb_board_famil
     return 0;
 }
 
-const tyb_board_model *tyb_board_model_guess(const tyb_firmware *f)
+bool tyb_board_model_test_firmware(const tyb_board_model *model, const tyb_firmware *fw,
+                                   const tyb_board_model **rguesses, unsigned int *rcount)
 {
-    assert(f);
+    assert(fw);
+    assert(!!rguesses == !!rcount);
+    if (rguesses)
+        assert(*rcount);
+
+    bool compatible = false;
+    unsigned int count = 0;
 
     for (const tyb_board_family **cur = tyb_board_families; *cur; cur++) {
         const tyb_board_family *family = *cur;
 
-        const tyb_board_model *model = (*family->guess_model)(f);
-        if (model)
-            return model;
+        const tyb_board_model *family_guesses[8];
+        unsigned int family_count;
+
+        family_count = (*family->guess_models)(fw, family_guesses, TY_COUNTOF(family_guesses));
+
+        for (unsigned int i = 0; i < family_count; i++) {
+            if (family_guesses[i] == model)
+                compatible = true;
+            if (rguesses && count < *rcount)
+                rguesses[count++] = family_guesses[i];
+        }
     }
 
-    return NULL;
+    if (rcount)
+        *rcount = count;
+    return compatible;
 }
 
 const char *tyb_board_model_get_name(const tyb_board_model *model)
@@ -1035,17 +1052,33 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
     }
 
     if (!(flags & TYB_BOARD_UPLOAD_NOCHECK)) {
-        const tyb_board_model *guess;
+        bool compatible;
+        const tyb_board_model *guesses[8];
+        unsigned int count;
 
-        guess = tyb_board_model_guess(f);
-        if (!guess) {
-            r = ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
-            goto cleanup;
-        }
+        count = TY_COUNTOF(guesses);
+        compatible = tyb_board_model_test_firmware(board->model, f, guesses, &count);
 
-        if (guess != board->model) {
-            r = ty_error(TY_ERROR_FIRMWARE, "This firmware was compiled for %s", guess->name);
-            goto cleanup;
+        if (!compatible) {
+            if (count) {
+                char buf[512];
+                char *ptr;
+
+                // FIXME: ugly
+                ptr = stpcpy(buf, "This firmware is only compatible with ");
+                for (unsigned int i = 0; i < count; i++) {
+                    if (i)
+                        ptr = stpncpy(ptr, i + 1 < count ? ", " : " and ", (size_t)(buf + 512 - ptr));
+                    ptr = stpncpy(ptr, guesses[i]->name, (size_t)(buf + 512 - ptr));
+                }
+                buf[sizeof(buf) - 1] = 0;
+
+                r = ty_error(TY_ERROR_FIRMWARE, "%s", buf);
+                goto cleanup;
+            } else {
+                r = ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
+                goto cleanup;
+            }
         }
     }
 
