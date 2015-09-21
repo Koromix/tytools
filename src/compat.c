@@ -36,6 +36,19 @@ char *stpcpy(char *dest, const char *src)
 
 #endif
 
+#ifndef HAVE_STPNCPY
+
+char *stpncpy(char *dest, const char *src, size_t n)
+{
+    while ((*dest++ = *src++) && n--)
+        continue;
+    if (n)
+        memset(dest, 0, n);
+    return dest - 1;
+}
+
+#endif
+
 #ifndef HAVE_STRNDUP
 
 char *strndup(const char *s, size_t n)
