@@ -233,6 +233,7 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
     elseif(APPLE)
         find_library(COCOA_LIBRARIES Cocoa)
         find_library(CARBON_LIBRARIES Carbon)
+        find_library(SECURITY_LIBRARIES Security)
         find_library(SC_LIBRARIES SystemConfiguration)
         find_package(ZLIB REQUIRED)
         find_package(Cups REQUIRED)
@@ -243,12 +244,19 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
         find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
             HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
             NO_CMAKE_FIND_ROOT_PATH)
+        find_library(qtpcre_LIBRARIES_DEBUG qtpcre_debug
+            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+            NO_CMAKE_FIND_ROOT_PATH)
+        find_library(qtpcre_LIBRARIES_OPTIMIZED qtpcre
+            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+            NO_CMAKE_FIND_ROOT_PATH)
 
         target_link_libraries(tyqt
             Qt5::QCocoaIntegrationPlugin Qt5::PrintSupport
-            ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES}
-            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG}
-            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED})
+            ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${SECURITY_LIBRARIES}
+            ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES}
+            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG} ${qtpcre_LIBRARIES_DEBUG}
+            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED} ${qtpcre_LIBRARIES_OPTIMIZED})
     endif()
 endif()
 
