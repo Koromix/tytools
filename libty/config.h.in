@@ -5,6 +5,7 @@
  */
 
 #cmakedefine HAVE_STPCPY
+#cmakedefine HAVE_STPNCPY
 #cmakedefine HAVE_STRNDUP
 #cmakedefine HAVE_MEMRCHR
 #cmakedefine HAVE_ASPRINTF
