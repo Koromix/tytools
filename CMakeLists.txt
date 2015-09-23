@@ -84,7 +84,7 @@ elseif(APPLE)
 
     set(CPACK_BUNDLE_NAME "TyQt")
     set(CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/tyqt/images/tyqt.icns")
-    set(CPACK_BUNDLE_PLIST "${CMAKE_BINARY_DIR}/tyqt_osx.plist")
+    set(CPACK_BUNDLE_PLIST "${CMAKE_BINARY_DIR}/tyqt/tyqt_osx.plist")
 
     install(FILES README.md DESTINATION . RENAME README.txt)
     install(FILES LICENSE.txt DESTINATION .)
