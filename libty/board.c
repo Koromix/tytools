@@ -1061,24 +1061,18 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
 
         if (!compatible) {
             if (count) {
-                char buf[512];
-                char *ptr;
+                char buf[256], *ptr;
 
-                // FIXME: ugly
-                ptr = stpcpy(buf, "This firmware is only compatible with ");
-                for (unsigned int i = 0; i < count; i++) {
-                    if (i)
-                        ptr = stpncpy(ptr, i + 1 < count ? ", " : " and ", (size_t)(buf + 512 - ptr));
-                    ptr = stpncpy(ptr, guesses[i]->name, (size_t)(buf + 512 - ptr));
-                }
-                buf[sizeof(buf) - 1] = 0;
+                ptr = buf;
+                for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
+                    ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
+                                    i ? (i + 1 < count ? ", ": " and ") : "", guesses[i]->name);
 
-                r = ty_error(TY_ERROR_FIRMWARE, "%s", buf);
-                goto cleanup;
+                r = ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
             } else {
                 r = ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
-                goto cleanup;
             }
+            goto cleanup;
         }
     }
 
