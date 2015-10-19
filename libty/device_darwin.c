@@ -927,6 +927,9 @@ static int open_hid_device(tyd_device *dev, tyd_handle **rh)
     h->pipe[0] = -1;
     h->pipe[1] = -1;
 
+    ty_list_init(&h->reports);
+    ty_list_init(&h->free_reports);
+
     h->service = IORegistryEntryFromPath(kIOMasterPortDefault, dev->path);
     if (!h->service) {
         r = ty_error(TY_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
@@ -967,9 +970,6 @@ static int open_hid_device(tyd_device *dev, tyd_handle **rh)
     }
     fcntl(h->pipe[0], F_SETFL, fcntl(h->pipe[0], F_GETFL, 0) | O_NONBLOCK);
     fcntl(h->pipe[1], F_SETFL, fcntl(h->pipe[1], F_GETFL, 0) | O_NONBLOCK);
-
-    ty_list_init(&h->reports);
-    ty_list_init(&h->free_reports);
 
     r = ty_mutex_init(&h->mutex, TY_MUTEX_FAST);
     if (r < 0)
