@@ -21,6 +21,9 @@
 static int open_posix_device(tyd_device *dev, tyd_handle **rh)
 {
     tyd_handle *h;
+#ifdef __APPLE__
+    unsigned int retry = 4;
+#endif
     int r;
 
     h = calloc(1, sizeof(*h));
@@ -47,6 +50,15 @@ restart:
             r = ty_error(TY_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
             break;
 
+#ifdef __APPLE__
+        /* On El Capitan (and maybe before), the open fails for some time (around 40 - 50 ms on my
+           computer) after the device notification. */
+        case EBUSY:
+            if (retry--) {
+                ty_delay(20);
+                goto restart;
+            }
+#endif
         default:
             r = ty_error(TY_ERROR_SYSTEM, "open('%s') failed: %s", dev->path, strerror(errno));
             break;
