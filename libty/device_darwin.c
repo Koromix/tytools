@@ -15,6 +15,7 @@
 #include <sys/event.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include "ty/device.h"
 #include "list.h"
@@ -26,7 +27,8 @@ struct tyd_monitor {
     TYD_MONITOR
 
     IONotificationPortRef notify_port;
-    io_iterator_t attach_it;
+    io_iterator_t attach_it[8];
+    unsigned int match_count;
     io_iterator_t detach_it;
     int notify_ret;
 
@@ -65,6 +67,20 @@ struct tyd_handle {
 extern const struct _tyd_device_vtable _tyd_posix_device_vtable;
 static const struct _tyd_device_vtable hid_device_vtable;
 
+static bool new_usb_stack;
+
+TY_INIT()
+{
+    struct utsname name;
+    unsigned int major;
+
+    uname(&name);
+    sscanf(name.release, "%u.", &major);
+
+    if (major >= 15)
+        new_usb_stack = true;
+}
+
 static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, char **rs)
 {
     CFTypeRef data;
@@ -100,6 +116,28 @@ cleanup:
     return r;
 }
 
+static ssize_t get_ioregistry_value_data(io_service_t service, CFStringRef prop, uint8_t *buf, size_t size)
+{
+    CFTypeRef data;
+    ssize_t r;
+
+    data = IORegistryEntryCreateCFProperty(service, prop, kCFAllocatorDefault, 0);
+    if (!data || CFGetTypeID(data) != CFDataGetTypeID()) {
+        r = 0;
+        goto cleanup;
+    }
+
+    r = (ssize_t)CFDataGetLength(data);
+    if (r > (ssize_t)size)
+        r = (ssize_t)size;
+    CFDataGetBytes(data, CFRangeMake(0, (CFIndex)r), buf);
+
+cleanup:
+    if (data)
+        CFRelease(data);
+    return r;
+}
+
 static bool get_ioregistry_value_number(io_service_t service, CFStringRef prop, CFNumberType type,
                                         void *rn)
 {
@@ -119,40 +157,6 @@ cleanup:
     return r;
 }
 
-static int get_object_interface(io_service_t service, CFUUIDRef uuid, IUnknownVTbl **robject)
-{
-    IOCFPlugInInterface **plugin = NULL;
-    int32_t score;
-    IUnknownVTbl *object = NULL;
-    kern_return_t kret;
-    int r;
-
-    kret = IOCreatePlugInInterfaceForService(service, kIOUSBDeviceUserClientTypeID,
-                                             kIOCFPlugInInterfaceID, &plugin,
-                                             &score);
-    if (kret != kIOReturnSuccess || !plugin) {
-        r = 0;
-        goto cleanup;
-    }
-
-    kret = (*plugin)->QueryInterface(plugin, CFUUIDGetUUIDBytes(uuid), (void **)&object);
-    if (kret != kIOReturnSuccess || !object) {
-        r = 0;
-        goto cleanup;
-    }
-
-    *robject = object;
-    object = NULL;
-
-    r = 1;
-cleanup:
-    if (object)
-        object->Release(object);
-    if (plugin)
-        (*plugin)->Release(plugin);
-    return r;
-}
-
 static void clear_iterator(io_iterator_t it)
 {
     io_object_t object;
@@ -160,47 +164,18 @@ static void clear_iterator(io_iterator_t it)
         IOObjectRelease(object);
 }
 
-struct iokit_device {
-    io_service_t service;
-    IOUSBDeviceInterface **iface;
-};
-
 static int find_serial_device_node(io_service_t service, char **rpath)
 {
-    io_service_t stream = 0, client = 0;
-    char *path;
-    kern_return_t kret;
     int r;
 
-    kret = IORegistryEntryGetChildEntry(service, kIOServicePlane, &stream);
-    if (kret != kIOReturnSuccess || !IOObjectConformsTo(stream, "IOSerialStreamSync")) {
-        ty_error(TY_ERROR_SYSTEM, "Serial device interface does not have IOSerialStreamSync child");
-        r = 0;
-        goto cleanup;
-    }
-
-    kret = IORegistryEntryGetChildEntry(stream, kIOServicePlane, &client);
-    if (kret != kIOReturnSuccess || !IOObjectConformsTo(client, "IOSerialBSDClient")) {
-        ty_error(TY_ERROR_SYSTEM, "Serial device interface does not have IOSerialBSDClient child");
-        r = 0;
-        goto cleanup;
-    }
-
-    r = get_ioregistry_value_string(client, CFSTR("IOCalloutDevice"), &path);
+    r = get_ioregistry_value_string(service, CFSTR("IOCalloutDevice"), rpath);
     if (r <= 0) {
         if (!r)
-            ty_error(TY_ERROR_SYSTEM, "Serial device does not have property IOCalloutDevice");
-        goto cleanup;
+            ty_error(TY_ERROR_SYSTEM, "Serial device does not have property 'IOCalloutDevice'");
+        return r;
     }
 
-    *rpath = path;
-    r = 1;
-cleanup:
-    if (client)
-        IOObjectRelease(client);
-    if (stream)
-        IOObjectRelease(stream);
-    return r;
+    return 1;
 }
 
 static int find_hid_device_node(io_service_t service, char **rpath)
@@ -225,29 +200,22 @@ static int find_hid_device_node(io_service_t service, char **rpath)
 
 static int find_device_node(tyd_device *dev, io_service_t service)
 {
-    io_service_t spec_service;
-    kern_return_t kret;
     int r;
 
-    kret = IORegistryEntryGetChildEntry(service, kIOServicePlane, &spec_service);
-    if (kret != kIOReturnSuccess)
-        return 0;
-
-    if (IOObjectConformsTo(spec_service, "IOSerialDriverSync")) {
+    if (IOObjectConformsTo(service, "IOSerialBSDClient")) {
         dev->type = TYD_DEVICE_SERIAL;
         dev->vtable = &_tyd_posix_device_vtable;
 
-        r = find_serial_device_node(spec_service, &dev->path);
-    } else if (IOObjectConformsTo(spec_service, "IOHIDDevice")) {
+        r = find_serial_device_node(service, &dev->path);
+    } else if (IOObjectConformsTo(service, "IOHIDDevice")) {
         dev->type = TYD_DEVICE_HID;
         dev->vtable = &hid_device_vtable;
 
-        r = find_hid_device_node(spec_service, &dev->path);
+        r = find_hid_device_node(service, &dev->path);
     } else {
         r = 0;
     }
 
-    IOObjectRelease(spec_service);
     return r;
 }
 
@@ -255,7 +223,7 @@ struct usb_controller {
     ty_list_head list;
 
     uint8_t index;
-    uint64_t session;
+    io_string_t path;
 };
 
 static int build_location_string(uint8_t ports[], unsigned int depth, char **rpath)
@@ -289,60 +257,75 @@ static int build_location_string(uint8_t ports[], unsigned int depth, char **rpa
     return 0;
 }
 
-static int resolve_device_location(struct iokit_device *iodev, ty_list_head *controllers,
-                                   char **rlocation)
+static uint8_t find_controller(ty_list_head *controllers, io_service_t service)
 {
-    uint8_t ports[16];
-    unsigned int depth;
-    uint64_t session;
+    io_string_t path;
     kern_return_t kret;
-    int r;
 
-    r = get_ioregistry_value_number(iodev->service, CFSTR("PortNum"), kCFNumberSInt8Type, &ports[0]);
-    if (!r) {
-        ty_error(TY_ERROR_SYSTEM, "Missing property 'PortNum' for USB device");
+    kret = IORegistryEntryGetPath(service, new_usb_stack ? kIOServicePlane : kIOUSBPlane, path);
+    if (kret != kIOReturnSuccess)
         return 0;
-    }
-    depth = 1;
-
-    IOObjectRetain(iodev->service);
-
-    io_service_t parent = iodev->service;
-    while (depth < TY_COUNTOF(ports)) {
-        io_service_t tmp = parent;
-
-        kret = IORegistryEntryGetParentEntry(tmp, kIOUSBPlane, &parent);
-        IOObjectRelease(tmp);
-        if (kret != kIOReturnSuccess) {
-            ty_error(TY_ERROR_SYSTEM, "IORegistryEntryGetParentEntry() failed");
-            return 0;
-        }
-
-        r = get_ioregistry_value_number(parent, CFSTR("PortNum"), kCFNumberSInt8Type, &ports[depth]);
-        if (!r)
-            break;
-        depth++;
-    }
-    if (depth == TY_COUNTOF(ports)) {
-        ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
-        return 0;
-    }
-
-    r = get_ioregistry_value_number(parent, CFSTR("sessionID"), kCFNumberSInt64Type, &session);
-    IOObjectRelease(parent);
-    if (!r) {
-        ty_error(TY_ERROR_SYSTEM, "Missing property 'sessionID' for USB device");
-        return 0;
-    }
 
     ty_list_foreach(cur, controllers) {
         struct usb_controller *controller = ty_container_of(cur, struct usb_controller, list);
 
-        if (controller->session == session) {
-            ports[depth++] = controller->index;
-            break;
-        }
+        if (strcmp(controller->path, path) == 0)
+            return controller->index;
     }
+
+    return 0;
+}
+
+static io_service_t get_parent_and_release(io_service_t service, const io_name_t plane)
+{
+    io_service_t parent;
+    kern_return_t kret;
+
+    kret = IORegistryEntryGetParentEntry(service, plane, &parent);
+    IOObjectRelease(service);
+    if (kret != kIOReturnSuccess)
+        return 0;
+
+    return parent;
+}
+
+static int resolve_device_location(io_service_t service, ty_list_head *controllers, char **rlocation)
+{
+    uint8_t ports[16];
+    unsigned int depth = 0;
+    int r;
+
+    IOObjectRetain(service);
+
+    do {
+        if (new_usb_stack) {
+            depth += !!get_ioregistry_value_data(service, CFSTR("port"), &ports[depth], sizeof(ports[depth]));
+        } else {
+            depth += get_ioregistry_value_number(service, CFSTR("PortNum"), kCFNumberSInt8Type, &ports[depth]);
+        }
+
+        if (depth == TY_COUNTOF(ports)) {
+            ty_error(TY_ERROR_SYSTEM, "Excessive USB location depth");
+            r = 0;
+            goto cleanup;
+        }
+
+        service = get_parent_and_release(service, new_usb_stack ? kIOServicePlane : kIOUSBPlane);
+    } while (service && !IOObjectConformsTo(service, new_usb_stack ? "AppleUSBHostController" : "IOUSBRootHubDevice"));
+
+    if (!depth) {
+        ty_error(TY_ERROR_SYSTEM, "Failed to build USB location");
+        r = 0;
+        goto cleanup;
+    }
+
+    ports[depth] = find_controller(controllers, service);
+    if (!ports[depth]) {
+        ty_error(TY_ERROR_SYSTEM, "Cannot find matching USB Host controller");
+        r = 0;
+        goto cleanup;
+    }
+    depth++;
 
     for (unsigned int i = 0; i < depth / 2; i++) {
         uint8_t tmp = ports[i];
@@ -353,17 +336,42 @@ static int resolve_device_location(struct iokit_device *iodev, ty_list_head *con
 
     r = build_location_string(ports, depth, rlocation);
     if (r < 0)
-        return r;
+        goto cleanup;
 
-    return 1;
+    r = 1;
+cleanup:
+    if (service)
+        IOObjectRelease(service);
+    return r;
 }
 
-static int make_device_for_interface(tyd_monitor *monitor, struct iokit_device *iodev,
-                                     io_service_t iface_service)
+static io_service_t find_conforming_parent(io_service_t service, const char *cls)
 {
-    tyd_device *dev;
+    IOObjectRetain(service);
+    do {
+        service = get_parent_and_release(service, kIOServicePlane);
+    } while (service && !IOObjectConformsTo(service, cls));
+
+    return service;
+}
+
+static int process_darwin_device(tyd_monitor *monitor, io_service_t service)
+{
+    io_service_t dev_service = 0, iface_service = 0;
+    tyd_device *dev = NULL;
     uint64_t session;
     int r;
+
+    iface_service = find_conforming_parent(service, "IOUSBInterface");
+    if (!iface_service) {
+        r = 0;
+        goto cleanup;
+    }
+    dev_service = find_conforming_parent(iface_service, "IOUSBDevice");
+    if (!dev_service) {
+        r = 0;
+        goto cleanup;
+    }
 
     dev = calloc(1, sizeof(*dev));
     if (!dev) {
@@ -372,21 +380,19 @@ static int make_device_for_interface(tyd_monitor *monitor, struct iokit_device *
     }
     dev->refcount = 1;
 
-    r = get_ioregistry_value_number(iodev->service, CFSTR("sessionID"), kCFNumberSInt64Type, &session);
-    if (!r) {
-        ty_error(TY_ERROR_SYSTEM, "Missing property 'sessionID' for USB device interface");
-        goto cleanup;
-    }
+#define GET_PROPERTY_NUMBER(service, key, type, var) \
+        r = get_ioregistry_value_number(service, CFSTR(key), type, var); \
+        if (!r) { \
+            ty_error(TY_ERROR_SYSTEM, "Missing property '%s' for USB device", key); \
+            goto cleanup; \
+        }
 
-    r = get_ioregistry_value_number(iface_service, CFSTR("bInterfaceNumber"), kCFNumberSInt8Type,
-                                    &dev->iface);
-    if (!r) {
-        ty_error(TY_ERROR_SYSTEM, "Missing property 'bInterfaceNumber' for USB device interface");
-        goto cleanup;
-    }
+    GET_PROPERTY_NUMBER(dev_service, "sessionID", kCFNumberSInt64Type, &session);
+    GET_PROPERTY_NUMBER(dev_service, "idVendor", kCFNumberSInt64Type, &dev->vid);
+    GET_PROPERTY_NUMBER(dev_service, "idProduct", kCFNumberSInt64Type, &dev->pid);
+    GET_PROPERTY_NUMBER(iface_service, "bInterfaceNumber", kCFNumberSInt64Type, &dev->iface);
 
-    (*iodev->iface)->GetDeviceVendor(iodev->iface, &dev->vid);
-    (*iodev->iface)->GetDeviceProduct(iodev->iface, &dev->pid);
+#undef GET_PROPERTY_NUMBER
 
     r = asprintf(&dev->key, "%"PRIx64, session);
     if (r < 0) {
@@ -394,72 +400,25 @@ static int make_device_for_interface(tyd_monitor *monitor, struct iokit_device *
         goto cleanup;
     }
 
-    r = get_ioregistry_value_string(iodev->service, CFSTR("USB Serial Number"), &dev->serial);
+    r = get_ioregistry_value_string(dev_service, CFSTR("USB Serial Number"), &dev->serial);
     if (r < 0)
         goto cleanup;
 
-    r = resolve_device_location(iodev, &monitor->controllers, &dev->location);
+    r = resolve_device_location(dev_service, &monitor->controllers, &dev->location);
     if (r <= 0)
         goto cleanup;
 
-    r = find_device_node(dev, iface_service);
+    r = find_device_node(dev, service);
     if (r <= 0)
         goto cleanup;
 
     r = _tyd_monitor_add(monitor, dev);
 cleanup:
     tyd_device_unref(dev);
-    return r;
-}
-
-static int process_darwin_device(tyd_monitor *monitor, io_service_t device_service)
-{
-    io_name_t cls;
-    struct iokit_device iodev = {0};
-    IOUSBFindInterfaceRequest request;
-    io_iterator_t interfaces = 0;
-    io_service_t iface;
-    kern_return_t kret;
-    int r;
-
-    IOObjectGetClass(device_service, cls);
-    if (strcmp(cls, "IOUSBDevice") != 0)
-        return 0;
-
-    iodev.service = device_service;
-
-    r = get_object_interface(device_service, kIOUSBDeviceInterfaceID, (IUnknownVTbl **)&iodev.iface);
-    if (r <= 0)
-        goto cleanup;
-
-    request.bInterfaceClass    = kIOUSBFindInterfaceDontCare;
-    request.bInterfaceSubClass = kIOUSBFindInterfaceDontCare;
-    request.bInterfaceProtocol = kIOUSBFindInterfaceDontCare;
-    request.bAlternateSetting  = kIOUSBFindInterfaceDontCare;
-
-    kret = (*iodev.iface)->CreateInterfaceIterator(iodev.iface, &request, &interfaces);
-    if (kret != kIOReturnSuccess) {
-        ty_error(TY_ERROR_SYSTEM, "IOUSBDevice::CreateInterfaceIterator() failed");
-        r = 0;
-        goto cleanup;
-    }
-
-    while ((iface = IOIteratorNext(interfaces))) {
-        r = make_device_for_interface(monitor, &iodev, iface);
-        if (r < 0)
-            goto cleanup;
-
-        IOObjectRelease(iface);
-    }
-
-    r = 1;
-cleanup:
-    if (interfaces) {
-        clear_iterator(interfaces);
-        IOObjectRelease(interfaces);
-    }
-    if (iodev.iface)
-        (*iodev.iface)->Release(iodev.iface);
+    if (dev_service)
+        IOObjectRelease(dev_service);
+    if (iface_service)
+        IOObjectRelease(iface_service);
     return r;
 }
 
@@ -468,19 +427,16 @@ static int list_devices(tyd_monitor *monitor)
     io_service_t service;
     int r;
 
-    while ((service = IOIteratorNext(monitor->attach_it))) {
-        r = process_darwin_device(monitor, service);
-        if (r < 0)
-            goto error;
-
-        IOObjectRelease(service);
+    for (unsigned int i = 0; i < monitor->match_count; i++) {
+        while ((service = IOIteratorNext(monitor->attach_it[i]))) {
+            r = process_darwin_device(monitor, service);
+            IOObjectRelease(service);
+            if (r < 0)
+                return r;
+        }
     }
 
     return 0;
-
-error:
-    clear_iterator(monitor->attach_it);
-    return r;
 }
 
 static void darwin_devices_attached(void *ptr, io_iterator_t devices)
@@ -489,7 +445,6 @@ static void darwin_devices_attached(void *ptr, io_iterator_t devices)
     TY_UNUSED(devices);
 
     tyd_monitor *monitor = ptr;
-
     int r;
 
     r = list_devices(monitor);
@@ -525,6 +480,7 @@ static void darwin_devices_detached(void *ptr, io_iterator_t devices)
 static int add_controller(tyd_monitor *monitor, uint8_t i, io_service_t service)
 {
     struct usb_controller *controller;
+    kern_return_t kret;
     int r;
 
     controller = calloc(1, sizeof(*controller));
@@ -534,10 +490,11 @@ static int add_controller(tyd_monitor *monitor, uint8_t i, io_service_t service)
     }
 
     controller->index = i;
-    r = get_ioregistry_value_number(service, CFSTR("sessionID"), kCFNumberSInt64Type,
-                                    &controller->session);
-    if (!r)
+    kret = IORegistryEntryGetPath(service, new_usb_stack ? kIOServicePlane : kIOUSBPlane, controller->path);
+    if (kret != kIOReturnSuccess) {
+        r = 0;
         goto error;
+    }
 
     ty_list_add(&monitor->controllers, &controller->list);
 
@@ -555,7 +512,8 @@ static int list_controllers(tyd_monitor *monitor)
     kern_return_t kret;
     int r;
 
-    kret = IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("IOUSBRootHubDevice"),
+    kret = IOServiceGetMatchingServices(kIOMasterPortDefault,
+                                        IOServiceMatching(new_usb_stack ? "AppleUSBHostController" : "IOUSBRootHubDevice"),
                                         &controllers);
     if (kret != kIOReturnSuccess) {
         r = ty_error(TY_ERROR_SYSTEM, "IOServiceGetMatchingServices() failed");
@@ -565,9 +523,9 @@ static int list_controllers(tyd_monitor *monitor)
     uint8_t i = 0;
     while ((service = IOIteratorNext(controllers))) {
         r = add_controller(monitor, ++i, service);
+        IOObjectRelease(service);
         if (r < 0)
             goto cleanup;
-        IOObjectRelease(service);
     }
 
     r = 0;
@@ -604,23 +562,23 @@ int tyd_monitor_new(tyd_monitor **rmonitor)
         goto error;
     }
 
-    kret = IOServiceAddMatchingNotification(monitor->notify_port, kIOFirstMatchNotification,
-                                            IOServiceMatching(kIOUSBDeviceClassName),
-                                            darwin_devices_attached,
-                                            monitor, &monitor->attach_it);
-    if  (kret != kIOReturnSuccess) {
-        r = ty_error(TY_ERROR_SYSTEM, "IOServiceAddMatchingNotification() failed");
-        goto error;
-    }
+#define ADD_NOTIFICATION(type, f, cls) \
+        kret = IOServiceAddMatchingNotification(monitor->notify_port, (type), \
+                                                IOServiceMatching(cls), \
+                                                (f), \
+                                                monitor, &monitor->attach_it[monitor->match_count++]); \
+        if (kret != kIOReturnSuccess) { \
+            r = ty_error(TY_ERROR_SYSTEM, "IOServiceAddMatchingNotification('%s') failed", (cls)); \
+            goto error; \
+        }
 
-    kret = IOServiceAddMatchingNotification(monitor->notify_port, kIOTerminatedNotification,
-                                            IOServiceMatching(kIOUSBDeviceClassName),
-                                            darwin_devices_detached,
-                                            monitor, &monitor->detach_it);
-    if  (kret != kIOReturnSuccess) {
-        r = ty_error(TY_ERROR_SYSTEM, "IOServiceAddMatchingNotification() failed");
-        goto error;
-    }
+    ADD_NOTIFICATION(kIOFirstMatchNotification, darwin_devices_attached,
+                     new_usb_stack ? "IOUSBHostHIDDevice" : "IOHIDDevice");
+    ADD_NOTIFICATION(kIOFirstMatchNotification, darwin_devices_attached, "IOSerialBSDClient");
+    ADD_NOTIFICATION(kIOTerminatedNotification, darwin_devices_detached,
+                     new_usb_stack ? "IOUSBHostDevice" : kIOUSBDeviceClassName);
+
+#undef ADD_NOTIFICATION
 
     monitor->kqfd = kqueue();
     if (monitor->kqfd < 0) {
@@ -685,10 +643,16 @@ void tyd_monitor_free(tyd_monitor *monitor)
             mach_port_deallocate(mach_task_self(), monitor->port_set);
 
         // I don't know how these functions are supposed to treat NULL
-        if (monitor->attach_it)
-            IOObjectRelease(monitor->attach_it);
-        if (monitor->detach_it)
+        for (unsigned int i = 0; i < monitor->match_count; i++) {
+            if (monitor->attach_it[i]) {
+                clear_iterator(monitor->attach_it[i]);
+                IOObjectRelease(monitor->attach_it[i]);
+            }
+        }
+        if (monitor->detach_it) {
+            clear_iterator(monitor->detach_it);
             IOObjectRelease(monitor->detach_it);
+        }
         if (monitor->notify_port)
             IONotificationPortDestroy(monitor->notify_port);
     }
