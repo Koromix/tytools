@@ -182,8 +182,9 @@ static uint64_t parse_bootloader_serial(const char *s)
 {
     uint64_t serial;
 
+    // Teensy 2.0
     if (!s)
-        return 0;
+        return 12345;
 
     serial = strtoull(s, NULL, 16);
     if (serial < 10000000)
