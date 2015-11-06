@@ -518,7 +518,13 @@ static int get_device_comport(DEVINST inst, char **rnode)
     if (ret != ERROR_SUCCESS)
         return 0;
 
-    r = asprintf(&node, "\\\\.\\%s", buf);
+    /* If the string is stored without a terminating NUL, the buffer won't have it either.
+       Microsoft fixed it with RegGetValue(), but this function requires Vista. */
+    if (buf[--len])
+        buf[len + 1] = 0;
+
+    // You need the \\.\ prefix to open COM ports beyond COM9
+    r = asprintf(&node, "%s%s", len > 4 ? "\\\\.\\" : "", buf);
     if (r < 0)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
