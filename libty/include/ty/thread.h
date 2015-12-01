@@ -17,6 +17,15 @@
 
 TY_C_BEGIN
 
+typedef struct ty_thread {
+#ifdef _WIN32
+    HANDLE h;
+#else
+    pthread_t thread;
+    bool init;
+#endif
+} ty_thread;
+
 typedef enum ty_mutex_type {
     TY_MUTEX_FAST,
     TY_MUTEX_RECURSIVE
@@ -48,6 +57,12 @@ typedef struct ty_cond {
 #endif
     bool init;
 } ty_cond;
+
+typedef int ty_thread_func(void *udata);
+
+TY_PUBLIC int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata);
+TY_PUBLIC int ty_thread_join(ty_thread *thread);
+TY_PUBLIC void ty_thread_detach(ty_thread *thread);
 
 TY_PUBLIC int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type);
 TY_PUBLIC void ty_mutex_release(ty_mutex *mutex);

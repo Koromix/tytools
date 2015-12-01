@@ -10,6 +10,90 @@
 #include "ty/system.h"
 #include "ty/thread.h"
 
+static ty_mutex thread_mutex;
+static ty_cond thread_cond;
+
+TY_INIT()
+{
+    int r;
+
+    r = ty_mutex_init(&thread_mutex, TY_MUTEX_FAST);
+    assert(!r);
+    r = ty_cond_init(&thread_cond);
+    assert(!r);
+}
+
+TY_EXIT()
+{
+    ty_cond_release(&thread_cond);
+    ty_mutex_release(&thread_mutex);
+}
+
+struct thread_context {
+    ty_thread *thread;
+
+    ty_thread_func *f;
+    void *udata;
+};
+
+static void *thread_proc(void *udata)
+{
+    struct thread_context ctx = *(struct thread_context *)udata;
+
+    ty_mutex_lock(&thread_mutex);
+    ctx.thread->init = true;
+    ty_cond_broadcast(&thread_cond);
+    ty_mutex_unlock(&thread_mutex);
+
+    return (void *)(intptr_t)(*ctx.f)(ctx.udata);
+}
+
+int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata)
+{
+    struct thread_context ctx;
+    int r;
+
+    ctx.thread = thread;
+    ctx.f = f;
+    ctx.udata = udata;
+
+    thread->init = false;
+    r = pthread_create(&thread->thread, NULL, thread_proc, &ctx);
+    if (r < 0)
+        return ty_error(TY_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
+
+    ty_mutex_lock(&thread_mutex);
+    while (!thread->init)
+        ty_cond_wait(&thread_cond, &thread_mutex, -1);
+    ty_mutex_unlock(&thread_mutex);
+
+    return 0;
+}
+
+int ty_thread_join(ty_thread *thread)
+{
+    assert(thread->init);
+
+    void *retval;
+    int r;
+
+    r = pthread_join(thread->thread, &retval);
+    assert(!r);
+
+    thread->init = false;
+
+    return (int)(intptr_t)retval;
+}
+
+void ty_thread_detach(ty_thread *thread)
+{
+    if (!thread->init)
+        return;
+
+    pthread_detach(thread->thread);
+    thread->init = false;
+}
+
 int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
 {
     pthread_mutexattr_t attr;

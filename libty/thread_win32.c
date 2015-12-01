@@ -6,6 +6,7 @@
 
 #include "ty/common.h"
 #include "compat.h"
+#include <process.h>
 #include "ty/system.h"
 #include "ty/thread.h"
 
@@ -19,9 +20,15 @@ static SleepConditionVariableCS_func *SleepConditionVariableCS_;
 static WakeConditionVariable_func *WakeConditionVariable_;
 static WakeAllConditionVariable_func *WakeAllConditionVariable_;
 
+static ty_mutex thread_mutex;
+static ty_cond thread_cond;
+
 TY_INIT()
 {
-    HANDLE h = GetModuleHandle("kernel32.dll");
+    HANDLE h;
+    int r;
+
+    h = GetModuleHandle("kernel32.dll");
     assert(h);
 
     // Condition Variables appeared on Vista, emulate them on Windows XP
@@ -31,6 +38,95 @@ TY_INIT()
         WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(h, "WakeConditionVariable");
         WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(h, "WakeAllConditionVariable");
     }
+
+    r = ty_mutex_init(&thread_mutex, TY_MUTEX_FAST);
+    assert(!r);
+    r = ty_cond_init(&thread_cond);
+    assert(!r);
+}
+
+TY_EXIT()
+{
+    ty_cond_release(&thread_cond);
+    ty_mutex_release(&thread_mutex);
+}
+
+struct thread_context {
+    ty_thread *thread;
+
+    ty_thread_func *f;
+    void *udata;
+
+    HANDLE ev;
+};
+
+static unsigned int __stdcall thread_proc(void *udata)
+{
+    struct thread_context ctx = *(struct thread_context *)udata;
+    union { DWORD dw; int i; } code;
+
+    SetEvent(ctx.ev);
+
+    code.i = (*ctx.f)(ctx.udata);
+    return code.dw;
+}
+
+int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata)
+{
+    struct thread_context ctx;
+    int r;
+
+    ctx.thread = thread;
+    ctx.f = f;
+    ctx.udata = udata;
+
+    ctx.ev = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!ctx.ev) {
+        r = ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    thread->h = (HANDLE)_beginthreadex(NULL, 0, thread_proc, &ctx, 0, NULL);
+    if (!thread->h) {
+        r = ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
+        goto cleanup;
+    }
+
+    WaitForSingleObject(ctx.ev, INFINITE);
+
+    r = 0;
+cleanup:
+    if (ctx.ev)
+        CloseHandle(ctx.ev);
+    return r;
+}
+
+int ty_thread_join(ty_thread *thread)
+{
+    // FIXME: assert? ignore?
+    assert(thread->h);
+
+    union { DWORD dw; int i; } code;
+    DWORD ret;
+
+    ret = WaitForSingleObject(thread->h, INFINITE);
+    assert(ret == WAIT_OBJECT_0);
+
+    GetExitCodeThread(thread->h, &code.dw);
+
+    CloseHandle(thread->h);
+    thread->h = NULL;
+
+    return code.i;
+}
+
+void ty_thread_detach(ty_thread *thread)
+{
+    if (!thread->h)
+        return;
+
+    CloseHandle(thread->h);
+    thread->h = NULL;
 }
 
 int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
