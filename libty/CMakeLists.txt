@@ -8,6 +8,7 @@ set(TY_SOURCES include/ty.h
                include/ty/device.h
                include/ty/firmware.h
                include/ty/system.h
+               include/ty/task.h
                include/ty/thread.h
                include/ty/timer.h
 
@@ -24,7 +25,9 @@ set(TY_SOURCES include/ty.h
                firmware_priv.h
                htable.c
                list.h
-               system.c)
+               system.c
+               task.c
+               task_priv.h)
 if(LINUX)
     list(APPEND TY_SOURCES device_linux.c
                            device_posix.c

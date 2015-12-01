@@ -13,6 +13,7 @@
 #include "ty/device.h"
 #include "ty/firmware.h"
 #include "ty/system.h"
+#include "ty/task.h"
 #include "ty/thread.h"
 #include "ty/timer.h"
 #include "ty/version.h"

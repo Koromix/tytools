@@ -12,6 +12,7 @@ HEADERS += include/ty.h \
     include/ty/device.h \
     include/ty/firmware.h \
     include/ty/system.h \
+    include/ty/task.h \
     include/ty/thread.h \
     include/ty/timer.h \
     board_priv.h \
@@ -21,7 +22,8 @@ HEADERS += include/ty.h \
     device_posix_priv.h \
     firmware_priv.h \
     htable.h \
-    list.h
+    list.h \
+    task_priv.h
 
 SOURCES += board.c \
     board_teensy.c \
@@ -32,7 +34,8 @@ SOURCES += board.c \
     firmware_elf.c \
     firmware_ihex.c \
     htable.c \
-    system.c
+    system.c \
+    task.c
 
 win32 {
     LIBS += -lhid -lsetupapi
