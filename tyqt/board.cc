@@ -329,7 +329,7 @@ QFuture<QString> Board::upload(const QString &filename, bool reset_after)
             return false;
         unique_ptr<tyb_firmware, decltype(tyb_firmware_unref) *> firmware_ptr(firmware, tyb_firmware_unref);
 
-        r = tyb_board_upload(board_, firmware, 0, [](const tyb_board *board, const tyb_firmware *fw, size_t uploaded, void *udata) {
+        r = tyb_board_upload(board_, firmware, [](const tyb_board *board, const tyb_firmware *fw, size_t uploaded, void *udata) {
             TY_UNUSED(board);
 
             BoardTask *task = static_cast<BoardTask *>(udata);

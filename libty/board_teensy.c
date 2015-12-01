@@ -422,10 +422,8 @@ static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *dat
     return 0;
 }
 
-static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, int flags, tyb_board_upload_progress_func *pf, void *udata)
+static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata)
 {
-    TY_UNUSED(flags);
-
     if (iface->model->experimental && !ty_config_experimental)
         return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, use --experimental", iface->model->name);
 

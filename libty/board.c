@@ -15,6 +15,7 @@
 #include "htable.h"
 #include "list.h"
 #include "ty/system.h"
+#include "task_priv.h"
 #include "ty/timer.h"
 
 struct tyb_monitor {
@@ -51,6 +52,19 @@ struct callback {
     void *udata;
 };
 
+struct ty_task {
+    TY_TASK
+
+    tyb_board *board;
+
+    union {
+        struct {
+            tyb_firmware *firmware;
+            int flags;
+        } upload;
+    };
+};
+
 extern const tyb_board_family _tyb_teensy_family;
 
 const tyb_board_family *tyb_board_families[] = {
@@ -66,6 +80,7 @@ static const char *capability_names[] = {
 };
 
 #define DROP_BOARD_DELAY 7000
+#define MANUAL_REBOOT_DELAY 5000
 
 static void drop_callback(struct callback *callback)
 {
@@ -1065,7 +1080,7 @@ ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size)
     return r;
 }
 
-int tyb_board_upload(tyb_board *board, tyb_firmware *fw, int flags, tyb_board_upload_progress_func *pf, void *udata)
+int tyb_board_upload(tyb_board *board, tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata)
 {
     assert(board);
     assert(fw);
@@ -1078,44 +1093,14 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *fw, int flags, tyb_board_up
         r = ty_error(TY_ERROR_MODE, "Firmware upload is not available in this mode");
         goto cleanup;
     }
+    assert(board->model);
 
-    if (!model_is_valid(board->model)) {
-        r = ty_error(TY_ERROR_MODE, "Cannot upload to unknown board model");
-        goto cleanup;
-    }
-
-    // FIXME: detail error message (max allowed, ratio)
     if (tyb_firmware_get_size(fw) > board->model->code_size) {
         r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->name);
         goto cleanup;
     }
 
-    if (!(flags & TYB_BOARD_UPLOAD_NOCHECK)) {
-        bool compatible;
-        const tyb_board_model *guesses[8];
-        unsigned int count;
-
-        count = TY_COUNTOF(guesses);
-        compatible = tyb_board_model_test_firmware(board->model, fw, guesses, &count);
-
-        if (!compatible) {
-            if (count) {
-                char buf[256], *ptr;
-
-                ptr = buf;
-                for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
-                    ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
-                                    i ? (i + 1 < count ? ", ": " and ") : "", guesses[i]->name);
-
-                r = ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
-            } else {
-                r = ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
-            }
-            goto cleanup;
-        }
-    }
-
-    r = (*iface->vtable->upload)(iface, fw, flags, pf, udata);
+    r = (*iface->vtable->upload)(iface, fw, pf, udata);
 
 cleanup:
     tyb_board_interface_unref(iface);
@@ -1220,4 +1205,223 @@ void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struc
     assert(set);
 
     tyd_device_get_descriptors(iface->h, set, id);
+}
+
+static int new_task(tyb_board *board, const struct _ty_task_vtable *vtable, ty_task **rtask)
+{
+    ty_task *task = NULL;
+    int r;
+
+    r = _ty_task_new(sizeof(*task), vtable, &task);
+    if (r < 0)
+        return r;
+
+    task->board = tyb_board_ref(board);
+
+    *rtask = task;
+    return 0;
+}
+
+static void cleanup_task(ty_task *task)
+{
+    tyb_board_unref(task->board);
+}
+
+static int upload_progress_callback(const tyb_board *board, const tyb_firmware *fw,
+                                    size_t uploaded, void *udata)
+{
+    TY_UNUSED(board);
+    TY_UNUSED(udata);
+
+    ty_progress("Uploading", (unsigned int)uploaded, (unsigned int)tyb_firmware_get_size(fw));
+    return 0;
+}
+
+static int run_upload(ty_task *task)
+{
+    tyb_board *board = task->board;
+    tyb_firmware *fw = task->upload.firmware;
+    int flags = task->upload.flags, r;
+
+    ty_log(TY_LOG_INFO, "Firmware: %s", tyb_firmware_get_name(fw));
+
+    // Can't upload directly, should we try to reboot or wait?
+    if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_UPLOAD)) {
+        if (flags & TYB_UPLOAD_WAIT) {
+            ty_log(TY_LOG_INFO, "Waiting for device (press button to reboot)...");
+        } else {
+            ty_log(TY_LOG_INFO, "Triggering board reboot");
+            r = tyb_board_reboot(board);
+            if (r < 0)
+                return r;
+        }
+    }
+
+wait:
+    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD,
+                           flags & TYB_UPLOAD_WAIT ? -1 : MANUAL_REBOOT_DELAY);
+    if (r < 0)
+        return r;
+    if (!r) {
+        ty_log(TY_LOG_INFO, "Reboot didn't work, press button manually");
+        flags |= TYB_UPLOAD_WAIT;
+
+        goto wait;
+    }
+
+    if (!(flags & TYB_UPLOAD_NOCHECK)) {
+        bool compatible;
+        const tyb_board_model *guesses[8];
+        unsigned int count;
+
+        count = TY_COUNTOF(guesses);
+        compatible = tyb_board_model_test_firmware(board->model, fw, guesses, &count);
+
+        if (!compatible) {
+            if (count) {
+                char buf[256], *ptr;
+
+                ptr = buf;
+                for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
+                    ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s %s",
+                                    i + 1 < count ? ",": " and", guesses[i]->name);
+
+                return ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
+            } else {
+                return ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
+            }
+        }
+    }
+
+    if (tyb_firmware_get_size(fw) >= 1024) {
+        ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
+               (tyb_firmware_get_size(fw) + 1023) / 1024,
+               (double)tyb_firmware_get_size(fw) / (double)tyb_board_model_get_code_size(board->model) * 100.0);
+    } else {
+        ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
+               tyb_firmware_get_size(fw),
+               (double)tyb_firmware_get_size(fw) / (double)tyb_board_model_get_code_size(board->model) * 100.0);
+    }
+
+    r = tyb_board_upload(board, fw, upload_progress_callback, NULL);
+    if (r < 0)
+        return r;
+
+    if (!(flags & TYB_UPLOAD_NORESET)) {
+        ty_log(TY_LOG_INFO, "Sending reset command");
+        r = tyb_board_reset(board);
+        if (r < 0)
+            return r;
+    } else {
+        ty_log(TY_LOG_INFO, "Firmware uploaded, reset the board to use it");
+    }
+
+    return 0;
+}
+
+static void cleanup_upload(ty_task *task)
+{
+    tyb_firmware_unref(task->upload.firmware);
+    cleanup_task(task);
+}
+
+static const struct _ty_task_vtable upload_task_vtable = {
+    .run = run_upload,
+    .cleanup = cleanup_upload
+};
+
+int tyb_upload(tyb_board *board, tyb_firmware *firmware, int flags, ty_task **rtask)
+{
+    assert(board);
+    assert(firmware);
+    assert(rtask);
+
+    ty_task *task;
+    int r;
+
+    r = new_task(board, &upload_task_vtable, &task);
+    if (r < 0)
+        goto error;
+
+    task->upload.firmware = tyb_firmware_ref(firmware);
+    task->upload.flags = flags;
+
+    *rtask = task;
+    return 0;
+
+error:
+    ty_task_unref(task);
+    return r;
+}
+
+int tyb_upload2(tyb_board *board, const char *firmware_filename, const char *format_name,
+                int flags, ty_task **rtask)
+{
+    assert(board);
+    assert(firmware_filename);
+    assert(rtask);
+
+    tyb_firmware *firmware;
+    int r;
+
+    r = tyb_firmware_load(firmware_filename, format_name, &firmware);
+    if (r < 0)
+        return r;
+
+    r = tyb_upload(board, firmware, flags, rtask);
+    tyb_firmware_unref(firmware);
+
+    return r;
+}
+
+static int run_reset(ty_task *task)
+{
+    tyb_board *board = task->board;
+    int r;
+
+    if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET)) {
+        ty_log(TY_LOG_INFO, "Triggering board reboot");
+        r = tyb_board_reboot(board);
+        if (r < 0)
+            return r;
+
+        r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, MANUAL_REBOOT_DELAY);
+        if (r < 0)
+            return ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work");
+    }
+
+    ty_log(TY_LOG_INFO, "Sending reset command");
+    return tyb_board_reset(board);
+}
+
+static const struct _ty_task_vtable reset_task_vtable = {
+    .run = run_reset,
+    .cleanup = cleanup_task
+};
+
+int tyb_reset(tyb_board *board, ty_task **rtask)
+{
+    assert(board);
+    assert(rtask);
+
+    return new_task(board, &reset_task_vtable, rtask);
+}
+
+static int run_reboot(ty_task *task)
+{
+    ty_log(TY_LOG_INFO, "Triggering board reboot");
+    return tyb_board_reboot(task->board);
+}
+
+static const struct _ty_task_vtable reboot_task_vtable = {
+    .run = run_reboot,
+    .cleanup = cleanup_task
+};
+
+int tyb_reboot(tyb_board *board, ty_task **rtask)
+{
+    assert(board);
+    assert(rtask);
+
+    return new_task(board, &reboot_task_vtable, rtask);
 }

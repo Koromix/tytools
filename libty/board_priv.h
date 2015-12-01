@@ -20,9 +20,8 @@ struct _tyb_board_interface_vtable {
     ssize_t (*serial_read)(tyb_board_interface *iface, char *buf, size_t size, int timeout);
     ssize_t (*serial_write)(tyb_board_interface *iface, const char *buf, size_t size);
 
+    int (*upload)(tyb_board_interface *iface, struct tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata);
     int (*reset)(tyb_board_interface *iface);
-    int (*upload)(tyb_board_interface *iface, struct tyb_firmware *firmware, int flags, tyb_board_upload_progress_func *pf, void *udata);
-
     int (*reboot)(tyb_board_interface *iface);
 };
 

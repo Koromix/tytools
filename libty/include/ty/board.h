@@ -13,6 +13,7 @@
 TY_C_BEGIN
 
 struct tyb_firmware;
+struct ty_task;
 
 typedef struct tyb_monitor tyb_monitor;
 
@@ -50,7 +51,9 @@ typedef enum tyb_monitor_event {
 } tyb_monitor_event;
 
 enum {
-    TYB_BOARD_UPLOAD_NOCHECK = 1
+    TYB_UPLOAD_WAIT = 1,
+    TYB_UPLOAD_NORESET = 2,
+    TYB_UPLOAD_NOCHECK = 4
 };
 
 typedef int tyb_monitor_callback_func(tyb_board *board, tyb_monitor_event event, void *udata);
@@ -60,7 +63,7 @@ typedef int tyb_board_family_list_models_func(const tyb_board_model *model, void
 
 typedef int tyb_board_list_interfaces_func(tyb_board_interface *iface, void *udata);
 
-typedef int tyb_board_upload_progress_func(const tyb_board *board, const struct tyb_firmware *f, size_t uploaded, void *udata);
+typedef int tyb_board_upload_progress_func(const tyb_board *board, const struct tyb_firmware *fw, size_t uploaded, void *udata);
 
 TY_PUBLIC extern const tyb_board_family *tyb_board_families[];
 
@@ -135,9 +138,8 @@ TY_PUBLIC int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, i
 TY_PUBLIC ssize_t tyb_board_serial_read(tyb_board *board, char *buf, size_t size, int timeout);
 TY_PUBLIC ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size);
 
-TY_PUBLIC int tyb_board_upload(tyb_board *board, struct tyb_firmware *f, int flags, tyb_board_upload_progress_func *pf, void *udata);
+TY_PUBLIC int tyb_board_upload(tyb_board *board, struct tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata);
 TY_PUBLIC int tyb_board_reset(tyb_board *board);
-
 TY_PUBLIC int tyb_board_reboot(tyb_board *board);
 
 TY_PUBLIC tyb_board_interface *tyb_board_interface_ref(tyb_board_interface *iface);
@@ -152,6 +154,14 @@ TY_PUBLIC const char *tyb_board_interface_get_path(const tyb_board_interface *if
 TY_PUBLIC tyd_device *tyb_board_interface_get_device(const tyb_board_interface *iface);
 TY_PUBLIC tyd_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface);
 TY_PUBLIC void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struct ty_descriptor_set *set, int id);
+
+TY_PUBLIC int tyb_upload(tyb_board *board, struct tyb_firmware *fw, int flags,
+                         struct ty_task **rtask);
+TY_PUBLIC int tyb_upload2(tyb_board *board, const char *firmware_filename, const char *format_name,
+                          int flags, struct ty_task **rtask);
+
+TY_PUBLIC int tyb_reset(tyb_board *board, struct ty_task **rtask);
+TY_PUBLIC int tyb_reboot(tyb_board *board, struct ty_task **rtask);
 
 TY_C_END
 

@@ -31,7 +31,8 @@ void print_reset_usage(FILE *f)
 
 int reset(int argc, char *argv[])
 {
-    tyb_board *board;
+    tyb_board *board = NULL;
+    ty_task *task = NULL;
     int r;
 
     int c;
@@ -56,34 +57,20 @@ int reset(int argc, char *argv[])
 
     r = get_board(&board);
     if (r < 0)
-        return r;
+        goto cleanup;
 
-    if ((bootloader || !tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET))
-            && tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_REBOOT)) {
-        printf("Triggering board reboot\n");
-        r = tyb_board_reboot(board);
-        if (r < 0)
-            goto cleanup;
-
-        r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, -1);
-        if (r < 0)
-            goto cleanup;
+    if (bootloader) {
+        r = tyb_reboot(board, &task);
+    } else {
+        r = tyb_reset(board, &task);
     }
+    if (r < 0)
+        goto cleanup;
 
-    if (!bootloader) {
-        if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET)) {
-            r = ty_error(TY_ERROR_MODE, "No way to trigger reset for this board");
-            goto cleanup;
-        }
+    r = ty_task_join(task);
 
-        printf("Sending reset command\n");
-        r = tyb_board_reset(board);
-        if (r < 0)
-            goto cleanup;
-    }
-
-    r = 0;
 cleanup:
+    ty_task_unref(task);
     tyb_board_unref(board);
     return r;
 
