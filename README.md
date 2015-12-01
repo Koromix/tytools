@@ -86,13 +86,14 @@ for ty. That's necessary because across reboots and resets, Teensies look comple
 the host.
 
 When you want to target a specific device, use `tyc <command> --board "[<serial>][@<location>]"`.
-_serial_ is the USB serial number, _location_ is specific to ty and can be found using `tyc list`.
-Either can be omitted.
+_serial_ is the USB serial number, _location_ can be a virtual path computed by ty (see `tyc list`)
+or an OS-specific device path (e.g. /dev/hidraw1 or COM1). Either can be omitted.
 
 Tag filter       | Result
 ---------------- | ---------------------------------------------------------------------------
 714230           | Select board with serial number 714230
 @usb-1-2-2       | Select the board plugged in USB port 'usb-1-2-2'
+@COM1            | Select the board linked to the OS-specific device 'COM1'
 714230@usb-1-2-2 | Select the board plugged in 'usb-1-2-2' only if its serial number is 714230
 
 You can learn about the various commands using `tyc help`. Get specific help for them using
