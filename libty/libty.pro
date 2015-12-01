@@ -19,6 +19,7 @@ HEADERS += include/ty.h \
     config.h \
     device_priv.h \
     device_posix_priv.h \
+    firmware_priv.h \
     htable.h \
     list.h
 

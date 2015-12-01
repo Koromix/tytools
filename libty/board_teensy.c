@@ -272,22 +272,27 @@ static int teensy_open_interface(tyb_board_interface *iface)
 }
 
 static unsigned int teensy_guess_models(const tyb_firmware *fw,
-                                        const tyb_board_model **rguesses, unsigned int size)
+                                        const tyb_board_model **rguesses, unsigned int max)
 {
+    const uint8_t *image;
+    size_t size;
     unsigned int count = 0;
 
-    if (fw->size < ty_member_sizeof(tyb_board_model, signature))
+    image = tyb_firmware_get_image(fw);
+    size = tyb_firmware_get_size(fw);
+
+    if (size < ty_member_sizeof(tyb_board_model, signature))
         return NULL;
 
     /* Naive search with each board's signature, not pretty but unless
        thousands of models appear this is good enough. */
-    for (size_t i = 0; i < fw->size - ty_member_sizeof(tyb_board_model, signature); i++) {
+    for (size_t i = 0; i < size - ty_member_sizeof(tyb_board_model, signature); i++) {
         for (const tyb_board_model **cur = teensy_models; *cur; cur++) {
             const tyb_board_model *model = *cur;
 
-            if (memcmp(fw->image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0) {
+            if (memcmp(image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0) {
                 rguesses[count++] = model;
-                if (count == size)
+                if (count == max)
                     return count;
             }
         }
@@ -358,7 +363,7 @@ static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, 
     __builtin_unreachable();
 }
 
-static int halfkay_send(tyb_board_interface *iface, size_t addr, void *data, size_t size, unsigned int timeout)
+static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *data, size_t size, unsigned int timeout)
 {
     uint8_t buf[2048] = {0};
     uint64_t start;
@@ -417,26 +422,31 @@ static int halfkay_send(tyb_board_interface *iface, size_t addr, void *data, siz
     return 0;
 }
 
-static int teensy_upload(tyb_board_interface *iface, tyb_firmware *f, int flags, tyb_board_upload_progress_func *pf, void *udata)
+static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, int flags, tyb_board_upload_progress_func *pf, void *udata)
 {
     TY_UNUSED(flags);
 
     if (iface->model->experimental && !ty_config_experimental)
         return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, use --experimental", iface->model->name);
 
+    const uint8_t *image;
+    size_t size;
     int r;
 
+    image = tyb_firmware_get_image(fw);
+    size = tyb_firmware_get_size(fw);
+
     if (pf) {
-        r = (*pf)(iface->board, f, 0, udata);
+        r = (*pf)(iface->board, fw, 0, udata);
         if (r)
             return r;
     }
 
-    for (size_t addr = 0; addr < f->size; addr += iface->model->block_size) {
-        size_t size = TY_MIN(iface->model->block_size, (size_t)(f->size - addr));
+    for (size_t addr = 0; addr < size; addr += iface->model->block_size) {
+        size_t block_size = TY_MIN(iface->model->block_size, (size_t)(size - addr));
 
         // Writing to the first block triggers flash erasure hence the longer timeout
-        r = halfkay_send(iface, addr, f->image + addr, size, addr ? 300 : 3000);
+        r = halfkay_send(iface, addr, image + addr, block_size, addr ? 300 : 3000);
         if (r < 0)
             return r;
 
@@ -445,7 +455,7 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *f, int flags,
         ty_delay(addr ? 10 : 100);
 
         if (pf) {
-            r = (*pf)(iface->board, f, addr + size, udata);
+            r = (*pf)(iface->board, fw, addr + block_size, udata);
             if (r)
                 return r;
         }

@@ -83,7 +83,7 @@ struct tyb_board_family {
 
     int (*open_interface)(tyb_board_interface *iface);
     unsigned int (*guess_models)(const struct tyb_firmware *fw,
-                                 const tyb_board_model **rmodels, unsigned int size);
+                                 const tyb_board_model **rmodels, unsigned int max);
 };
 
 #define TYB_BOARD_MODEL \

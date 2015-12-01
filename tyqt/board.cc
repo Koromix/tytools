@@ -327,13 +327,13 @@ QFuture<QString> Board::upload(const QString &filename, bool reset_after)
         int r = tyb_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
         if (r < 0)
             return false;
-        unique_ptr<tyb_firmware, decltype(tyb_firmware_free) *> firmware_ptr(firmware, tyb_firmware_free);
+        unique_ptr<tyb_firmware, decltype(tyb_firmware_unref) *> firmware_ptr(firmware, tyb_firmware_unref);
 
-        r = tyb_board_upload(board_, firmware, 0, [](const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata) {
+        r = tyb_board_upload(board_, firmware, 0, [](const tyb_board *board, const tyb_firmware *fw, size_t uploaded, void *udata) {
             TY_UNUSED(board);
 
             BoardTask *task = static_cast<BoardTask *>(udata);
-            task->setProgress(uploaded, f->size);
+            task->setProgress(uploaded, tyb_firmware_get_size(fw));
 
             return 0;
         }, &task);

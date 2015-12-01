@@ -6,10 +6,10 @@
 
 #include "ty/common.h"
 #include "compat.h"
-#include "ty/firmware.h"
+#include "firmware_priv.h"
 
 struct parser_context {
-    tyb_firmware *f;
+    tyb_firmware *firmware;
 
     uint32_t base_offset;
 
@@ -72,16 +72,16 @@ static int parse_line(struct parser_context *ctx, const char *line)
     switch (type) {
     case 0: // data record
         address += ctx->base_offset;
-        if (address + length > ctx->f->size) {
-            ctx->f->size = address + length;
+        if (address + length > ctx->firmware->size) {
+            ctx->firmware->size = address + length;
 
-            if (ctx->f->size > tyb_firmware_max_size)
-                return ty_error(TY_ERROR_RANGE, "Firmware too big (max %zu bytes)",
-                                tyb_firmware_max_size);
+            if (ctx->firmware->size > TYB_FIRMWARE_MAX_SIZE)
+                return ty_error(TY_ERROR_RANGE, "Firmware too big (max %u bytes)",
+                                TYB_FIRMWARE_MAX_SIZE);
         }
 
         for (unsigned int i = 0; i < length; i++)
-            ctx->f->image[address + i] = parse_hex_byte(ctx, true);
+            ctx->firmware->image[address + i] = parse_hex_byte(ctx, true);
         break;
 
     case 1: // EOF record
@@ -122,9 +122,9 @@ static int parse_line(struct parser_context *ctx, const char *line)
     return 1;
 }
 
-int _tyb_firmware_load_ihex(const char *filename, tyb_firmware **rfirmware)
+int _tyb_firmware_load_ihex(tyb_firmware *firmware, const char *filename)
 {
-    assert(rfirmware);
+    assert(firmware);
     assert(filename);
 
     struct parser_context ctx = {0};
@@ -132,11 +132,7 @@ int _tyb_firmware_load_ihex(const char *filename, tyb_firmware **rfirmware)
     char buf[1024];
     int r;
 
-    ctx.f = malloc(sizeof(tyb_firmware) + tyb_firmware_max_size);
-    if (!ctx.f)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-    memset(ctx.f, 0, sizeof(*ctx.f));
-    memset(ctx.f->image, 0xFF, tyb_firmware_max_size);
+    ctx.firmware = firmware;
 
 #ifdef _WIN32
     fp = fopen(filename, "r");
@@ -181,13 +177,9 @@ int _tyb_firmware_load_ihex(const char *filename, tyb_firmware **rfirmware)
             break;
     }
 
-    *rfirmware = ctx.f;
-    ctx.f = NULL;
-
     r = 0;
 cleanup:
     if (fp)
         fclose(fp);
-    free(ctx.f);
     return r;
 }

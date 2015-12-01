@@ -67,7 +67,7 @@ static int reload_firmware(tyb_firmware **rfirmware, const char *filename, uint6
             return r;
 
         if (*rfirmware)
-            tyb_firmware_free(*rfirmware);
+            tyb_firmware_unref(*rfirmware);
         *rfirmware = firmware;
         *rmtime = info.mtime;
 
@@ -77,12 +77,12 @@ static int reload_firmware(tyb_firmware **rfirmware, const char *filename, uint6
     return 0;
 }
 
-static int progress_callback(const tyb_board *board, const tyb_firmware *f, size_t uploaded, void *udata)
+static int progress_callback(const tyb_board *board, const tyb_firmware *fw, size_t uploaded, void *udata)
 {
     TY_UNUSED(board);
     TY_UNUSED(udata);
 
-    printf("\rUploading firmware... %zu%%", uploaded * 100 / f->size);
+    printf("\rUploading firmware... %zu%%", uploaded * 100 / tyb_firmware_get_size(fw));
     fflush(stdout);
 
     return 0;
@@ -91,7 +91,7 @@ static int progress_callback(const tyb_board *board, const tyb_firmware *f, size
 int upload(int argc, char *argv[])
 {
     tyb_board *board = NULL;
-    tyb_firmware *firmware = NULL;
+    tyb_firmware *fw = NULL;
     const tyb_board_model *model;
     uint64_t mtime = 0;
     int r;
@@ -132,7 +132,7 @@ int upload(int argc, char *argv[])
     image_filename = argv[optind++];
 
     // Test the file before doing anything else
-    r = reload_firmware(&firmware, image_filename, &mtime);
+    r = reload_firmware(&fw, image_filename, &mtime);
     if (r < 0)
         return r;
 
@@ -165,7 +165,7 @@ wait:
     }
 
     // Maybe it changed?
-    r = reload_firmware(&firmware, image_filename, &mtime);
+    r = reload_firmware(&fw, image_filename, &mtime);
     if (r < 0)
         goto cleanup;
 
@@ -178,17 +178,17 @@ wait:
     printf("Model: %s\n", tyb_board_model_get_name(model));
     printf("Firmware: %s\n", image_filename);
 
-    printf("Usage: %.1f%% (%zu bytes)\n", (double)firmware->size / (double)tyb_board_model_get_code_size(model) * 100.0,
-           firmware->size);
+    printf("Usage: %.1f%% (%zu bytes)\n", (double)tyb_firmware_get_size(fw) / (double)tyb_board_model_get_code_size(model) * 100.0,
+           tyb_firmware_get_size(fw));
 
     if (show_progress) {
-        r = tyb_board_upload(board, firmware, 0, progress_callback, NULL);
+        r = tyb_board_upload(board, fw, 0, progress_callback, NULL);
         if (r < 0)
             goto cleanup;
         printf("\n");
     } else {
         printf("Uploading firmware...\n");
-        r = tyb_board_upload(board, firmware, 0, NULL, NULL);
+        r = tyb_board_upload(board, fw, 0, NULL, NULL);
         if (r < 0)
             goto cleanup;
     }
@@ -204,7 +204,7 @@ wait:
 
     r = 0;
 cleanup:
-    tyb_firmware_free(firmware);
+    tyb_firmware_unref(fw);
     tyb_board_unref(board);
     return r;
 

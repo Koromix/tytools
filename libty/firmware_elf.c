@@ -6,7 +6,7 @@
 
 #include "ty/common.h"
 #include "compat.h"
-#include "ty/firmware.h"
+#include "firmware_priv.h"
 
 #define EI_NIDENT 16
 
@@ -53,7 +53,7 @@ typedef struct Elf32_Phdr {
 #define PT_LOAD 1
 
 struct loader_context {
-    tyb_firmware *f;
+    tyb_firmware *firmware;
 
     FILE *fp;
     const char *filename;
@@ -145,34 +145,30 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     if (!phdr.p_filesz)
         return 0;
 
-    if (phdr.p_paddr + phdr.p_filesz > ctx->f->size) {
-        ctx->f->size = phdr.p_paddr + phdr.p_filesz;
+    if (phdr.p_paddr + phdr.p_filesz > ctx->firmware->size) {
+        ctx->firmware->size = phdr.p_paddr + phdr.p_filesz;
 
-        if (ctx->f->size > tyb_firmware_max_size)
-            return ty_error(TY_ERROR_RANGE, "Firmware too big (max %zu bytes) in '%s'",
-                            tyb_firmware_max_size, ctx->filename);
+        if (ctx->firmware->size > TYB_FIRMWARE_MAX_SIZE)
+            return ty_error(TY_ERROR_RANGE, "Firmware too big (max %u bytes) in '%s'",
+                            TYB_FIRMWARE_MAX_SIZE, ctx->filename);
     }
 
-    r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, ctx->f->image + phdr.p_paddr);
+    r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, ctx->firmware->image + phdr.p_paddr);
     if (r < 0)
         return r;
 
     return 1;
 }
 
-int _tyb_firmware_load_elf(const char *filename, tyb_firmware **rfirmware)
+int _tyb_firmware_load_elf(tyb_firmware *firmware, const char *filename)
 {
-    assert(rfirmware);
     assert(filename);
+    assert(firmware);
 
     struct loader_context ctx = {0};
     int r;
 
-    ctx.f = malloc(sizeof(tyb_firmware) + tyb_firmware_max_size);
-    if (!ctx.f)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-    memset(ctx.f, 0, sizeof(*ctx.f));
-    memset(ctx.f->image, 0xFF, tyb_firmware_max_size);
+    ctx.firmware = firmware;
 
 #ifdef _WIN32
     ctx.fp = fopen(filename, "rb");
@@ -241,13 +237,9 @@ int _tyb_firmware_load_elf(const char *filename, tyb_firmware **rfirmware)
             goto cleanup;
     }
 
-    *rfirmware = ctx.f;
-    ctx.f = NULL;
-
     r = 0;
 cleanup:
     if (ctx.fp)
         fclose(ctx.fp);
-    free(ctx.f);
     return r;
 }

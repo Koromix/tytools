@@ -1065,10 +1065,10 @@ ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size)
     return r;
 }
 
-int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upload_progress_func *pf, void *udata)
+int tyb_board_upload(tyb_board *board, tyb_firmware *fw, int flags, tyb_board_upload_progress_func *pf, void *udata)
 {
     assert(board);
-    assert(f);
+    assert(fw);
 
     tyb_board_interface *iface;
     int r;
@@ -1085,7 +1085,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
     }
 
     // FIXME: detail error message (max allowed, ratio)
-    if (f->size > board->model->code_size) {
+    if (tyb_firmware_get_size(fw) > board->model->code_size) {
         r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->name);
         goto cleanup;
     }
@@ -1096,7 +1096,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
         unsigned int count;
 
         count = TY_COUNTOF(guesses);
-        compatible = tyb_board_model_test_firmware(board->model, f, guesses, &count);
+        compatible = tyb_board_model_test_firmware(board->model, fw, guesses, &count);
 
         if (!compatible) {
             if (count) {
@@ -1115,7 +1115,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *f, int flags, tyb_board_upl
         }
     }
 
-    r = (*iface->vtable->upload)(iface, f, flags, pf, udata);
+    r = (*iface->vtable->upload)(iface, fw, flags, pf, udata);
 
 cleanup:
     tyb_board_interface_unref(iface);
