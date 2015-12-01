@@ -28,6 +28,9 @@ TY_C_BEGIN
     \
     ty_pool *pool; \
     \
+    ty_message_func *callback; \
+    void *callback_udata; \
+    \
     ty_task_cleanup_func *cleanup; \
     void *cleanup_udata;
 

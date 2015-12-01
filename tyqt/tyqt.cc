@@ -26,11 +26,15 @@ TyQt::TyQt(int &argc, char *argv[])
     setupOptionParser(parser_);
 
     // This can be triggered from multiple threads, but Qt can queue signals appropriately
-    ty_error_redirect([](ty_err err, const char *msg, void *udata) {
-        TY_UNUSED(err);
+    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
+        TY_UNUSED(task);
         TY_UNUSED(udata);
 
-        tyQt->reportError(msg);
+        if (type == TY_MESSAGE_LOG) {
+            auto msg = static_cast<const ty_log_message *>(data);
+            if (msg->level >= TY_LOG_WARNING)
+                tyQt->reportError(msg->msg);
+        }
     }, nullptr);
 
     action_visible_ = new QAction(tr("&Visible"), this);
@@ -62,7 +66,7 @@ TyQt::~TyQt()
         delete win;
     }
 
-    ty_error_redirect(nullptr, nullptr);
+    ty_message_redirect(ty_message_default_handler, nullptr);
 }
 
 int TyQt::exec()

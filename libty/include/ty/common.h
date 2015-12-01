@@ -73,6 +73,8 @@
 
 TY_C_BEGIN
 
+struct ty_task;
+
 typedef enum ty_err {
     TY_ERROR_MEMORY        = -1,
     TY_ERROR_PARAM         = -2,
@@ -91,15 +93,48 @@ typedef enum ty_err {
     TY_ERROR_OTHER         = -15
 } ty_err;
 
-typedef void ty_error_func(ty_err err, const char *msg, void *udata);
+typedef enum ty_message_type {
+    TY_MESSAGE_LOG,
+
+    TY_MESSAGE_PROGRESS,
+    TY_MESSAGE_STATUS
+} ty_message_type;
+
+typedef enum ty_log_level {
+    TY_LOG_DEBUG = -1,
+    TY_LOG_INFO,
+    TY_LOG_WARNING,
+    TY_LOG_ERROR,
+} ty_log_level;
+
+typedef struct ty_log_message {
+    ty_log_level level;
+    const char *msg;
+} ty_log_message;
+
+typedef struct ty_progress_message {
+    const char *action;
+
+    unsigned int value;
+    unsigned int max;
+} ty_progress_message;
+
+typedef void ty_message_func(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 
 TY_PUBLIC extern bool ty_config_experimental;
 
-TY_PUBLIC void ty_error_redirect(ty_error_func *f, void *udata);
+TY_PUBLIC void ty_message_default_handler(struct ty_task *task, ty_message_type type, const void *data, void *udata);
+TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
+
 TY_PUBLIC void ty_error_mask(ty_err err);
 TY_PUBLIC void ty_error_unmask(void);
 
+TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
+
+TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
+
+void _ty_message(struct ty_task *task, ty_message_type type, void *data);
 
 TY_C_END
 

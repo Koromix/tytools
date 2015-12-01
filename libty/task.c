@@ -197,6 +197,15 @@ void ty_task_set_cleanup(ty_task *task, ty_task_cleanup_func *f, void *udata)
     task->cleanup_udata = udata;
 }
 
+void ty_task_set_callback(ty_task *task, ty_message_func *f, void *udata)
+{
+    assert(task);
+    assert(task->status == TY_TASK_STATUS_READY);
+
+    task->callback = f;
+    task->callback_udata = udata;
+}
+
 void ty_task_set_pool(ty_task *task, ty_pool *pool)
 {
     assert(task);
@@ -207,11 +216,18 @@ void ty_task_set_pool(ty_task *task, ty_pool *pool)
 
 static void change_status(ty_task *task, ty_task_status status)
 {
+    ty_status_message msg;
+
     task->status = status;
 
     ty_mutex_lock(&task->mutex);
     ty_cond_broadcast(&task->cond);
     ty_mutex_unlock(&task->mutex);
+
+    msg.task = task;
+    msg.status = status;
+
+    _ty_message(task, TY_MESSAGE_STATUS, &msg);
 }
 
 static void run_task(ty_task *task)

@@ -22,6 +22,11 @@ typedef enum ty_task_status {
     TY_TASK_STATUS_FINISHED
 } ty_task_status;
 
+typedef struct ty_status_message {
+    ty_task *task;
+    ty_task_status status;
+} ty_status_message;
+
 typedef void ty_task_cleanup_func(ty_task *task, void *udata);
 
 TY_PUBLIC int ty_pool_new(ty_pool **rpool);
@@ -33,6 +38,7 @@ TY_PUBLIC ty_task *ty_task_ref(ty_task *task);
 TY_PUBLIC void ty_task_unref(ty_task *task);
 
 TY_PUBLIC void ty_task_set_cleanup(ty_task *task, ty_task_cleanup_func *f, void *udata);
+TY_PUBLIC void ty_task_set_callback(ty_task *task, ty_message_func *f, void *udata);
 
 TY_PUBLIC void ty_task_set_pool(ty_task *task, ty_pool *pool);
 

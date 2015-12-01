@@ -7,12 +7,16 @@
 #include "ty/common.h"
 #include "compat.h"
 #include <stdarg.h>
+#include "ty/system.h"
+#include "task_priv.h"
 
-static void default_handler(ty_err err, const char *msg, void *udata);
+struct ty_task {
+    TY_TASK
+};
 
 bool ty_config_experimental = false;
 
-static ty_error_func *handler = default_handler;
+static ty_message_func *handler = ty_message_default_handler;
 static void *handler_udata = NULL;
 
 static ty_err mask[32];
@@ -25,7 +29,96 @@ TY_INIT()
         ty_config_experimental = true;
 }
 
-static const char *generic_message(int err)
+static void print_log(const void *data)
+{
+    const ty_log_message *msg = data;
+    fprintf(msg->level == TY_LOG_INFO ? stdout : stderr, "%s\n", msg->msg);
+}
+
+static void print_progress(const void *data)
+{
+    const ty_progress_message *msg = data;
+
+    if (ty_terminal_available(TY_DESCRIPTOR_STDOUT)) {
+        if (msg->value)
+            printf("\r");
+        printf("%s... %u%%", msg->action, 100 * msg->value / msg->max);
+        if (msg->value == msg->max)
+            printf("\n");
+
+        fflush(stdout);
+    } else if (!msg->value) {
+        printf("%s...\n", msg->action);
+    }
+}
+
+void ty_message_default_handler(ty_task *task, ty_message_type type, const void *data, void *udata)
+{
+    TY_UNUSED(task);
+    TY_UNUSED(udata);
+
+    switch (type) {
+    case TY_MESSAGE_LOG:
+        print_log(data);
+        break;
+    case TY_MESSAGE_PROGRESS:
+        print_progress(data);
+        break;
+
+    default:
+        break;
+    }
+}
+
+void ty_message_redirect(ty_message_func *f, void *udata)
+{
+    assert(f);
+    assert(f != ty_message_default_handler || !udata);
+
+    handler = f;
+    handler_udata = udata;
+}
+
+void ty_error_mask(ty_err err)
+{
+    assert(mask_count < TY_COUNTOF(mask));
+
+    mask[mask_count++] = err;
+}
+
+void ty_error_unmask(void)
+{
+    assert(mask_count);
+
+    mask_count--;
+}
+
+TY_PRINTF_FORMAT(2, 0)
+static void logv(ty_log_level level, const char *fmt, va_list ap)
+{
+    char buf[256];
+    ty_log_message msg;
+
+    vsnprintf(buf, sizeof(buf), fmt, ap);
+
+    msg.level = level;
+    msg.msg = buf;
+
+    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+}
+
+void ty_log(ty_log_level level, const char *fmt, ...)
+{
+    assert(fmt);
+
+    va_list ap;
+
+    va_start(ap, fmt);
+    logv(level, fmt, ap);
+    va_end(ap);
+}
+
+static const char *generic_error(int err)
 {
     if (err >= 0)
         return "Success";
@@ -67,62 +160,45 @@ static const char *generic_message(int err)
     return "Unknown error";
 }
 
-static void default_handler(ty_err err, const char *msg, void *udata)
-{
-    TY_UNUSED(err);
-    TY_UNUSED(udata);
-
-    fputs(msg, stderr);
-    fputc('\n', stderr);
-}
-
-void ty_error_redirect(ty_error_func *f, void *udata)
-{
-    if (f) {
-        handler = f;
-        handler_udata = udata;
-    } else {
-        handler = default_handler;
-        handler_udata = NULL;
-    }
-}
-
-void ty_error_mask(ty_err err)
-{
-    assert(mask_count < TY_COUNTOF(mask));
-
-    mask[mask_count++] = err;
-}
-
-void ty_error_unmask(void)
-{
-    assert(mask_count);
-
-    mask_count--;
-}
-
 int ty_error(ty_err err, const char *fmt, ...)
 {
     va_list ap;
-    char buf[512];
-
-    va_start(ap, fmt);
 
     for (unsigned int i = 0; i < mask_count; i++) {
         if (mask[i] == err)
-            goto cleanup;
+            return err;
     }
 
-    if (fmt) {
-        vsnprintf(buf, sizeof(buf), fmt, ap);
-    } else {
-        strncpy(buf, generic_message(err), sizeof(buf));
-        buf[sizeof(buf) - 1] = 0;
-    }
+    if (!fmt)
+        fmt = generic_error(err);
 
-    (*handler)(err, buf, handler_udata);
-
-cleanup:
+    va_start(ap, fmt);
+    logv(TY_LOG_ERROR, fmt, ap);
     va_end(ap);
+
     return err;
+}
+
+void ty_progress(const char *action, unsigned int value, unsigned int max)
+{
+    assert(value <= max);
+    assert(max);
+
+    ty_progress_message msg;
+
+    msg.action = action ?: "Processing";
+    msg.value = value;
+    msg.max = max;
+
+    _ty_message(NULL, TY_MESSAGE_PROGRESS, &msg);
+}
+
+void _ty_message(ty_task *task, ty_message_type type, void *data)
+{
+    if (!task)
+        task = ty_task_current();
+
+    (*handler)(task, type, data, handler_udata);
+    if (task && task->callback)
+        (*task->callback)(task, type, data, task->callback_udata);
 }
