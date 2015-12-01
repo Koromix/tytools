@@ -91,59 +91,6 @@ void ty_delay(unsigned int ms)
     Sleep(ms);
 }
 
-static uint64_t filetime_to_unix_time(FILETIME *ft)
-{
-    uint64_t time = ((uint64_t)ft->dwHighDateTime << 32) | ft->dwLowDateTime;
-
-    return time / 10000000 - 11644473600ull;
-}
-
-int ty_stat(const char *path, ty_file_info *info, bool follow)
-{
-    TY_UNUSED(follow);
-
-    assert(path && path[0]);
-    assert(info);
-
-    HANDLE h;
-    BY_HANDLE_FILE_INFORMATION attr;
-    int r;
-
-    // FIXME: check error handling
-    h = CreateFile(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
-    if (h == INVALID_HANDLE_VALUE) {
-        switch (GetLastError()) {
-        case ERROR_ACCESS_DENIED:
-            return ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", path);
-        case ERROR_NOT_READY:
-            return ty_error(TY_ERROR_IO, "I/O error while stating '%s'", path);
-        case ERROR_FILE_NOT_FOUND:
-            return ty_error(TY_ERROR_NOT_FOUND, "Path '%s' does not exist", path);
-        case ERROR_PATH_NOT_FOUND:
-            return ty_error(TY_ERROR_NOT_FOUND, "Part of '%s' is not a directory", path);
-        }
-        // Let's lie a little, error will be clearer this way
-        return ty_error(TY_ERROR_SYSTEM, "GetFileAttributesEx('%s') failed: %s", path, ty_win32_strerror(0));
-    }
-
-    r = GetFileInformationByHandle(h, &attr);
-    if (!r)
-        return ty_error(TY_ERROR_SYSTEM, "GetFileInformationByHandle('%s') failed: %s", path, ty_win32_strerror(0));
-
-    if (attr.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-        info->type = TY_FILE_DIRECTORY;
-    } else if (attr.dwFileAttributes & FILE_ATTRIBUTE_DEVICE) {
-        info->type = TY_FILE_SPECIAL;
-    } else {
-        info->type = TY_FILE_REGULAR;
-    }
-
-    info->size = ((uint64_t)attr.nFileSizeHigh << 32) | attr.nFileSizeLow;
-    info->mtime = filetime_to_unix_time(&attr.ftLastWriteTime);
-
-    return 0;
-}
-
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);

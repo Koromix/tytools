@@ -12,21 +12,6 @@
 
 TY_C_BEGIN
 
-typedef enum ty_file_type {
-    TY_FILE_REGULAR,
-    TY_FILE_DIRECTORY,
-    TY_FILE_LINK,
-
-    // Device, socket, pipe, etc.
-    TY_FILE_SPECIAL
-} ty_file_type;
-
-typedef struct ty_file_info {
-    ty_file_type type;
-    uint64_t size;
-    uint64_t mtime;
-} ty_file_info;
-
 #ifdef _WIN32
     #define TY_PATH_SEPARATORS "\\/"
 #else
@@ -72,8 +57,6 @@ TY_PUBLIC uint64_t ty_millis(void);
 TY_PUBLIC void ty_delay(unsigned int ms);
 
 TY_PUBLIC int ty_adjust_timeout(int timeout, uint64_t start);
-
-TY_PUBLIC int ty_stat(const char *path, ty_file_info *info, bool follow);
 
 TY_PUBLIC void ty_descriptor_set_clear(ty_descriptor_set *set);
 TY_PUBLIC void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
