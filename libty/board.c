@@ -1212,10 +1212,14 @@ static int new_task(tyb_board *board, const struct _ty_task_vtable *vtable, ty_t
     ty_task *task = NULL;
     int r;
 
+    if (board->current_task)
+        return ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'", board->location);
+
     r = _ty_task_new(sizeof(*task), vtable, &task);
     if (r < 0)
         return r;
 
+    board->current_task = task;
     task->board = tyb_board_ref(board);
 
     *rtask = task;
@@ -1224,6 +1228,7 @@ static int new_task(tyb_board *board, const struct _ty_task_vtable *vtable, ty_t
 
 static void cleanup_task(ty_task *task)
 {
+    task->board->current_task = NULL;
     tyb_board_unref(task->board);
 }
 
@@ -1312,6 +1317,8 @@ wait:
         r = tyb_board_reset(board);
         if (r < 0)
             return r;
+
+        ty_delay(600);
     } else {
         ty_log(TY_LOG_INFO, "Firmware uploaded, reset the board to use it");
     }
@@ -1391,7 +1398,12 @@ static int run_reset(ty_task *task)
     }
 
     ty_log(TY_LOG_INFO, "Sending reset command");
-    return tyb_board_reset(board);
+    r = tyb_board_reset(board);
+    if (r < 0)
+        return r;
+
+    ty_delay(600);
+    return 0;
 }
 
 static const struct _ty_task_vtable reset_task_vtable = {
@@ -1409,8 +1421,15 @@ int tyb_reset(tyb_board *board, ty_task **rtask)
 
 static int run_reboot(ty_task *task)
 {
+    int r;
+
     ty_log(TY_LOG_INFO, "Triggering board reboot");
-    return tyb_board_reboot(task->board);
+    r = tyb_board_reboot(task->board);
+    if (r < 0)
+        return r;
+
+    ty_delay(600);
+    return 0;
 }
 
 static const struct _ty_task_vtable reboot_task_vtable = {

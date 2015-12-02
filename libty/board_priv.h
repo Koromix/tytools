@@ -11,6 +11,7 @@
 #include "ty/board.h"
 #include "htable.h"
 #include "list.h"
+#include "ty/task.h"
 #include "ty/thread.h"
 
 TY_C_BEGIN
@@ -71,6 +72,8 @@ struct tyb_board {
     uint64_t missing_since;
 
     const tyb_board_model *model;
+
+    ty_task *current_task;
 
     void *udata;
 };
