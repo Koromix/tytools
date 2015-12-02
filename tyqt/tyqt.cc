@@ -9,7 +9,6 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QThread>
-#include <QThreadPool>
 #include <QTimer>
 
 #include "commands.hh"
@@ -172,22 +171,16 @@ bool TyQt::clientConsole() const
 
 void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    switch (reason) {
 #ifndef __APPLE__
-    case QSystemTrayIcon::Trigger:
+    if (reason == QSystemTrayIcon::Trigger)
         setVisible(!visible());
-        break;
 #endif
-
-    default:
-        break;
-    }
 }
 
 void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
 {
     if (arguments.isEmpty()) {
-        peer.send({"error", tr("Command not specified")});
+        peer.send({"log", QString::number(TY_LOG_ERROR), tr("Command not specified")});
         peer.send({"exit", "1"});
         return;
     }
@@ -195,27 +188,24 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
     QStringList parameters = arguments;
     QString cmd = parameters.takeFirst();
 
-    auto future = Commands::execute(cmd, parameters);
-    auto watcher = new QFutureWatcher<QString>(&peer);
+    auto task = Commands::execute(cmd, parameters);
+    auto watcher = new TaskWatcher(&peer);
 
-    connect(watcher, &QFutureWatcher<QString>::started, &peer, [&peer]() {
-        peer.send({"progress"});
+    connect(watcher, &TaskWatcher::log, &peer, [&peer](int level, const QString &msg) {
+        peer.send({"log", QString::number(level), msg});
     });
-    connect(watcher, &QFutureWatcher<QString>::progressValueChanged, &peer, [=,&peer](int value) {
-        if (future.progressMaximum())
-            peer.send({"progress",  QString::number(value), QString::number(future.progressMaximum())});
+    connect(watcher, &TaskWatcher::started, &peer, [&peer]() {
+        peer.send({"start"});
     });
-    connect(watcher, &QFutureWatcher<QString>::finished, &peer, [=,&peer]() {
-        if (!future.resultCount()) {
-            peer.send({"exit", "2"});
-        } else if (!future.result().isEmpty()) {
-            peer.send({"error", future.result()});
-            peer.send({"exit", "1"});
-        } else {
-            peer.send({"exit", "0"});
-        }
+    connect(watcher, &TaskWatcher::finished, &peer, [&peer](bool success) {
+        peer.send({"exit", success ? "1" : "0"});
     });
-    watcher->setFuture(future);
+    connect(watcher, &TaskWatcher::progress, &peer, [&peer](const QString &action, unsigned int value, unsigned int max) {
+        peer.send({"progress", action, QString::number(value), QString::number(max)});
+    });
+    watcher->setTask(&task);
+
+    task.start();
 }
 
 void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
@@ -229,34 +219,34 @@ void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
         goto error;
     cmd = parameters.takeFirst();
 
-    if (cmd == "exit") {
+    if (cmd == "log") {
+        if (parameters.count() < 2)
+            goto error;
+
+        int level = QString(parameters[0]).toInt();
+        QString msg = parameters[1];
+
+        ty_log(static_cast<ty_log_level>(level), "%s", msg.toLocal8Bit().constData());
+    } else if (cmd == "start") {
+        if (!parser_.isSet("wait")) {
+            channel_.disconnect(this);
+            exit(0);
+        }
+    } else if (cmd == "exit") {
         exit(parameters.value(0, "0").toInt());
     } else if (cmd == "progress") {
-        if (!parser_.isSet("wait"))
-            exit(0);
-
-        if (client_console_ && parameters.count() >= 2) {
-            unsigned int progress = parameters[0].toUInt();
-            unsigned int total = parameters[1].toUInt();
-
-            if (total) {
-                printf("Processing... %u%%\r", 100 * progress / total);
-                if (progress == total)
-                    printf("\n");
-                fflush(stdout);
-            }
-        }
-    } else if (cmd == "message") {
-        if (parameters.isEmpty())
+        if (parameters.count() < 3)
             goto error;
 
-        showClientMessage(parameters[0]);
-    } else if (cmd == "error") {
-        if (parameters.isEmpty())
-            goto error;
+        QString action = parameters[0];
+        unsigned int progress = parameters[1].toUInt();
+        unsigned int total = parameters[2].toUInt();
 
-        showClientError(parameters[0]);
+        ty_progress(action.toLocal8Bit().constData(), progress, total);
+    } else {
+        goto error;
     }
+
     return;
 
 error:
@@ -347,8 +337,6 @@ int TyQt::runServer()
         QMessageBox::critical(nullptr, tr("TyQt (critical error)"), last_error_, QMessageBox::Close);
         return 1;
     }
-
-    QThreadPool::globalInstance()->setMaxThreadCount(16);
 
     tray_icon_.show();
     openMainWindow();

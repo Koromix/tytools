@@ -16,6 +16,7 @@ set(TYQT_SOURCES about_dialog.cc
                 descriptor_set_notifier.cc
                 selector_dialog.cc
                 session_channel.cc
+                task.cc
                 tyqt.cc)
 set(TYQT_FORMS about_dialog.ui
               main_window.ui

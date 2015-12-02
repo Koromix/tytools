@@ -7,19 +7,21 @@
 #ifndef COMMANDS_HH
 #define COMMANDS_HH
 
-#include <QFuture>
 #include <QStringList>
 
 #include "board.hh"
+#include "task.hh"
 
 namespace Commands {
-    QFuture<QString> execute(const QString &cmd, const QStringList &parameters);
+    TaskInterface execute(const QString &cmd, const QStringList &parameters);
 
-    QFuture<QString> openMainWindow();
-    QFuture<QString> activateMainWindow();
+    TaskInterface openMainWindow();
+    TaskInterface activateMainWindow();
 
-    QFuture<QString> upload(const QString &tag, const QString &firmware);
-    QFuture<QString> upload(Board &board, const QString &firmware);
+    TaskInterface upload(const QString &tag, const QString &firmware);
+    TaskInterface upload(Board &board, const QString &firmware);
+
+    TaskInterface uploadAll();
 }
 
 #endif

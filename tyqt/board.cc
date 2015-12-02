@@ -10,7 +10,6 @@
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
 #include <QTextCursor>
-#include <QThreadPool>
 
 #include <functional>
 
@@ -20,86 +19,7 @@
 
 using namespace std;
 
-class BoardTask : public QRunnable {
-    QFutureInterface<QString> intf_;
-
-    shared_ptr<Board> board_;
-
-    QMetaObject::Connection conn_;
-    QThread *thread_ = nullptr;
-    function<bool(BoardTask &)> f_;
-
-    unsigned int progress_ = 0, total_ = 0;
-    QString error_message_;
-
-public:
-    BoardTask(Board &board, function<bool(BoardTask &)> f);
-    ~BoardTask();
-
-    QFuture<QString> start();
-
-    void setProgress(unsigned int progress, unsigned int total);
-
-private:
-    void run();
-};
-
 static const int manual_reboot_delay = 5000;
-
-BoardTask::BoardTask(Board &board, function<bool(BoardTask &)> f)
-    : board_(board.getSharedPtr()), f_(f)
-{
-    conn_ = QObject::connect(tyQt, &TyQt::errorMessage, [=](const QString &msg) {
-        if (QThread::currentThread() == thread_)
-            error_message_ = msg;
-    });
-}
-
-BoardTask::~BoardTask()
-{
-    QObject::disconnect(conn_);
-}
-
-QFuture<QString> BoardTask::start()
-{
-    intf_.reportStarted();
-    QThreadPool::globalInstance()->start(this);
-
-    return intf_.future();
-}
-
-void BoardTask::setProgress(unsigned int progress, unsigned int total)
-{
-    if (progress < progress_)
-        return;
-
-    if (total != total_) {
-        total_ = total;
-        intf_.setProgressRange(0, total);
-    }
-
-    progress_ = progress;
-    intf_.setProgressValue(progress);
-    emit board_->taskProgress(progress, total);
-}
-
-void BoardTask::run()
-{
-    thread_ = QThread::currentThread();
-
-    bool ret = f_(*this);
-    if (!ret) {
-        if (!error_message_.isEmpty()) {
-            intf_.reportResult(error_message_);
-        } else {
-            intf_.reportResult("Task failed");
-        }
-    }
-
-    intf_.reportFinished();
-    if (progress_ < total_)
-        emit board_->taskProgress(0, 0);
-}
 
 Board::Board(tyb_board *board, QObject *parent)
     : QObject(parent), board_(tyb_board_ref(board))
@@ -248,11 +168,6 @@ void Board::appendToSerialDocument(const QString &s)
     cursor.insertText(s);
 }
 
-QFuture<QString> Board::runningTask() const
-{
-    return running_task_;
-}
-
 bool Board::event(QEvent *e)
 {
     if (e->type() == QEvent::DynamicPropertyChange) {
@@ -307,92 +222,51 @@ void Board::refreshBoard()
     }
 }
 
-QFuture<QString> Board::upload(const QString &filename, bool reset_after)
+TaskInterface Board::upload(const QString &filename, bool reset_after)
 {
-    return startAsync([=](BoardTask &task) {
-        tyb_firmware *firmware;
+    ty_task *task;
+    int r;
 
-        if (!tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_UPLOAD)) {
-            tyb_board_reboot(board_);
+    r = tyb_upload2(board_, filename.toLocal8Bit().constData(), NULL,
+                    reset_after ? 0 : TYB_UPLOAD_NORESET, &task);
+    if (r < 0)
+        return make_task<FailedTask>(ty_error_last_message());
 
-            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_UPLOAD, manual_reboot_delay);
-            if (r < 0)
-                return false;
-            if (!r) {
-                ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work, trigger manually");
-                return false;
-            }
-        }
-
-        int r = tyb_firmware_load(filename.toLocal8Bit().constData(), nullptr, &firmware);
-        if (r < 0)
-            return false;
-        unique_ptr<tyb_firmware, decltype(tyb_firmware_unref) *> firmware_ptr(firmware, tyb_firmware_unref);
-
-        r = tyb_board_upload(board_, firmware, [](const tyb_board *board, const tyb_firmware *fw, size_t uploaded, void *udata) {
-            TY_UNUSED(board);
-
-            BoardTask *task = static_cast<BoardTask *>(udata);
-            task->setProgress(uploaded, tyb_firmware_get_size(fw));
-
-            return 0;
-        }, &task);
-        if (r < 0)
-            return false;
-
-        if (reset_after) {
-            tyb_board_reset(board_);
-            QThread::msleep(400);
-        }
-
-        return true;
-    });
+    return wrapBoardTask(task);
 }
 
-QFuture<QString> Board::reset()
+TaskInterface Board::reset()
 {
-    return startAsync([=](BoardTask &task) {
-        TY_UNUSED(task);
+    ty_task *task;
+    int r;
 
-        if (!tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RESET)) {
-            tyb_board_reboot(board_);
+    r = tyb_reset(board_, &task);
+    if (r < 0)
+        return make_task<FailedTask>(ty_error_last_message());
 
-            int r = tyb_board_wait_for(board_, TYB_BOARD_CAPABILITY_RESET, manual_reboot_delay);
-            if (r < 0)
-                return false;
-            if (!r) {
-                ty_error(TY_ERROR_TIMEOUT, "Cannot reset board");
-                return false;
-            }
-        }
-
-        tyb_board_reset(board_);
-        QThread::msleep(800);
-
-        return true;
-    });
+    return wrapBoardTask(task);
 }
 
-QFuture<QString> Board::reboot()
+TaskInterface Board::reboot()
 {
-    return startAsync([=](BoardTask &task) {
-        TY_UNUSED(task);
+    ty_task *task;
+    int r;
 
-        tyb_board_reboot(board_);
-        QThread::msleep(800);
+    r = tyb_reboot(board_, &task);
+    if (r < 0)
+        return make_task<FailedTask>(ty_error_last_message());
 
-        return true;
-    });
+    return wrapBoardTask(task);
 }
 
-QFuture<QString> Board::sendSerial(const QByteArray &buf)
+bool Board::sendSerial(const QByteArray &buf)
 {
-    return startAsync([=](BoardTask &task) {
-        TY_UNUSED(task);
+    return tyb_board_serial_write(board_, buf.data(), buf.size()) > 0;
+}
 
-        tyb_board_serial_write(board_, buf.data(), buf.size());
-        return true;
-    });
+TaskInterface Board::runningTask() const
+{
+    return task();
 }
 
 void Board::serialReceived(ty_descriptor desc)
@@ -412,18 +286,23 @@ void Board::serialReceived(ty_descriptor desc)
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
 }
 
-/* startAsync/BoardTask make sure Board will exist for as long as the task is running,
-   you can capture 'this' safely. */
-QFuture<QString> Board::startAsync(function<bool(BoardTask &)> f)
+void Board::notifyFinished(bool success)
 {
-    if (running_task_.isRunning()) {
-        ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'",
-                 tag().toLocal8Bit().constData());
-        return QFuture<QString>();
-    }
+    TY_UNUSED(success);
+    emit taskProgress("", 0, 0);
+}
 
-    running_task_ = (new BoardTask(*this, f))->start();
-    return running_task_;
+void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
+{
+    emit taskProgress(action, value, max);
+}
+
+TaskInterface Board::wrapBoardTask(ty_task *task)
+{
+    TaskInterface intf = make_task<TyTask>(task);
+    setTask(&intf);
+
+    return intf;
 }
 
 Manager::~Manager()
@@ -606,7 +485,8 @@ void Manager::handleAddedEvent(tyb_board *board)
     auto proxy_ptr = Board::createBoard(board);
     Board *proxy = proxy_ptr.get();
 
-    connect(proxy, &Board::taskProgress, this, [=](unsigned int progress, unsigned int total) {
+    connect(proxy, &Board::taskProgress, this, [=](const QString &action, unsigned int progress, unsigned int total) {
+        TY_UNUSED(action);
         TY_UNUSED(progress);
         TY_UNUSED(total);
 

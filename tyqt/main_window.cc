@@ -269,9 +269,9 @@ void MainWindow::on_actionUpload_triggered()
         if (filename.isEmpty())
             return;
 
-        Commands::upload(*current_board_, filename);
+        Commands::upload(*current_board_, filename).start();
     } else {
-        Commands::upload(*current_board_, "");
+        Commands::upload(*current_board_, "").start();
     }
 }
 
@@ -284,23 +284,12 @@ void MainWindow::on_actionUploadNew_triggered()
     if (filename.isEmpty())
         return;
 
-    Commands::upload(*current_board_, filename);
+    Commands::upload(*current_board_, filename).start();
 }
 
 void MainWindow::on_actionUploadAll_triggered()
 {
-    unsigned int uploaded = 0;
-    for (auto &board: manager_->boards()) {
-        if (board->property("firmware").toString().isEmpty())
-            continue;
-
-        board->upload(board->property("firmware").toString(),
-                      board->property("resetAfter").toBool());
-        uploaded++;
-    }
-
-    if (!uploaded)
-        ty_error(TY_ERROR_PARAM, "Select a firmware for at least one board to use this functionality");
+    Commands::uploadAll().start();
 }
 
 void MainWindow::on_actionReset_triggered()
@@ -308,7 +297,7 @@ void MainWindow::on_actionReset_triggered()
     if (!current_board_)
         return;
 
-    current_board_->reset();
+    current_board_->reset().start();
 }
 
 void MainWindow::on_actionReboot_triggered()
@@ -316,7 +305,7 @@ void MainWindow::on_actionReboot_triggered()
     if (!current_board_)
         return;
 
-    current_board_->reboot();
+    current_board_->reboot().start();
 }
 
 void MainWindow::on_monitorEdit_returnPressed()

@@ -20,6 +20,7 @@ HEADERS += about_dialog.hh \
     main_window.hh \
     selector_dialog.hh \
     session_channel.hh \
+    task.hh \
     tyqt.hh
 
 SOURCES += about_dialog.cc \
@@ -31,6 +32,7 @@ SOURCES += about_dialog.cc \
     main_window.cc \
     selector_dialog.cc \
     session_channel.cc \
+    task.cc \
     tyqt.cc
 
 RESOURCES += tyqt.qrc

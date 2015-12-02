@@ -8,16 +8,14 @@
 #define BOARD_HH
 
 #include <QAbstractListModel>
-#include <QFuture>
-#include <QRunnable>
 #include <QTextDocument>
-#include <QThread>
 
 #include <memory>
 #include <vector>
 
 #include "ty.h"
 #include "descriptor_set_notifier.hh"
+#include "task.hh"
 
 class Manager;
 class Board;
@@ -32,7 +30,7 @@ struct BoardInterfaceInfo {
     uint8_t number;
 };
 
-class Board : public QObject, public std::enable_shared_from_this<Board> {
+class Board : public QObject, public std::enable_shared_from_this<Board>, private TaskListener {
     Q_OBJECT
 
     tyb_board *board_;
@@ -42,8 +40,6 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool clear_on_reset_ = false;
 
     QTextDocument serial_document_;
-
-    QFuture<QString> running_task_;
 
 public:
     static std::shared_ptr<Board> createBoard(tyb_board *board);
@@ -78,8 +74,6 @@ public:
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);
 
-    QFuture<QString> runningTask() const;
-
     virtual bool event(QEvent *e) override;
 
     static QStringList makeCapabilityList(uint16_t capabilities);
@@ -87,12 +81,13 @@ public:
 
     void refreshBoard();
 
-public slots:
-    QFuture<QString> upload(const QString &filename, bool reset_after = true);
-    QFuture<QString> reset();
-    QFuture<QString> reboot();
+    TaskInterface upload(const QString &filename, bool reset_after = true);
+    TaskInterface reset();
+    TaskInterface reboot();
 
-    QFuture<QString> sendSerial(const QByteArray &buf);
+    bool sendSerial(const QByteArray &buf);
+
+    TaskInterface runningTask() const;
 
 signals:
     void boardChanged();
@@ -100,7 +95,7 @@ signals:
 
     void propertyChanged(const QByteArray &name, const QVariant &value);
 
-    void taskProgress(unsigned int progress, unsigned int total);
+    void taskProgress(const QString &action, unsigned int progress, unsigned int total);
 
 private slots:
     void serialReceived(ty_descriptor desc);
@@ -108,7 +103,10 @@ private slots:
 private:
     Board(tyb_board *board, QObject *parent = nullptr);
 
-    QFuture<QString> startAsync(std::function<bool(BoardTask &)> f);
+    void notifyFinished(bool success);
+    void notifyProgress(const QString &action, unsigned int value, unsigned int max);
+
+    TaskInterface wrapBoardTask(ty_task *task);
 };
 
 class Manager : public QAbstractListModel {

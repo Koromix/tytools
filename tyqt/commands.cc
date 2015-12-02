@@ -4,82 +4,70 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <QFutureWatcher>
-#include <QThreadPool>
-
 #include "commands.hh"
 #include "selector_dialog.hh"
 #include "tyqt.hh"
 
 using namespace std;
 
-class BoardSelectorCommand {
-    QFutureInterface<QString> intf_;
-
-    function<QFuture<QString>(Board &)> f_;
-    QFutureWatcher<QString> watcher_;
-
-    shared_ptr<Board> board_;
+class BoardSelectorTask : public Task, private TaskListener {
+    QString title_;
+    function<TaskInterface(Board &)> f_;
 
 public:
-    BoardSelectorCommand(function<QFuture<QString>(Board &)> f);
+    BoardSelectorTask(const QString &title, function<TaskInterface(Board &)> f)
+        : title_(title), f_(f) {}
 
-    QFuture<QString> start();
+    bool start() override;
+
+private:
+    void notifyLog(ty_log_level level, const QString &msg) override;
+    void notifyFinished(bool success) override;
+    void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
 };
 
-BoardSelectorCommand::BoardSelectorCommand(function<QFuture<QString>(Board &)> f)
-    : f_(f)
+bool BoardSelectorTask::start()
 {
-}
-
-QFuture<QString> BoardSelectorCommand::start()
-{
-    intf_.reportStarted();
-
-    QObject::connect(&watcher_, &QFutureWatcher<QString>::resultReadyAt, [=](int index) {
-        assert(!index);
-        intf_.reportResult(watcher_.result());
-    });
-    QObject::connect(&watcher_, &QFutureWatcher<QString>::finished, [=]() {
-        intf_.reportFinished();
-    });
-    QObject::connect(&watcher_, &QFutureWatcher<QString>::progressRangeChanged, [=](int min, int max) {
-        intf_.setProgressRange(min, max);
-    });
-    QObject::connect(&watcher_, &QFutureWatcher<QString>::progressValueChanged, [=](int value) {
-        intf_.setProgressValue(value);
-    });
+    reportStarted();
 
     auto dialog = tyQt->openSelector();
     if (!dialog) {
-        intf_.reportFinished();
-        return intf_.future();
+        reportFinished(false);
+        return true;
     }
+
     QObject::connect(dialog, &SelectorDialog::boardSelected, [=](Board *board) {
         if (!board) {
-            intf_.reportFinished();
+            reportLog(TY_LOG_INFO, QString("%1 was canceled").arg(title_));
+            reportFinished(false);
             return;
         }
 
-        board_ = board->getSharedPtr();
-        watcher_.setFuture(f_(*board_));
+        auto task = f_(*board);
+        setTask(&task);
+        task.start();
     });
     dialog->show();
 
-    return intf_.future();
+    return true;
 }
 
-static QFuture<QString> immediate_future(const QString &s = QString())
+void BoardSelectorTask::notifyLog(ty_log_level level, const QString &msg)
 {
-    QFutureInterface<QString> intf;
-    intf.reportStarted();
-    intf.reportResult(s);
-    intf.reportFinished();
-
-    return intf.future();
+    reportLog(level, msg);
 }
 
-QFuture<QString> Commands::execute(const QString &cmd, const QStringList &parameters)
+void BoardSelectorTask::notifyFinished(bool success)
+{
+    reportFinished(success);
+}
+
+void BoardSelectorTask::notifyProgress(const QString &action, unsigned int value, unsigned int max)
+{
+    reportProgress(action, value, max);
+}
+
+TaskInterface Commands::execute(const QString &cmd, const QStringList &parameters)
 {
     if (cmd == "open") {
         return openMainWindow();
@@ -92,27 +80,31 @@ QFuture<QString> Commands::execute(const QString &cmd, const QStringList &parame
         return upload(tag, firmware);
     }
 
-    return immediate_future(QString("Unknown command '%1'").arg(cmd));
+    return make_task<FailedTask>(TyQt::tr("Unknown command '%1'").arg(cmd));
 }
 
-QFuture<QString> Commands::openMainWindow()
+TaskInterface Commands::openMainWindow()
 {
-    tyQt->openMainWindow();
-    return immediate_future();
+    return make_task<ImmediateTask>([]() {
+        tyQt->openMainWindow();
+        return true;
+    });
 }
 
-QFuture<QString> Commands::activateMainWindow()
+TaskInterface Commands::activateMainWindow()
 {
-    tyQt->activateMainWindow();
-    return immediate_future();
+    return make_task<ImmediateTask>([]() {
+        tyQt->activateMainWindow();
+        return true;
+    });
 }
 
-QFuture<QString> Commands::upload(const QString &tag, const QString &firmware)
+TaskInterface Commands::upload(const QString &tag, const QString &firmware)
 {
     auto manager = tyQt->manager();
 
     if (!manager->boardCount())
-        return immediate_future(TyQt::tr("No board available"));
+        return make_task<FailedTask>(TyQt::tr("No board available"));
 
     shared_ptr<Board> board;
     if (!tag.isEmpty()) {
@@ -123,22 +115,44 @@ QFuture<QString> Commands::upload(const QString &tag, const QString &firmware)
         } else {
             board = manager->find([=](Board &board) { return board.property("firmware") == firmware; });
             if (!board) {
-                return (new BoardSelectorCommand([=](Board &board) {
+                return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
                     return upload(board, firmware);
-                }))->start();
+                });
             }
         }
     }
     if (!board)
-        return immediate_future(TyQt::tr("Cannot find board '%1'").arg(tag));
+        return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
 
     return upload(*board, firmware);
 }
 
-QFuture<QString> Commands::upload(Board &board, const QString &firmware)
+TaskInterface Commands::upload(Board &board, const QString &firmware)
 {
     if (!firmware.isEmpty())
         board.setProperty("firmware", firmware);
 
     return board.upload(board.property("firmware").toString(), board.property("resetAfter").toBool());
+}
+
+TaskInterface Commands::uploadAll()
+{
+    return make_task<ImmediateTask>([]() {
+        auto manager = tyQt->manager();
+
+        unsigned int uploaded = 0;
+        for (auto &board: manager->boards()) {
+            if (board->property("firmware").toString().isEmpty())
+                continue;
+
+            board->upload(board->property("firmware").toString(),
+                          board->property("resetAfter").toBool());
+            uploaded++;
+        }
+
+        if (!uploaded)
+            ty_error(TY_ERROR_PARAM, "Select a firmware for at least one board to use this functionality");
+
+        return !!uploaded;
+    });
 }
