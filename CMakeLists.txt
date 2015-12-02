@@ -36,7 +36,7 @@ elseif(APPLE)
     endif()
 
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
-    set(CMAKE_INSTALL_RPATH "@executable_path;@executable_path/../lib;@executable_path/../Frameworks")
+    set(CMAKE_INSTALL_RPATH "@executable_path;@executable_path/../lib;@executable_path/../libty;@executable_path/../Frameworks")
 
     # Makes it easier for cross-compilation and testing. In my case, compile on Linux
     # and test on OSX using sshfs
