@@ -20,8 +20,6 @@
 
 using namespace std;
 
-static const int manual_reboot_delay = 5000;
-
 Board::Board(tyb_board *board, QObject *parent)
     : QObject(parent), board_(tyb_board_ref(board))
 {

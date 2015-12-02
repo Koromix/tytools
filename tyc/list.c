@@ -52,6 +52,7 @@ void print_list_usage(FILE *f)
                "   -w, --watch              Watch devices dynamically\n");
 }
 
+TY_PRINTF_FORMAT(2, 3)
 static void print_field(const char *key, const char *format, ...)
 {
     char value[256];

@@ -163,6 +163,8 @@ void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 #ifndef __APPLE__
     if (reason == QSystemTrayIcon::Trigger)
         setVisible(!visible());
+#else
+    TY_UNUSED(reason);
 #endif
 }
 
