@@ -36,7 +36,8 @@ bool BoardSelectorTask::start()
         return true;
     }
 
-    QObject::connect(dialog, &SelectorDialog::boardSelected, [=](Board *board) {
+    auto ptr = shared_from_this();
+    QObject::connect(dialog, &SelectorDialog::boardSelected, [this, ptr](Board *board) {
         if (!board) {
             reportLog(TY_LOG_INFO, QString("%1 was canceled").arg(title_));
             reportFinished(false);
