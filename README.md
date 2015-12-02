@@ -7,17 +7,110 @@ ty is a collection of tools to manage Teensy devices (or teensies). It provides:
 - tyc, a command-line tool
 - libty, a C library
 
-It currently runs on Linux, Windows and Mac OS X.
+It currently runs on Linux, Windows and Mac OS X. You can download binaries in the
+[release section](https://github.com/Koromix/ty/releases).
 
+- [Command-line usage](#tyc)
+  - [List devices](#tyc_list)
+  - [Upload firmware](#tyc_upload)
+  - [Serial monitor](#tyc_monitor)
+  - [Bootloader and reset](#tyc_reset)
 - [Build instructions](#build)
   - [Linux](#build_linux)
   - [Windows](#build_windows)
   - [Mac OS X](#build_darwin)
-- [Command-line usage](#usage)
-  - [List devices](#usage_list)
-  - [Upload firmware](#usage_upload)
-  - [Serial monitor](#usage_monitor)
-  - [Bootloader and reset](#usage_reset)
+
+<a name="tyc"/>
+# Command-line usage
+
+You can manage multiple devices connected simultaneously, ty uniquely identifies each device by its
+position in the host USB topology. Meaning if it stays on the same USB port, it is the same device
+for ty. That's necessary because across reboots and resets, Teensies look completely different to
+the host.
+
+When you want to target a specific device, use `tyc <command> --board "[<serial>][@<location>]"`.
+_serial_ is the USB serial number, _location_ can be a virtual path computed by ty (see `tyc list`)
+or an OS-specific device path (e.g. /dev/hidraw1 or COM1). Either can be omitted.
+
+Tag filter       | Result
+---------------- | ---------------------------------------------------------------------------
+714230           | Select board with serial number 714230
+@usb-1-2-2       | Select the board plugged in USB port 'usb-1-2-2'
+@COM1            | Select the board linked to the OS-specific device 'COM1'
+714230@usb-1-2-2 | Select the board plugged in 'usb-1-2-2' only if its serial number is 714230
+
+You can learn about the various commands using `tyc help`. Get specific help for them using
+`tyc help <command>`.
+
+<a name="tyc_list"/>
+## List devices
+
+`tyc list` lists plugged Teensy devices. Here is how it looks:
+```
+add 34130@usb-1-2 Teensy 3.1
+add 29460@usb-4-2 Teensy
+add 32250@usb-4-3 Teensy 3.0
+```
+
+Use `--verbose` if you want detailed information about available devices:
+```
+add 32250@usb-4-3 Teensy 3.0
+  + capabilities:
+    - upload
+    - reset
+  + interfaces:
+    - HalfKay Bootloader: /dev/hidraw2
+```
+
+If you need to read structured information in your scripts, you can set the output to JSON with `--output json`:
+```
+{"action": "add", "tag": "714230@usb-6-3", "serial": 714230, "location": "usb-6-3", "model": "Teensy", "capabilities": ["reboot", "serial"], "interfaces": [["Seremu", "/dev/hidraw4"]]}
+{"action": "add", "tag": "1126140@usb-6-2", "serial": 1126140, "location": "usb-6-2", "model": "Teensy LC", "capabilities": ["upload", "reset"], "interfaces": [["HalfKay Bootloader", "/dev/hidraw3"]]}
+```
+
+You can also watch device changes with `--watch`, both in plain and JSON mode.
+
+Action | Meaning
+------ | ------------------------------------------------------------------------------
+add    | This board was plugged in or was already there
+change | Something changed, maybe the board rebooted
+miss   | This board is missing, either it was unplugged (remove) or it is changing mode
+remove | This board has been missing for some time, consider it removed
+
+<a name="tyc_upload"/>
+## Upload firmware
+
+Use `tyc upload <filename.hex>` to upload a specific firmware to your device. It is checked for
+compatibility with your model before being uploaded.
+
+By default, a reboot is triggered but you can use `--wait` to wait for the bootloader to show up,
+meaning ty will wait for you to press the button on your board.
+
+<a name="tyc_monitor"/>
+## Serial monitor
+
+`tyc monitor` opens a text connection with your Teensy. It is either done through the serial device
+(/dev/ttyACM*) or through the HID serial emulation (SEREMU) in other USB modes. ty uses the correct
+mode automatically.
+
+You can use the `--reconnect` option to detect I/O errors (such as a reset, or after a brief
+unplugging) and reconnect immediately. Other errors will exit the program.
+
+The `--raw` option will disable line-buffering/editing and immediately send everything you type in
+the terminal.
+
+See `tyc help monitor` for other options. Note that Teensy being a USB device, serial settings are
+ignored. They are provided in case your application uses them for specific purposes.
+
+<a name="tyc_reset"/>
+## Bootloader and reset
+
+`tyc reset` will restart your device. Since Teensy devices (at least the ARM ones) do not provide
+a way to trigger a reset, ty will instead start the bootloader first and then issue a reset
+without programming anything.
+
+You can also use `tyc reset -b` to start the bootloader. This is the same as pushing the button on
+your Teensy.
 
 <a name="build"/>
 # Build instructions
@@ -76,95 +169,3 @@ Pre-built binaries are provided in the releases section.
 
 Install Xcode, the developer command-line tools, [CMake](http://www.cmake.org/) and
 [Qt Creator](http://www.qt.io/download-open-source/). The native Clang compiler can build ty.
-
-<a name="usage"/>
-# Command-line usage
-
-You can manage multiple devices connected simultaneously, ty uniquely identifies each device by its
-position in the host USB topology. Meaning if it stays on the same USB port, it is the same device
-for ty. That's necessary because across reboots and resets, Teensies look completely different to
-the host.
-
-When you want to target a specific device, use `tyc <command> --board "[<serial>][@<location>]"`.
-_serial_ is the USB serial number, _location_ can be a virtual path computed by ty (see `tyc list`)
-or an OS-specific device path (e.g. /dev/hidraw1 or COM1). Either can be omitted.
-
-Tag filter       | Result
----------------- | ---------------------------------------------------------------------------
-714230           | Select board with serial number 714230
-@usb-1-2-2       | Select the board plugged in USB port 'usb-1-2-2'
-@COM1            | Select the board linked to the OS-specific device 'COM1'
-714230@usb-1-2-2 | Select the board plugged in 'usb-1-2-2' only if its serial number is 714230
-
-You can learn about the various commands using `tyc help`. Get specific help for them using
-`tyc help <command>`.
-
-<a name="usage_list"/>
-## List devices
-
-`tyc list` lists plugged Teensy devices. Here is how it looks:
-```
-add 34130@usb-1-2 Teensy 3.1
-add 29460@usb-4-2 Teensy
-add 32250@usb-4-3 Teensy 3.0
-```
-
-Use `--verbose` if you want detailed information about available devices:
-```
-add 32250@usb-4-3 Teensy 3.0
-  + capabilities:
-    - upload
-    - reset
-  + interfaces:
-    - HalfKay Bootloader: /dev/hidraw2
-```
-
-If you need to read structured information in your scripts, you can set the output to JSON with `--output json`:
-```
-{"action": "add", "tag": "714230@usb-6-3", "serial": 714230, "location": "usb-6-3", "model": "Teensy", "capabilities": ["reboot", "serial"], "interfaces": [["Seremu", "/dev/hidraw4"]]}
-{"action": "add", "tag": "1126140@usb-6-2", "serial": 1126140, "location": "usb-6-2", "model": "Teensy LC", "capabilities": ["upload", "reset"], "interfaces": [["HalfKay Bootloader", "/dev/hidraw3"]]}
-```
-
-You can also watch device changes with `--watch`, both in plain and JSON mode.
-
-Action | Meaning
------- | ------------------------------------------------------------------------------
-add    | This board was plugged in or was already there
-change | Something changed, maybe the board rebooted
-miss   | This board is missing, either it was unplugged (remove) or it is changing mode
-remove | This board has been missing for some time, consider it removed
-
-<a name="usage_upload"/>
-## Upload firmware
-
-Use `tyc upload <filename.hex>` to upload a specific firmware to your device. It is checked for
-compatibility with your model before being uploaded.
-
-By default, a reboot is triggered but you can use `--wait` to wait for the bootloader to show up,
-meaning ty will wait for you to press the button on your board.
-
-<a name="usage_monitor"/>
-## Serial monitor
-
-`tyc monitor` opens a text connection with your Teensy. It is either done through the serial device
-(/dev/ttyACM*) or through the HID serial emulation (SEREMU) in other USB modes. ty uses the correct
-mode automatically.
-
-You can use the `--reconnect` option to detect I/O errors (such as a reset, or after a brief
-unplugging) and reconnect immediately. Other errors will exit the program.
-
-The `--raw` option will disable line-buffering/editing and immediately send everything you type in
-the terminal.
-
-See `tyc help monitor` for other options. Note that Teensy being a USB device, serial settings are
-ignored. They are provided in case your application uses them for specific purposes.
-
-<a name="usage_reset"/>
-## Bootloader and reset
-
-`tyc reset` will restart your device. Since Teensy devices (at least the ARM ones) do not provide
-a way to trigger a reset, ty will instead start the bootloader first and then issue a reset
-without programming anything.
-
-You can also use `tyc reset -b` to start the bootloader. This is the same as pushing the button on
-your Teensy.
