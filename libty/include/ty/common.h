@@ -129,6 +129,8 @@ TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
 TY_PUBLIC void ty_error_mask(ty_err err);
 TY_PUBLIC void ty_error_unmask(void);
 
+TY_PUBLIC const char *ty_error_last_message(void);
+
 TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 

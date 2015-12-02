@@ -22,6 +22,8 @@ static void *handler_udata = NULL;
 static ty_err mask[32];
 static unsigned int mask_count = 0;
 
+static __thread char last_error_msg[256];
+
 TY_INIT()
 {
     const char *experimental = getenv("TY_EXPERIMENTAL");
@@ -101,6 +103,11 @@ static void logv(ty_log_level level, const char *fmt, va_list ap)
 
     vsnprintf(buf, sizeof(buf), fmt, ap);
 
+    if (level >= TY_LOG_ERROR) {
+        strncpy(last_error_msg, buf, sizeof(last_error_msg));
+        last_error_msg[sizeof(last_error_msg) - 1] = 0;
+    }
+
     msg.level = level;
     msg.msg = buf;
 
@@ -158,6 +165,11 @@ static const char *generic_error(int err)
     }
 
     return "Unknown error";
+}
+
+const char *ty_error_last_message(void)
+{
+    return last_error_msg;
 }
 
 int ty_error(ty_err err, const char *fmt, ...)
