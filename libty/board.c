@@ -1287,8 +1287,8 @@ wait:
 
                 ptr = buf;
                 for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
-                    ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s %s",
-                                    i + 1 < count ? ",": " and", guesses[i]->name);
+                    ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
+                                    i ? (i + 1 < count ? ", " : " and ") : "", guesses[i]->name);
 
                 return ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
             } else {
