@@ -27,7 +27,7 @@ if(WIN32)
     add_definitions(-DWINVER=0x0602 -D_WIN32_WINNT=0x0602)
 
     if(MINGW)
-        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic")
+        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic")
         set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread -Wl,-Bdynamic")
     endif()
 elseif(APPLE)
