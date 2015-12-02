@@ -75,8 +75,16 @@ if(WIN32)
     set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/win32/wix_banner.jpg")
     set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/win32/wix_dialog.jpg")
 
-    install(FILES README.md DESTINATION . RENAME README.txt)
-    install(FILES LICENSE.txt DESTINATION .)
+    # Someday, notepad will support LF newlines and this won't be necessary anymore
+    file(WRITE "${CMAKE_BINARY_DIR}/dos2unix.cmake" "configure_file(\${IN} \${OUT} NEWLINE_STYLE CRLF)")
+    add_custom_command(OUTPUT README_crlf.md COMMAND ${CMAKE_COMMAND}
+        ARGS -DIN="${CMAKE_SOURCE_DIR}/README.md" -DOUT="${CMAKE_BINARY_DIR}/README_crlf.md" -P "${CMAKE_BINARY_DIR}/dos2unix.cmake")
+    add_custom_command(OUTPUT LICENSE_crlf.txt COMMAND ${CMAKE_COMMAND}
+        ARGS -DIN="${CMAKE_SOURCE_DIR}/LICENSE.txt" -DOUT="${CMAKE_BINARY_DIR}/LICENSE_crlf.txt" -P "${CMAKE_BINARY_DIR}/dos2unix.cmake")
+    add_custom_target(crlf ALL DEPENDS README_crlf.md LICENSE_crlf.txt)
+
+    install(FILES "${CMAKE_BINARY_DIR}/README_crlf.md" DESTINATION . RENAME README.txt)
+    install(FILES "${CMAKE_BINARY_DIR}/LICENSE_crlf.txt" DESTINATION . RENAME LICENSE.txt)
     install(DIRECTORY contrib/win32/ DESTINATION . FILES_MATCHING PATTERN *.txt)
 
     include(CPack)
