@@ -1,7 +1,8 @@
 /*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * ty, a collection of GUI and command-line tools to manage Teensy devices
+ *
+ * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
+ * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
 #include <QDesktopServices>
@@ -25,7 +26,7 @@ void AboutDialog::on_websiteButton_clicked()
 
 void AboutDialog::on_licenseButton_clicked()
 {
-    QDesktopServices::openUrl(QUrl("https://www.mozilla.org/MPL/2.0/"));
+    QDesktopServices::openUrl(QUrl("https://opensource.org/licenses/MIT"));
 }
 
 void AboutDialog::on_descriptionText_linkActivated(const QString &link)

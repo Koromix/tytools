@@ -1,4 +1,8 @@
 #!/bin/sh
+# ty, a collection of GUI and command-line tools to manage Teensy devices
+#
+# Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
+# Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
 
 OUTFILE=$1
 if [ -z "$OUTFILE" ]; then
@@ -11,10 +15,11 @@ TY_VERSION=$(git describe --tags | cut -c2-)
 
 if [ -n "$TY_VERSION" ]; then
     echo "/*"
-    echo "* This Source Code Form is subject to the terms of the Mozilla Public"
-    echo "* License, v. 2.0. If a copy of the MPL was not distributed with this"
-    echo "* file, You can obtain one at http://mozilla.org/MPL/2.0/."
-    echo "*/"
+    echo " * ty, a collection of GUI and command-line tools to manage Teensy devices"
+    echo " *"
+    echo " * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)"
+    echo " * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>"
+    echo " */"
     echo
     echo "#ifndef TY_VERSION_H"
     echo "#define TY_VERSION_H"
