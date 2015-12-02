@@ -26,6 +26,7 @@ enum {
     MAIN_OPTION_VERSION,
 
     MAIN_OPTION_BOARD,
+
     MAIN_OPTION_EXPERIMENTAL
 };
 
@@ -35,7 +36,8 @@ enum {
     {"version",      no_argument,       NULL, MAIN_OPTION_VERSION}, \
     \
     {"board",        required_argument, NULL, MAIN_OPTION_BOARD}, \
-    {"experimental", no_argument,       NULL, MAIN_OPTION_EXPERIMENTAL}, \
+    \
+    {"experimental", no_argument,       NULL, MAIN_OPTION_EXPERIMENTAL},
 
 TY_C_END
 

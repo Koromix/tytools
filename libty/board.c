@@ -566,7 +566,6 @@ int tyb_monitor_refresh(tyb_monitor *manager)
             }
 
             drop_board(board);
-
             tyb_board_unref(board);
         }
     }

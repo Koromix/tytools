@@ -8,20 +8,20 @@ find_package(Qt5 REQUIRED
     NO_CMAKE_FIND_ROOT_PATH)
 
 set(TYQT_SOURCES about_dialog.cc
-                main.cc
-                main_window.cc
-                board.cc
-                board_widget.cc
-                commands.cc
-                descriptor_set_notifier.cc
-                selector_dialog.cc
-                session_channel.cc
-                task.cc
-                tyqt.cc)
+                 main.cc
+                 main_window.cc
+                 board.cc
+                 board_widget.cc
+                 commands.cc
+                 descriptor_set_notifier.cc
+                 selector_dialog.cc
+                 session_channel.cc
+                 task.cc
+                 tyqt.cc)
 set(TYQT_FORMS about_dialog.ui
-              main_window.ui
-              board_widget.ui
-              selector_dialog.ui)
+               main_window.ui
+               board_widget.ui
+               selector_dialog.ui)
 set(TYQT_RESOURCES tyqt.qrc)
 if(WIN32)
     list(APPEND TYQT_SOURCES tyqt_win32.rc)

@@ -81,20 +81,6 @@ void ty_message_redirect(ty_message_func *f, void *udata)
     handler_udata = udata;
 }
 
-void ty_error_mask(ty_err err)
-{
-    assert(mask_count < TY_COUNTOF(mask));
-
-    mask[mask_count++] = err;
-}
-
-void ty_error_unmask(void)
-{
-    assert(mask_count);
-
-    mask_count--;
-}
-
 TY_PRINTF_FORMAT(2, 0)
 static void logv(ty_log_level level, const char *fmt, va_list ap)
 {
@@ -165,6 +151,20 @@ static const char *generic_error(int err)
     }
 
     return "Unknown error";
+}
+
+void ty_error_mask(ty_err err)
+{
+    assert(mask_count < TY_COUNTOF(mask));
+
+    mask[mask_count++] = err;
+}
+
+void ty_error_unmask(void)
+{
+    assert(mask_count);
+
+    mask_count--;
 }
 
 const char *ty_error_last_message(void)
