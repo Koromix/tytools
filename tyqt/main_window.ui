@@ -363,8 +363,9 @@
      <string>&amp;View</string>
     </property>
     <addaction name="actionNewWindow"/>
-    <addaction name="separator"/>
     <addaction name="actionMinimalInterface"/>
+    <addaction name="separator"/>
+    <addaction name="actionClearMonitor"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -531,6 +532,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actionClearMonitor">
+   <property name="text">
+    <string>&amp;Clear Monitor</string>
+   </property>
+   <property name="toolTip">
+    <string>Clear Monitor</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+X</string>
    </property>
   </action>
  </widget>

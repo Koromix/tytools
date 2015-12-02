@@ -56,6 +56,7 @@ private slots:
     void on_clearOnReset_toggled(bool checked);
 
     void on_actionMinimalInterface_toggled(bool checked);
+    void on_actionClearMonitor_triggered();
 
     void on_firmwareBrowseButton_clicked();
 

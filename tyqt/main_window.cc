@@ -352,6 +352,11 @@ void MainWindow::on_actionMinimalInterface_toggled(bool checked)
     statusbar->setVisible(!checked);
 }
 
+void MainWindow::on_actionClearMonitor_triggered()
+{
+    clearMonitor();
+}
+
 void MainWindow::on_firmwareBrowseButton_clicked()
 {
     browseForFirmware();
@@ -361,7 +366,7 @@ void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
 {
     QMenu *menu = monitorText->createStandardContextMenu();
 
-    menu->addAction(tr("Clear"), logText, SLOT(clearMonitor()));
+    menu->addAction(actionClearMonitor);
     menu->exec(monitorText->viewport()->mapToGlobal(pos));
 }
 
