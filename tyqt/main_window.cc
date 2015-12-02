@@ -54,6 +54,8 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
 
     for (auto &board: *manager)
         setBoardDefaults(board);
+
+    logText->setMaximumBlockCount(1000);
 }
 
 void MainWindow::disableBoardWidgets()
