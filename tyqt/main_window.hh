@@ -57,7 +57,7 @@ private slots:
 
     void on_actionMinimalInterface_toggled(bool checked);
 
-    void on_browseButton_clicked();
+    void on_firmwareBrowseButton_clicked();
 
     void on_monitorText_customContextMenuRequested(const QPoint &pos);
     void on_logText_customContextMenuRequested(const QPoint &pos);

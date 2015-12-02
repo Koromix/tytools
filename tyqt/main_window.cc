@@ -30,12 +30,12 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     if (obj) {
         QToolButton* uploadButton = qobject_cast<QToolButton *>(obj);
         if (uploadButton) {
-            QMenu *menu = new QMenu(this);
-            menu->addAction(actionUploadNew);
-            menu->addSeparator();
-            menu->addAction(actionUploadAll);
+            QMenu *uploadMenu = new QMenu(this);
+            uploadMenu->addAction(actionUploadNew);
+            uploadMenu->addSeparator();
+            uploadMenu->addAction(actionUploadAll);
 
-            uploadButton->setMenu(menu);
+            uploadButton->setMenu(uploadMenu);
             uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
         }
     }
@@ -352,7 +352,7 @@ void MainWindow::on_actionMinimalInterface_toggled(bool checked)
     statusbar->setVisible(!checked);
 }
 
-void MainWindow::on_browseButton_clicked()
+void MainWindow::on_firmwareBrowseButton_clicked()
 {
     browseForFirmware();
 }
@@ -361,7 +361,7 @@ void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
 {
     QMenu *menu = monitorText->createStandardContextMenu();
 
-    menu->addAction(tr("Clear"), this, SLOT(clearMonitor()));
+    menu->addAction(tr("Clear"), logText, SLOT(clearMonitor()));
     menu->exec(monitorText->viewport()->mapToGlobal(pos));
 }
 
