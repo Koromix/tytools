@@ -282,7 +282,7 @@ static unsigned int teensy_guess_models(const tyb_firmware *fw,
     size = tyb_firmware_get_size(fw);
 
     if (size < ty_member_sizeof(tyb_board_model, signature))
-        return NULL;
+        return 0;
 
     /* Naive search with each board's signature, not pretty but unless
        thousands of models appear this is good enough. */

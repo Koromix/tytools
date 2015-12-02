@@ -352,7 +352,7 @@ int TyQt::runClient()
 #ifdef _WIN32
         if (client_console_) {
             showClientError("Cannot find main TyQt instance");
-            return false;
+            return 1;
         }
 #endif
 
