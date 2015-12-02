@@ -4,8 +4,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "tyqt.hh"
-
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
@@ -14,6 +12,8 @@
     #include <stdio.h>
     #include <stdlib.h>
 #endif
+
+#include "tyqt.hh"
 
 #ifdef QT_STATIC
     #include <QtPlugin>
@@ -35,7 +35,7 @@ static void set_standard_handle(DWORD n, HANDLE h, FILE *f, const char *mode)
     setvbuf(f, NULL, _IONBF, 0);
 }
 
-static bool setup_tyqtc_bridge()
+static bool open_tyqtc_bridge()
 {
     QStringList parts = QString(getenv("_TYQT_BRIDGE")).split(':');
     if (parts.count() != 3)
@@ -60,8 +60,9 @@ int main(int argc, char *argv[])
     TyQt app(argc, argv);
 
 #ifdef _WIN32
-    if (setup_tyqtc_bridge())
-        app.setClientConsole(true);
+    app.setClientConsole(open_tyqtc_bridge());
+#else
+    app.setClientConsole(ty_terminal_available(TY_DESCRIPTOR_STDOUT));
 #endif
 
     return app.exec();

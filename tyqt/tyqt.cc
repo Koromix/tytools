@@ -24,18 +24,6 @@ TyQt::TyQt(int &argc, char *argv[])
 
     setupOptionParser(parser_);
 
-    // This can be triggered from multiple threads, but Qt can queue signals appropriately
-    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
-        TY_UNUSED(task);
-        TY_UNUSED(udata);
-
-        if (type == TY_MESSAGE_LOG) {
-            auto msg = static_cast<const ty_log_message *>(data);
-            if (msg->level >= TY_LOG_WARNING)
-                tyQt->reportError(msg->msg);
-        }
-    }, nullptr);
-
     action_visible_ = new QAction(tr("&Visible"), this);
     action_visible_->setCheckable(true);
     action_visible_->setChecked(true);
@@ -131,10 +119,10 @@ void TyQt::activateMainWindow()
 
 void TyQt::reportError(const QString &msg)
 {
-    fprintf(stderr, "%s\n", qPrintable(msg));
-    last_error_ = msg;
-
     emit errorMessage(msg);
+
+    if (!client_console_ && main_windows_.empty())
+        showClientError(msg);
 }
 
 void TyQt::setVisible(bool visible)
@@ -333,10 +321,19 @@ int TyQt::run()
 
 int TyQt::runServer()
 {
-    if (!manager_.start()) {
-        QMessageBox::critical(nullptr, tr("TyQt (critical error)"), last_error_, QMessageBox::Close);
+    // This can be triggered from multiple threads, but Qt can queue signals appropriately
+    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
+        ty_message_default_handler(task, type, data, udata);
+
+        if (type == TY_MESSAGE_LOG) {
+            auto print = static_cast<const ty_log_message *>(data);
+            if (print->level >= TY_LOG_WARNING)
+                tyQt->reportError(print->msg);
+        }
+    }, nullptr);
+
+    if (!manager_.start())
         return 1;
-    }
 
     tray_icon_.show();
     openMainWindow();

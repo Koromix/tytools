@@ -28,8 +28,6 @@ class TyQt : public QApplication {
 
     SessionChannel channel_;
 
-    QString last_error_;
-
     Manager manager_;
 
     std::vector<MainWindow *> main_windows_;
