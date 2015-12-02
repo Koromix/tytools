@@ -45,8 +45,6 @@ public:
     static std::shared_ptr<Board> createBoard(tyb_board *board);
     virtual ~Board();
 
-    std::shared_ptr<Board> getSharedPtr();
-
     tyb_board *board() const;
 
     bool matchesTag(const QString &id);

@@ -50,11 +50,6 @@ Board::~Board()
     tyb_board_unref(board_);
 }
 
-shared_ptr<Board> Board::getSharedPtr()
-{
-    return shared_from_this();
-}
-
 tyb_board *Board::board() const
 {
     return board_;
