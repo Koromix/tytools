@@ -187,28 +187,6 @@ int get_board(tyb_board **rboard)
     return 0;
 }
 
-#if defined(__unix__) || defined(__APPLE__)
-
-static void handle_sigchld(int sig)
-{
-    TY_UNUSED(sig);
-
-    pid_t pid;
-
-    /* Reap all children, we don't use SIG_IGN or SA_NOCLDWAIT because
-       we want to wait for some children and ignore others. */
-    do {
-        pid = waitpid((pid_t)-1, 0, WNOHANG);
-    } while (pid > 0);
-}
-
-static void setup_signals(void)
-{
-    signal(SIGCHLD, handle_sigchld);
-}
-
-#endif
-
 int parse_main_option(int argc, char *argv[], int c)
 {
     TY_UNUSED(argc);
@@ -261,10 +239,6 @@ int main(int argc, char *argv[])
         print_main_usage(stderr);
         return EXIT_SUCCESS;
     }
-
-#if defined(__unix__) || defined(__APPLE__)
-    setup_signals();
-#endif
 
     if (strcmp(argv[1], "help") == 0 || strcmp(argv[1], "--help") == 0) {
         if (argc > 2 && *argv[2] != '-') {
