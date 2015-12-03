@@ -1361,26 +1361,6 @@ error:
     return r;
 }
 
-int tyb_upload2(tyb_board *board, const char *firmware_filename, const char *format_name,
-                int flags, ty_task **rtask)
-{
-    assert(board);
-    assert(firmware_filename);
-    assert(rtask);
-
-    tyb_firmware *firmware;
-    int r;
-
-    r = tyb_firmware_load(firmware_filename, format_name, &firmware);
-    if (r < 0)
-        return r;
-
-    r = tyb_upload(board, firmware, flags, rtask);
-    tyb_firmware_unref(firmware);
-
-    return r;
-}
-
 static int run_reset(ty_task *task)
 {
     tyb_board *board = task->board;

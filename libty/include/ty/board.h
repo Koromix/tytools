@@ -158,9 +158,6 @@ TY_PUBLIC void tyb_board_interface_get_descriptors(const tyb_board_interface *if
 
 TY_PUBLIC int tyb_upload(tyb_board *board, struct tyb_firmware *fw, int flags,
                          struct ty_task **rtask);
-TY_PUBLIC int tyb_upload2(tyb_board *board, const char *firmware_filename, const char *format_name,
-                          int flags, struct ty_task **rtask);
-
 TY_PUBLIC int tyb_reset(tyb_board *board, struct ty_task **rtask);
 TY_PUBLIC int tyb_reboot(tyb_board *board, struct ty_task **rtask);
 

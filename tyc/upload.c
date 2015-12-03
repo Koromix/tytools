@@ -51,6 +51,7 @@ void print_upload_usage(FILE *f)
 int upload(int argc, char *argv[])
 {
     tyb_board *board = NULL;
+    tyb_firmware *fw;
     ty_task *task = NULL;
     int r;
 
@@ -92,7 +93,12 @@ int upload(int argc, char *argv[])
     if (r < 0)
         goto cleanup;
 
-    r = tyb_upload2(board, firmware_filename, firmware_format, upload_flags, &task);
+    r = tyb_firmware_load(firmware_filename, firmware_format, &fw);
+    if (r < 0)
+        goto cleanup;
+
+    r = tyb_upload(board, fw, upload_flags, &task);
+    tyb_firmware_unref(fw);
     if (r < 0)
         goto cleanup;
 
