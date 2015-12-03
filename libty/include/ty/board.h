@@ -156,8 +156,8 @@ TY_PUBLIC tyd_device *tyb_board_interface_get_device(const tyb_board_interface *
 TY_PUBLIC tyd_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface);
 TY_PUBLIC void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int tyb_upload(tyb_board *board, struct tyb_firmware *fw, int flags,
-                         struct ty_task **rtask);
+TY_PUBLIC int tyb_upload(tyb_board *board, struct tyb_firmware **fws, unsigned int fws_count,
+                         int flags, struct ty_task **rtask);
 TY_PUBLIC int tyb_reset(tyb_board *board, struct ty_task **rtask);
 TY_PUBLIC int tyb_reboot(tyb_board *board, struct ty_task **rtask);
 

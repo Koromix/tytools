@@ -5,6 +5,11 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
+#ifdef _WIN32
+    #include <malloc.h>
+#else
+    #include <alloca.h>
+#endif
 #include <getopt.h>
 #include "ty.h"
 #include "main.h"
@@ -26,7 +31,8 @@ static const struct option long_options[] = {
 
 static int upload_flags = 0;
 static const char *firmware_format = NULL;
-static const char *firmware_filename = NULL;
+
+#define MAX_FIRMWARES 512
 
 void print_upload_usage(FILE *f)
 {
@@ -51,7 +57,8 @@ void print_upload_usage(FILE *f)
 int upload(int argc, char *argv[])
 {
     tyb_board *board = NULL;
-    tyb_firmware *fw;
+    tyb_firmware **fws;
+    unsigned int fws_count;
     ty_task *task = NULL;
     int r;
 
@@ -83,22 +90,27 @@ int upload(int argc, char *argv[])
     if (optind >= argc) {
         ty_error(TY_ERROR_PARAM, "Missing firmware filename");
         goto usage;
-    } else if (argc > optind + 1) {
-        ty_error(TY_ERROR_PARAM, "Only one positional argument is allowed");
-        goto usage;
+    } else if (argc - optind > MAX_FIRMWARES) {
+        ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %d files", MAX_FIRMWARES);
+        argc = optind + MAX_FIRMWARES;
     }
-    firmware_filename = argv[optind++];
 
     r = get_board(&board);
     if (r < 0)
         goto cleanup;
 
-    r = tyb_firmware_load(firmware_filename, firmware_format, &fw);
-    if (r < 0)
-        goto cleanup;
+    fws = alloca((size_t)(argc - optind) * sizeof(*fws));
+    fws_count = 0;
+    for (unsigned int i = (unsigned int)optind; i < (unsigned int)argc; i++) {
+        r = tyb_firmware_load(argv[i], firmware_format, &fws[fws_count]);
+        if (r < 0)
+            goto cleanup;
+        fws_count++;
+    }
 
-    r = tyb_upload(board, fw, upload_flags, &task);
-    tyb_firmware_unref(fw);
+    r = tyb_upload(board, fws, fws_count, upload_flags, &task);
+    for (unsigned int i = 0; i < fws_count; i++)
+        tyb_firmware_unref(fws[i]);
     if (r < 0)
         goto cleanup;
 

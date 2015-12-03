@@ -57,10 +57,10 @@ struct ty_task {
     TY_TASK
 
     tyb_board *board;
-
     union {
         struct {
-            tyb_firmware *firmware;
+            tyb_firmware **fws;
+            unsigned int fws_count;
             int flags;
         } upload;
     };
@@ -1213,7 +1213,7 @@ static int new_task(tyb_board *board, const struct _ty_task_vtable *vtable, ty_t
     int r;
 
     if (board->current_task)
-        return ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'", board->location);
+        return ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'", board->tag);
 
     r = _ty_task_new(sizeof(*task), vtable, &task);
     if (r < 0)
@@ -1232,6 +1232,45 @@ static void cleanup_task(ty_task *task)
     tyb_board_unref(task->board);
 }
 
+static int get_compatible_firmware(tyb_board *board, tyb_firmware **fws, unsigned int fws_count,
+                                   tyb_firmware **rfw)
+{
+    if (fws_count > 1) {
+        for (unsigned int i = 0; i < fws_count; i++) {
+            if (tyb_board_model_test_firmware(board->model, fws[i], NULL, 0)) {
+                *rfw = fws[i];
+                return 0;
+            }
+        }
+
+        return ty_error(TY_ERROR_FIRMWARE, "No firmware is compatible with '%s' (%s)",
+                        board->tag, board->model->name);
+    } else {
+        const tyb_board_model *guesses[8];
+        unsigned int count;
+
+        count = TY_COUNTOF(guesses);
+        if (tyb_board_model_test_firmware(board->model, fws[0], guesses, &count)) {
+            *rfw = fws[0];
+            return 0;
+        }
+
+        if (count) {
+            char buf[256], *ptr;
+
+            ptr = buf;
+            for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
+                ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
+                                i ? (i + 1 < count ? ", " : " and ") : "", guesses[i]->name);
+
+            return ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
+        } else {
+            return ty_error(TY_ERROR_FIRMWARE, "This firmware is not compatible with '%s'",
+                            board->tag);
+        }
+    }
+}
+
 static int upload_progress_callback(const tyb_board *board, const tyb_firmware *fw,
                                     size_t uploaded, void *udata)
 {
@@ -1245,10 +1284,20 @@ static int upload_progress_callback(const tyb_board *board, const tyb_firmware *
 static int run_upload(ty_task *task)
 {
     tyb_board *board = task->board;
-    tyb_firmware *fw = task->upload.firmware;
+    tyb_firmware *fw;
+    size_t fw_size;
     int flags = task->upload.flags, r;
 
-    ty_log(TY_LOG_INFO, "Firmware: %s", tyb_firmware_get_name(fw));
+    if (flags & TYB_UPLOAD_NOCHECK) {
+        fw = task->upload.fws[0];
+    } else if (model_is_valid(board->model)) {
+        r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
+        if (r < 0)
+            return r;
+    } else {
+        // Maybe we can identify the board and test the firmwares in bootloader mode?
+        fw = NULL;
+    }
 
     // Can't upload directly, should we try to reboot or wait?
     if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_UPLOAD)) {
@@ -1274,38 +1323,23 @@ wait:
         goto wait;
     }
 
-    if (!(flags & TYB_UPLOAD_NOCHECK)) {
-        bool compatible;
-        const tyb_board_model *guesses[8];
-        unsigned int count;
-
-        count = TY_COUNTOF(guesses);
-        compatible = tyb_board_model_test_firmware(board->model, fw, guesses, &count);
-
-        if (!compatible) {
-            if (count) {
-                char buf[256], *ptr;
-
-                ptr = buf;
-                for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
-                    ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
-                                    i ? (i + 1 < count ? ", " : " and ") : "", guesses[i]->name);
-
-                return ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
-            } else {
-                return ty_error(TY_ERROR_FIRMWARE, "This firmware was not compiled for a known device");
-            }
-        }
+    if (!fw) {
+        // FIXME: make sure board->model is set
+        r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
+        if (r < 0)
+            return r;
     }
 
-    if (tyb_firmware_get_size(fw) >= 1024) {
+    ty_log(TY_LOG_INFO, "Firmware: %s", tyb_firmware_get_name(fw));
+    fw_size = tyb_firmware_get_size(fw);
+    if (fw_size >= 1024) {
         ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
-               (tyb_firmware_get_size(fw) + 1023) / 1024,
-               (double)tyb_firmware_get_size(fw) / (double)tyb_board_model_get_code_size(board->model) * 100.0);
+               (fw_size + 1023) / 1024,
+               (double)fw_size / (double)tyb_board_model_get_code_size(board->model) * 100.0);
     } else {
         ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
-               tyb_firmware_get_size(fw),
-               (double)tyb_firmware_get_size(fw) / (double)tyb_board_model_get_code_size(board->model) * 100.0);
+               fw_size,
+               (double)fw_size / (double)tyb_board_model_get_code_size(board->model) * 100.0);
     }
 
     r = tyb_board_upload(board, fw, upload_progress_callback, NULL);
@@ -1328,7 +1362,10 @@ wait:
 
 static void cleanup_upload(ty_task *task)
 {
-    tyb_firmware_unref(task->upload.firmware);
+    for (unsigned int i = 0; i < task->upload.fws_count; i++)
+        tyb_firmware_unref(task->upload.fws[i]);
+    free(task->upload.fws);
+
     cleanup_task(task);
 }
 
@@ -1337,10 +1374,12 @@ static const struct _ty_task_vtable upload_task_vtable = {
     .cleanup = cleanup_upload
 };
 
-int tyb_upload(tyb_board *board, tyb_firmware *firmware, int flags, ty_task **rtask)
+int tyb_upload(tyb_board *board, tyb_firmware **fws, unsigned int fws_count, int flags,
+               ty_task **rtask)
 {
     assert(board);
-    assert(firmware);
+    assert(fws);
+    assert(fws_count);
     assert(rtask);
 
     ty_task *task = NULL;
@@ -1350,7 +1389,17 @@ int tyb_upload(tyb_board *board, tyb_firmware *firmware, int flags, ty_task **rt
     if (r < 0)
         goto error;
 
-    task->upload.firmware = tyb_firmware_ref(firmware);
+    if (flags & TYB_UPLOAD_NOCHECK)
+        fws_count = 1;
+
+    task->upload.fws = malloc(fws_count * sizeof(tyb_firmware *));
+    if (!task->upload.fws) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+    for (unsigned int i = 0; i < fws_count; i++)
+        task->upload.fws[i] = tyb_firmware_ref(fws[i]);
+    task->upload.fws_count = fws_count;
     task->upload.flags = flags;
 
     *rtask = task;

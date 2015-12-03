@@ -226,7 +226,7 @@ TaskInterface Board::upload(const QString &filename, bool reset_after)
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
 
-    r = tyb_upload(board_, fw, reset_after ? 0 : TYB_UPLOAD_NORESET, &task);
+    r = tyb_upload(board_, &fw, 1, reset_after ? 0 : TYB_UPLOAD_NORESET, &task);
     tyb_firmware_unref(fw);
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
