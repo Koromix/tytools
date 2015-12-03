@@ -220,7 +220,8 @@ int list(int argc, char *argv[])
             } else if (strcmp(optarg, "json") == 0) {
                 output = OUTPUT_JSON;
             } else {
-                return ty_error(TY_ERROR_PARAM, "--output must be one off plain or json");
+                ty_log(TY_LOG_ERROR, "--output must be one off plain or json");
+                goto usage;
             }
             break;
         case 'v':
@@ -233,38 +234,38 @@ int list(int argc, char *argv[])
 
         default:
             r = parse_main_option(argc, argv, c);
-            if (r <= 0)
-                return r;
+            if (r)
+                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
             break;
         }
     }
 
     if (argc > optind) {
-        ty_error(TY_ERROR_PARAM, "No positional argument is allowed");
+        ty_log(TY_LOG_ERROR, "No positional argument is allowed");
         goto usage;
     }
 
     r = get_manager(&manager);
     if (r < 0)
-        return r;
+        return EXIT_FAILURE;
 
     r = tyb_monitor_list(manager, list_callback, NULL);
     if (r < 0)
-        return r;
+        return EXIT_FAILURE;
 
     if (watch) {
         r = tyb_monitor_register_callback(manager, list_callback, NULL);
         if (r < 0)
-            return r;
+            return EXIT_FAILURE;
 
         r = tyb_monitor_wait(manager, NULL, NULL, -1);
         if (r < 0)
-            return r;
+            return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 
 usage:
     print_list_usage(stderr);
-    return TY_ERROR_PARAM;
+    return EXIT_FAILURE;
 }

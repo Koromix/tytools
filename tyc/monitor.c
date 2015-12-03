@@ -378,15 +378,18 @@ int monitor(int argc, char *argv[])
             } else if (strcmp(optarg, "both") == 0) {
                 directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
             } else {
-                return ty_error(TY_ERROR_PARAM, "--direction must be one off input, output or both");
+                ty_log(TY_LOG_ERROR, "--direction must be one off input, output or both");
+                goto usage;
             }
             break;
 
         case 'b':
             errno = 0;
             device_rate = (uint32_t)strtoul(optarg, NULL, 10);
-            if (errno)
-                return ty_error(TY_ERROR_PARAM, "--baud requires a number");
+            if (errno) {
+                ty_log(TY_LOG_ERROR, "--baud requires a number");
+                goto usage;
+            }
             break;
         case 'd':
            device_flags &= ~TYD_SERIAL_CSIZE_MASK;
@@ -397,7 +400,8 @@ int monitor(int argc, char *argv[])
             } else if (strcmp(optarg, "7") == 0) {
                 device_flags |= TYD_SERIAL_7BITS_CSIZE;
             } else if (strcmp(optarg, "8") != 0) {
-                return ty_error(TY_ERROR_PARAM, "--databits must be one off 5, 6, 7 or 8");
+                ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
+                goto usage;
             }
         case 'f':
             device_flags &= ~TYD_SERIAL_FLOW_MASK;
@@ -406,8 +410,8 @@ int monitor(int argc, char *argv[])
             } else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "rtscts") == 0) {
                 device_flags |= TYD_SERIAL_RTSCTS_FLOW;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") == 0) {
-                return ty_error(TY_ERROR_PARAM,
-                                "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
+                ty_log(TY_LOG_ERROR, "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
+                goto usage;
             }
             break;
         case MONITOR_OPTION_NORESET:
@@ -420,8 +424,8 @@ int monitor(int argc, char *argv[])
             } else if (strcmp(optarg, "e") == 0 || strcmp(optarg, "even") == 0) {
                 device_flags |= TYD_SERIAL_EVEN_PARITY;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") != 0) {
-                return ty_error(TY_ERROR_PARAM,
-                                "--parity must be one off o (odd), e (even) or n (none)");
+                ty_log(TY_LOG_ERROR, "--parity must be one off o (odd), e (even) or n (none)");
+                goto usage;
             }
             break;
 
@@ -432,22 +436,24 @@ int monitor(int argc, char *argv[])
         case MONITOR_OPTION_TIMEOUT_EOF:
             errno = 0;
             timeout_eof = (int)strtol(optarg, NULL, 10);
-            if (errno)
-                return ty_error(TY_ERROR_PARSE, "--timeout requires a number");
+            if (errno) {
+                ty_log(TY_LOG_ERROR, "--timeout requires a number");
+                goto usage;
+            }
             if (timeout_eof < 0)
                 timeout_eof = -1;
             break;
 
         default:
             r = parse_main_option(argc, argv, c);
-            if (r <= 0)
-                return r;
+            if (r)
+                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
             break;
         }
     }
 
     if (argc > optind) {
-        ty_error(TY_ERROR_PARAM, "No positional argument is allowed");
+        ty_log(TY_LOG_ERROR, "No positional argument is allowed");
         goto usage;
     }
 
@@ -497,9 +503,9 @@ cleanup:
     stop_stdin_thread();
 #endif
     tyb_board_unref(board);
-    return r;
+    return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 usage:
     print_monitor_usage(stderr);
-    return TY_ERROR_PARAM;
+    return EXIT_FAILURE;
 }

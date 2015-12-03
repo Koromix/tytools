@@ -45,14 +45,14 @@ int reset(int argc, char *argv[])
 
         default:
             r = parse_main_option(argc, argv, c);
-            if (r <= 0)
-                return r;
+            if (r)
+                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
             break;
         }
     }
 
     if (argc > optind) {
-        ty_error(TY_ERROR_PARAM, "No positional argument is allowed");
+        ty_log(TY_LOG_ERROR, "No positional argument is allowed");
         goto usage;
     }
 
@@ -73,9 +73,9 @@ int reset(int argc, char *argv[])
 cleanup:
     ty_task_unref(task);
     tyb_board_unref(board);
-    return r;
+    return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 usage:
     print_reset_usage(stderr);
-    return TY_ERROR_PARAM;
+    return EXIT_FAILURE;
 }

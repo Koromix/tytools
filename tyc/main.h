@@ -31,7 +31,7 @@ enum {
     MAIN_OPTION_EXPERIMENTAL
 };
 
-#define MAIN_SHORT_OPTIONS
+#define MAIN_SHORT_OPTIONS ":"
 #define MAIN_LONG_OPTIONS \
     {"help",         no_argument,       NULL, MAIN_OPTION_HELP}, \
     {"version",      no_argument,       NULL, MAIN_OPTION_VERSION}, \

@@ -216,24 +216,31 @@ int parse_main_option(int argc, char *argv[], int c)
     switch (c) {
     case MAIN_OPTION_HELP:
         print_usage(stdout, current_command);
-        return 0;
+        return 1;
     case MAIN_OPTION_VERSION:
         print_version(stdout);
-        return 0;
+        return 1;
 
     case MAIN_OPTION_BOARD:
         board_tag = optarg;
-        return 1;
+        return 0;
 
     case MAIN_OPTION_EXPERIMENTAL:
         ty_config_experimental = true;
-        return 1;
+        return 0;
+
+    case ':':
+        ty_log(TY_LOG_ERROR, "Option '%s' takes an argument", argv[optind - 1]);
+        print_usage(stderr, current_command);
+        return TY_ERROR_PARAM;
+    case '?':
+        ty_log(TY_LOG_ERROR, "Unknown option '%s'", argv[optind - 1]);
+        print_usage(stderr, current_command);
+        return TY_ERROR_PARAM;
     }
 
-    ty_error(TY_ERROR_PARAM, "Unknown option '%s'", argv[optind - 1]);
-    print_usage(stderr, current_command);
-
-    return TY_ERROR_PARAM;
+    assert(false);
+    return 0;
 }
 
 static const struct command *find_command(const char *name)
@@ -252,7 +259,7 @@ int main(int argc, char *argv[])
 
     if (argc < 2) {
         print_main_usage(stderr);
-        return 0;
+        return EXIT_SUCCESS;
     }
 
 #if defined(__unix__) || defined(__APPLE__)
@@ -265,24 +272,24 @@ int main(int argc, char *argv[])
             if (cmd) {
                 print_usage(stdout, cmd);
             } else {
-                ty_error(TY_ERROR_PARAM, "Unknown command '%s'", argv[2]);
+                ty_log(TY_LOG_ERROR, "Unknown command '%s'", argv[2]);
                 print_usage(stderr, NULL);
             }
         } else {
             print_usage(stdout, NULL);
         }
 
-        return 0;
+        return EXIT_SUCCESS;
     } else if (strcmp(argv[1], "--version") == 0) {
         print_version(stdout);
-        return 0;
+        return EXIT_SUCCESS;
     }
 
     current_command = find_command(argv[1]);
     if (!current_command) {
-        ty_error(TY_ERROR_PARAM, "Unknown command '%s'", argv[1]);
+        ty_log(TY_LOG_ERROR, "Unknown command '%s'", argv[1]);
         print_main_usage(stderr);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // We'll print our own, for consistency
@@ -293,5 +300,5 @@ int main(int argc, char *argv[])
     tyb_board_unref(main_board);
     tyb_monitor_free(board_manager);
 
-    return !!r;
+    return r;
 }
