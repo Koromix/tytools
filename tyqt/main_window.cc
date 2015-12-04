@@ -271,18 +271,14 @@ void MainWindow::on_actionUploadNew_triggered()
 
 void MainWindow::on_actionReset_triggered()
 {
-    if (!current_board_)
-        return;
-
-    current_board_->reset().start();
+    for (auto &board: selected_boards_)
+        board->reset().start();
 }
 
 void MainWindow::on_actionReboot_triggered()
 {
-    if (!current_board_)
-        return;
-
-    current_board_->reboot().start();
+    for (auto &board: selected_boards_)
+        board->reboot().start();
 }
 
 void MainWindow::on_monitorEdit_returnPressed()
