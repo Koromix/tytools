@@ -16,6 +16,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 
     Manager *manager_;
     std::shared_ptr<Board> current_board_;
+    QList<std::shared_ptr<Board>> selected_boards_;
 
     bool monitor_autoscroll_ = true;
     QTextCursor monitor_cursor_;
@@ -27,15 +28,13 @@ public slots:
     void showErrorMessage(const QString &msg);
 
 private:
-    void disableBoardWidgets();
-
     QString browseForFirmware();
 
 private slots:
     void setBoardDefaults(std::shared_ptr<Board> board);
-    void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
-    void refreshBoardInfo();
 
+    void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
+    void refreshBoardsInfo();
     void updatePropertyField(const QByteArray &name, const QVariant &value);
 
     void monitorTextChanged();

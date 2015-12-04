@@ -24,48 +24,23 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     : QMainWindow(parent), manager_(manager)
 {
     setupUi(this);
+    refreshBoardsInfo();
 
     connect(actionQuit, &QAction::triggered, TyQt::instance(), &TyQt::quit);
 
-
-    disableBoardWidgets();
-    monitorText->setWordWrapMode(QTextOption::WrapAnywhere);
-
     boardList->setModel(manager);
     boardList->setItemDelegate(new BoardItemDelegate(manager));
-
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
     connect(manager, &Manager::boardAdded, this, &MainWindow::setBoardDefaults);
 
+    monitorText->setWordWrapMode(QTextOption::WrapAnywhere);
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
     connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
 
+    logText->setMaximumBlockCount(1000);
+
     for (auto &board: *manager)
         setBoardDefaults(board);
-
-    logText->setMaximumBlockCount(1000);
-}
-
-void MainWindow::disableBoardWidgets()
-{
-    setWindowTitle("TyQt");
-
-    infoTab->setEnabled(false);
-    modelText->clear();
-    locationText->clear();
-    serialText->clear();
-    interfaceTree->clear();
-
-    monitorTab->setEnabled(false);
-    monitorEdit->setEnabled(false);
-
-    actionUpload->setEnabled(false);
-    actionUploadNew->setEnabled(false);
-    uploadTab->setEnabled(false);
-    firmwarePath->clear();
-
-    actionReset->setEnabled(false);
-    actionReboot->setEnabled(false);
 }
 
 QString MainWindow::browseForFirmware()
@@ -89,80 +64,97 @@ void MainWindow::setBoardDefaults(shared_ptr<Board> board)
         boardList->setCurrentIndex(manager_->index(0, 0));
 }
 
-void MainWindow::selectionChanged(const QItemSelection &selected, const QItemSelection &previous)
+void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelection &previous)
 {
+    TY_UNUSED(newsel);
     TY_UNUSED(previous);
 
-    if (current_board_)
+    monitorText->setDocument(nullptr);
+    if (current_board_) {
         current_board_->disconnect(this);
-
-    if (selected.indexes().isEmpty()) {
-        monitorText->setDocument(nullptr);
-
         current_board_ = nullptr;
-        disableBoardWidgets();
+    }
+    selected_boards_.clear();
 
-        return;
+    auto selected = boardList->selectionModel()->selection();
+    for (auto &idx: selected.indexes())
+        selected_boards_.append(manager_->board(idx.row()));
+
+    if (selected_boards_.count() == 1) {
+        current_board_ = selected_boards_.front();
+
+        firmwarePath->setText(current_board_->property("firmware").toString());
+        resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
+        clearOnReset->setChecked(current_board_->clearOnReset());
+
+        monitor_autoscroll_ = true;
+        monitor_cursor_ = QTextCursor();
+        monitorText->setDocument(&current_board_->serialDocument());
+        monitorText->moveCursor(QTextCursor::End);
+        monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
+
+        connect(current_board_.get(), &Board::boardChanged, this, &MainWindow::refreshBoardsInfo);
+        connect(current_board_.get(), &Board::propertyChanged, this, &MainWindow::updatePropertyField);
+    } else {
+        firmwarePath->clear();
     }
 
-    current_board_ = manager_->board(selected.indexes().front().row());
-
-    firmwarePath->setText(current_board_->property("firmware").toString());
-    resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
-
-    monitor_autoscroll_ = true;
-    clearOnReset->setChecked(current_board_->clearOnReset());
-
-    monitor_cursor_ = QTextCursor();
-    monitorText->setDocument(&current_board_->serialDocument());
-    monitorText->moveCursor(QTextCursor::End);
-    monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
-
-    connect(current_board_.get(), &Board::boardChanged, this, &MainWindow::refreshBoardInfo);
-    connect(current_board_.get(), &Board::propertyChanged, this, &MainWindow::updatePropertyField);
-
-    refreshBoardInfo();
+    refreshBoardsInfo();
 }
 
-void MainWindow::refreshBoardInfo()
+void MainWindow::refreshBoardsInfo()
 {
-    setWindowTitle(QString("TyQt - %1 - %2")
-                   .arg(current_board_->modelName())
-                   .arg(current_board_->tag()));
+    if (current_board_) {
+        setWindowTitle(QString("TyQt - %1 - %2")
+                       .arg(current_board_->modelName())
+                       .arg(current_board_->tag()));
 
-    infoTab->setEnabled(true);
-    modelText->setText(current_board_->modelName());
-    locationText->setText(current_board_->location());
-    serialText->setText(QString::number(current_board_->serialNumber()));
+        infoTab->setEnabled(true);
+        modelText->setText(current_board_->modelName());
+        locationText->setText(current_board_->location());
+        serialText->setText(QString::number(current_board_->serialNumber()));
 
-    interfaceTree->clear();
-    for (auto iface: current_board_->interfaces()) {
-        auto item = new QTreeWidgetItem(QStringList{iface.desc, iface.path});
-        item->setToolTip(1, iface.path);
+        interfaceTree->clear();
+        for (auto iface: current_board_->interfaces()) {
+            auto item = new QTreeWidgetItem(QStringList{iface.desc, iface.path});
+            item->setToolTip(1, iface.path);
 
-        new QTreeWidgetItem(item, QStringList{tr("capabilities"),
-                            Board::makeCapabilityList(current_board_->capabilities()).join(", ")});
-        new QTreeWidgetItem(item, QStringList{tr("location"),
-                            QString("%1:%2").arg(current_board_->location(), QString::number(iface.number))});
+            new QTreeWidgetItem(item, QStringList{tr("capabilities"),
+                                Board::makeCapabilityList(current_board_->capabilities()).join(", ")});
+            new QTreeWidgetItem(item, QStringList{tr("location"),
+                                QString("%1:%2").arg(current_board_->location(), QString::number(iface.number))});
 
-        interfaceTree->addTopLevelItem(item);
-    }
+            interfaceTree->addTopLevelItem(item);
+        }
 
-    monitorTab->setEnabled(true);
-    monitorEdit->setEnabled(current_board_->isSerialAvailable());
-
-    if (current_board_->isUploadAvailable()) {
-        actionUpload->setEnabled(true);
-        actionUploadNew->setEnabled(true);
+        monitorTab->setEnabled(true);
+        monitorEdit->setEnabled(current_board_->isSerialAvailable());
+        actionClearMonitor->setEnabled(true);
         uploadTab->setEnabled(true);
     } else {
-        actionUpload->setEnabled(false);
-        actionUploadNew->setEnabled(false);
+        setWindowTitle("TyQt");
+
+        infoTab->setEnabled(false);
+        modelText->clear();
+        locationText->clear();
+        serialText->clear();
+        interfaceTree->clear();
+
+        monitorTab->setEnabled(false);
+        actionClearMonitor->setEnabled(false);
         uploadTab->setEnabled(false);
     }
 
-    actionReset->setEnabled(current_board_->isResetAvailable());
-    actionReboot->setEnabled(current_board_->isRebootAvailable());
+    bool upload = false, reset = false, reboot = false;
+    for (auto &board: selected_boards_) {
+        upload |= board->isUploadAvailable();
+        reset |= board->isResetAvailable();
+        reboot |= board->isRebootAvailable();
+    }
+    actionUpload->setEnabled(upload);
+    actionUploadNew->setEnabled(upload);
+    actionReset->setEnabled(reset);
+    actionReboot->setEnabled(reboot);
 }
 
 void MainWindow::updatePropertyField(const QByteArray &name, const QVariant &value)
