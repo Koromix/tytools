@@ -27,19 +27,6 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
 
     connect(actionQuit, &QAction::triggered, TyQt::instance(), &TyQt::quit);
 
-    QObject *obj = toolBar->widgetForAction(actionUpload);
-    if (obj) {
-        QToolButton* uploadButton = qobject_cast<QToolButton *>(obj);
-        if (uploadButton) {
-            QMenu *uploadMenu = new QMenu(this);
-            uploadMenu->addAction(actionUploadNew);
-            uploadMenu->addSeparator();
-            uploadMenu->addAction(actionUploadAll);
-
-            uploadButton->setMenu(uploadMenu);
-            uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
-        }
-    }
 
     disableBoardWidgets();
     monitorText->setWordWrapMode(QTextOption::WrapAnywhere);
@@ -288,11 +275,6 @@ void MainWindow::on_actionUploadNew_triggered()
         return;
 
     Commands::upload(*current_board_, filename).start();
-}
-
-void MainWindow::on_actionUploadAll_triggered()
-{
-    Commands::uploadAll().start();
 }
 
 void MainWindow::on_actionReset_triggered()

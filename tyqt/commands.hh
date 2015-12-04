@@ -21,8 +21,6 @@ namespace Commands {
 
     TaskInterface upload(const QString &tag, const QString &firmware);
     TaskInterface upload(Board &board, const QString &firmware);
-
-    TaskInterface uploadAll();
 }
 
 #endif

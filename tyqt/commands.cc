@@ -136,25 +136,3 @@ TaskInterface Commands::upload(Board &board, const QString &firmware)
 
     return board.upload(board.property("firmware").toString(), board.property("resetAfter").toBool());
 }
-
-TaskInterface Commands::uploadAll()
-{
-    return make_task<ImmediateTask>([]() {
-        auto manager = tyQt->manager();
-
-        unsigned int uploaded = 0;
-        for (auto &board: manager->boards()) {
-            if (board->property("firmware").toString().isEmpty())
-                continue;
-
-            board->upload(board->property("firmware").toString(),
-                          board->property("resetAfter").toBool());
-            uploaded++;
-        }
-
-        if (!uploaded)
-            ty_error(TY_ERROR_PARAM, "Select a firmware for at least one board to use this functionality");
-
-        return !!uploaded;
-    });
-}

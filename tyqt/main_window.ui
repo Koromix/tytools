@@ -342,8 +342,6 @@
     <addaction name="actionUpload"/>
     <addaction name="actionUploadNew"/>
     <addaction name="separator"/>
-    <addaction name="actionUploadAll"/>
-    <addaction name="separator"/>
     <addaction name="actionReset"/>
     <addaction name="actionReboot"/>
     <addaction name="separator"/>
@@ -524,14 +522,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
-   </property>
-  </action>
-  <action name="actionUploadAll">
-   <property name="text">
-    <string>Upload All</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="actionClearMonitor">
