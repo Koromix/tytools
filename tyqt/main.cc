@@ -60,6 +60,8 @@ int main(int argc, char *argv[])
 {
     TyQt app(argc, argv);
 
+    qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
+
 #ifdef _WIN32
     app.setClientConsole(open_tyqtc_bridge());
 #else

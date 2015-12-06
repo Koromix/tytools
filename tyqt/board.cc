@@ -29,6 +29,9 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_notifier_.setMinInterval(5);
     connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &Board::serialReceived);
 
+    connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
+    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
+
     refreshBoard();
 }
 
@@ -289,7 +292,7 @@ bool Board::sendSerial(const QByteArray &buf)
 
 TaskInterface Board::runningTask() const
 {
-    return task();
+    return task_watcher_.task();
 }
 
 void Board::serialReceived(ty_descriptor desc)
@@ -318,13 +321,17 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
         task_finish_ = nullptr;
     }
 
-    emit taskProgress("", 0, 0);
-    setTask(nullptr);
+    emit taskChanged();
+    task_watcher_.setTask(nullptr);
 }
 
 void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
 {
-    emit taskProgress(action, value, max);
+    TY_UNUSED(action);
+    TY_UNUSED(value);
+    TY_UNUSED(max);
+
+    emit taskChanged();
 }
 
 TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, shared_ptr<void> result)> finish)
@@ -332,7 +339,7 @@ TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, sh
     task_finish_ = finish;
 
     TaskInterface intf = make_task<TyTask>(task);
-    setTask(&intf);
+    task_watcher_.setTask(&intf);
 
     return intf;
 }
@@ -518,11 +525,7 @@ void Manager::handleAddedEvent(tyb_board *board)
     auto proxy_ptr = Board::createBoard(board);
     Board *proxy = proxy_ptr.get();
 
-    connect(proxy, &Board::taskProgress, this, [=](const QString &action, unsigned int progress, unsigned int total) {
-        TY_UNUSED(action);
-        TY_UNUSED(progress);
-        TY_UNUSED(total);
-
+    connect(proxy, &Board::taskChanged, this, [=]() {
         refreshBoardItem(proxy);
     });
 

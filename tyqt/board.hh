@@ -32,7 +32,7 @@ struct BoardInterfaceInfo {
     uint8_t number;
 };
 
-class Board : public QObject, public std::enable_shared_from_this<Board>, private TaskListener {
+class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_OBJECT
 
     tyb_board *board_;
@@ -45,6 +45,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board>, privat
     QString firmware_name_;
     bool clear_on_reset_ = false;
 
+    TaskWatcher task_watcher_;
     std::function<void(bool success, std::shared_ptr<void> result)> task_finish_;
 
 public:
@@ -102,16 +103,16 @@ signals:
 
     void propertyChanged(const QByteArray &name, const QVariant &value);
 
-    void taskProgress(const QString &action, unsigned int progress, unsigned int total);
+    void taskChanged();
 
 private slots:
     void serialReceived(ty_descriptor desc);
 
+    void notifyFinished(bool success, std::shared_ptr<void> result);
+    void notifyProgress(const QString &action, unsigned int value, unsigned int max);
+
 private:
     Board(tyb_board *board, QObject *parent = nullptr);
-
-    void notifyFinished(bool success, std::shared_ptr<void> result) override;
-    void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
 
     TaskInterface wrapBoardTask(ty_task *task,
                                 std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
