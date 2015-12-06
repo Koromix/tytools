@@ -138,6 +138,22 @@ bool Board::isSerialAvailable() const
     return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL);
 }
 
+void Board::setFirmware(const QString &firmware)
+{
+    firmware_ = firmware;
+    emit propertyChanged("firmware", firmware);
+}
+
+QString Board::firmware() const
+{
+    return firmware_;
+}
+
+QString Board::firmwareName() const
+{
+    return firmware_name_;
+}
+
 void Board::setClearOnReset(bool clear)
 {
     clear_on_reset_ = clear;
@@ -231,7 +247,15 @@ TaskInterface Board::upload(const QString &filename, bool reset_after)
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
 
-    return wrapBoardTask(task);
+    return wrapBoardTask(task, [this](bool success, shared_ptr<void> result) {
+        if (!success)
+            return;
+
+        auto fw = static_cast<tyb_firmware *>(result.get());
+        setFirmware(tyb_firmware_get_filename(fw));
+        firmware_name_ = tyb_firmware_get_name(fw);
+        emit propertyChanged("firmwareName", firmware_name_);
+    });
 }
 
 TaskInterface Board::reset()
@@ -288,7 +312,11 @@ void Board::serialReceived(ty_descriptor desc)
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 {
     TY_UNUSED(success);
-    TY_UNUSED(result);
+
+    if (task_finish_) {
+        task_finish_(success, result);
+        task_finish_ = nullptr;
+    }
 
     emit taskProgress("", 0, 0);
     setTask(nullptr);
@@ -299,8 +327,10 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
     emit taskProgress(action, value, max);
 }
 
-TaskInterface Board::wrapBoardTask(ty_task *task)
+TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, shared_ptr<void> result)> finish)
 {
+    task_finish_ = finish;
+
     TaskInterface intf = make_task<TyTask>(task);
     setTask(&intf);
 

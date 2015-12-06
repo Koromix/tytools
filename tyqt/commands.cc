@@ -115,7 +115,7 @@ TaskInterface Commands::upload(const QString &tag, const QString &firmware)
         if (manager->boardCount() == 1) {
             board = manager->board(0);
         } else {
-            board = manager->find([=](Board &board) { return board.property("firmware") == firmware; });
+            board = manager->find([=](Board &board) { return board.firmware() == firmware; });
             if (!board) {
                 return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
                     return upload(board, firmware);
@@ -131,8 +131,13 @@ TaskInterface Commands::upload(const QString &tag, const QString &firmware)
 
 TaskInterface Commands::upload(Board &board, const QString &firmware)
 {
-    if (!firmware.isEmpty())
-        board.setProperty("firmware", firmware);
+    QString firmware2 = firmware;
+    if (firmware2.isEmpty()) {
+        if (board.firmware().isEmpty())
+            return make_task<FailedTask>(TyQt::tr("No firmware to upload"));
 
-    return board.upload(board.property("firmware").toString(), board.property("resetAfter").toBool());
+        firmware2 = board.firmware();
+    }
+
+    return board.upload(firmware2, board.property("resetAfter").toBool());
 }

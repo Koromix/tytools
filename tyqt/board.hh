@@ -11,6 +11,7 @@
 #include <QAbstractListModel>
 #include <QTextDocument>
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -38,9 +39,13 @@ class Board : public QObject, public std::enable_shared_from_this<Board>, privat
 
     DescriptorSetNotifier serial_notifier_;
     bool serial_available_ = false;
+    QTextDocument serial_document_;
+
+    QString firmware_;
+    QString firmware_name_;
     bool clear_on_reset_ = false;
 
-    QTextDocument serial_document_;
+    std::function<void(bool success, std::shared_ptr<void> result)> task_finish_;
 
 public:
     static std::shared_ptr<Board> createBoard(tyb_board *board);
@@ -67,6 +72,9 @@ public:
     bool isRebootAvailable() const;
     bool isSerialAvailable() const;
 
+    void setFirmware(const QString &firmware);
+    QString firmware() const;
+    QString firmwareName() const;
     void setClearOnReset(bool clear);
     bool clearOnReset() const;
 
@@ -105,7 +113,8 @@ private:
     void notifyFinished(bool success, std::shared_ptr<void> result) override;
     void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
 
-    TaskInterface wrapBoardTask(ty_task *task);
+    TaskInterface wrapBoardTask(ty_task *task,
+                                std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
 };
 
 class Manager : public QAbstractListModel {

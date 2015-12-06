@@ -50,9 +50,6 @@ QString MainWindow::browseForFirmware()
     if (filename.isEmpty())
         return QString();
 
-    firmwarePath->setText(filename);
-    emit firmwarePath->editingFinished();
-
     return filename;
 }
 
@@ -83,7 +80,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     if (selected_boards_.count() == 1) {
         current_board_ = selected_boards_.front();
 
-        firmwarePath->setText(current_board_->property("firmware").toString());
+        firmwarePath->setText(current_board_->firmware());
         resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
         clearOnReset->setChecked(current_board_->clearOnReset());
 
@@ -222,9 +219,9 @@ void MainWindow::on_firmwarePath_editingFinished()
             return;
         }
 
-        current_board_->setProperty("firmware", firmware);
+        current_board_->setFirmware(firmware);
     } else {
-        current_board_->setProperty("firmware", QVariant());
+        current_board_->setFirmware("");
     }
 }
 
@@ -246,7 +243,7 @@ void MainWindow::on_actionUpload_triggered()
     if (!current_board_)
         return;
 
-    if (current_board_->property("firmware").toString().isEmpty()) {
+    if (current_board_->firmware().isEmpty()) {
         QString filename = browseForFirmware();
         if (filename.isEmpty())
             return;
@@ -332,7 +329,12 @@ void MainWindow::on_actionClearMonitor_triggered()
 
 void MainWindow::on_firmwareBrowseButton_clicked()
 {
-    browseForFirmware();
+    QString filename = browseForFirmware();
+    if (filename.isEmpty())
+        return;
+
+    firmwarePath->setText(filename);
+    emit firmwarePath->editingFinished();
 }
 
 void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
