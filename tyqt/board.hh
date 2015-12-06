@@ -102,7 +102,7 @@ private slots:
 private:
     Board(tyb_board *board, QObject *parent = nullptr);
 
-    void notifyFinished(bool success) override;
+    void notifyFinished(bool success, std::shared_ptr<void> result) override;
     void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
 
     TaskInterface wrapBoardTask(ty_task *task);

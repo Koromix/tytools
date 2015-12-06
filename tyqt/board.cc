@@ -285,9 +285,11 @@ void Board::serialReceived(ty_descriptor desc)
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
 }
 
-void Board::notifyFinished(bool success)
+void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 {
     TY_UNUSED(success);
+    TY_UNUSED(result);
+
     emit taskProgress("", 0, 0);
 }
 

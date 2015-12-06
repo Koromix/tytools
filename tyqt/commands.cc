@@ -23,7 +23,7 @@ public:
 
 private:
     void notifyLog(ty_log_level level, const QString &msg) override;
-    void notifyFinished(bool success) override;
+    void notifyFinished(bool success, shared_ptr<void> result) override;
     void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
 };
 
@@ -33,7 +33,7 @@ bool BoardSelectorTask::start()
 
     auto dialog = tyQt->openSelector();
     if (!dialog) {
-        reportFinished(false);
+        reportFinished(false, nullptr);
         return true;
     }
 
@@ -41,7 +41,7 @@ bool BoardSelectorTask::start()
     QObject::connect(dialog, &SelectorDialog::boardSelected, [this, ptr](Board *board) {
         if (!board) {
             reportLog(TY_LOG_INFO, QString("%1 was canceled").arg(title_));
-            reportFinished(false);
+            reportFinished(false, nullptr);
             return;
         }
 
@@ -59,9 +59,9 @@ void BoardSelectorTask::notifyLog(ty_log_level level, const QString &msg)
     reportLog(level, msg);
 }
 
-void BoardSelectorTask::notifyFinished(bool success)
+void BoardSelectorTask::notifyFinished(bool success, shared_ptr<void> result)
 {
-    reportFinished(success);
+    reportFinished(success, result);
 }
 
 void BoardSelectorTask::notifyProgress(const QString &action, unsigned int value, unsigned int max)

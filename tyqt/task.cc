@@ -30,14 +30,16 @@ void Task::reportStarted()
         l->notifyStarted();
 }
 
-void Task::reportFinished(bool success)
+void Task::reportFinished(bool success, shared_ptr<void> result)
 {
     status_ = TY_TASK_STATUS_FINISHED;
+    success_ = success;
+    result_ = result;
 
     intf_.reportFinished(&success);
     QMutexLocker locker(&listeners_lock_);
     for (auto &l: listeners_)
-        l->notifyFinished(success);
+        l->notifyFinished(success, result);
 }
 
 void Task::reportProgress(const QString &action, unsigned int value, unsigned int max)
@@ -67,6 +69,16 @@ unsigned int Task::progressMaximum() const
     return progress_max_;
 }
 
+bool Task::success() const
+{
+    return success_;
+}
+
+shared_ptr<void> Task::result() const
+{
+    return result_;
+}
+
 QFuture<bool> Task::future() const
 {
     return intf_.future();
@@ -79,7 +91,7 @@ TyTask::TyTask(ty_task *task)
         TY_UNUSED(task);
 
         auto task2 = static_cast<TyTask *>(udata);
-        task2->reportMessage(type, data);
+        task2->notifyMessage(type, data);
     }, this);
 }
 
@@ -96,7 +108,7 @@ bool TyTask::start()
     return status() >= TY_TASK_STATUS_PENDING;
 }
 
-void TyTask::reportMessage(ty_message_type type, const void *data)
+void TyTask::notifyMessage(ty_message_type type, const void *data)
 {
     /* The task is doing something, we don't need to keep it alive anymore... it'll keep this
        object alive instead. */
@@ -112,24 +124,24 @@ void TyTask::reportMessage(ty_message_type type, const void *data)
 
     switch (type) {
     case TY_MESSAGE_LOG:
-        reportLog(data);
+        notifyLog(data);
         break;
     case TY_MESSAGE_STATUS:
-        reportStatus(data);
+        notifyStatus(data);
         break;
     case TY_MESSAGE_PROGRESS:
-        reportProgress(data);
+        notifyProgress(data);
         break;
     }
 }
 
-void TyTask::reportLog(const void *data)
+void TyTask::notifyLog(const void *data)
 {
     auto msg = static_cast<const ty_log_message *>(data);
-    Task::reportLog(msg->level, msg->msg);
+    reportLog(msg->level, msg->msg);
 }
 
-void TyTask::reportStatus(const void *data)
+void TyTask::notifyStatus(const void *data)
 {
     auto msg = static_cast<const ty_status_message *>(data);
 
@@ -137,19 +149,24 @@ void TyTask::reportStatus(const void *data)
     case TY_TASK_STATUS_RUNNING:
         reportStarted();
         break;
-    case TY_TASK_STATUS_FINISHED:
-        reportFinished(!ty_task_get_return_value(msg->task));
+    case TY_TASK_STATUS_FINISHED: {
+        ty_task_cleanup_func *f;
+        void *result = ty_task_steal_result(msg->task, &f);
+        if (!f)
+            f = [](void *ptr) { TY_UNUSED(ptr); };
+        reportFinished(ty_task_get_return_value(msg->task) >= 0, shared_ptr<void>(result, f));
         break;
+    }
 
     default:
         break;
     }
 }
 
-void TyTask::reportProgress(const void *data)
+void TyTask::notifyProgress(const void *data)
 {
     auto msg = static_cast<const ty_progress_message *>(data);
-    Task::reportProgress(msg->action, msg->value, msg->max);
+    reportProgress(msg->action, msg->value, msg->max);
 }
 
 bool ImmediateTask::start()
@@ -159,7 +176,7 @@ bool ImmediateTask::start()
 
     reportStarted();
     bool ret = f_();
-    reportFinished(ret);
+    reportFinished(ret, nullptr);
 
     return true;
 }
@@ -174,7 +191,7 @@ bool FailedTask::start()
         tyQt->reportError(msg_);
         reportLog(TY_LOG_ERROR, msg_);
     }
-    reportFinished(false);
+    reportFinished(false, nullptr);
 
     return true;
 }
@@ -202,6 +219,16 @@ unsigned int TaskInterface::progress() const
 unsigned int TaskInterface::progressMaximum() const
 {
     return task_->progressMaximum();
+}
+
+bool TaskInterface::success() const
+{
+    return task_->success();
+}
+
+shared_ptr<void> TaskInterface::result() const
+{
+    return task_->result();
 }
 
 QFuture<bool> TaskInterface::future() const
@@ -248,9 +275,10 @@ void TaskListener::notifyStarted()
 {
 }
 
-void TaskListener::notifyFinished(bool success)
+void TaskListener::notifyFinished(bool success, shared_ptr<void> result)
 {
     TY_UNUSED(success);
+    TY_UNUSED(result);
 }
 
 void TaskListener::notifyProgress(const QString &action, unsigned int value, unsigned int max)
@@ -270,9 +298,9 @@ void TaskWatcher::notifyStarted()
     emit started();
 }
 
-void TaskWatcher::notifyFinished(bool success)
+void TaskWatcher::notifyFinished(bool success, shared_ptr<void> result)
 {
-    emit finished(success);
+    emit finished(success, result);
 }
 
 void TaskWatcher::notifyProgress(const QString &action, unsigned int value, unsigned int max)

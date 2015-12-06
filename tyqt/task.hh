@@ -21,6 +21,8 @@
 class Task : public std::enable_shared_from_this<Task> {
     ty_task_status status_ = TY_TASK_STATUS_READY;
     unsigned int progress_ = 0, progress_max_ = 0;
+    bool success_ = false;
+    std::shared_ptr<void> result_;
 
     mutable QFutureInterface<bool> intf_;
 
@@ -41,12 +43,14 @@ public:
     ty_task_status status() const;
     unsigned int progress() const;
     unsigned int progressMaximum() const;
+    bool success() const;
+    std::shared_ptr<void> result() const;
 
     QFuture<bool> future() const;
 
     void reportLog(ty_log_level level, const QString &msg);
     void reportStarted();
-    void reportFinished(bool success);
+    void reportFinished(bool success, std::shared_ptr<void> result);
     void reportProgress(const QString &action, unsigned int value, unsigned int max);
 
     friend class TaskListener;
@@ -62,10 +66,10 @@ public:
     bool start() override;
 
 private:
-    void reportMessage(ty_message_type type, const void *data);
-    void reportLog(const void *data);
-    void reportStatus(const void *data);
-    void reportProgress(const void *data);
+    void notifyMessage(ty_message_type type, const void *data);
+    void notifyLog(const void *data);
+    void notifyStatus(const void *data);
+    void notifyProgress(const void *data);
 };
 
 class ImmediateTask : public Task {
@@ -99,6 +103,8 @@ public:
     ty_task_status status() const;
     unsigned int progress() const;
     unsigned int progressMaximum() const;
+    bool success() const;
+    std::shared_ptr<void> result() const;
 
     QFuture<bool> future() const;
 
@@ -126,7 +132,7 @@ public:
 protected:
     virtual void notifyLog(ty_log_level level, const QString &msg);
     virtual void notifyStarted();
-    virtual void notifyFinished(bool success);
+    virtual void notifyFinished(bool success, std::shared_ptr<void> result);
     virtual void notifyProgress(const QString &action, unsigned int value, unsigned int max);
 
     friend class Task;
@@ -142,13 +148,13 @@ public:
 signals:
     void log(int level, const QString &msg);
     void started();
-    void finished(bool success);
+    void finished(bool success, std::shared_ptr<void> result);
     void progress(const QString &action, unsigned int value, unsigned int max);
 
 protected:
     void notifyLog(ty_log_level level, const QString &msg) override;
     void notifyStarted() override;
-    void notifyFinished(bool success) override;
+    void notifyFinished(bool success, std::shared_ptr<void> result) override;
     void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
 };
 
