@@ -21,13 +21,9 @@ static SleepConditionVariableCS_func *SleepConditionVariableCS_;
 static WakeConditionVariable_func *WakeConditionVariable_;
 static WakeAllConditionVariable_func *WakeAllConditionVariable_;
 
-static ty_mutex thread_mutex;
-static ty_cond thread_cond;
-
 TY_INIT()
 {
     HANDLE h;
-    int r;
 
     h = GetModuleHandle("kernel32.dll");
     assert(h);
@@ -39,17 +35,6 @@ TY_INIT()
         WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(h, "WakeConditionVariable");
         WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(h, "WakeAllConditionVariable");
     }
-
-    r = ty_mutex_init(&thread_mutex, TY_MUTEX_FAST);
-    assert(!r);
-    r = ty_cond_init(&thread_cond);
-    assert(!r);
-}
-
-TY_EXIT()
-{
-    ty_cond_release(&thread_cond);
-    ty_mutex_release(&thread_mutex);
 }
 
 struct thread_context {
