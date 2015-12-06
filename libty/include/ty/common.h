@@ -138,7 +138,7 @@ TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 
 TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
 
-void _ty_message(struct ty_task *task, ty_message_type type, void *data);
+void _ty_message(struct ty_task *task, ty_message_type type, const void *data);
 
 TY_C_END
 
