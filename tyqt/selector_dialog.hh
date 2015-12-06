@@ -29,6 +29,7 @@ public:
 
 protected slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
+    void doubleClicked(const QModelIndex &index);
     void done(int result) override;
 
 signals:

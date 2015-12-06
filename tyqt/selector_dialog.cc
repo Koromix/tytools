@@ -18,6 +18,7 @@ SelectorDialog::SelectorDialog(Manager *manager, QWidget *parent)
 
     tree->setModel(manager);
     connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &SelectorDialog::selectionChanged);
+    connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::doubleClicked);
 
     tree->header()->setStretchLastSection(false);
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -54,6 +55,12 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
     }
 
     emit currentChanged(current_board_.get());
+}
+
+void SelectorDialog::doubleClicked(const QModelIndex &index)
+{
+    TY_UNUSED(index);
+    accept();
 }
 
 void SelectorDialog::done(int result)
