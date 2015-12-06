@@ -209,7 +209,7 @@ void ty_progress(const char *action, unsigned int value, unsigned int max)
 void _ty_message(ty_task *task, ty_message_type type, const void *data)
 {
     if (!task)
-        task = ty_task_current();
+        task = _ty_task_get_current();
 
     (*handler)(task, type, data, handler_udata);
     if (task && task->callback)

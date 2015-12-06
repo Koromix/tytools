@@ -52,8 +52,6 @@ TY_PUBLIC int ty_task_get_return_value(ty_task *task);
 TY_PUBLIC void *ty_task_get_result(ty_task *task);
 TY_PUBLIC void *ty_task_steal_result(ty_task *task, ty_task_cleanup_func **rf);
 
-TY_PUBLIC ty_task *ty_task_current(void);
-
 TY_C_END
 
 #endif

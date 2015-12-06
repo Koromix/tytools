@@ -453,7 +453,7 @@ void _ty_task_set_result(ty_task *task, void *ptr, ty_task_cleanup_func *f)
     task->result_cleanup = f;
 }
 
-ty_task *ty_task_current(void)
+ty_task *_ty_task_get_current(void)
 {
     return current_task;
 }

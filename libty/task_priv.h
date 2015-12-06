@@ -46,6 +46,8 @@ struct _ty_task_vtable {
 int _ty_task_new(size_t size, const struct _ty_task_vtable *vtable, ty_task **rtask);
 void _ty_task_set_result(ty_task *task, void *ptr, ty_task_cleanup_func *f);
 
+ty_task *_ty_task_get_current(void);
+
 TY_C_END
 
 #endif
