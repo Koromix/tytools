@@ -130,7 +130,7 @@ bool Board::isResetAvailable() const
 
 bool Board::isRebootAvailable() const
 {
-    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL);
+    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_REBOOT);
 }
 
 bool Board::isSerialAvailable() const
