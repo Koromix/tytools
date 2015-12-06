@@ -14,6 +14,7 @@ TY_C_BEGIN
 struct tyb_firmware {
     unsigned int refcount;
 
+    char *filename;
     char *name;
 
     size_t size;

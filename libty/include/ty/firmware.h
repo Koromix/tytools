@@ -30,6 +30,7 @@ TY_PUBLIC int tyb_firmware_load(const char *filename, const char *format_name, t
 TY_PUBLIC tyb_firmware *tyb_firmware_ref(tyb_firmware *firmware);
 TY_PUBLIC void tyb_firmware_unref(tyb_firmware *firmware);
 
+TY_PUBLIC const char *tyb_firmware_get_filename(const tyb_firmware *firmware);
 TY_PUBLIC const char *tyb_firmware_get_name(const tyb_firmware *firmware);
 
 TY_PUBLIC size_t tyb_firmware_get_size(const tyb_firmware *firmware);

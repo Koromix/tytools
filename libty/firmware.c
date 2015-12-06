@@ -69,6 +69,12 @@ int tyb_firmware_load(const char *filename, const char *format_name, tyb_firmwar
     memset(firmware->image, 0xFF, TYB_FIRMWARE_MAX_SIZE);
     firmware->refcount = 1;
 
+    firmware->filename = strdup(filename);
+    if (!firmware->filename) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
     r = (*format->load)(firmware, filename);
     if (r < 0)
         goto error;
@@ -105,9 +111,16 @@ void tyb_firmware_unref(tyb_firmware *firmware)
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
         free(firmware->name);
+        free(firmware->filename);
     }
 
     free(firmware);
+}
+
+const char *tyb_firmware_get_filename(const tyb_firmware *firmware)
+{
+    assert(firmware);
+    return firmware->filename;
 }
 
 const char *tyb_firmware_get_name(const tyb_firmware *firmware)
