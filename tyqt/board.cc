@@ -291,6 +291,7 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
     TY_UNUSED(result);
 
     emit taskProgress("", 0, 0);
+    setTask(nullptr);
 }
 
 void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
