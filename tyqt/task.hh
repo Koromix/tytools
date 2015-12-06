@@ -26,7 +26,7 @@ class Task : public std::enable_shared_from_this<Task> {
 
     mutable QFutureInterface<bool> intf_;
 
-    QMutex listeners_lock_;
+    QMutex listeners_lock_{QMutex::Recursive};
     QList<class TaskListener *> listeners_;
 
 public:
