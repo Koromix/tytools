@@ -322,7 +322,7 @@ void Board::serialReceived(ty_descriptor desc)
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
 }
 
-void Board::notifyLog(int level, const QString &msg)
+void Board::notifyLog(ty_log_level level, const QString &msg)
 {
     TY_UNUSED(msg);
 

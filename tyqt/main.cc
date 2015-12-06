@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
 {
     TyQt app(argc, argv);
 
+    qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
 
 #ifdef _WIN32

@@ -112,7 +112,7 @@ signals:
 private slots:
     void serialReceived(ty_descriptor desc);
 
-    void notifyLog(int level, const QString &msg);
+    void notifyLog(ty_log_level level, const QString &msg);
     void notifyFinished(bool success, std::shared_ptr<void> result);
     void notifyProgress(const QString &action, unsigned int value, unsigned int max);
 

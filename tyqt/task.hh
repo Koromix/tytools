@@ -146,7 +146,7 @@ public:
         : QObject(parent) {}
 
 signals:
-    void log(int level, const QString &msg);
+    void log(ty_log_level level, const QString &msg);
     void started();
     void finished(bool success, std::shared_ptr<void> result);
     void progress(const QString &action, unsigned int value, unsigned int max);
