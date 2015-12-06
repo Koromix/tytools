@@ -21,7 +21,6 @@ TY_C_BEGIN
     ty_list_head list; \
     \
     ty_task_status status; \
-    int ret; \
     ty_mutex mutex; \
     ty_cond cond; \
     \
@@ -33,7 +32,11 @@ TY_C_BEGIN
     void *callback_udata; \
     \
     ty_task_cleanup_func *cleanup; \
-    void *cleanup_udata;
+    void *cleanup_ptr; \
+    \
+    int ret; \
+    void *result; \
+    ty_task_cleanup_func *result_cleanup;
 
 struct _ty_task_vtable {
     int (*run)(ty_task *task);
@@ -41,6 +44,7 @@ struct _ty_task_vtable {
 };
 
 int _ty_task_new(size_t size, const struct _ty_task_vtable *vtable, ty_task **rtask);
+void _ty_task_set_result(ty_task *task, void *ptr, ty_task_cleanup_func *f);
 
 TY_C_END
 

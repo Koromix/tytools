@@ -101,10 +101,8 @@ void TyTask::reportMessage(ty_message_type type, const void *data)
     /* The task is doing something, we don't need to keep it alive anymore... it'll keep this
        object alive instead. */
     if (task_ && type == TY_MESSAGE_STATUS) {
-        ty_task_set_cleanup(task_, [](ty_task *task, void *udata) {
-            TY_UNUSED(task);
-
-            auto task_ptr = static_cast<shared_ptr<Task> *>(udata);
+        ty_task_set_cleanup(task_, [](void *ptr) {
+            auto task_ptr = static_cast<shared_ptr<Task> *>(ptr);
             delete task_ptr;
         }, new shared_ptr<Task>(shared_from_this()));
 

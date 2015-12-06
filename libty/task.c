@@ -178,8 +178,11 @@ void ty_task_unref(ty_task *task)
             return;
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
+        if (task->result_cleanup)
+            (*task->result_cleanup)(task->result);
+
         if (task->cleanup)
-            (*task->cleanup)(task, task->cleanup_udata);
+            (*task->cleanup)(task->cleanup_ptr);
         if (task->vtable->cleanup)
             (*task->vtable->cleanup)(task);
 
@@ -190,12 +193,12 @@ void ty_task_unref(ty_task *task)
     free(task);
 }
 
-void ty_task_set_cleanup(ty_task *task, ty_task_cleanup_func *f, void *udata)
+void ty_task_set_cleanup(ty_task *task, ty_task_cleanup_func *f, void *ptr)
 {
     assert(task);
 
     task->cleanup = f;
-    task->cleanup_udata = udata;
+    task->cleanup_ptr = ptr;
 }
 
 void ty_task_set_callback(ty_task *task, ty_message_func *f, void *udata)
@@ -422,6 +425,32 @@ int ty_task_get_return_value(ty_task *task)
     assert(task->status == TY_TASK_STATUS_FINISHED);
 
     return task->ret;
+}
+
+void *ty_task_get_result(ty_task *task)
+{
+    assert(task);
+    assert(task->status == TY_TASK_STATUS_FINISHED);
+
+    return task->result;
+}
+
+void *ty_task_steal_result(ty_task *task, ty_task_cleanup_func **rf)
+{
+    assert(task);
+    assert(rf);
+    assert(task->status == TY_TASK_STATUS_FINISHED);
+
+    *rf = task->result_cleanup;
+    task->result_cleanup = NULL;
+
+    return task->result;
+}
+
+void _ty_task_set_result(ty_task *task, void *ptr, ty_task_cleanup_func *f)
+{
+    task->result = ptr;
+    task->result_cleanup = f;
 }
 
 ty_task *ty_task_current(void)
