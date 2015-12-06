@@ -32,6 +32,7 @@
 #ifdef __GNUC__
     #define TY_PUBLIC __attribute__((__visibility__("default")))
     #define TY_NORETURN __attribute__((__noreturn__))
+    #define TY_POSSIBLY_UNUSED __attribute__((__unused__))
 
     #define TY_INIT() \
         __attribute__((constructor)) \

@@ -66,7 +66,7 @@ int ty_thread_join(ty_thread *thread)
     assert(thread->init);
 
     void *retval;
-    int r;
+    int r TY_POSSIBLY_UNUSED;
 
     r = pthread_join(thread->thread, &retval);
     assert(!r);
@@ -92,6 +92,7 @@ int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
 
     mutex->init = false;
 
+    ptype = PTHREAD_MUTEX_NORMAL;
     switch (type) {
     case TY_MUTEX_FAST:
         ptype = PTHREAD_MUTEX_NORMAL;
@@ -99,9 +100,6 @@ int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
     case TY_MUTEX_RECURSIVE:
         ptype = PTHREAD_MUTEX_RECURSIVE;
         break;
-
-    default:
-        assert(false);
     }
 
     r = pthread_mutexattr_init(&attr);

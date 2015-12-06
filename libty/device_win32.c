@@ -1428,6 +1428,7 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     default:
         assert(false);
+        break;
     }
 
     switch (flags & TYD_SERIAL_CSIZE_MASK) {
@@ -1462,6 +1463,7 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     default:
         assert(false);
+        break;
     }
 
     dcb.StopBits = 0;
@@ -1489,6 +1491,7 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     default:
         assert(false);
+        break;
     }
 
     success = SetCommState(h->handle, &dcb);

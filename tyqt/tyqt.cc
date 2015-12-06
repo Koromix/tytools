@@ -186,7 +186,7 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
         peer.send({"log", QString::number(level), msg});
     });
     connect(watcher, &TaskWatcher::started, &peer, [&peer]() {
-        peer.send({"start"});
+        peer.send("start");
     });
     connect(watcher, &TaskWatcher::finished, &peer, [&peer](bool success) {
         peer.send({"exit", success ? "1" : "0"});

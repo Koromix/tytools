@@ -365,10 +365,8 @@ static void parse_descriptor(tyd_hid_descriptor *desc, struct hidraw_report_desc
             break;
 
         // Little Endian
+        data = 0;
         switch (size) {
-        case 0:
-            data = 0;
-            break;
         case 1:
             data = report->value[i + 1];
             break;
@@ -379,10 +377,6 @@ static void parse_descriptor(tyd_hid_descriptor *desc, struct hidraw_report_desc
             data = (uint32_t)(report->value[i + 4] << 24) | (uint32_t)(report->value[i + 3] << 16)
                 | (uint32_t)(report->value[i + 2] << 8) | report->value[i + 1];
             break;
-
-        // WTF?
-        default:
-            assert(false);
         }
 
         switch (type) {

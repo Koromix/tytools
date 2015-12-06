@@ -53,7 +53,10 @@ uint64_t ty_millis(void)
 #else
     r = clock_gettime(CLOCK_MONOTONIC, &ts);
 #endif
-    assert(!r);
+    if (r < 0) {
+        ty_log(TY_LOG_WARNING, "clock_gettime() failed: %s", strerror(errno));
+        return 0;
+    }
 
     return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 10000000;
 }
@@ -123,7 +126,9 @@ restart:
         if (FD_ISSET(set->desc[i], &fds))
             return set->id[i];
     }
+
     assert(false);
+    __builtin_unreachable();
 }
 
 #else
@@ -165,7 +170,9 @@ restart:
         if (pfd[i].revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL))
             return set->id[i];
     }
+
     assert(false);
+    __builtin_unreachable();
 }
 
 #endif

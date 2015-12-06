@@ -43,15 +43,15 @@ char *ty_win32_strerror(DWORD err)
 {
     static char buf[2048];
     char *ptr;
-    DWORD r;
+    DWORD ret;
 
     if (!err)
         err = GetLastError();
 
-    r = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+    ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
                       err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, sizeof(buf), NULL);
 
-    if (r) {
+    if (ret) {
         ptr = buf + strlen(buf);
         // FormatMessage adds newlines, remove them
         while (ptr > buf && (ptr[-1] == '\n' || ptr[-1] == '\r'))
@@ -67,17 +67,15 @@ char *ty_win32_strerror(DWORD err)
 static ULONGLONG WINAPI GetTickCount64_fallback(void)
 {
     static LARGE_INTEGER freq;
-
     LARGE_INTEGER now;
-    BOOL ret;
+    BOOL success TY_POSSIBLY_UNUSED;
 
     if (!freq.QuadPart) {
-        ret = QueryPerformanceFrequency(&freq);
-        assert(ret);
+        success = QueryPerformanceFrequency(&freq);
+        assert(!success);
     }
-
-    ret = QueryPerformanceCounter(&now);
-    assert(ret);
+    success = QueryPerformanceCounter(&now);
+    assert(!success);
 
     return (ULONGLONG)now.QuadPart * 1000 / (ULONGLONG)freq.QuadPart;
 }
@@ -125,14 +123,14 @@ int ty_terminal_setup(int flags)
 {
     HANDLE handle;
     DWORD mode;
-    BOOL r;
+    BOOL success;
 
     handle = GetStdHandle(STD_INPUT_HANDLE);
     if (handle == INVALID_HANDLE_VALUE)
         return ty_error(TY_ERROR_SYSTEM, "GetStdHandle(STD_INPUT_HANDLE) failed");
 
-    r = GetConsoleMode(handle, &mode);
-    if (!r) {
+    success = GetConsoleMode(handle, &mode);
+    if (!success) {
         if (GetLastError() == ERROR_INVALID_HANDLE)
             return ty_error(TY_ERROR_UNSUPPORTED, "Not a terminal");
         return ty_error(TY_ERROR_SYSTEM, "GetConsoleMode(STD_INPUT_HANDLE) failed: %s",
@@ -154,8 +152,8 @@ int ty_terminal_setup(int flags)
     if (!(flags & TY_TERMINAL_SILENT))
         mode |= ENABLE_ECHO_INPUT;
 
-    r = SetConsoleMode(handle, mode);
-    if (!r)
+    success = SetConsoleMode(handle, mode);
+    if (!success)
         return ty_error(TY_ERROR_SYSTEM, "SetConsoleMode(STD_INPUT_HANDLE) failed: %s",
                         ty_win32_strerror(0));
 

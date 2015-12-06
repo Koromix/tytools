@@ -93,11 +93,10 @@ int ty_thread_join(ty_thread *thread)
     assert(thread->h);
 
     union { DWORD dw; int i; } code;
-    DWORD ret;
+    DWORD ret TY_POSSIBLY_UNUSED;
 
     ret = WaitForSingleObject(thread->h, INFINITE);
     assert(ret == WAIT_OBJECT_0);
-
     GetExitCodeThread(thread->h, &code.dw);
 
     CloseHandle(thread->h);

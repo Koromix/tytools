@@ -179,6 +179,7 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     default:
         assert(false);
+        break;
     }
 
     cfsetispeed(&tio, rate);
@@ -186,6 +187,9 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     tio.c_cflag &= (unsigned int)~CSIZE;
     switch (flags & TYD_SERIAL_CSIZE_MASK) {
+    case 0:
+        tio.c_cflag |= CS8;
+        break;
     case TYD_SERIAL_5BITS_CSIZE:
         tio.c_cflag |= CS5;
         break;
@@ -194,10 +198,6 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
         break;
     case TYD_SERIAL_7BITS_CSIZE:
         tio.c_cflag |= CS7;
-        break;
-
-    default:
-        tio.c_cflag |= CS8;
         break;
     }
 
@@ -214,6 +214,7 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     default:
         assert(false);
+        break;
     }
 
     tio.c_cflag &= (unsigned int)~CSTOPB;
@@ -234,6 +235,7 @@ int tyd_serial_set_attributes(tyd_handle *h, uint32_t rate, int flags)
 
     default:
         assert(false);
+        break;
     }
 
     tio.c_cflag &= (unsigned int)~HUPCL;

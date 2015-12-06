@@ -412,7 +412,7 @@ static int device_callback(tyd_device *dev, tyd_monitor_event event, void *udata
     }
 
     assert(false);
-    __builtin_unreachable();
+    return 0;
 }
 
 int tyb_monitor_new(int flags, tyb_monitor **rmanager)
@@ -1343,7 +1343,7 @@ int tyb_upload(tyb_board *board, tyb_firmware *firmware, int flags, ty_task **rt
     assert(firmware);
     assert(rtask);
 
-    ty_task *task;
+    ty_task *task = NULL;
     int r;
 
     r = new_task(board, &upload_task_vtable, &task);

@@ -328,7 +328,7 @@ static ssize_t teensy_serial_read(tyb_board_interface *iface, char *buf, size_t 
     }
 
     assert(false);
-    __builtin_unreachable();
+    return 0;
 }
 
 static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, size_t size)
@@ -361,7 +361,7 @@ static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, 
     }
 
     assert(false);
-    __builtin_unreachable();
+    return 0;
 }
 
 static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *data, size_t size, unsigned int timeout)
@@ -405,6 +405,7 @@ static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *dat
 
     default:
         assert(false);
+        break;
     }
 
     /* We may get errors along the way (while the bootloader works) so try again
@@ -495,9 +496,6 @@ static int teensy_reboot(tyb_board_interface *iface)
             r = 0;
         }
         break;
-
-    default:
-        assert(false);
     }
 
     return r;
