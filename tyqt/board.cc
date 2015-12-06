@@ -449,11 +449,12 @@ QVariant Manager::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole:
             return QIcon(":/board");
         case Qt::ToolTipRole:
-            return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4"))
+            return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4\n\nFirmware: %5")
                            .arg(board->modelName())
                            .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")))
                            .arg(board->location())
-                           .arg(QString::number(board->serialNumber()));
+                           .arg(QString::number(board->serialNumber()))
+                           .arg(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(unknown)")));
         case Qt::SizeHintRole:
             return QSize(0, 24);
         }

@@ -24,14 +24,14 @@ void BoardWidget::setModel(const QString &model)
     modelLabel->setText(model);
 }
 
-void BoardWidget::setCapabilities(const QString &capabilities)
-{
-    capabilityLabel->setText(capabilities);
-}
-
 void BoardWidget::setTag(const QString &tag)
 {
     tagLabel->setText(tag);
+}
+
+void BoardWidget::setStatus(const QString &status)
+{
+    statusLabel->setText(status);
 }
 
 void BoardWidget::setAvailable(bool available)
@@ -56,14 +56,14 @@ QString BoardWidget::model() const
     return modelLabel->text();
 }
 
-QString BoardWidget::capabilities() const
-{
-    return capabilityLabel->text();
-}
-
 QString BoardWidget::tag() const
 {
     return tagLabel->text();
+}
+
+QString BoardWidget::status() const
+{
+    return statusLabel->text();
 }
 
 bool BoardWidget::available() const
@@ -88,8 +88,13 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setAvailable(board->state() == TYB_BOARD_STATE_ONLINE);
 
     widget_.setModel(board->modelName());
-    widget_.setCapabilities(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
     widget_.setTag(board->tag());
+    // FIXME: add better way to detect current board mode
+    if (board->isSerialAvailable()) {
+        widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(unknown)"));
+    } else {
+        widget_.setStatus(tr("(bootloader)"));
+    }
 
     auto task = board->runningTask();
     if (task.status() == TY_TASK_STATUS_RUNNING) {

@@ -23,16 +23,16 @@ public:
     void setAvailable(bool available);
 
     void setModel(const QString &model);
-    void setCapabilities(const QString &capabilities);
     void setTag(const QString &tag);
+    void setStatus(const QString &status);
 
     void setProgress(unsigned int progress, unsigned int total);
 
     bool available() const;
 
     QString model() const;
-    QString capabilities() const;
     QString tag() const;
+    QString status() const;
 };
 
 class BoardItemDelegate : public QItemDelegate {

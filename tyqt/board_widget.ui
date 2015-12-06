@@ -119,21 +119,22 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QLabel" name="capabilityLabel">
-           <property name="font">
-            <font>
-             <italic>true</italic>
-            </font>
-           </property>
+          <widget class="QLabel" name="tagLabel">
            <property name="text">
-            <string>capabilities</string>
+            <string>tag</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="tagLabel">
+          <widget class="QLabel" name="statusLabel">
+           <property name="font">
+            <font>
+             <pointsize>8</pointsize>
+             <italic>true</italic>
+            </font>
+           </property>
            <property name="text">
-            <string>tag</string>
+            <string>status</string>
            </property>
           </widget>
          </item>
