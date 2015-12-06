@@ -272,6 +272,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
     return 1;
 }
 
+// FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
 static unsigned int teensy_guess_models(const tyb_firmware *fw,
                                         const tyb_board_model **rguesses, unsigned int max)
 {

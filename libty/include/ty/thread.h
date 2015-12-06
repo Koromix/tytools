@@ -10,6 +10,7 @@
 
 #include "ty/common.h"
 #ifdef _WIN32
+    // FIXME: avoid windows.h in public headers
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #else

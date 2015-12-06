@@ -415,6 +415,7 @@ static int device_callback(tyd_device *dev, tyd_monitor_event event, void *udata
     return 0;
 }
 
+// FIXME: improve the sequential/parallel API
 int tyb_monitor_new(int flags, tyb_monitor **rmanager)
 {
     assert(rmanager);
