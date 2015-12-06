@@ -257,11 +257,13 @@ static int task_thread(void *udata)
 
     while (true) {
         uint64_t start;
+        bool run;
         ty_task *task;
 
         ty_mutex_lock(&pool->mutex);
         pool->busy--;
 
+        run = true;
         start = ty_millis();
         while (true) {
             task = ty_list_get_first(&pool->pending_tasks, ty_task, list);
@@ -269,12 +271,12 @@ static int task_thread(void *udata)
                 ty_list_remove(&task->list);
                 break;
             }
+            if (!run)
+                goto timeout;
 
-            if (!ty_cond_wait(&pool->pending_cond, &pool->mutex, ty_adjust_timeout(pool->unused_timeout, start)))
-                break;
+            run = ty_cond_wait(&pool->pending_cond, &pool->mutex,
+                               ty_adjust_timeout(pool->unused_timeout, start));
         }
-        if (!task)
-            break;
 
         pool->busy++;
         ty_mutex_unlock(&pool->mutex);
@@ -283,6 +285,7 @@ static int task_thread(void *udata)
         ty_task_unref(task);
     }
 
+timeout:
     pool->started--;
     if (pool->init) {
         ty_list_remove(&thread->list);
