@@ -19,6 +19,11 @@ BoardWidget::BoardWidget(QWidget *parent)
     setupUi(this);
 }
 
+void BoardWidget::setIcon(const QPixmap &pixmap)
+{
+    boardIcon->setPixmap(pixmap);
+}
+
 void BoardWidget::setModel(const QString &model)
 {
     modelLabel->setText(model);
@@ -49,6 +54,11 @@ void BoardWidget::setProgress(unsigned int progress, unsigned int total)
     } else {
         stackedWidget->setCurrentIndex(0);
     }
+}
+
+const QPixmap *BoardWidget::icon() const
+{
+    return boardIcon->pixmap();
 }
 
 QString BoardWidget::model() const
@@ -87,6 +97,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.setAvailable(board->state() == TYB_BOARD_STATE_ONLINE);
 
+    widget_.setIcon(QPixmap(board->errorOccured() ? ":/board_error" : ":/board"));
     widget_.setModel(board->modelName());
     widget_.setTag(board->tag());
     // FIXME: add better way to detect current board mode

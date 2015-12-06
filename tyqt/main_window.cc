@@ -203,7 +203,7 @@ void MainWindow::clearMonitor()
 
 void MainWindow::showErrorMessage(const QString &msg)
 {
-    statusBar()->showMessage(msg, 5000);
+    statusBar()->showMessage(msg, SHOW_ERROR_TIMEOUT);
     logText->appendPlainText(msg);
 }
 

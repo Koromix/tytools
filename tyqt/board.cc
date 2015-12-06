@@ -29,6 +29,11 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_notifier_.setMinInterval(10);
     connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &Board::serialReceived);
 
+    error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
+    error_timer_.setSingleShot(true);
+    connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
+
+    connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
     connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
 
@@ -139,6 +144,11 @@ bool Board::isRebootAvailable() const
 bool Board::isSerialAvailable() const
 {
     return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL);
+}
+
+bool Board::errorOccured() const
+{
+    return error_timer_.remainingTime() > 0;
 }
 
 void Board::setFirmware(const QString &firmware)
@@ -310,6 +320,16 @@ void Board::serialReceived(ty_descriptor desc)
         return;
 
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
+}
+
+void Board::notifyLog(int level, const QString &msg)
+{
+    TY_UNUSED(msg);
+
+    if (level == TY_LOG_ERROR) {
+        error_timer_.start();
+        emit taskChanged();
+    }
 }
 
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)

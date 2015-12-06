@@ -41,6 +41,8 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool serial_available_ = false;
     QTextDocument serial_document_;
 
+    QTimer error_timer_;
+
     QString firmware_;
     QString firmware_name_;
     bool clear_on_reset_ = false;
@@ -72,6 +74,8 @@ public:
     bool isResetAvailable() const;
     bool isRebootAvailable() const;
     bool isSerialAvailable() const;
+
+    bool errorOccured() const;
 
     void setFirmware(const QString &firmware);
     QString firmware() const;
@@ -108,6 +112,7 @@ signals:
 private slots:
     void serialReceived(ty_descriptor desc);
 
+    void notifyLog(int level, const QString &msg);
     void notifyFinished(bool success, std::shared_ptr<void> result);
     void notifyProgress(const QString &action, unsigned int value, unsigned int max);
 

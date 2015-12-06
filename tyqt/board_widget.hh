@@ -22,6 +22,7 @@ public:
 
     void setAvailable(bool available);
 
+    void setIcon(const QPixmap &pixmap);
     void setModel(const QString &model);
     void setTag(const QString &tag);
     void setStatus(const QString &status);
@@ -30,6 +31,7 @@ public:
 
     bool available() const;
 
+    const QPixmap *icon() const;
     QString model() const;
     QString tag() const;
     QString status() const;

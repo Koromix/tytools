@@ -22,6 +22,8 @@
 
 #define tyQt (TyQt::instance())
 
+#define SHOW_ERROR_TIMEOUT 5000
+
 class TyQt : public QApplication {
     Q_OBJECT
 
