@@ -14,13 +14,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
-    set(CMAKE_C_FLAGS "-std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces -Wshadow -Wconversion -Wformat=2")
-    set(CMAKE_CXX_FLAGS "-std=gnu++11 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wold-style-cast -Wformat=2")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wno-missing-braces -Wshadow -Wconversion -Wformat=2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wold-style-cast -Wformat=2")
 
     foreach(lang C CXX)
-        set(CMAKE_${lang}_FLAGS_DEBUG "-O1 -g -D_FORTIFY_SOURCE=2")
-        set(CMAKE_${lang}_FLAGS_RELWITHDEBINFO "-O2 -g -D_FORTIFY_SOURCE=2")
-        set(CMAKE_${lang}_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2")
+        foreach(mode RELEASE RELWITHDEBINFO MINSIZEREL)
+            set(CMAKE_${lang}_FLAGS_${mode} "${CMAKE_${lang}_FLAGS_${mode}} -D_FORTIFY_SOURCE=2")
+        endforeach()
     endforeach()
 endif()
 
