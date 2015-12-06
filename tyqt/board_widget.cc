@@ -91,7 +91,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setTag(board->tag());
     // FIXME: add better way to detect current board mode
     if (board->isSerialAvailable()) {
-        widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(unknown)"));
+        widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"));
     } else {
         widget_.setStatus(tr("(bootloader)"));
     }

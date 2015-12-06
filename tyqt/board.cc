@@ -454,7 +454,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
                            .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")))
                            .arg(board->location())
                            .arg(QString::number(board->serialNumber()))
-                           .arg(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(unknown)")));
+                           .arg(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)")));
         case Qt::SizeHintRole:
             return QSize(0, 24);
         }
