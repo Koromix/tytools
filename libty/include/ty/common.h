@@ -97,7 +97,6 @@ typedef enum ty_err {
 
 typedef enum ty_message_type {
     TY_MESSAGE_LOG,
-
     TY_MESSAGE_PROGRESS,
     TY_MESSAGE_STATUS
 } ty_message_type;

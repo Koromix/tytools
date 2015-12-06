@@ -17,7 +17,6 @@ typedef struct ty_task ty_task;
 
 typedef enum ty_task_status {
     TY_TASK_STATUS_READY,
-
     TY_TASK_STATUS_PENDING,
     TY_TASK_STATUS_RUNNING,
     TY_TASK_STATUS_FINISHED
