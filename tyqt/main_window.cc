@@ -40,7 +40,7 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     logText->setMaximumBlockCount(1000);
 
     for (auto &board: *manager)
-        setBoardDefaults(board);
+        setBoardDefaults(board.get());
 }
 
 QString MainWindow::browseForFirmware()
@@ -53,7 +53,7 @@ QString MainWindow::browseForFirmware()
     return filename;
 }
 
-void MainWindow::setBoardDefaults(shared_ptr<Board> board)
+void MainWindow::setBoardDefaults(Board *board)
 {
     board->setProperty("resetAfter", true);
 

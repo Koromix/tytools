@@ -533,7 +533,7 @@ void Manager::handleAddedEvent(tyb_board *board)
     boards_.push_back(proxy_ptr);
     endInsertRows();
 
-    emit boardAdded(proxy_ptr);
+    emit boardAdded(proxy);
 }
 
 void Manager::handleChangedEvent(tyb_board *board)

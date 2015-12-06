@@ -157,7 +157,7 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 signals:
-    void boardAdded(std::shared_ptr<Board> board);
+    void boardAdded(Board *board);
 
 private slots:
     void refreshManager(ty_descriptor desc);

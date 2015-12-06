@@ -31,7 +31,7 @@ private:
     QString browseForFirmware();
 
 private slots:
-    void setBoardDefaults(std::shared_ptr<Board> board);
+    void setBoardDefaults(Board *board);
 
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void refreshBoardsInfo();
