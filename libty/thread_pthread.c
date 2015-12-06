@@ -11,23 +11,13 @@
 #include "ty/system.h"
 #include "ty/thread.h"
 
-static ty_mutex thread_mutex;
-static ty_cond thread_cond;
-
-TY_INIT()
-{
-    int r;
-
-    r = ty_mutex_init(&thread_mutex, TY_MUTEX_FAST);
-    assert(!r);
-    r = ty_cond_init(&thread_cond);
-    assert(!r);
-}
+static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t thread_cond = PTHREAD_COND_INITIALIZER;
 
 TY_EXIT()
 {
-    ty_cond_release(&thread_cond);
-    ty_mutex_release(&thread_mutex);
+    pthread_cond_destroy(&thread_cond);
+    pthread_mutex_destroy(&thread_mutex);
 }
 
 struct thread_context {
@@ -41,10 +31,10 @@ static void *thread_proc(void *udata)
 {
     struct thread_context ctx = *(struct thread_context *)udata;
 
-    ty_mutex_lock(&thread_mutex);
+    pthread_mutex_lock(&thread_mutex);
     ctx.thread->init = true;
-    ty_cond_broadcast(&thread_cond);
-    ty_mutex_unlock(&thread_mutex);
+    pthread_cond_broadcast(&thread_cond);
+    pthread_mutex_unlock(&thread_mutex);
 
     return (void *)(intptr_t)(*ctx.f)(ctx.udata);
 }
@@ -63,10 +53,10 @@ int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata)
     if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
 
-    ty_mutex_lock(&thread_mutex);
+    pthread_mutex_lock(&thread_mutex);
     while (!thread->init)
-        ty_cond_wait(&thread_cond, &thread_mutex, -1);
-    ty_mutex_unlock(&thread_mutex);
+        pthread_cond_wait(&thread_cond, &thread_mutex);
+    pthread_mutex_unlock(&thread_mutex);
 
     return 0;
 }
