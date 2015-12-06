@@ -1281,6 +1281,11 @@ static int upload_progress_callback(const tyb_board *board, const tyb_firmware *
     return 0;
 }
 
+static void unref_upload_firmware(void *ptr)
+{
+    tyb_firmware_unref(ptr);
+}
+
 static int run_upload(ty_task *task)
 {
     tyb_board *board = task->board;
@@ -1357,6 +1362,7 @@ wait:
         ty_log(TY_LOG_INFO, "Firmware uploaded, reset the board to use it");
     }
 
+    _ty_task_set_result(task, tyb_firmware_ref(fw), unref_upload_firmware);
     return 0;
 }
 
