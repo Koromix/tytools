@@ -10,7 +10,7 @@
 #include "firmware_priv.h"
 
 struct parser_context {
-    tyb_firmware *firmware;
+    tyb_firmware *fw;
 
     uint32_t base_offset;
 
@@ -52,6 +52,7 @@ static int parse_line(struct parser_context *ctx, const char *line)
     unsigned int length, type;
     uint32_t address;
     uint8_t checksum;
+    int r;
 
     ctx->ptr = line;
     ctx->sum = 0;
@@ -59,40 +60,35 @@ static int parse_line(struct parser_context *ctx, const char *line)
 
     // Empty lines are probably OK
     if (*ctx->ptr++ != ':')
-        return 1;
+        return 0;
     if (strlen(ctx->ptr) < 11)
-        return TY_ERROR_PARSE;
+        goto parse_error;
 
     length = parse_hex_byte(ctx, true);
     address = parse_hex_short(ctx);
     type = parse_hex_byte(ctx, true);
 
     if (ctx->error)
-        return TY_ERROR_PARSE;
+        goto parse_error;
 
     switch (type) {
     case 0: // data record
         address += ctx->base_offset;
-        if (address + length > ctx->firmware->size) {
-            ctx->firmware->size = address + length;
-
-            if (ctx->firmware->size > TYB_FIRMWARE_MAX_SIZE)
-                return ty_error(TY_ERROR_RANGE, "Firmware too big (max %u bytes)",
-                                TYB_FIRMWARE_MAX_SIZE);
-        }
-
+        r = _tyb_firmware_expand_image(ctx->fw, address + length);
+        if (r < 0)
+            return r;
         for (unsigned int i = 0; i < length; i++)
-            ctx->firmware->image[address + i] = parse_hex_byte(ctx, true);
+            ctx->fw->image[address + i] = parse_hex_byte(ctx, true);
         break;
 
     case 1: // EOF record
         if (length > 0)
-            return TY_ERROR_PARSE;
-        return 0;
+            goto parse_error;
+        return 1;
 
     case 2: // extended segment address record
         if (length != 2)
-            return TY_ERROR_PARSE;
+            goto parse_error;
         ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 4;
         break;
     case 3: // start segment address record
@@ -100,61 +96,63 @@ static int parse_line(struct parser_context *ctx, const char *line)
 
     case 4: // extended linear address record
         if (length != 2)
-            return TY_ERROR_PARSE;
+            goto parse_error;
         ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 16;
         break;
     case 5: // start linear address record
         break;
 
     default:
-        return TY_ERROR_PARSE;
+        goto parse_error;
     }
 
     // Don't checksum the checksum :)
     checksum = parse_hex_byte(ctx, false);
 
     if (ctx->error)
-        return TY_ERROR_PARSE;
-
+        goto parse_error;
     if (((ctx->sum & 0xFF) + (checksum & 0xFF)) & 0xFF)
-        return TY_ERROR_PARSE;
+        goto parse_error;
 
-    // 1 to continue, 0 to stop (EOF record) and negative for errors
-    return 1;
+    // 0 to continue, 1 to stop (EOF record) and negative for errors
+    return 0;
+
+parse_error:
+    return ty_error(TY_ERROR_PARSE, "Parse error (Intel HEX) on line %u in '%s'\n", ctx->line,
+                    ctx->fw->filename);
 }
 
-int _tyb_firmware_load_ihex(tyb_firmware *firmware, const char *filename)
+int _tyb_firmware_load_ihex(tyb_firmware *fw)
 {
-    assert(firmware);
-    assert(filename);
+    assert(fw);
 
     struct parser_context ctx = {0};
     FILE *fp = NULL;
     char buf[1024];
     int r;
 
-    ctx.firmware = firmware;
+    ctx.fw = fw;
 
 #ifdef _WIN32
-    fp = fopen(filename, "r");
+    fp = fopen(fw->filename, "r");
 #else
-    fp = fopen(filename, "re");
+    fp = fopen(fw->filename, "re");
 #endif
     if (!fp) {
         switch (errno) {
         case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", fw->filename);
             break;
         case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", filename);
+            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", fw->filename);
             break;
         case ENOENT:
         case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", filename);
+            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", fw->filename);
             break;
 
         default:
-            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", filename, strerror(errno));
+            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", fw->filename, strerror(errno));
             break;
         }
         goto cleanup;
@@ -166,15 +164,12 @@ int _tyb_firmware_load_ihex(tyb_firmware *firmware, const char *filename)
         ctx.line++;
 
         r = parse_line(&ctx, buf);
-        if (r < 0) {
-            if (r == TY_ERROR_PARSE)
-                ty_error(r, "Parse error (Intel HEX) on line %u in '%s'\n", ctx.line, filename);
+        if (r < 0)
             goto cleanup;
-        }
 
-        // Either EOF record or real EOF will do, albeit the first is probably
-        // better (guarantees the file is complete)
-        if (r == 0 || feof(fp))
+        /* Either EOF record or real EOF will do, albeit the first is probably better (guarantees
+           the file is complete). */
+        if (r || feof(fp))
             break;
     }
 
