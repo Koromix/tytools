@@ -17,6 +17,7 @@
 
 #include "ty.h"
 #include "descriptor_set_notifier.hh"
+#include "firmware.hh"
 #include "task.hh"
 
 class Manager;
@@ -93,7 +94,7 @@ public:
 
     void refreshBoard();
 
-    TaskInterface upload(const QString &filename, bool reset_after = true);
+    TaskInterface upload(const Firmware &fw, bool reset_after = true);
     TaskInterface reset();
     TaskInterface reboot();
 

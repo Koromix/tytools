@@ -101,7 +101,7 @@ TaskInterface Commands::activateMainWindow()
     });
 }
 
-TaskInterface Commands::upload(const QString &tag, const QString &firmware)
+TaskInterface Commands::upload(const QString &tag, const QString &filename)
 {
     auto manager = tyQt->manager();
 
@@ -115,10 +115,10 @@ TaskInterface Commands::upload(const QString &tag, const QString &firmware)
         if (manager->boardCount() == 1) {
             board = manager->board(0);
         } else {
-            board = manager->find([=](Board &board) { return board.firmware() == firmware; });
+            board = manager->find([=](Board &board) { return board.firmware() == filename; });
             if (!board) {
                 return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
-                    return upload(board, firmware);
+                    return upload(board, filename);
                 });
             }
         }
@@ -126,18 +126,22 @@ TaskInterface Commands::upload(const QString &tag, const QString &firmware)
     if (!board)
         return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
 
-    return upload(*board, firmware);
+    return upload(*board, filename);
 }
 
-TaskInterface Commands::upload(Board &board, const QString &firmware)
+TaskInterface Commands::upload(Board &board, const QString &filename)
 {
-    QString firmware2 = firmware;
-    if (firmware2.isEmpty()) {
-        if (board.firmware().isEmpty())
-            return make_task<FailedTask>(TyQt::tr("No firmware to upload"));
+    shared_ptr<Firmware> fw;
 
-        firmware2 = board.firmware();
+    if (!filename.isEmpty()) {
+        fw = Firmware::load(filename);
+    } else if (!board.firmware().isEmpty()) {
+        fw = Firmware::load(board.firmware());
+    } else {
+        return make_task<FailedTask>(TyQt::tr("No firmware to upload"));
     }
+    if (!fw)
+        return make_task<FailedTask>(ty_error_last_message());
 
-    return board.upload(firmware2, board.property("resetAfter").toBool());
+    return board.upload(*fw, board.property("resetAfter").toBool());
 }

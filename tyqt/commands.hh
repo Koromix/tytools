@@ -11,6 +11,7 @@
 #include <QStringList>
 
 #include "board.hh"
+#include "firmware.hh"
 #include "task.hh"
 
 namespace Commands {
@@ -19,8 +20,8 @@ namespace Commands {
     TaskInterface openMainWindow();
     TaskInterface activateMainWindow();
 
-    TaskInterface upload(const QString &tag, const QString &firmware);
-    TaskInterface upload(Board &board, const QString &firmware);
+    TaskInterface upload(const QString &tag, const QString &filename);
+    TaskInterface upload(Board &board, const QString &filename);
 }
 
 #endif
