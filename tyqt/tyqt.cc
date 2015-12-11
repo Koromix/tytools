@@ -121,9 +121,6 @@ void TyQt::activateMainWindow()
 void TyQt::reportError(const QString &msg)
 {
     emit errorMessage(msg);
-
-    if (!client_console_ && main_windows_.empty())
-        showClientError(msg);
 }
 
 void TyQt::setVisible(bool visible)
@@ -335,11 +332,13 @@ int TyQt::runServer()
         }
     }, nullptr);
 
-    if (!manager_.start())
-        return 1;
-
     tray_icon_.show();
     openMainWindow();
+
+    if (!manager_.start()) {
+        showClientError(ty_error_last_message());
+        return 1;
+    }
 
     if (!channel_.listen())
         reportError(tr("Failed to start session channel, single-instance mode won't work"));
