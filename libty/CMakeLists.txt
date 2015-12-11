@@ -89,16 +89,6 @@ add_definitions(-DHAVE_CONFIG_H)
 find_package(Threads)
 list(APPEND TY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
-if(WIN32 AND NOT CMAKE_CROSSCOMPILING)
-    execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.bat"
-        OUTPUT_VARIABLE TY_VERSION_HEADER)
-else()
-    execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.sh"
-        OUTPUT_VARIABLE TY_VERSION_HEADER)
-endif()
-file(WRITE "${CMAKE_BINARY_DIR}/ty/version.h" "${TY_VERSION_HEADER}")
-string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(\\-[0-9]+-[a-zA-Z0-9]+)?" TY_VERSION "${TY_VERSION_HEADER}")
-
 add_library(ty OBJECT ${TY_SOURCES})
 set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_library(ty_shared SHARED $<TARGET_OBJECTS:ty>)
@@ -107,9 +97,6 @@ target_link_libraries(ty_shared ${TY_LINK_LIBRARIES})
 add_library(ty_static STATIC $<TARGET_OBJECTS:ty>)
 set_target_properties(ty_static PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON)
 target_link_libraries(ty_static ${TY_LINK_LIBRARIES})
-
-string(REGEX REPLACE "\\-.*$" "" CPACK_PACKAGE_VERSION ${TY_VERSION})
-set(CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION} PARENT_SCOPE)
 
 if(WIN32)
     if(NOT STATIC_BINARIES)

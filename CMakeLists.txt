@@ -54,6 +54,17 @@ else()
     set(TY_LIBRARIES ty_shared)
 endif()
 
+if(WIN32 AND NOT CMAKE_CROSSCOMPILING)
+    execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.bat"
+        OUTPUT_VARIABLE TY_VERSION_HEADER)
+else()
+    execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.sh"
+        OUTPUT_VARIABLE TY_VERSION_HEADER)
+endif()
+file(WRITE "${CMAKE_BINARY_DIR}/ty/version.h" "${TY_VERSION_HEADER}")
+string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?(\\-[0-9]+-[a-zA-Z0-9]+)?" TY_VERSION "${TY_VERSION_HEADER}")
+string(REGEX REPLACE "\\-.*$" "" CPACK_PACKAGE_VERSION ${TY_VERSION})
+
 add_subdirectory(libty)
 add_subdirectory(tyc)
 add_subdirectory(tyqt)
@@ -68,6 +79,11 @@ set(CPACK_PACKAGE_EXECUTABLES tyqt "TyQt")
 set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/tyqt/images/tyqt.png")
 
 if(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(CPACK_PACKAGE_FILE_NAME "TyQt-${TY_VERSION}-win64")
+    else()
+        set(CPACK_PACKAGE_FILE_NAME "TyQt-${TY_VERSION}-win32")
+    endif()
     set(CPACK_GENERATOR ZIP WIX)
 
     set(CPACK_WIX_UPGRADE_GUID 72663aca-47a7-4b9b-aa53-aa067b872b8a)
@@ -89,6 +105,7 @@ if(WIN32)
 
     include(CPack)
 elseif(APPLE)
+    set(CPACK_PACKAGE_FILE_NAME "TyQt-${TY_VERSION}-osx")
     set(CPACK_GENERATOR Bundle)
 
     set(CPACK_BUNDLE_NAME "TyQt")
