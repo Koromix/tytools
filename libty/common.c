@@ -20,8 +20,8 @@ bool ty_config_experimental = false;
 static ty_message_func *handler = ty_message_default_handler;
 static void *handler_udata = NULL;
 
-static ty_err mask[32];
-static unsigned int mask_count = 0;
+static __thread ty_err mask[16];
+static __thread unsigned int mask_count;
 
 static __thread char last_error_msg[256];
 
