@@ -303,6 +303,16 @@ TaskInterface Board::runningTask() const
     return running_task_;
 }
 
+void Board::notifyLog(ty_log_level level, const QString &msg)
+{
+    TY_UNUSED(msg);
+
+    if (level == TY_LOG_ERROR) {
+        error_timer_.start();
+        emit taskChanged();
+    }
+}
+
 void Board::serialReceived(ty_descriptor desc)
 {
     TY_UNUSED(desc);
@@ -325,16 +335,6 @@ void Board::serialReceived(ty_descriptor desc)
         return;
 
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
-}
-
-void Board::notifyLog(ty_log_level level, const QString &msg)
-{
-    TY_UNUSED(msg);
-
-    if (level == TY_LOG_ERROR) {
-        error_timer_.start();
-        emit taskChanged();
-    }
 }
 
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
