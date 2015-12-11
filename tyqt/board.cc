@@ -42,9 +42,8 @@ Board::Board(tyb_board *board, QObject *parent)
 
 shared_ptr<Board> Board::createBoard(tyb_board *board)
 {
-    // Workaround the private constructor for make_shared()
-    struct BoardSharedEnabler : public Board
-    {
+    // Work around the private constructor for make_shared()
+    struct BoardSharedEnabler : public Board {
         BoardSharedEnabler(tyb_board *board)
             : Board(board) {}
     };

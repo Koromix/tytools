@@ -14,8 +14,7 @@ char *strrpbrk(const char *s, const char *accept)
     const char *start = s;
 
     s += strlen(s);
-    while (--s >= start)
-    {
+    while (--s >= start) {
         const char *a = accept;
         while (*a != '\0') {
             if (*a++ == *s)
