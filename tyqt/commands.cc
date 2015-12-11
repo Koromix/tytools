@@ -143,5 +143,5 @@ TaskInterface Commands::upload(Board &board, const QString &filename)
     if (!fw)
         return make_task<FailedTask>(ty_error_last_message());
 
-    return board.upload(*fw, board.property("resetAfter").toBool());
+    return board.upload({fw}, board.property("resetAfter").toBool());
 }

@@ -9,6 +9,7 @@
 #define BOARD_HH
 
 #include <QAbstractListModel>
+#include <QList>
 #include <QTextDocument>
 
 #include <functional>
@@ -94,7 +95,7 @@ public:
 
     void refreshBoard();
 
-    TaskInterface upload(const Firmware &fw, bool reset_after = true);
+    TaskInterface upload(const QList<std::shared_ptr<Firmware>> &fws, bool reset_after = true);
     TaskInterface reset();
     TaskInterface reboot();
 

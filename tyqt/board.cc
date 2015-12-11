@@ -244,14 +244,17 @@ void Board::refreshBoard()
     }
 }
 
-TaskInterface Board::upload(const Firmware &fw, bool reset_after)
+TaskInterface Board::upload(const QList<shared_ptr<Firmware>> &fws, bool reset_after)
 {
-    tyb_firmware *fw2;
+    vector<tyb_firmware *> fws2;
     ty_task *task;
     int r;
 
-    fw2 = fw.firmware();
-    r = tyb_upload(board_, &fw2, 1, reset_after ? 0 : TYB_UPLOAD_NORESET, &task);
+    fws2.reserve(fws.count());
+    for (auto &fw: fws)
+        fws2.push_back(fw->firmware());
+
+    r = tyb_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TYB_UPLOAD_NORESET, &task);
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
 
