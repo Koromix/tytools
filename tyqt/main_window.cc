@@ -71,13 +71,13 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         current_board_->disconnect(this);
         current_board_ = nullptr;
     }
-    selected_boards_.clear();
 
+    selected_boards_.clear();
     auto selected = boardList->selectionModel()->selection();
     for (auto &idx: selected.indexes())
-        selected_boards_.append(manager_->board(idx.row()));
+        selected_boards_.push_back(manager_->board(idx.row()));
 
-    if (selected_boards_.count() == 1) {
+    if (selected_boards_.size() == 1) {
         current_board_ = selected_boards_.front();
 
         firmwarePath->setText(current_board_->firmware());
@@ -264,7 +264,7 @@ void MainWindow::on_actionUploadNew_triggered()
     if (filenames.isEmpty())
         return;
 
-    QList<shared_ptr<Firmware>> fws;
+    vector<shared_ptr<Firmware>> fws;
     fws.reserve(filenames.count());
     for (auto filename: filenames)
         fws.push_back(Firmware::load(filename));

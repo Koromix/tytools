@@ -8,6 +8,9 @@
 #ifndef MAIN_WINDOW_HH
 #define MAIN_WINDOW_HH
 
+#include <memory>
+#include <vector>
+
 #include "board.hh"
 #include "ui_main_window.h"
 
@@ -16,7 +19,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 
     Manager *manager_;
     std::shared_ptr<Board> current_board_;
-    QList<std::shared_ptr<Board>> selected_boards_;
+    std::vector<std::shared_ptr<Board>> selected_boards_;
 
     bool monitor_autoscroll_ = true;
     QTextCursor monitor_cursor_;

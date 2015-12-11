@@ -10,11 +10,11 @@
 
 #include <QFuture>
 #include <QFutureInterface>
-#include <QList>
 #include <QMutex>
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "ty.h"
 
@@ -27,7 +27,7 @@ class Task : public std::enable_shared_from_this<Task> {
     mutable QFutureInterface<bool> intf_;
 
     QMutex listeners_lock_{QMutex::Recursive};
-    QList<class TaskListener *> listeners_;
+    std::vector<class TaskListener *> listeners_;
 
 public:
     Task() {}
@@ -53,7 +53,8 @@ public:
     void reportFinished(bool success, std::shared_ptr<void> result);
     void reportProgress(const QString &action, unsigned int value, unsigned int max);
 
-    friend class TaskListener;
+    void addListener(TaskListener *listener);
+    void removeListener(TaskListener *listener);
 };
 
 class TyTask : public Task {

@@ -244,13 +244,13 @@ void Board::refreshBoard()
     }
 }
 
-TaskInterface Board::upload(const QList<shared_ptr<Firmware>> &fws, bool reset_after)
+TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
 {
     vector<tyb_firmware *> fws2;
     ty_task *task;
     int r;
 
-    fws2.reserve(fws.count());
+    fws2.reserve(fws.size());
     for (auto &fw: fws)
         fws2.push_back(fw->firmware());
 

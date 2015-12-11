@@ -84,6 +84,21 @@ QFuture<bool> Task::future() const
     return intf_.future();
 }
 
+void Task::addListener(TaskListener *listener)
+{
+    QMutexLocker locker(&listeners_lock_);
+    listeners_.push_back(listener);
+}
+
+void Task::removeListener(TaskListener *listener)
+{
+    QMutexLocker locker(&listeners_lock_);
+
+    auto it = find(listeners_.begin(), listeners_.end(), listener);
+    if (it != listeners_.end())
+        listeners_.erase(it);
+}
+
 TyTask::TyTask(ty_task *task)
     : task_(task)
 {
@@ -238,23 +253,16 @@ QFuture<bool> TaskInterface::future() const
 
 TaskListener::~TaskListener()
 {
-    if (task_) {
-        QMutexLocker locker(&task_->listeners_lock_);
-        task_->listeners_.removeOne(this);
-    }
+    task_->removeListener(this);
 }
 
 void TaskListener::setTask(TaskInterface *task)
 {
-    task_->listeners_lock_.lock();
-    task_->listeners_.removeOne(this);
-    task_->listeners_lock_.unlock();
+    task_->removeListener(this);
 
     if (task) {
         task_ = task->task_;
-
-        QMutexLocker locker(&task_->listeners_lock_);
-        task_->listeners_.append(this);
+        task_->addListener(this);
     } else {
         task_ = make_shared<FailedTask>();
     }
