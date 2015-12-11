@@ -47,7 +47,7 @@ endif()
 include_directories(libty/include ${CMAKE_BINARY_DIR})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(STATIC_BINARIES OFF CACHE BOOL "Build statically linked binaries")
+set(STATIC_BINARIES ON CACHE BOOL "Build statically linked binaries")
 if(STATIC_BINARIES)
     set(TY_LIBRARIES ty_static)
 else()
