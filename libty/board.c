@@ -80,8 +80,12 @@ static const char *capability_names[] = {
     "serial"
 };
 
-#define DROP_BOARD_DELAY 7000
-#define MANUAL_REBOOT_DELAY 5000
+#define DROP_BOARD_DELAY 15000
+#ifdef _WIN32
+    #define MANUAL_REBOOT_DELAY 15000
+#else
+    #define MANUAL_REBOOT_DELAY 5000
+#endif
 
 static void drop_callback(struct callback *callback)
 {
