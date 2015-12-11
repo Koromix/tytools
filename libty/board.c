@@ -778,36 +778,7 @@ void tyb_board_unlock(const tyb_board *board)
 
 static int match_interface(tyb_board_interface *iface, void *udata)
 {
-    const char *path1, *path2;
-
-    path1 = tyb_board_interface_get_path(iface);
-    path2 = udata;
-
-#ifdef _WIN32
-    // This is mainly for COM ports, which exist as COMx files (with x < 10) and \\.\COMx files
-    if (strncmp(path1, "\\\\.\\", 4) == 0 || strncmp(path1, "\\\\?\\", 4) == 0)
-        path1 += 4;
-    if (strncmp(path2, "\\\\.\\", 4) == 0 || strncmp(path2, "\\\\?\\", 4) == 0)
-        path2 += 4;
-
-    // Device nodes are not valid Win32 filesystem paths so a simple comparison is enough
-    return strcasecmp(path1, path2) == 0;
-#else
-    struct stat sb1, sb2;
-    int r;
-
-    if (strcmp(path1, path2) == 0)
-        return true;
-
-    r = stat(path1, &sb1);
-    if (r < 0)
-        return false;
-    r = stat(path2, &sb2);
-    if (r < 0)
-        return false;
-
-    return sb1.st_dev == sb2.st_dev && sb1.st_ino == sb2.st_ino;
-#endif
+    return ty_compare_paths(tyb_board_interface_get_path(iface), udata);
 }
 
 bool tyb_board_matches_tag(tyb_board *board, const char *id)

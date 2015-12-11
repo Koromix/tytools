@@ -177,6 +177,27 @@ restart:
 
 #endif
 
+bool ty_compare_paths(const char *path1, const char *path2)
+{
+    assert(path1);
+    assert(path2);
+
+    struct stat sb1, sb2;
+    int r;
+
+    if (strcmp(path1, path2) == 0)
+        return true;
+
+    r = stat(path1, &sb1);
+    if (r < 0)
+        return false;
+    r = stat(path2, &sb2);
+    if (r < 0)
+        return false;
+
+    return sb1.st_dev == sb2.st_dev && sb1.st_ino == sb2.st_ino;
+}
+
 bool ty_terminal_available(ty_descriptor desc)
 {
     return isatty(desc);

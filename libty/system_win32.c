@@ -90,6 +90,21 @@ void ty_delay(unsigned int ms)
     Sleep(ms);
 }
 
+bool ty_compare_paths(const char *path1, const char *path2)
+{
+    assert(path1);
+    assert(path2);
+
+    // This is mainly for COM ports, which exist as COMx files (with x < 10) and \\.\COMx files
+    if (strncmp(path1, "\\\\.\\", 4) == 0 || strncmp(path1, "\\\\?\\", 4) == 0)
+        path1 += 4;
+    if (strncmp(path2, "\\\\.\\", 4) == 0 || strncmp(path2, "\\\\?\\", 4) == 0)
+        path2 += 4;
+
+    // Device nodes are not valid Win32 filesystem paths so a simple comparison is enough
+    return strcasecmp(path1, path2) == 0;
+}
+
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);
