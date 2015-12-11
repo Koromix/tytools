@@ -250,8 +250,11 @@ void MainWindow::on_actionUpload_triggered()
     unsigned int uploaded = 0;
     for (auto &board: selected_boards_) {
         if (!board->firmware().isEmpty()) {
-            board->upload({Firmware::load(board->firmware())},
-                          board->property("resetAfter").toBool()).start();
+            auto fw = Firmware::load(board->firmware());
+            if (!fw)
+                continue;
+
+            board->upload({fw}, board->property("resetAfter").toBool()).start();
             uploaded++;
         }
     }
@@ -268,8 +271,13 @@ void MainWindow::on_actionUploadNew_triggered()
 
     vector<shared_ptr<Firmware>> fws;
     fws.reserve(filenames.count());
-    for (auto filename: filenames)
-        fws.push_back(Firmware::load(filename));
+    for (auto filename: filenames) {
+        auto fw = Firmware::load(filename);
+        if (!fw)
+            continue;
+
+        fws.push_back(fw);
+    }
 
     for (auto &board: selected_boards_)
         board->upload(fws, board->property("resetAfter").toBool()).start();
