@@ -32,8 +32,6 @@ static const struct option long_options[] = {
 static int upload_flags = 0;
 static const char *firmware_format = NULL;
 
-#define MAX_FIRMWARES 512
-
 void print_upload_usage(FILE *f)
 {
     fprintf(f, "usage: tyc upload [options] <filename>\n\n");
@@ -90,9 +88,10 @@ int upload(int argc, char *argv[])
     if (optind >= argc) {
         ty_log(TY_LOG_ERROR, "Missing firmware filename");
         goto usage;
-    } else if (argc - optind > MAX_FIRMWARES) {
-        ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %d files", MAX_FIRMWARES);
-        argc = optind + MAX_FIRMWARES;
+    } else if (argc - optind > TYB_UPLOAD_MAX_FIRMWARES) {
+        ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %d files",
+               TYB_UPLOAD_MAX_FIRMWARES);
+        argc = optind + TYB_UPLOAD_MAX_FIRMWARES;
     }
 
     r = get_board(&board);

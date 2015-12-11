@@ -1367,6 +1367,11 @@ int tyb_upload(tyb_board *board, tyb_firmware **fws, unsigned int fws_count, int
     if (r < 0)
         goto error;
 
+    if (fws_count > TYB_UPLOAD_MAX_FIRMWARES) {
+        ty_log(TY_LOG_WARNING, "Cannot select more than %d firmwares per upload",
+               TYB_UPLOAD_MAX_FIRMWARES);
+        fws_count = TYB_UPLOAD_MAX_FIRMWARES;
+    }
     if (flags & TYB_UPLOAD_NOCHECK)
         fws_count = 1;
 

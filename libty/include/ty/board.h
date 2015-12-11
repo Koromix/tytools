@@ -57,6 +57,8 @@ enum {
     TYB_UPLOAD_NOCHECK = 4
 };
 
+#define TYB_UPLOAD_MAX_FIRMWARES 256
+
 typedef int tyb_monitor_callback_func(tyb_board *board, tyb_monitor_event event, void *udata);
 typedef int tyb_monitor_wait_func(tyb_monitor *manager, void *udata);
 
