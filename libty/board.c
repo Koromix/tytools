@@ -1405,7 +1405,7 @@ static int run_reset(ty_task *task)
             return r;
 
         r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RESET, MANUAL_REBOOT_DELAY);
-        if (r < 0)
+        if (r <= 0)
             return ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work");
     }
 
