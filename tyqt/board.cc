@@ -300,7 +300,7 @@ bool Board::sendSerial(const QByteArray &buf)
 
 TaskInterface Board::runningTask() const
 {
-    return task_watcher_.task();
+    return running_task_;
 }
 
 void Board::serialReceived(ty_descriptor desc)
@@ -308,8 +308,15 @@ void Board::serialReceived(ty_descriptor desc)
     TY_UNUSED(desc);
 
     char buf[1024];
+    ssize_t r;
 
-    ssize_t r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
+    if (running_task_.status() == TY_TASK_STATUS_RUNNING) {
+        ty_error_mask(TY_ERROR_IO);
+        r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
+        ty_error_unmask();
+    } else {
+        r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
+    }
     if (r < 0) {
         serial_notifier_.clear();
         return;
@@ -339,8 +346,9 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
         task_finish_ = nullptr;
     }
 
-    emit taskChanged();
+    running_task_ = TaskInterface();
     task_watcher_.setTask(nullptr);
+    emit taskChanged();
 }
 
 void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
@@ -356,10 +364,10 @@ TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, sh
 {
     task_finish_ = finish;
 
-    TaskInterface intf = make_task<TyTask>(task);
-    task_watcher_.setTask(&intf);
+    running_task_ = make_task<TyTask>(task);
+    task_watcher_.setTask(&running_task_);
 
-    return intf;
+    return running_task_;
 }
 
 Manager::~Manager()

@@ -48,6 +48,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QString firmware_name_;
     bool clear_on_reset_ = false;
 
+    TaskInterface running_task_;
     TaskWatcher task_watcher_;
     std::function<void(bool success, std::shared_ptr<void> result)> task_finish_;
 
