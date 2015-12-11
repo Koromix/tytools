@@ -28,7 +28,7 @@ public slots:
     void showErrorMessage(const QString &msg);
 
 private:
-    QString browseForFirmware();
+    static QString makeFirmwareFilter();
 
 private slots:
     void setBoardDefaults(Board *board);

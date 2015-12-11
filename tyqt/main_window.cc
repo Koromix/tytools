@@ -43,14 +43,14 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
         setBoardDefaults(board.get());
 }
 
-QString MainWindow::browseForFirmware()
+QString MainWindow::makeFirmwareFilter()
 {
-    QString filename = QFileDialog::getOpenFileName(this, tr("Open Firmware"), QString(),
-                                                    tr("Binary Files (*.elf *.hex);;All Files (*)"));
-    if (filename.isEmpty())
-        return QString();
+    QString exts;
+    for (auto format = tyb_firmware_formats; format->name; format++)
+        exts += QString("*%1 ").arg(format->ext);
+    exts.chop(1);
 
-    return filename;
+    return tr("Binary Files (%1);;All Files (*)").arg(exts);
 }
 
 void MainWindow::setBoardDefaults(Board *board)
@@ -240,30 +240,37 @@ void MainWindow::on_actionNewWindow_triggered()
 
 void MainWindow::on_actionUpload_triggered()
 {
-    if (!current_board_)
+    if (current_board_ && current_board_->firmware().isEmpty()) {
+        on_actionUploadNew_triggered();
         return;
-
-    if (current_board_->firmware().isEmpty()) {
-        QString filename = browseForFirmware();
-        if (filename.isEmpty())
-            return;
-
-        Commands::upload(*current_board_, filename).start();
-    } else {
-        Commands::upload(*current_board_, "").start();
     }
+
+    unsigned int uploaded = 0;
+    for (auto &board: selected_boards_) {
+        if (!board->firmware().isEmpty()) {
+            board->upload({Firmware::load(board->firmware())},
+                          board->property("resetAfter").toBool()).start();
+            uploaded++;
+        }
+    }
+    if (!uploaded)
+        tyQt->reportError("No board has a set firmware, try using 'Upload New Firmware'");
 }
 
 void MainWindow::on_actionUploadNew_triggered()
 {
-    if (!current_board_)
+    auto filenames = QFileDialog::getOpenFileNames(this, tr("Open Firmwares"), "",
+                                                   makeFirmwareFilter());
+    if (filenames.isEmpty())
         return;
 
-    QString filename = browseForFirmware();
-    if (filename.isEmpty())
-        return;
+    QList<shared_ptr<Firmware>> fws;
+    fws.reserve(filenames.count());
+    for (auto filename: filenames)
+        fws.push_back(Firmware::load(filename));
 
-    Commands::upload(*current_board_, filename).start();
+    for (auto &board: selected_boards_)
+        board->upload(fws, board->property("resetAfter").toBool()).start();
 }
 
 void MainWindow::on_actionReset_triggered()
@@ -329,7 +336,8 @@ void MainWindow::on_actionClearMonitor_triggered()
 
 void MainWindow::on_firmwareBrowseButton_clicked()
 {
-    QString filename = browseForFirmware();
+    auto filename = QFileDialog::getOpenFileName(this, tr("Open Firmware"), "",
+                                                 makeFirmwareFilter());
     if (filename.isEmpty())
         return;
 
