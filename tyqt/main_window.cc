@@ -73,9 +73,11 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     }
 
     selected_boards_.clear();
-    auto selected = boardList->selectionModel()->selection();
-    for (auto &idx: selected.indexes())
-        selected_boards_.push_back(manager_->board(idx.row()));
+    auto selected = boardList->selectionModel()->selectedIndexes();
+    for (auto &idx: selected) {
+        if (idx.column() == 0)
+            selected_boards_.push_back(manager_->board(idx.row()));
+    }
 
     if (selected_boards_.size() == 1) {
         current_board_ = selected_boards_.front();
