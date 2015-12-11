@@ -251,8 +251,10 @@ void MainWindow::on_actionUpload_triggered()
     for (auto &board: selected_boards_) {
         if (!board->firmware().isEmpty()) {
             auto fw = Firmware::load(board->firmware());
-            if (!fw)
+            if (!fw) {
+                board->notifyLog(TY_LOG_ERROR, ty_error_last_message());
                 continue;
+            }
 
             board->upload({fw}, board->property("resetAfter").toBool()).start();
             uploaded++;
