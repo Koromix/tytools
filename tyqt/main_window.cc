@@ -67,10 +67,10 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     TY_UNUSED(previous);
 
     monitorText->setDocument(nullptr);
-    if (current_board_) {
-        current_board_->disconnect(this);
+    for (auto &board: selected_boards_)
+        board->disconnect(this);
+    if (current_board_)
         current_board_ = nullptr;
-    }
 
     selected_boards_.clear();
     auto selected = boardList->selectionModel()->selectedIndexes();
@@ -92,11 +92,12 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         monitorText->moveCursor(QTextCursor::End);
         monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
 
-        connect(current_board_.get(), &Board::boardChanged, this, &MainWindow::refreshBoardsInfo);
         connect(current_board_.get(), &Board::propertyChanged, this, &MainWindow::updatePropertyField);
     } else {
         firmwarePath->clear();
     }
+    for (auto &board: selected_boards_)
+        connect(board.get(), &Board::boardChanged, this, &MainWindow::refreshBoardsInfo);
 
     refreshBoardsInfo();
 }
