@@ -84,7 +84,7 @@ static CancelIoEx_func *CancelIoEx_;
 #define MAX_USB_DEPTH 8
 #define MONITOR_CLASS_NAME "tyd_monitor"
 
-#define READ_BUFFER_SIZE 1024
+#define READ_BUFFER_SIZE 16384
 
 static GUID hid_guid;
 static const struct device_type device_types[] = {
