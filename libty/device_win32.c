@@ -1520,7 +1520,7 @@ ssize_t tyd_serial_read(tyd_handle *h, char *buf, size_t size, int timeout)
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
     if (!h->len) {
         h->len = finalize_async_read(h, timeout);
-        if (h->len <= 0)
+        if (h->len < 0)
             return h->len;
 
         h->ptr = h->buf;
