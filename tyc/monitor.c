@@ -41,7 +41,7 @@ enum {
     DIRECTION_OUTPUT = 2
 };
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 8192
 #define ERROR_IO_TIMEOUT 5000
 
 static int terminal_flags = 0;

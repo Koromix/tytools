@@ -26,7 +26,7 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(100000);
 
-    serial_notifier_.setMinInterval(10);
+    serial_notifier_.setMinInterval(5);
     connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &Board::serialReceived);
 
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
@@ -317,7 +317,7 @@ void Board::serialReceived(ty_descriptor desc)
 {
     TY_UNUSED(desc);
 
-    char buf[1024];
+    char buf[8192];
     ssize_t r;
 
     if (running_task_.status() == TY_TASK_STATUS_RUNNING) {
