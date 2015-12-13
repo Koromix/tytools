@@ -26,7 +26,6 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(400000);
 
-    serial_notifier_.setMinInterval(5);
     connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &Board::serialReceived);
 
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);

@@ -14,9 +14,6 @@ DescriptorSetNotifier::DescriptorSetNotifier(ty_descriptor_set *set, QObject *pa
 {
     if (set)
         addDescriptorSet(set);
-
-    interval_timer_.setSingleShot(true);
-    connect(&interval_timer_, &QTimer::timeout, this, &DescriptorSetNotifier::restoreNotifiers);
 }
 
 void DescriptorSetNotifier::setDescriptorSet(ty_descriptor_set *set)
@@ -42,22 +39,9 @@ void DescriptorSetNotifier::addDescriptorSet(ty_descriptor_set *set)
     }
 }
 
-void DescriptorSetNotifier::setMinInterval(int interval)
-{
-    if (interval < 0)
-        interval = 0;
-
-    interval_timer_.setInterval(interval);
-}
-
 bool DescriptorSetNotifier::isEnabled() const
 {
     return enabled_;
-}
-
-int DescriptorSetNotifier::minInterval() const
-{
-    return interval_timer_.interval();
 }
 
 void DescriptorSetNotifier::setEnabled(bool enable)
@@ -78,20 +62,5 @@ void DescriptorSetNotifier::activatedDesc(ty_descriptor desc)
     if (!enabled_ )
         return;
 
-    if (interval_timer_.interval() > 0) {
-        setEnabled(false);
-        enabled_ = true;
-
-        interval_timer_.start();
-    }
-
     emit activated(desc);
-}
-
-void DescriptorSetNotifier::restoreNotifiers()
-{
-    if (!enabled_)
-        return;
-
-    setEnabled(true);
 }

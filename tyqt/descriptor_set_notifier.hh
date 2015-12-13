@@ -13,7 +13,6 @@
 #else
     #include <QSocketNotifier>
 #endif
-#include <QTimer>
 
 #include <memory>
 #include <vector>
@@ -30,7 +29,6 @@ class DescriptorSetNotifier : public QObject {
 #endif
 
     bool enabled_ = true;
-    QTimer interval_timer_;
 
 public:
     DescriptorSetNotifier(ty_descriptor_set *set, QObject *parent = nullptr);
@@ -40,10 +38,7 @@ public:
     void setDescriptorSet(ty_descriptor_set *set);
     void addDescriptorSet(ty_descriptor_set *set);
 
-    void setMinInterval(int interval);
-
     bool isEnabled() const;
-    int minInterval() const;
 
 signals:
     void activated(ty_descriptor desc);
@@ -54,7 +49,6 @@ public slots:
 
 private slots:
     void activatedDesc(ty_descriptor desc);
-    void restoreNotifiers();
 };
 
 #endif

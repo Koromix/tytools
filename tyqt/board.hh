@@ -10,6 +10,7 @@
 
 #include <QAbstractListModel>
 #include <QTextDocument>
+#include <QTimer>
 
 #include <functional>
 #include <memory>
