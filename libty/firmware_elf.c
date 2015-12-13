@@ -134,14 +134,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     if (r < 0)
         return (int)r;
 
-    if (phdr.p_type != PT_LOAD) {
-        if (phdr.p_type == PT_NULL)
-            return 0;
-
-        return ty_error(TY_ERROR_UNSUPPORTED, "ELF object '%s' contains non-loadable segments",
-                        ctx->fw->filename);
-    }
-    if (!phdr.p_filesz)
+    if (phdr.p_type != PT_LOAD || !phdr.p_filesz)
         return 0;
 
     r = _tyb_firmware_expand_image(ctx->fw, phdr.p_paddr + phdr.p_filesz);
