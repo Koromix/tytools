@@ -330,10 +330,17 @@ void Board::serialReceived(ty_descriptor desc)
         serial_notifier_.clear();
         return;
     }
-    if (!r)
-        return;
 
     appendToSerialDocument(QString::fromLocal8Bit(buf, r));
+#ifdef _WIN32
+    /* On Windows, QWinEventNotifier can prevent the Qt loop from doing any GUI-related work
+       if the board sends a lot of stuff, this fixes it... no I don't like it either. This
+       will do for now. Other solutions to think about:
+       - disable this event source temporarily (the old code did that, but it triggered short
+         stalls that the board would notice)
+       - read from a background thread but this involves a lot more code than this. */
+    tyQt->processEvents(QEventLoop::ExcludeSocketNotifiers);
+#endif
 }
 
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
