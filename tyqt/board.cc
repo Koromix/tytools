@@ -319,19 +319,23 @@ void Board::serialReceived(ty_descriptor desc)
     char buf[8192];
     ssize_t r;
 
-    if (running_task_.status() == TY_TASK_STATUS_RUNNING) {
-        ty_error_mask(TY_ERROR_IO);
+    ty_error_mask(TY_ERROR_IO);
+    /* On OSX El Capitan (at least), serial device reads are often partial (512 and 1020 bytes
+       reads happen pretty often), so try hard to empty the OS buffer. The Qt event loop may not
+       give us back control before some time, and we want to avoid buffer overruns. */
+    for (unsigned int i = 0; i < 16; i++) {
         r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
-        ty_error_unmask();
-    } else {
-        r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
-    }
-    if (r < 0) {
-        serial_notifier_.clear();
-        return;
-    }
+        if (r < 0) {
+            serial_notifier_.clear();
+            break;
+        }
+        if (!r)
+            break;
 
-    appendToSerialDocument(QString::fromLocal8Bit(buf, r));
+        appendToSerialDocument(QString::fromLocal8Bit(buf, r));
+    }
+    ty_error_unmask();
+
 #ifdef _WIN32
     /* On Windows, QWinEventNotifier can prevent the Qt loop from doing any GUI-related work
        if the board sends a lot of stuff, this fixes it... no I don't like it either. This
