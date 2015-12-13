@@ -33,7 +33,7 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
     connect(manager, &Manager::boardAdded, this, &MainWindow::setBoardDefaults);
 
-    monitorText->setWordWrapMode(QTextOption::WrapAnywhere);
+    monitorText->setWordWrapMode(QTextOption::NoWrap);
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
     connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
 
@@ -170,18 +170,22 @@ void MainWindow::updatePropertyField(const QByteArray &name, const QVariant &val
 
 void MainWindow::monitorTextChanged()
 {
+    auto vbar = monitorText->verticalScrollBar();
+
     if (monitor_autoscroll_) {
-        monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
+        vbar->setValue(vbar->maximum());
     } else {
+        auto hbar = monitorText->horizontalScrollBar();
         QTextCursor old_cursor = monitorText->textCursor();
+        int hpos = hbar->value();
 
         monitorText->setTextCursor(monitor_cursor_);
         monitorText->ensureCursorVisible();
-
-        int position = monitorText->verticalScrollBar()->value();
+        int vpos = vbar->value();
 
         monitorText->setTextCursor(old_cursor);
-        monitorText->verticalScrollBar()->setValue(position);
+        hbar->setValue(hpos);
+        vbar->setValue(vpos);
     }
 }
 
