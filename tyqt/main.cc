@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
 
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
+    qRegisterMetaType<ty_descriptor>("ty_descriptor");
 
 #ifdef _WIN32
     app.setClientConsole(open_tyqtc_bridge());

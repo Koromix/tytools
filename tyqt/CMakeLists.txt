@@ -14,7 +14,7 @@ set(TYQT_SOURCES about_dialog.cc
                  board.cc
                  board_widget.cc
                  commands.cc
-                 descriptor_set_notifier.cc
+                 descriptor_notifier.cc
                  firmware.cc
                  selector_dialog.cc
                  session_channel.cc

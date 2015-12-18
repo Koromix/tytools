@@ -26,7 +26,7 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(200000);
 
-    connect(&serial_notifier_, &DescriptorSetNotifier::activated, this, &Board::serialReceived);
+    connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived);
 
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
@@ -412,7 +412,7 @@ bool Manager::start()
     tyb_monitor_get_descriptors(manager_, &set, 1);
 
     manager_notifier_.setDescriptorSet(&set);
-    connect(&manager_notifier_, &DescriptorSetNotifier::activated, this, &Manager::refreshManager);
+    connect(&manager_notifier_, &DescriptorNotifier::activated, this, &Manager::refreshManager);
 
     tyb_monitor_refresh(manager_);
 

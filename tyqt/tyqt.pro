@@ -19,7 +19,7 @@ HEADERS += about_dialog.hh \
     board.hh \
     board_widget.hh \
     commands.hh \
-    descriptor_set_notifier.hh \
+    descriptor_notifier.hh \
     firmware.hh \
     main_window.hh \
     selector_dialog.hh \
@@ -31,7 +31,7 @@ SOURCES += about_dialog.cc \
     board.cc \
     board_widget.cc \
     commands.cc \
-    descriptor_set_notifier.cc \
+    descriptor_notifier.cc \
     firmware.cc \
     main.cc \
     main_window.cc \

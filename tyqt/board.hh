@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "ty.h"
-#include "descriptor_set_notifier.hh"
+#include "descriptor_notifier.hh"
 #include "firmware.hh"
 #include "task.hh"
 
@@ -39,7 +39,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     tyb_board *board_;
 
-    DescriptorSetNotifier serial_notifier_;
+    DescriptorNotifier serial_notifier_;
     bool serial_available_ = false;
     QTextDocument serial_document_;
 
@@ -132,7 +132,7 @@ class Manager : public QAbstractListModel {
     Q_OBJECT
 
     tyb_monitor *manager_ = nullptr;
-    DescriptorSetNotifier manager_notifier_;
+    DescriptorNotifier manager_notifier_;
 
     std::vector<std::shared_ptr<Board>> boards_;
 
