@@ -7,6 +7,6 @@ TEMPLATE = app
 CONFIG -= qt
 CONFIG += console
 
-TARGET = ../tyqtc
+TARGET = ../tyqt/tyqtc
 
 SOURCES += tyqtc.c
