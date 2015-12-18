@@ -8,6 +8,7 @@
 #include <QCoreApplication>
 #include <QDynamicPropertyChangeEvent>
 #include <QIcon>
+#include <QMutexLocker>
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
 #include <QTextCursor>
@@ -26,7 +27,9 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(200000);
 
-    connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived);
+    // The manager will move the serial notifier to a dedicated thread
+    connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived,
+            Qt::DirectConnection);
 
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
@@ -235,11 +238,9 @@ void Board::refreshBoard()
             serial_notifier_.setDescriptorSet(&set);
             serial_available_ = true;
         }
-    } else {
-        if (serial_available_) {
-            serial_available_ = false;
-            serial_notifier_.clear();
-        }
+    } else if (serial_available_) {
+        serial_notifier_.clear();
+        serial_available_ = false;
     }
 }
 
@@ -316,35 +317,46 @@ void Board::serialReceived(ty_descriptor desc)
 {
     TY_UNUSED(desc);
 
-    char buf[8192];
-    ssize_t r;
-
+    QMutexLocker locker(&serial_lock_);
+    ty_error_mask(TY_ERROR_MODE);
     ty_error_mask(TY_ERROR_IO);
+
+    bool was_empty = !serial_buf_len_;
     /* On OSX El Capitan (at least), serial device reads are often partial (512 and 1020 bytes
        reads happen pretty often), so try hard to empty the OS buffer. The Qt event loop may not
        give us back control before some time, and we want to avoid buffer overruns. */
-    for (unsigned int i = 0; i < 16; i++) {
-        r = tyb_board_serial_read(board_, buf, sizeof(buf), 0);
+    for (unsigned int i = 0; i < 4; i++) {
+        if (serial_buf_len_ == sizeof(serial_buf_))
+            break;
+
+        int r = tyb_board_serial_read(board_, serial_buf_ + serial_buf_len_,
+                                      sizeof(serial_buf_) - serial_buf_len_, 0);
         if (r < 0) {
             serial_notifier_.clear();
             break;
         }
         if (!r)
             break;
-
-        appendToSerialDocument(QString::fromLocal8Bit(buf, r));
+        serial_buf_len_ += static_cast<size_t>(r);
     }
-    ty_error_unmask();
 
-#ifdef _WIN32
-    /* On Windows, QWinEventNotifier can prevent the Qt loop from doing any GUI-related work
-       if the board sends a lot of stuff, this fixes it... no I don't like it either. This
-       will do for now. Other solutions to think about:
-       - disable this event source temporarily (the old code did that, but it triggered short
-         stalls that the board would notice)
-       - read from a background thread but this involves a lot more code than this. */
-    tyQt->processEvents(QEventLoop::ExcludeSocketNotifiers);
-#endif
+    ty_error_unmask();
+    ty_error_unmask();
+    locker.unlock();
+
+    if (was_empty && serial_buf_len_)
+        QMetaObject::invokeMethod(this, "updateSerialDocument", Qt::QueuedConnection);
+}
+
+void Board::updateSerialDocument()
+{
+    QMutexLocker locker(&serial_lock_);
+    auto str = QString::fromLocal8Bit(serial_buf_, serial_buf_len_);
+    serial_buf_len_ = 0;
+    locker.unlock();
+
+    // FIXME: behavior with partial characters (UTF-8 or other multibyte encodings)
+    appendToSerialDocument(str);
 }
 
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
@@ -382,6 +394,9 @@ TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, sh
 
 Manager::~Manager()
 {
+    serial_thread_.quit();
+    serial_thread_.wait();
+
     // Just making sure nothing depends on the manager when it's destroyed
     manager_notifier_.clear();
     boards_.clear();
@@ -410,9 +425,10 @@ bool Manager::start()
 
     ty_descriptor_set set = {};
     tyb_monitor_get_descriptors(manager_, &set, 1);
-
     manager_notifier_.setDescriptorSet(&set);
     connect(&manager_notifier_, &DescriptorNotifier::activated, this, &Manager::refreshManager);
+
+    serial_thread_.start();
 
     tyb_monitor_refresh(manager_);
 
@@ -560,6 +576,8 @@ void Manager::handleAddedEvent(tyb_board *board)
 {
     auto proxy_ptr = Board::createBoard(board);
     Board *proxy = proxy_ptr.get();
+
+    proxy->serial_notifier_.moveToThread(&serial_thread_);
 
     connect(proxy, &Board::taskChanged, this, [=]() {
         refreshBoardItem(proxy);

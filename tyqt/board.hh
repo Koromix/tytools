@@ -9,7 +9,9 @@
 #define BOARD_HH
 
 #include <QAbstractListModel>
+#include <QMutex>
 #include <QTextDocument>
+#include <QThread>
 #include <QTimer>
 
 #include <functional>
@@ -39,8 +41,11 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     tyb_board *board_;
 
-    DescriptorNotifier serial_notifier_;
     bool serial_available_ = false;
+    DescriptorNotifier serial_notifier_;
+    QMutex serial_lock_;
+    char serial_buf_[262144];
+    size_t serial_buf_len_ = 0;
     QTextDocument serial_document_;
 
     QTimer error_timer_;
@@ -117,6 +122,7 @@ public slots:
 
 private slots:
     void serialReceived(ty_descriptor desc);
+    void updateSerialDocument();
 
     void notifyFinished(bool success, std::shared_ptr<void> result);
     void notifyProgress(const QString &action, unsigned int value, unsigned int max);
@@ -126,6 +132,8 @@ private:
 
     TaskInterface wrapBoardTask(ty_task *task,
                                 std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
+
+    friend class Manager;
 };
 
 class Manager : public QAbstractListModel {
@@ -133,6 +141,8 @@ class Manager : public QAbstractListModel {
 
     tyb_monitor *manager_ = nullptr;
     DescriptorNotifier manager_notifier_;
+
+    QThread serial_thread_;
 
     std::vector<std::shared_ptr<Board>> boards_;
 
