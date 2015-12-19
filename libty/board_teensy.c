@@ -486,7 +486,9 @@ static int teensy_reboot(tyb_board_interface *iface)
         if (!r) {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
                the device will keep rebooting when opened. */
+            ty_error_mask(TY_ERROR_SYSTEM);
             tyd_serial_set_attributes(iface->h, 115200, 0);
+            ty_error_unmask();
         }
         break;
 
