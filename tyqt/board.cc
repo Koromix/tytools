@@ -533,18 +533,6 @@ QVariant Manager::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-Qt::ItemFlags Manager::flags(const QModelIndex &index) const
-{
-    if (index.row() >= static_cast<int>(boards_.size()))
-        return 0;
-
-    if (boards_[index.row()]->state() == TYB_BOARD_STATE_ONLINE) {
-        return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-    } else {
-        return Qt::ItemIsSelectable;
-    }
-}
-
 void Manager::refreshManager(ty_descriptor desc)
 {
     TY_UNUSED(desc);
