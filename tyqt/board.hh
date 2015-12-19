@@ -94,7 +94,7 @@ public:
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);
 
-    virtual bool event(QEvent *e) override;
+    bool event(QEvent *e) override;
 
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());

@@ -33,7 +33,7 @@ struct tyb_board_interface {
     tyb_board *board;
     ty_list_head list;
 
-    volatile unsigned int refcount;
+    unsigned int refcount;
 
     const struct _tyb_board_interface_vtable *vtable;
 
@@ -52,7 +52,7 @@ struct tyb_board {
     tyb_monitor *manager;
     ty_list_head list;
 
-    volatile unsigned int refcount;
+    unsigned int refcount;
 
     tyb_board_state state;
 

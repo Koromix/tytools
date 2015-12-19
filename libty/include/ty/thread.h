@@ -50,8 +50,8 @@ typedef struct ty_cond {
             HANDLE ev;
 
             CRITICAL_SECTION mutex;
-            volatile unsigned int waiting;
-            volatile unsigned int wakeup;
+            unsigned int waiting;
+            unsigned int wakeup;
         } xp;
     };
 #else

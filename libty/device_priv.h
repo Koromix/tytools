@@ -36,7 +36,7 @@ struct tyd_device {
     tyd_monitor *monitor;
     ty_htable_head hnode;
 
-    volatile unsigned int refcount;
+    unsigned int refcount;
 
     char *key;
 
