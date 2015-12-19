@@ -28,8 +28,11 @@ if(WIN32)
     add_definitions(-DWINVER=0x0602 -D_WIN32_WINNT=0x0602)
 
     if(MINGW)
-        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic")
-        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread -Wl,-Bdynamic")
+        # Latest approach to force MinGW to statically link libwinpthread, until a new
+        # version breaks this one too.
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic")
+        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lstdc++ -lwinpthread")
     endif()
 elseif(APPLE)
     if(POLICY CMP0042)
