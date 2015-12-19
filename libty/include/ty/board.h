@@ -101,9 +101,6 @@ TY_PUBLIC const char *tyb_board_capability_get_name(tyb_board_capability cap);
 TY_PUBLIC tyb_board *tyb_board_ref(tyb_board *board);
 TY_PUBLIC void tyb_board_unref(tyb_board *board);
 
-TY_PUBLIC void tyb_board_lock(const tyb_board *board);
-TY_PUBLIC void tyb_board_unlock(const tyb_board *board);
-
 TY_PUBLIC bool tyb_board_matches_tag(tyb_board *board, const char *id);
 
 TY_PUBLIC void tyb_board_set_udata(tyb_board *board, void *udata);

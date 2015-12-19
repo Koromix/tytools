@@ -53,7 +53,6 @@ struct tyb_board {
     ty_list_head list;
 
     volatile unsigned int refcount;
-    ty_mutex mutex;
 
     tyb_board_state state;
 
@@ -64,8 +63,8 @@ struct tyb_board {
     uint16_t pid;
     uint64_t serial;
 
+    ty_mutex interfaces_lock;
     ty_list_head interfaces;
-
     int capabilities;
     tyb_board_interface *cap2iface[16];
 

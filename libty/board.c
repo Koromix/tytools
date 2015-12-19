@@ -121,15 +121,15 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
     }
     board->refcount = 1;
 
-    r = ty_mutex_init(&board->mutex, TY_MUTEX_RECURSIVE);
-    if (r < 0)
-        goto error;
-
     board->location = strdup(tyd_device_get_location(iface->dev));
     if (!board->location) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
+
+    r = ty_mutex_init(&board->interfaces_lock, TY_MUTEX_FAST);
+    if (r < 0)
+        goto error;
 
     ty_list_init(&board->interfaces);
 
@@ -158,7 +158,7 @@ error:
 
 static void close_board(tyb_board *board)
 {
-    board->state = TYB_BOARD_STATE_MISSING;
+    ty_mutex_lock(&board->interfaces_lock);
 
     ty_list_foreach(cur, &board->interfaces) {
         tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, list);
@@ -173,33 +173,37 @@ static void close_board(tyb_board *board)
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
     board->capabilities = 0;
 
+    ty_mutex_unlock(&board->interfaces_lock);
+
+    board->state = TYB_BOARD_STATE_MISSING;
     trigger_callbacks(board, TYB_MONITOR_EVENT_DISAPPEARED);
 }
 
 static int add_missing_board(tyb_board *board)
 {
+    tyb_monitor *manager = board->manager;
+
     board->missing_since = ty_millis();
     if (board->missing.prev)
         ty_list_remove(&board->missing);
-    ty_list_add_tail(&board->manager->missing_boards, &board->missing);
+    ty_list_add_tail(&manager->missing_boards, &board->missing);
 
     // There may be other boards waiting to be dropped, set timeout for the next in line
-    board = ty_list_get_first(&board->manager->missing_boards, tyb_board, missing);
+    board = ty_list_get_first(&manager->missing_boards, tyb_board, missing);
 
-    return ty_timer_set(board->manager->timer, ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since), TY_TIMER_ONESHOT);
+    return ty_timer_set(manager->timer, ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since),
+                        TY_TIMER_ONESHOT);
 }
 
 static void drop_board(tyb_board *board)
 {
-    board->state = TYB_BOARD_STATE_DROPPED;
-
     if (board->missing.prev)
         ty_list_remove(&board->missing);
 
+    board->state = TYB_BOARD_STATE_DROPPED;
     trigger_callbacks(board, TYB_MONITOR_EVENT_DROPPED);
 
     ty_list_remove(&board->list);
-    board->manager = NULL;
 }
 
 static tyb_board *find_board(tyb_monitor *manager, const char *location)
@@ -284,7 +288,7 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
 
     r = open_interface(dev, &iface);
     if (r <= 0)
-        goto cleanup;
+        goto error;
 
     board = find_board(manager, tyd_device_get_location(dev));
 
@@ -292,15 +296,11 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
        notifications were dropped somewhere and we never got it, so use heuristics to improve
        board change detection. */
     if (board) {
-        tyb_board_lock(board);
-
         if ((model_is_valid(iface->model) && model_is_valid(board->model) && iface->model != board->model)
                 || iface->serial != board->serial) {
             drop_board(board);
 
-            tyb_board_unlock(board);
             tyb_board_unref(board);
-
             board = NULL;
         } else if (board->vid != tyd_device_get_vid(dev) || board->pid != tyd_device_get_pid(dev)) {
             if (board->state == TYB_BOARD_STATE_ONLINE)
@@ -321,13 +321,14 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
     } else {
         r = add_board(manager, iface, &board);
         if (r < 0)
-            goto cleanup;
-        tyb_board_lock(board);
+            goto error;
 
         event = TYB_MONITOR_EVENT_ADDED;
     }
 
     iface->board = board;
+
+    ty_mutex_lock(&board->interfaces_lock);
 
     ty_list_add_tail(&board->interfaces, &iface->list);
     ty_htable_add(&manager->interfaces, ty_htable_hash_ptr(iface->dev), &iface->hnode);
@@ -338,17 +339,15 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
     }
     board->capabilities |= iface->capabilities;
 
+    ty_mutex_unlock(&board->interfaces_lock);
+
     if (board->missing.prev)
         ty_list_remove(&board->missing);
 
     board->state = TYB_BOARD_STATE_ONLINE;
-    iface = NULL;
+    return trigger_callbacks(board, event);
 
-    r = trigger_callbacks(board, event);
-
-cleanup:
-    if (board)
-        tyb_board_unlock(board);
+error:
     tyb_board_interface_unref(iface);
     return r;
 }
@@ -365,7 +364,7 @@ static int remove_interface(tyb_monitor *manager, tyd_device *dev)
 
     board = iface->board;
 
-    tyb_board_lock(board);
+    ty_mutex_lock(&board->interfaces_lock);
 
     ty_htable_remove(&iface->hnode);
     ty_list_remove(&iface->list);
@@ -385,21 +384,15 @@ static int remove_interface(tyb_monitor *manager, tyd_device *dev)
         board->capabilities |= iface->capabilities;
     }
 
+    ty_mutex_unlock(&board->interfaces_lock);
+
     if (ty_list_is_empty(&board->interfaces)) {
         close_board(board);
-
         r = add_missing_board(board);
-        if (r < 0)
-            goto cleanup;
     } else {
         r = trigger_callbacks(board, TYB_MONITOR_EVENT_CHANGED);
-        if (r < 0)
-            goto cleanup;
     }
 
-    r = 0;
-cleanup:
-    tyb_board_unlock(board);
     return r;
 }
 
@@ -488,8 +481,6 @@ void tyb_monitor_free(tyb_monitor *manager)
 
         ty_list_foreach(cur, &manager->boards) {
             tyb_board *board = ty_container_of(cur, tyb_board, list);
-
-            board->manager = NULL;
             tyb_board_unref(board);
         }
 
@@ -750,34 +741,21 @@ void tyb_board_unref(tyb_board *board)
             return;
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
-        ty_mutex_release(&board->mutex);
-
         free(board->tag);
         free(board->location);
+
+        ty_mutex_release(&board->interfaces_lock);
 
         ty_list_foreach(cur, &board->interfaces) {
             tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, list);
 
             if (iface->hnode.next)
                 ty_htable_remove(&iface->hnode);
-
             tyb_board_interface_unref(iface);
         }
     }
 
     free(board);
-}
-
-void tyb_board_lock(const tyb_board *board)
-{
-    assert(board);
-    ty_mutex_lock(&((tyb_board *)board)->mutex);
-}
-
-void tyb_board_unlock(const tyb_board *board)
-{
-    assert(board);
-    ty_mutex_unlock(&((tyb_board *)board)->mutex);
 }
 
 static int match_interface(tyb_board_interface *iface, void *udata)
@@ -874,13 +852,13 @@ tyb_board_interface *tyb_board_get_interface(const tyb_board *board, tyb_board_c
 
     tyb_board_interface *iface;
 
-    tyb_board_lock(board);
+    ty_mutex_lock(&((tyb_board *)board)->interfaces_lock);
 
     iface = board->cap2iface[cap];
     if (iface)
         tyb_board_interface_ref(iface);
 
-    tyb_board_unlock(board);
+    ty_mutex_unlock(&((tyb_board *)board)->interfaces_lock);
 
     return iface;
 }
@@ -950,19 +928,18 @@ int tyb_board_list_interfaces(tyb_board *board, tyb_board_list_interfaces_func *
 
     int r;
 
-    tyb_board_lock(board);
+    ty_mutex_lock(&board->interfaces_lock);
 
+    r = 0;
     ty_list_foreach(cur, &board->interfaces) {
         tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, list);
 
         r = (*f)(iface, udata);
         if (r)
-            goto cleanup;
+            break;
     }
 
-    r = 0;
-cleanup:
-    tyb_board_unlock(board);
+    ty_mutex_unlock(&board->interfaces_lock);
     return r;
 }
 
@@ -990,7 +967,7 @@ int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int ti
     tyb_monitor *manager = board->manager;
     struct wait_for_context ctx;
 
-    if (!manager)
+    if (board->state == TYB_BOARD_STATE_DROPPED)
         return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
 
     ctx.board = board;
