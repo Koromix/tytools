@@ -300,6 +300,8 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
     if (board) {
         if ((model_is_valid(iface->model) && model_is_valid(board->model) && iface->model != board->model)
                 || iface->serial != board->serial) {
+            if (board->state == TYB_BOARD_STATE_ONLINE)
+                close_board(board);
             drop_board(board);
 
             tyb_board_unref(board);
