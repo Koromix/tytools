@@ -1209,15 +1209,12 @@ static void close_win32_device(tyd_handle *h);
 static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
 {
     tyd_handle *h = udata;
-    DWORD len;
-    BOOL success;
+    DWORD ret;
 
     /* Give up if nothing happens, even if it means a leak; we'll get rid of this when XP
        becomes irrelevant anyway. Hope this happens within my lifetime. */
-    WaitForSingleObject(h->ov->hEvent, 300000);
-
-    success = GetOverlappedResult(h->handle, h->ov, &len, FALSE);
-    if (!success && GetLastError() == ERROR_IO_INCOMPLETE) {
+    ret = WaitForSingleObject(h->ov->hEvent, 120000);
+    if (ret != WAIT_OBJECT_0) {
         ty_error(TY_ERROR_SYSTEM, "Cannot stop asynchronous read request, leaking handle and memory");
         return 0;
     }
@@ -1237,19 +1234,22 @@ static void close_win32_device(tyd_handle *h)
         if (h->pending_thread) {
             if (CancelIoEx_) {
                 CancelIoEx_(h->handle, NULL);
-            } else {
+            } else if (h->pending_thread == GetCurrentThreadId()) {
                 CancelIo(h->handle);
+            } else {
+                CloseHandle(h->handle);
+                h->handle = NULL;
 
-                /* CancelIoEx does not exist on XP, so instead we create a new thread to cleanup
-                   when pending I/O stops. And if the thread cannot be created, just leaking seems
-                   better than a potential segmentation fault. */
-                if (h->pending_thread != GetCurrentThreadId()) {
-                    HANDLE thread = (HANDLE)_beginthreadex(NULL, 0, overlapped_cleanup_thread,
-                                                           h, 0, NULL);
-                    if (thread)
-                        CloseHandle(thread);
-                    return;
-                }
+                /* CancelIoEx does not exist on XP, so instead we create a new thread to
+                   cleanup when pending I/O stops. And if the thread cannot be created or
+                   the kernel does not set h->ov->hEvent, just leaking seems better than a
+                   potential segmentation fault. */
+                HANDLE thread = (HANDLE)_beginthreadex(NULL, 0, overlapped_cleanup_thread,
+                                                       h, 0, NULL);
+                if (thread)
+                    CloseHandle(thread);
+
+                return;
             }
         }
 
