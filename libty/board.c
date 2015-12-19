@@ -158,18 +158,11 @@ error:
 
 static void close_board(tyb_board *board)
 {
+    ty_list_head ifaces;
+
     ty_mutex_lock(&board->interfaces_lock);
 
-    ty_list_foreach(cur, &board->interfaces) {
-        tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, list);
-
-        if (iface->hnode.next)
-            ty_htable_remove(&iface->hnode);
-
-        tyb_board_interface_unref(iface);
-    }
-    ty_list_init(&board->interfaces);
-
+    ty_list_replace(&board->interfaces, &ifaces);
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
     board->capabilities = 0;
 
@@ -177,6 +170,15 @@ static void close_board(tyb_board *board)
 
     board->state = TYB_BOARD_STATE_MISSING;
     trigger_callbacks(board, TYB_MONITOR_EVENT_DISAPPEARED);
+
+    ty_list_foreach(cur, &ifaces) {
+        tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, list);
+
+        if (iface->hnode.next)
+            ty_htable_remove(&iface->hnode);
+
+        tyb_board_interface_unref(iface);
+    }
 }
 
 static int add_missing_board(tyb_board *board)
@@ -369,8 +371,6 @@ static int remove_interface(tyb_monitor *manager, tyd_device *dev)
     ty_htable_remove(&iface->hnode);
     ty_list_remove(&iface->list);
 
-    tyb_board_interface_unref(iface);
-
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
     board->capabilities = 0;
 
@@ -392,6 +392,8 @@ static int remove_interface(tyb_monitor *manager, tyd_device *dev)
     } else {
         r = trigger_callbacks(board, TYB_MONITOR_EVENT_CHANGED);
     }
+
+    tyb_board_interface_unref(iface);
 
     return r;
 }
