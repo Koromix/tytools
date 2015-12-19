@@ -823,7 +823,7 @@ error:
 
 static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    tyd_monitor *monitor = GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    tyd_monitor *monitor = (tyd_monitor *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     int r;
 
