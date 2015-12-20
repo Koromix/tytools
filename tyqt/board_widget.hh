@@ -10,9 +10,8 @@
 
 #include <QItemDelegate>
 
+#include "board.hh"
 #include "ui_board_widget.h"
-
-class Manager;
 
 class BoardWidget : public QWidget, private Ui::BoardWidget {
     Q_OBJECT
@@ -22,19 +21,12 @@ public:
 
     void setAvailable(bool available);
 
-    void setIcon(const QPixmap &pixmap);
-    void setModel(const QString &model);
-    void setTag(const QString &tag);
-    void setStatus(const QString &status);
+    void setIcon(const QPixmap &pixmap) { boardIcon->setPixmap(pixmap); }
+    void setModel(const QString &model) { modelLabel->setText(model); }
+    void setTag(const QString &tag) { tagLabel->setText(tag); }
+    void setStatus(const QString &status) { statusLabel->setText(status); }
 
     void setProgress(unsigned int progress, unsigned int total);
-
-    bool available() const;
-
-    const QPixmap *icon() const;
-    QString model() const;
-    QString tag() const;
-    QString status() const;
 };
 
 class BoardItemDelegate : public QItemDelegate {
@@ -45,7 +37,8 @@ class BoardItemDelegate : public QItemDelegate {
     mutable BoardWidget widget_;
 
 public:
-    BoardItemDelegate(Manager *model);
+    BoardItemDelegate(Manager *model)
+        : QItemDelegate(model), model_(model) {}
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
     QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override;

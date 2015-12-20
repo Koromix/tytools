@@ -54,36 +54,6 @@ void Task::reportProgress(const QString &action, unsigned int value, unsigned in
         l->notifyProgress(action, value, max);
 }
 
-ty_task_status Task::status() const
-{
-    return status_;
-}
-
-unsigned int Task::progress() const
-{
-    return progress_;
-}
-
-unsigned int Task::progressMaximum() const
-{
-    return progress_max_;
-}
-
-bool Task::success() const
-{
-    return success_;
-}
-
-shared_ptr<void> Task::result() const
-{
-    return result_;
-}
-
-QFuture<bool> Task::future() const
-{
-    return intf_.future();
-}
-
 void Task::addListener(TaskListener *listener)
 {
     QMutexLocker locker(&listeners_lock_);
@@ -266,11 +236,6 @@ void TaskListener::setTask(TaskInterface *task)
     } else {
         task_ = make_shared<FailedTask>();
     }
-}
-
-TaskInterface TaskListener::task() const
-{
-    return TaskInterface(task_);
 }
 
 void TaskListener::notifyLog(ty_log_level level, const QString &msg)

@@ -32,12 +32,7 @@ SelectorDialog::SelectorDialog(Manager *manager, QWidget *parent)
     }
 }
 
-std::shared_ptr<Board> SelectorDialog::currentBoard() const
-{
-    return current_board_;
-}
-
-std::shared_ptr<Board> SelectorDialog::selectedBoard() const
+shared_ptr<Board> SelectorDialog::selectedBoard() const
 {
     return result() ? current_board_ : nullptr;
 }

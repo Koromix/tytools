@@ -52,15 +52,15 @@ public:
 
     static int exec();
 
-    static TyQt *instance();
+    static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
+    Manager *manager() { return &manager_; }
 
-    Manager *manager();
     SelectorDialog *openSelector();
 
-    bool visible() const;
+    bool visible() const { return action_visible_->isChecked(); }
 
-    void setClientConsole(bool console);
-    bool clientConsole() const;
+    void setClientConsole(bool console) { client_console_ = console; }
+    bool clientConsole() const { return client_console_; }
 
 public slots:
     void openMainWindow();

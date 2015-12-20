@@ -22,7 +22,7 @@ class SelectorDialog : public QDialog, private Ui::SelectorDialog {
 public:
     SelectorDialog(Manager *manager, QWidget *parent = nullptr);
 
-    std::shared_ptr<Board> currentBoard() const;
+    std::shared_ptr<Board> currentBoard() const { return current_board_; }
     std::shared_ptr<Board> selectedBoard() const;
 
     static std::shared_ptr<Board> getBoard(Manager *manager, QWidget *parent = nullptr);

@@ -8,7 +8,6 @@
 #include <QPainter>
 
 #include "ty.h"
-#include "board.hh"
 #include "board_widget.hh"
 
 using namespace std;
@@ -17,26 +16,6 @@ BoardWidget::BoardWidget(QWidget *parent)
     : QWidget(parent)
 {
     setupUi(this);
-}
-
-void BoardWidget::setIcon(const QPixmap &pixmap)
-{
-    boardIcon->setPixmap(pixmap);
-}
-
-void BoardWidget::setModel(const QString &model)
-{
-    modelLabel->setText(model);
-}
-
-void BoardWidget::setTag(const QString &tag)
-{
-    tagLabel->setText(tag);
-}
-
-void BoardWidget::setStatus(const QString &status)
-{
-    statusLabel->setText(status);
 }
 
 void BoardWidget::setAvailable(bool available)
@@ -54,36 +33,6 @@ void BoardWidget::setProgress(unsigned int progress, unsigned int total)
     } else {
         stackedWidget->setCurrentIndex(0);
     }
-}
-
-const QPixmap *BoardWidget::icon() const
-{
-    return boardIcon->pixmap();
-}
-
-QString BoardWidget::model() const
-{
-    return modelLabel->text();
-}
-
-QString BoardWidget::tag() const
-{
-    return tagLabel->text();
-}
-
-QString BoardWidget::status() const
-{
-    return statusLabel->text();
-}
-
-bool BoardWidget::available() const
-{
-    return boardIcon->isEnabled();
-}
-
-BoardItemDelegate::BoardItemDelegate(Manager *model)
-    : QItemDelegate(model), model_(model)
-{
 }
 
 void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const

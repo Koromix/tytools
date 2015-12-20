@@ -40,13 +40,13 @@ public:
 
     virtual bool start() = 0;
 
-    ty_task_status status() const;
-    unsigned int progress() const;
-    unsigned int progressMaximum() const;
-    bool success() const;
-    std::shared_ptr<void> result() const;
+    ty_task_status status() const { return status_; }
+    unsigned int progress() const { return progress_; }
+    unsigned int progressMaximum() const { return progress_max_; }
+    bool success() const { return success_; }
+    std::shared_ptr<void> result() const { return result_; }
 
-    QFuture<bool> future() const;
+    QFuture<bool> future() const { return intf_.future(); }
 
     void reportLog(ty_log_level level, const QString &msg);
     void reportStarted();
@@ -128,7 +128,7 @@ public:
     virtual ~TaskListener();
 
     void setTask(TaskInterface *task);
-    TaskInterface task() const;
+    TaskInterface task() const { return TaskInterface(task_); }
 
 protected:
     virtual void notifyLog(ty_log_level level, const QString &msg);

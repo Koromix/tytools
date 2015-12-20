@@ -62,16 +62,6 @@ int TyQt::exec()
     return tyQt->run();
 }
 
-TyQt *TyQt::instance()
-{
-    return static_cast<TyQt *>(QCoreApplication::instance());
-}
-
-Manager *TyQt::manager()
-{
-    return &manager_;
-}
-
 SelectorDialog *TyQt::openSelector()
 {
     if (main_windows_.empty())
@@ -138,21 +128,6 @@ void TyQt::setVisible(bool visible)
     }
 
     action_visible_->setChecked(visible);
-}
-
-bool TyQt::visible() const
-{
-    return action_visible_->isChecked();
-}
-
-void TyQt::setClientConsole(bool console)
-{
-    client_console_ = console;
-}
-
-bool TyQt::clientConsole() const
-{
-    return client_console_;
 }
 
 void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
