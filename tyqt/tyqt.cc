@@ -309,8 +309,8 @@ int TyQt::run()
     }
 
 #ifdef _WIN32
-    if (client_console_ && !commandCount) {
-        showClientMessage(parser_.helpText());
+    if (client_console_ && command_.isEmpty()) {
+        showClientMessage(helpText());
         return 0;
     }
 #endif
