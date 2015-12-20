@@ -171,7 +171,6 @@ bool FailedTask::start()
     if (status() >= TY_TASK_STATUS_PENDING)
         return true;
 
-    reportStarted();
     if (!msg_.isEmpty()) {
         tyQt->reportError(msg_);
         reportLog(TY_LOG_ERROR, msg_);
