@@ -10,7 +10,6 @@
 
 #include <QAction>
 #include <QApplication>
-#include <QCommandLineParser>
 #include <QSystemTrayIcon>
 
 #include <memory>
@@ -27,7 +26,11 @@
 class TyQt : public QApplication {
     Q_OBJECT
 
-    QCommandLineParser parser_;
+    int argc_;
+    char **argv_;
+    QString command_;
+    QString board_;
+    bool wait_ = false;
 
     SessionChannel channel_;
 
@@ -74,11 +77,11 @@ signals:
     void errorMessage(const QString &msg);
 
 private:
-    void setupOptionParser(QCommandLineParser &parser);
-
     int run();
     int runServer();
     int runClient();
+
+    QString helpText();
 
     bool startBackgroundServer();
     void showClientMessage(const QString &msg);

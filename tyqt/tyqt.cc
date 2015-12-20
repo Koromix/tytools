@@ -5,25 +5,57 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <QFileInfo>
+#include <QDir>
 #include <QFutureWatcher>
 #include <QMessageBox>
 #include <QProcess>
 #include <QThread>
 #include <QTimer>
 
+#include <getopt.h>
+
 #include "commands.hh"
 #include "tyqt.hh"
+
+struct command {
+    const char *name;
+    const char *arg;
+    const char *description;
+};
+
+enum {
+    OPTION_HELP = 0x100,
+    OPTION_VERSION,
+
+    OPTION_EXPERIMENTAL
+};
+
+static const struct command commands[] = {
+    {"open",     NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
+    {"activate", NULL,                      QT_TR_NOOP("Bring TyQt window to foreground")},
+    {"reset",    NULL,                      QT_TR_NOOP("Reset board")},
+    {"reboot",   NULL,                      QT_TR_NOOP("Reboot board")},
+    {"upload",   QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
+    {0}
+};
+
+static const char *short_options_ = ":b:w";
+static const struct option long_options_[] = {
+    {"help",         no_argument,       NULL, OPTION_HELP},
+    {"version",      no_argument,       NULL, OPTION_VERSION},
+    {"board",        required_argument, NULL, 'b'},
+    {"wait",         no_argument,       NULL, 'w'},
+    {"experimental", no_argument,       NULL, OPTION_EXPERIMENTAL},
+    {0}
+};
 
 using namespace std;
 
 TyQt::TyQt(int &argc, char *argv[])
-    : QApplication(argc, argv)
+    : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
     setApplicationName("TyQt");
     setApplicationVersion(TY_VERSION);
-
-    setupOptionParser(parser_);
 
     action_visible_ = new QAction(tr("&Visible"), this);
     action_visible_->setCheckable(true);
@@ -191,7 +223,7 @@ void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
 
         ty_log(static_cast<ty_log_level>(level), "%s", msg.toLocal8Bit().constData());
     } else if (cmd == "start") {
-        if (!parser_.isSet("wait")) {
+        if (!wait_) {
             channel_.disconnect(this);
             exit(0);
         }
@@ -217,53 +249,48 @@ error:
     exit(1);
 }
 
-void TyQt::setupOptionParser(QCommandLineParser &parser)
-{
-    parser.addHelpOption();
-    parser.addVersionOption();
-
-    QCommandLineOption waitOption(QStringList{"w", "wait"}, tr("Wait until task completion."));
-    parser.addOption(waitOption);
-
-    QCommandLineOption deviceOption(QStringList{"b", "board"}, tr("Work with specific board."),
-                                    tr("id"));
-    parser.addOption(deviceOption);
-
-    QCommandLineOption uploadCommand(QStringList{"u", "upload"}, tr("Upload new firmware."),
-                                     tr("firmware"));
-    parser.addOption(uploadCommand);
-
-    QCommandLineOption activateCommand("activate", tr("Bring TyQt to foreground."));
-    parser.addOption(activateCommand);
-
-    QCommandLineOption experimentalOption("experimental", tr("Enable experimental features (use with caution)."));
-    parser.addOption(experimentalOption);
-}
-
 int TyQt::run()
 {
-    if (!parser_.parse(arguments())) {
-        showClientError(QString("%1\n%2").arg(parser_.errorText(), parser_.helpText()));
-        return 1;
+    if (argc_ >= 2 && argv_[1][0] != '-') {
+        command_ = argv_[1];
+        argv_++;
+        argc_--;
     }
 
-    if (parser_.isSet("version")) {
-        showClientMessage(QString("%1 %2").arg(applicationName(), applicationVersion()));
-        return 0;
-    }
-    if (parser_.isSet("help")) {
-        showClientMessage(parser_.helpText());
-        return 0;
+    opterr = 0;
+    int c;
+    while ((c = getopt_long(argc_, argv_, short_options_, long_options_, NULL)) != -1) {
+        switch (c) {
+        case OPTION_HELP:
+            showClientMessage(helpText());
+            return 0;
+        case OPTION_VERSION:
+            showClientMessage(QString("%1 %2").arg(applicationName(), applicationVersion()));
+            return 0;
+
+        case 'b':
+            board_ = optarg;
+            break;
+        case 'w':
+            wait_ = true;
+            break;
+
+        case OPTION_EXPERIMENTAL:
+            ty_config_experimental = true;
+            break;
+
+        case ':':
+            showClientError(tr("Option '%1' takes an argument\n%2").arg(argv_[optind - 1])
+                                                                   .arg(helpText()));
+            return 1;
+        case '?':
+            showClientError(tr("Unknown option '%1'\n%2").arg(argv_[optind - 1]).arg(helpText()));
+            return 1;
+        }
     }
 
-    if (!parser_.positionalArguments().isEmpty()) {
-        showClientError(QString("%1\n%2").arg(tr("Positional arguments are not allowed."), parser_.helpText()));
-        return 1;
-    }
-
-    unsigned int commandCount = parser_.isSet("activate") + parser_.isSet("upload");
-    if (commandCount > 1) {
-        showClientError(QString("%1\n%2").arg(tr("Multiple commands are not allowed."), parser_.helpText()));
+    if (command_.isEmpty() && optind < argc_) {
+        showClientError(tr("Command must be placed first\n%1").arg(helpText()));
         return 1;
     }
 
@@ -274,10 +301,7 @@ int TyQt::run()
     }
 #endif
 
-    if (parser_.isSet("experimental"))
-        ty_config_experimental = true;
-
-    if (channel_.lock() && !commandCount) {
+    if (channel_.lock() && command_.isEmpty()) {
         return runServer();
     } else {
         channel_.disconnect(this);
@@ -328,20 +352,13 @@ int TyQt::runClient()
         return 1;
     }
 
-    if (parser_.isSet("activate")) {
-        channel_.send("activate");
-    } else if (parser_.isSet("upload")) {
-        auto tag = parser_.value("board");
-        auto firmware = QFileInfo(parser_.value("upload")).canonicalFilePath();
-        if (firmware.isEmpty()) {
-            showClientError(tr("Firmware '%1' does not exist").arg(parser_.value("upload")));
-            return 1;
-        }
+    if (command_.isEmpty())
+        command_ = "open";
 
-        channel_.send({"upload", tag, firmware});
-    } else {
-        channel_.send("open");
-    }
+    QStringList arguments = {command_, QDir::currentPath(), board_};
+    for (int i = optind; i < argc_; i++)
+        arguments.append(argv_[i]);
+    channel_.send(arguments);
 
     connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
         showClientError(tr("Main TyQt instance closed the connection"));
@@ -349,6 +366,29 @@ int TyQt::runClient()
     });
 
     return QApplication::exec();
+}
+
+QString TyQt::helpText()
+{
+    QString help = tr("usage: tyqt <command> [options]\n\n"
+                      "General options:\n"
+                      "       --help               Show help message\n"
+                      "       --version            Display version information\n\n"
+                      "   -w, --wait               Wait until task completion\n"
+                      "   -b, --board <tag>        Work with board <tag> instead of first detected\n"
+                      "       --experimental       Enable experimental features (use with caution)\n\n"
+                      "Commands:\n");
+
+    for (const struct command *cmd = commands; cmd->name; cmd++) {
+        QString name = cmd->name;
+        if (cmd->arg)
+            name += QString(" %1").arg(tr(cmd->arg));
+
+        help += QString("   %1 %2\n").arg(name, -24).arg(tr(cmd->description));
+    }
+    help.chop(1);
+
+    return help;
 }
 
 bool TyQt::startBackgroundServer()

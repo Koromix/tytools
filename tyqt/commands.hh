@@ -20,8 +20,10 @@ namespace Commands {
     TaskInterface openMainWindow();
     TaskInterface activateMainWindow();
 
-    TaskInterface upload(const QString &tag, const QString &filename);
-    TaskInterface upload(Board &board, const QString &filename);
+    TaskInterface reset(const QString &tag);
+    TaskInterface reboot(const QString &tag);
+    TaskInterface upload(const QString &tag, const QStringList &filenames);
+    TaskInterface upload(Board &board, const QStringList &filename);
 }
 
 #endif

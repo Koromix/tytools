@@ -5,6 +5,9 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
+#include <QDir>
+#include <QFileInfo>
+
 #include "commands.hh"
 #include "selector_dialog.hh"
 #include "tyqt.hh"
@@ -72,15 +75,26 @@ void BoardSelectorTask::notifyProgress(const QString &action, unsigned int value
 
 TaskInterface Commands::execute(const QString &cmd, const QStringList &parameters)
 {
+    if (parameters.count() < 2)
+        return make_task<FailedTask>(TyQt::tr("Command '%1' needs more parameters").arg(cmd));
+
+    auto arguments = parameters;
+    auto working_dir = arguments.takeFirst();
+    auto tag = arguments.takeFirst();
+
     if (cmd == "open") {
         return openMainWindow();
     } else if (cmd == "activate") {
         return activateMainWindow();
+    } else if (cmd == "reset") {
+        return reset(tag);
+    } else if (cmd == "reboot") {
+        return reboot(tag);
     } else if (cmd == "upload") {
-        auto tag = parameters.value(0, QString());
-        auto firmware = parameters.value(1, QString());
+        for (auto &filename: arguments)
+           filename = QFileInfo(working_dir, filename).filePath();
 
-        return upload(tag, firmware);
+        return upload(tag, arguments);
     }
 
     return make_task<FailedTask>(TyQt::tr("Unknown command '%1'").arg(cmd));
@@ -102,7 +116,7 @@ TaskInterface Commands::activateMainWindow()
     });
 }
 
-TaskInterface Commands::upload(const QString &tag, const QString &filename)
+TaskInterface Commands::reset(const QString &tag)
 {
     auto manager = tyQt->manager();
 
@@ -111,38 +125,85 @@ TaskInterface Commands::upload(const QString &tag, const QString &filename)
 
     shared_ptr<Board> board;
     if (!tag.isEmpty()) {
-        board = manager->find([=](Board &board) { return board.matchesTag(tag); });
+        board = manager->find([&](Board &board) { return board.matchesTag(tag); });
+        if (!board)
+            return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
     } else {
-        if (manager->boardCount() == 1) {
-            board = manager->board(0);
-        } else {
-            board = manager->find([=](Board &board) { return board.firmware() == filename; });
-            if (!board) {
-                return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
-                    return upload(board, filename);
-                });
-            }
-        }
+        board = manager->board(0);
     }
-    if (!board)
-        return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
 
-    return upload(*board, filename);
+    return board->reset();
 }
 
-TaskInterface Commands::upload(Board &board, const QString &filename)
+TaskInterface Commands::reboot(const QString &tag)
 {
-    shared_ptr<Firmware> fw;
+    auto manager = tyQt->manager();
 
-    if (!filename.isEmpty()) {
-        fw = Firmware::load(filename);
-    } else if (!board.firmware().isEmpty()) {
-        fw = Firmware::load(board.firmware());
+    if (!manager->boardCount())
+        return make_task<FailedTask>(TyQt::tr("No board available"));
+
+    shared_ptr<Board> board;
+    if (!tag.isEmpty()) {
+        board = manager->find([&](Board &board) { return board.matchesTag(tag); });
+        if (!board)
+            return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
     } else {
-        return make_task<FailedTask>(TyQt::tr("No firmware to upload"));
+        board = manager->board(0);
     }
-    if (!fw)
+
+    return board->reboot();
+}
+
+TaskInterface Commands::upload(const QString &tag, const QStringList &filenames)
+{
+    auto manager = tyQt->manager();
+
+    if (!manager->boardCount())
+        return make_task<FailedTask>(TyQt::tr("No board available"));
+
+    shared_ptr<Board> board;
+    if (!tag.isEmpty()) {
+        board = manager->find([&](Board &board) { return board.matchesTag(tag); });
+        if (!board)
+            return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
+    } else if (manager->boardCount() == 1) {
+        board = manager->board(0);
+    } else {
+        if (filenames.count() == 1)
+            board = manager->find([&](Board &board) { return ty_compare_paths(board.firmware().toLocal8Bit().constData(),
+                                                                              filenames[0].toLocal8Bit().constData()); });
+
+        if (!board) {
+            return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
+                return upload(board, filenames);
+            });
+        }
+    }
+
+    return upload(*board, filenames);
+}
+
+TaskInterface Commands::upload(Board &board, const QStringList &filenames)
+{
+    vector<shared_ptr<Firmware>> fws;
+
+    if (!filenames.isEmpty()) {
+        fws.reserve(filenames.count());
+        for (auto filename: filenames) {
+            auto fw = Firmware::load(filename);
+            if (fw)
+                fws.push_back(fw);
+        }
+    } else if (!board.firmware().isEmpty()) {
+        auto fw = Firmware::load(board.firmware());
+        if (fw)
+            fws.push_back(fw);
+    } else {
+        return make_task<FailedTask>(TyQt::tr("No firmware to upload to '%1'").arg(board.tag()));
+    }
+    // FIXME: forward all error messages
+    if (fws.empty())
         return make_task<FailedTask>(ty_error_last_message());
 
-    return board.upload({fw}, board.property("resetAfter").toBool());
+    return board.upload(fws, board.property("resetAfter").toBool());
 }
