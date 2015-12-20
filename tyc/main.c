@@ -94,6 +94,7 @@ void print_main_options(FILE *f)
                "       --help               Show help message\n"
                "       --version            Display version information\n\n"
                "       --board <tag>        Work with board <tag> instead of first detected\n"
+               "   -q, --quiet              Disable output, use -qqq to silence errors\n"
                "       --experimental       Enable experimental features (use with caution)\n");
 }
 
@@ -194,6 +195,9 @@ int parse_main_option(int argc, char *argv[], int c)
         board_tag = optarg;
         return 0;
 
+    case 'q':
+        ty_config_quiet++;
+        break;
     case MAIN_OPTION_EXPERIMENTAL:
         ty_config_experimental = true;
         return 0;

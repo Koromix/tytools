@@ -41,12 +41,13 @@ static const struct command commands[] = {
     {0}
 };
 
-static const char *short_options_ = ":b:w";
+static const char *short_options_ = ":b:wq";
 static const struct option long_options_[] = {
     {"help",         no_argument,       NULL, OPTION_HELP},
     {"version",      no_argument,       NULL, OPTION_VERSION},
     {"board",        required_argument, NULL, 'b'},
     {"wait",         no_argument,       NULL, 'w'},
+    {"quiet",        no_argument,       NULL, 'q'},
     {"experimental", no_argument,       NULL, OPTION_EXPERIMENTAL},
     {"usbtype",      required_argument, NULL, OPTION_USBTYPE},
     {0}
@@ -278,6 +279,9 @@ int TyQt::run()
             wait_ = true;
             break;
 
+        case 'q':
+            ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
+            break;
         case OPTION_EXPERIMENTAL:
             ty_config_experimental = true;
             break;
@@ -388,6 +392,7 @@ QString TyQt::helpText()
                       "       --version            Display version information\n\n"
                       "   -w, --wait               Wait until task completion\n"
                       "   -b, --board <tag>        Work with board <tag> instead of first detected\n"
+                      "   -q, --quiet              Disable output, use -qqq to silence errors\n"
                       "       --experimental       Enable experimental features (use with caution)\n\n"
                       "Commands:\n");
 

@@ -15,6 +15,7 @@ struct ty_task {
     TY_TASK
 };
 
+ty_log_level ty_config_quiet = TY_LOG_INFO;
 bool ty_config_experimental = false;
 
 static ty_message_func *handler = ty_message_default_handler;
@@ -27,14 +28,24 @@ static __thread char last_error_msg[256];
 
 TY_INIT()
 {
-    const char *experimental = getenv("TY_EXPERIMENTAL");
-    if (experimental && strcmp(experimental, "0") != 0 && strcmp(experimental, "") != 0)
+    const char *value;
+
+    value = getenv("TY_QUIET");
+    if (value)
+        ty_config_quiet = (ty_log_level)strtol(value, NULL, 10);
+
+    value = getenv("TY_EXPERIMENTAL");
+    if (value && strcmp(value, "0") != 0 && strcmp(value, "") != 0)
         ty_config_experimental = true;
 }
 
 static void print_log(const void *data)
 {
     const ty_log_message *msg = data;
+
+    if (msg->level < ty_config_quiet)
+        return;
+
     if (msg->level == TY_LOG_INFO) {
         printf("%s\n", msg->msg);
         fflush(stdout);
@@ -46,6 +57,9 @@ static void print_log(const void *data)
 static void print_progress(const void *data)
 {
     const ty_progress_message *msg = data;
+
+    if (TY_LOG_INFO < ty_config_quiet)
+        return;
 
     if (ty_terminal_available(TY_DESCRIPTOR_STDOUT)) {
         if (msg->value)
