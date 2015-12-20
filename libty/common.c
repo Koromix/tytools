@@ -35,7 +35,12 @@ TY_INIT()
 static void print_log(const void *data)
 {
     const ty_log_message *msg = data;
-    fprintf(msg->level == TY_LOG_INFO ? stdout : stderr, "%s\n", msg->msg);
+    if (msg->level == TY_LOG_INFO) {
+        printf("%s\n", msg->msg);
+        fflush(stdout);
+    } else {
+        fprintf(stderr, "%s\n", msg->msg);
+    }
 }
 
 static void print_progress(const void *data)
@@ -53,6 +58,7 @@ static void print_progress(const void *data)
     } else if (!msg->value) {
         printf("%s...\n", msg->action);
     }
+    fflush(stdout);
 }
 
 void ty_message_default_handler(ty_task *task, ty_message_type type, const void *data, void *udata)
