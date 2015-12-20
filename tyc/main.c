@@ -33,10 +33,10 @@ int reset(int argc, char *argv[]);
 int upload(int argc, char *argv[]);
 
 static const struct command commands[] = {
-    {"list",    list,    print_list_usage,    "list available boards"},
-    {"monitor", monitor, print_monitor_usage, "open serial (or emulated) connection with device"},
-    {"reset",   reset,   print_reset_usage,   "reset device"},
-    {"upload",  upload,  print_upload_usage,  "upload new firmware"},
+    {"list",    list,    print_list_usage,    "List available boards"},
+    {"monitor", monitor, print_monitor_usage, "Open serial (or emulated) connection with board"},
+    {"reset",   reset,   print_reset_usage,   "Reset board"},
+    {"upload",  upload,  print_upload_usage,  "Upload new firmware"},
     {0}
 };
 
@@ -93,9 +93,7 @@ void print_main_options(FILE *f)
     fprintf(f, "General options:\n"
                "       --help               Show help message\n"
                "       --version            Display version information\n\n"
-
-               "       --board <tag>        Work with board <tag> instead of first detected\n\n"
-
+               "       --board <tag>        Work with board <tag> instead of first detected\n"
                "       --experimental       Enable experimental features (use with caution)\n");
 }
 

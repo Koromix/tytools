@@ -79,13 +79,10 @@ void print_monitor_usage(FILE *f)
                "                            Supports input, output, both (default)\n"
                "   -f, --flow <control>     Define flow-control mode\n"
                "                            Supports xonxoff (x), rtscts (h) and none (n)\n"
-
                "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
                "                            Supports odd (o), even (e) and none (n)\n\n"
-
                "   -r, --raw                Disable line-buffering and line-editing\n"
                "   -s, --silent             Disable echoing of local input on terminal\n\n"
-
                "   -R, --reconnect          Try to reconnect on I/O errors\n"
                "       --noreset            Don't reset serial port when closing\n"
                "       --timeout-eof <ms>   Time before closing after EOF on standard input\n"

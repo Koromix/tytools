@@ -48,7 +48,6 @@ void print_list_usage(FILE *f)
     fprintf(f, "List options:\n"
                "   -O, --output <format>    Output format, must be plain (default) or json\n"
                "   -v, --verbose            Print detailed information about devices\n\n"
-
                "   -w, --watch              Watch devices dynamically\n");
 }
 

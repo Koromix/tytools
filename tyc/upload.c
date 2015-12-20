@@ -34,7 +34,7 @@ static const char *firmware_format = NULL;
 
 void print_upload_usage(FILE *f)
 {
-    fprintf(f, "usage: tyc upload [options] <filename>\n\n");
+    fprintf(f, "usage: tyc upload [options] <firmwares>\n\n");
 
     print_main_options(f);
     fprintf(f, "\n");
@@ -42,14 +42,14 @@ void print_upload_usage(FILE *f)
     fprintf(f, "Upload options:\n"
                "   -w, --wait               Wait for the bootloader instead of rebooting\n"
                "       --nocheck            Force upload even if the board is not compatible\n"
-               "       --noreset            Do not reset the device once the upload is finished\n\n"
-
-               "   -f, --format <format>    Firmware file format (autodetected by default)\n\n");
+               "       --noreset            Do not reset the device once the upload is finished\n"
+               "   -f, --format <format>    Firmware file format (autodetected by default)\n\n"
+               "You can pass multiple firmwares, and tyc will upload the first compatible.\n");
 
     fprintf(f, "Supported firmware formats: ");
     for (const tyb_firmware_format *format = tyb_firmware_formats; format->name; format++)
         fprintf(f, "%s%s", format != tyb_firmware_formats ? ", " : "", format->name);
-    fprintf(f, "\n");
+    fprintf(f, ".\n");
 }
 
 int upload(int argc, char *argv[])
