@@ -31,6 +31,7 @@ class TyQt : public QApplication {
     QString command_;
     QString board_;
     bool wait_ = false;
+    QString usbtype_;
 
     SessionChannel channel_;
 

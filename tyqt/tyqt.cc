@@ -27,7 +27,9 @@ enum {
     OPTION_HELP = 0x100,
     OPTION_VERSION,
 
-    OPTION_EXPERIMENTAL
+    OPTION_EXPERIMENTAL,
+
+    OPTION_USBTYPE
 };
 
 static const struct command commands[] = {
@@ -46,6 +48,7 @@ static const struct option long_options_[] = {
     {"board",        required_argument, NULL, 'b'},
     {"wait",         no_argument,       NULL, 'w'},
     {"experimental", no_argument,       NULL, OPTION_EXPERIMENTAL},
+    {"usbtype",      required_argument, NULL, OPTION_USBTYPE},
     {0}
 };
 
@@ -279,6 +282,13 @@ int TyQt::run()
             ty_config_experimental = true;
             break;
 
+        /* Hidden option to improve the Arduino integration. Basically, if mode is set and does
+           not contain "_SERIAL", --board is ignored. This way the IDE serial port selection
+           is ignored when uploading to a non-serial board. */
+        case OPTION_USBTYPE:
+            usbtype_ = optarg;
+            break;
+
         case ':':
             showClientError(tr("Option '%1' takes an argument\n%2").arg(argv_[optind - 1])
                                                                    .arg(helpText()));
@@ -354,6 +364,8 @@ int TyQt::runClient()
 
     if (command_.isEmpty())
         command_ = "open";
+    if (!usbtype_.isEmpty() && !usbtype_.contains("_SERIAL"))
+        board_ = "";
 
     QStringList arguments = {command_, QDir::currentPath(), board_};
     for (int i = optind; i < argc_; i++)
