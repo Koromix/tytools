@@ -29,6 +29,7 @@ private:
 
 bool BoardSelectorTask::start()
 {
+    reportLog(TY_LOG_INFO, "Waiting for user selection");
     reportStarted();
 
     auto dialog = tyQt->openSelector();
