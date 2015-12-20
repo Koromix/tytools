@@ -274,15 +274,8 @@ int TyQt::run()
     }
 #endif
 
-    if (parser_.isSet("experimental")) {
+    if (parser_.isSet("experimental"))
         ty_config_experimental = true;
-
-#ifdef _WIN32
-        _putenv("TY_EXPERIMENTAL=1");
-#else
-        setenv("TY_EXPERIMENTAL", "1", 1);
-#endif
-    }
 
     if (channel_.lock() && !commandCount) {
         return runServer();
@@ -326,19 +319,8 @@ int TyQt::runClient()
     if (channel_.isLocked()) {
         channel_.unlock();
 
-#ifdef _WIN32
-        if (client_console_) {
-            showClientError("Cannot find main TyQt instance");
-            return 1;
-        }
-#endif
-
-        if (!startBackgroundServer()) {
-            showClientError(tr("Failed to start TyQt main instance"));
-            return 1;
-        }
-
-        QThread::sleep(1);
+        showClientError("Cannot find main TyQt instance");
+        return 1;
     }
 
     if (!channel_.connectToMaster()) {
