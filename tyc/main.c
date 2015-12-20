@@ -174,13 +174,6 @@ int get_board(tyb_board **rboard)
         }
     }
 
-    static tyb_board *previous_board = NULL;
-    if (main_board != previous_board) {
-        printf("%s at '%s'\n", tyb_board_get_model_name(main_board) ?: "Board",
-               tyb_board_get_tag(main_board));
-        previous_board = main_board;
-    }
-
     *rboard = tyb_board_ref(main_board);
     return 0;
 }

@@ -1261,6 +1261,8 @@ static int run_upload(ty_task *task)
         fw = NULL;
     }
 
+    ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, board->model->name);
+
     // Can't upload directly, should we try to reboot or wait?
     if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_UPLOAD)) {
         if (flags & TYB_UPLOAD_WAIT) {
@@ -1383,6 +1385,8 @@ static int run_reset(ty_task *task)
     tyb_board *board = task->board;
     int r;
 
+    ty_log(TY_LOG_INFO, "Resetting board '%s' (%s)", board->tag, board->model->name);
+
     if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_RESET)) {
         ty_log(TY_LOG_INFO, "Triggering board reboot");
         r = tyb_board_reboot(board);
@@ -1418,10 +1422,13 @@ int tyb_reset(tyb_board *board, ty_task **rtask)
 
 static int run_reboot(ty_task *task)
 {
+    tyb_board *board = task->board;
     int r;
 
+    ty_log(TY_LOG_INFO, "Rebooting board '%s' (%s)", board->tag, board->model->name);
+
     ty_log(TY_LOG_INFO, "Triggering board reboot");
-    r = tyb_board_reboot(task->board);
+    r = tyb_board_reboot(board);
     if (r < 0)
         return r;
 
