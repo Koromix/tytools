@@ -220,13 +220,14 @@ void MainWindow::on_firmwarePath_editingFinished()
         return;
 
     if (!firmwarePath->text().isEmpty()) {
-        QString firmware = QFileInfo(firmwarePath->text()).canonicalFilePath();
-        if (firmware.isEmpty()) {
+        QString filename = QFileInfo(firmwarePath->text()).canonicalFilePath();
+        if (filename.isEmpty()) {
             tyQt->reportError(tr("Path '%1' is not valid").arg(firmwarePath->text()));
             return;
         }
+        filename = QDir::toNativeSeparators(filename);
 
-        current_board_->setFirmware(firmware);
+        current_board_->setFirmware(filename);
     } else {
         current_board_->setFirmware("");
     }
@@ -279,7 +280,7 @@ void MainWindow::on_actionUploadNew_triggered()
     vector<shared_ptr<Firmware>> fws;
     fws.reserve(filenames.count());
     for (auto filename: filenames) {
-        auto fw = Firmware::load(filename);
+        auto fw = Firmware::load(QDir::toNativeSeparators(filename));
         if (!fw)
             continue;
 
@@ -353,13 +354,17 @@ void MainWindow::on_actionClearMonitor_triggered()
 
 void MainWindow::on_firmwareBrowseButton_clicked()
 {
+    if (!current_board_)
+        return;
+
     auto filename = QFileDialog::getOpenFileName(this, tr("Open Firmware"), "",
                                                  makeFirmwareFilter());
     if (filename.isEmpty())
         return;
+    filename = QDir::toNativeSeparators(filename);
 
     firmwarePath->setText(filename);
-    emit firmwarePath->editingFinished();
+    current_board_->setFirmware(filename);
 }
 
 void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
