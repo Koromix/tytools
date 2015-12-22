@@ -780,7 +780,7 @@ bool tyb_board_matches_tag(tyb_board *board, const char *id)
     serial = strtoull(id, &location, 10);
     if (*location == '@' && location[1]) {
         location++;
-    } else if (!*location) {
+    } else if (!*location || *location == '@') {
         location = NULL;
     } else {
         ty_error(TY_ERROR_PARAM, "Incorrect board tag '%s', use [<serial>][@<location>]", id);
