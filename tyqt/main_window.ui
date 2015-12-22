@@ -550,10 +550,17 @@
   <tabstop>tabWidget</tabstop>
   <tabstop>modelText</tabstop>
   <tabstop>serialText</tabstop>
+  <tabstop>locationText</tabstop>
   <tabstop>interfaceTree</tabstop>
   <tabstop>monitorText</tabstop>
+  <tabstop>monitorEdit</tabstop>
+  <tabstop>sendButton</tabstop>
   <tabstop>firmwarePath</tabstop>
   <tabstop>firmwareBrowseButton</tabstop>
+  <tabstop>resetAfterUpload</tabstop>
+  <tabstop>clearOnReset</tabstop>
+  <tabstop>echo</tabstop>
+  <tabstop>newlineComboBox</tabstop>
   <tabstop>logText</tabstop>
  </tabstops>
  <resources>
