@@ -25,9 +25,7 @@ int get_board(tyb_board **rboard);
 enum {
     MAIN_OPTION_HELP = 0x100,
     MAIN_OPTION_VERSION,
-
     MAIN_OPTION_BOARD,
-
     MAIN_OPTION_EXPERIMENTAL
 };
 

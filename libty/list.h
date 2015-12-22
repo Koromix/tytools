@@ -12,8 +12,7 @@
 
 TY_C_BEGIN
 
-typedef struct ty_list_head
-{
+typedef struct ty_list_head {
     struct ty_list_head *prev;
     struct ty_list_head *next;
 } ty_list_head;

@@ -22,7 +22,6 @@ enum {
 static const char *short_options = MAIN_SHORT_OPTIONS "b:d:D:f:p:rRs";
 static const struct option long_options[] = {
     MAIN_LONG_OPTIONS
-
     {"baud",        required_argument, NULL, 'b'},
     {"databits",    required_argument, NULL, 'd'},
     {"direction",   required_argument, NULL, 'D'},

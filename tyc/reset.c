@@ -12,7 +12,6 @@
 static const char *short_options = MAIN_SHORT_OPTIONS "b";
 static const struct option long_options[] = {
     MAIN_LONG_OPTIONS
-
     {"bootloader", no_argument, NULL, 'b'},
     {0}
 };

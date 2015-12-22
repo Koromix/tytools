@@ -13,7 +13,6 @@
 static const char *short_options = MAIN_SHORT_OPTIONS "O:vw";
 static const struct option long_options[] = {
     MAIN_LONG_OPTIONS
-
     {"output",  required_argument, NULL, 'O'},
     {"verbose", no_argument,       NULL, 'v'},
     {"watch",   no_argument,       NULL, 'w'},

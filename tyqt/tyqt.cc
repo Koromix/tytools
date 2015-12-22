@@ -26,9 +26,7 @@ struct command {
 enum {
     OPTION_HELP = 0x100,
     OPTION_VERSION,
-
     OPTION_EXPERIMENTAL,
-
     OPTION_USBTYPE
 };
 
