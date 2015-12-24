@@ -66,6 +66,12 @@ public:
     void setClientConsole(bool console) { client_console_ = console; }
     bool clientConsole() const { return client_console_; }
 
+    int run();
+    int runClient();
+    int sendRemoteCommand();
+
+    int runServer();
+
 public slots:
     void openMainWindow();
     void activateMainWindow();
@@ -78,10 +84,6 @@ signals:
     void errorMessage(const QString &msg);
 
 private:
-    int run();
-    int runServer();
-    int runClient();
-
     QString helpText();
     void showClientMessage(const QString &msg);
     void showClientError(const QString &msg);

@@ -17,8 +17,11 @@
 #include "commands.hh"
 #include "tyqt.hh"
 
-struct command {
+struct ClientCommand {
     const char *name;
+
+    int (TyQt::*f)();
+
     const char *arg;
     const char *description;
 };
@@ -30,12 +33,12 @@ enum {
     OPTION_USBTYPE
 };
 
-static const struct command commands[] = {
-    {"open",     NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
-    {"activate", NULL,                      QT_TR_NOOP("Bring TyQt window to foreground")},
-    {"reset",    NULL,                      QT_TR_NOOP("Reset board")},
-    {"reboot",   NULL,                      QT_TR_NOOP("Reboot board")},
-    {"upload",   QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
+static const ClientCommand commands[] = {
+    {"open",      &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
+    {"activate",  &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Bring TyQt window to foreground")},
+    {"reset",     &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
+    {"reboot",    &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
+    {"upload",    &TyQt::sendRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
     {0}
 };
 
@@ -77,8 +80,6 @@ TyQt::TyQt(int &argc, char *argv[])
     connect(action_quit_, &QAction::triggered, this, &TyQt::quit);
 
     channel_.init();
-
-    connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
 }
 
 TyQt::~TyQt()
@@ -307,24 +308,70 @@ int TyQt::run()
     }
 
 #ifdef _WIN32
-    if (client_console_ && command_.isEmpty()) {
+    // tyqtc should not launch TyQt, it's only a console interface
+    if (command_.isEmpty() && client_console_) {
         showClientMessage(helpText());
         return 0;
     }
 #endif
 
-    if (channel_.lock() && command_.isEmpty()) {
+    if (!command_.isEmpty())
+        return runClient();
+
+    if (channel_.lock()) {
         return runServer();
     } else {
-        channel_.disconnect(this);
-        connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
-
+        command_ = "open";
         return runClient();
     }
 }
 
+int TyQt::runClient()
+{
+    for (const ClientCommand *cmd = commands; cmd->name; cmd++) {
+        if (command_ == cmd->name)
+            return (this->*(cmd->f))();
+    }
+
+    showClientError(tr("Unknown command '%1'\n%2").arg(command_, helpText()));
+    return 1;
+}
+
+int TyQt::sendRemoteCommand()
+{
+    if (!channel_.connectToMaster()) {
+        showClientError(tr("Cannot connect to main TyQt instance"));
+        return 1;
+    }
+
+    connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
+
+    // Hack for Arduino integration, see getopt loop in TyQt::run()
+    if (!usbtype_.isEmpty() && !usbtype_.contains("_SERIAL"))
+        board_ = "";
+
+    QStringList arguments = {command_, QDir::currentPath(), board_};
+    for (int i = optind; i < argc_; i++)
+        arguments.append(argv_[i]);
+    channel_.send(arguments);
+
+    connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
+        showClientError(tr("Main TyQt instance closed the connection"));
+        exit(1);
+    });
+
+    return QApplication::exec();
+}
+
 int TyQt::runServer()
 {
+    if (!channel_.lock()) {
+        showClientError(tr("Cannot start main TyQt instance, lock file in place"));
+        return 1;
+    }
+
+    connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
+
     // This can be triggered from multiple threads, but Qt can queue signals appropriately
     ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
         ty_message_default_handler(task, type, data, udata);
@@ -350,38 +397,6 @@ int TyQt::runServer()
     return QApplication::exec();
 }
 
-int TyQt::runClient()
-{
-    if (channel_.isLocked()) {
-        channel_.unlock();
-
-        showClientError("Cannot find main TyQt instance");
-        return 1;
-    }
-
-    if (!channel_.connectToMaster()) {
-        showClientError(tr("Cannot connect to main TyQt instance"));
-        return 1;
-    }
-
-    if (command_.isEmpty())
-        command_ = "open";
-    if (!usbtype_.isEmpty() && !usbtype_.contains("_SERIAL"))
-        board_ = "";
-
-    QStringList arguments = {command_, QDir::currentPath(), board_};
-    for (int i = optind; i < argc_; i++)
-        arguments.append(argv_[i]);
-    channel_.send(arguments);
-
-    connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
-        showClientError(tr("Main TyQt instance closed the connection"));
-        exit(1);
-    });
-
-    return QApplication::exec();
-}
-
 QString TyQt::helpText()
 {
     QString help = tr("usage: tyqt <command> [options]\n\n"
@@ -394,11 +409,13 @@ QString TyQt::helpText()
                       "       --experimental       Enable experimental features (use with caution)\n\n"
                       "Commands:\n");
 
-    for (const struct command *cmd = commands; cmd->name; cmd++) {
+    for (auto cmd = commands; cmd->name; cmd++) {
+        if (!cmd->description)
+            continue;
+
         QString name = cmd->name;
         if (cmd->arg)
             name += QString(" %1").arg(tr(cmd->arg));
-
         help += QString("   %1 %2\n").arg(name, -24).arg(tr(cmd->description));
     }
     help.chop(1);
