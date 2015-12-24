@@ -406,11 +406,6 @@ QString TyQt::helpText()
     return help;
 }
 
-bool TyQt::startBackgroundServer()
-{
-    return QProcess::startDetached(applicationFilePath(), {});
-}
-
 void TyQt::showClientMessage(const QString &msg)
 {
     if (client_console_) {

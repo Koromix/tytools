@@ -83,8 +83,6 @@ private:
     int runClient();
 
     QString helpText();
-
-    bool startBackgroundServer();
     void showClientMessage(const QString &msg);
     void showClientError(const QString &msg);
 
