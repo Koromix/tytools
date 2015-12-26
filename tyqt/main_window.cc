@@ -13,6 +13,7 @@
 
 #include "ty.h"
 #include "about_dialog.hh"
+#include "arduino_dialog.hh"
 #include "board_widget.hh"
 #include "commands.hh"
 #include "main_window.hh"
@@ -391,6 +392,11 @@ void MainWindow::on_actionWebsite_triggered()
 void MainWindow::on_actionReportBug_triggered()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/issues"));
+}
+
+void MainWindow::on_actionIntegrateToArduino_triggered()
+{
+    ArduinoDialog(this).exec();
 }
 
 void MainWindow::on_actionAbout_triggered()

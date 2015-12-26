@@ -11,11 +11,13 @@ TARGET = tyqt
 LIBS = -lty
 
 FORMS += about_dialog.ui \
+    arduino_dialog.ui \
     board_widget.ui \
     main_window.ui \
     selector_dialog.ui
 
 HEADERS += about_dialog.hh \
+    arduino_dialog.hh \
     arduino_install.hh \
     board.hh \
     board_widget.hh \
@@ -29,6 +31,7 @@ HEADERS += about_dialog.hh \
     tyqt.hh
 
 SOURCES += about_dialog.cc \
+    arduino_dialog.cc \
     arduino_install.cc \
     board.cc \
     board_widget.cc \

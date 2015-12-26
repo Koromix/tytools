@@ -9,6 +9,7 @@ find_package(Qt5 REQUIRED
     NO_CMAKE_FIND_ROOT_PATH)
 
 set(TYQT_SOURCES about_dialog.cc
+                 arduino_dialog.cc
                  arduino_install.cc
                  main.cc
                  main_window.cc
@@ -22,6 +23,7 @@ set(TYQT_SOURCES about_dialog.cc
                  task.cc
                  tyqt.cc)
 set(TYQT_FORMS about_dialog.ui
+               arduino_dialog.ui
                main_window.ui
                board_widget.ui
                selector_dialog.ui)

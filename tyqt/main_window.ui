@@ -363,6 +363,8 @@
     <addaction name="actionWebsite"/>
     <addaction name="actionReportBug"/>
     <addaction name="separator"/>
+    <addaction name="actionIntegrateToArduino"/>
+    <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -542,6 +544,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+X</string>
+   </property>
+  </action>
+  <action name="actionIntegrateToArduino">
+   <property name="text">
+    <string>&amp;Integrate to Arduino</string>
    </property>
   </action>
  </widget>
