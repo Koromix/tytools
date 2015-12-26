@@ -88,9 +88,10 @@ bool ArduinoInstallation::integrate()
 
     if (src.error())
         return reportFileError(src);
+    src.close();
+
     if (dest.error())
         return reportFileError(dest);
-
     if (!dest.flush())
         return reportFileError(dest);
 
