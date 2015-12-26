@@ -14,6 +14,7 @@
 #include <QTextStream>
 
 #include "arduino_install.hh"
+#include "tyqt.hh"
 
 using namespace std;
 
@@ -67,13 +68,8 @@ bool ArduinoInstallation::integrate()
 
         if (line.startsWith("tools.teensyloader.upload.pattern") && !integrated) {
             emit log(tr(" + Integrate TyQt instructions after line %1").arg(i));
-#ifdef _WIN32
             out << QString("\n## TyQt\n"
-                           "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(QCoreApplication::applicationDirPath() + "\\tyqtc.exe"));
-#else
-            out << QString("\n## TyQt\n"
-                           "tools.teensyloader.cmd.path=%1\n").arg(QCoreApplication::applicationFilePath());
-#endif
+                           "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(tyQt->clientFilePath()));
             out << "tools.teensyloader.upload.params.quiet=--quiet\n"
                    "tools.teensyloader.upload.params.verbose=\n"
                    "tools.teensyloader.upload.pattern=\"{cmd.path}\" upload --wait --board=@{serial.port}"

@@ -100,6 +100,15 @@ int TyQt::exec()
     return tyQt->run();
 }
 
+QString TyQt::clientFilePath() const
+{
+#ifdef _WIN32
+    return applicationDirPath() + "/tyqtc.exe";
+#else
+    return applicationFilePath();
+#endif
+}
+
 SelectorDialog *TyQt::openSelector()
 {
     if (main_windows_.empty())

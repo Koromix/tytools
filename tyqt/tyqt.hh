@@ -56,6 +56,8 @@ public:
 
     static int exec();
 
+    QString clientFilePath() const;
+
     static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
     Manager *manager() { return &manager_; }
 

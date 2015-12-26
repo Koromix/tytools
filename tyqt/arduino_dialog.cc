@@ -15,6 +15,7 @@
 
 #include "ty.h"
 #include "arduino_dialog.hh"
+#include "tyqt.hh"
 
 using namespace std;
 
@@ -146,10 +147,6 @@ void ArduinoDialog::executeAsRoot(const QString &command)
         installWithUAC(command);
         return;
     }
-
-    QString executable = QDir::toNativeSeparators(QCoreApplication::applicationDirPath() + "/tyqtc.exe");
-#else
-    QString executable = QCoreApplication::applicationDirPath() + "/tyqt";
 #endif
 
     QTextCharFormat fmt;
@@ -157,7 +154,8 @@ void ArduinoDialog::executeAsRoot(const QString &command)
 
     appendMessage("");
     appendMessage(tr("Try to restart this command as root with :"));
-    appendMessage(tr("\"%1\" %2 \"%3\"").arg(executable, command, install_.absolutePath()), fmt);
+    appendMessage(tr("\"%1\" %2 \"%3\"").arg(QDir::toNativeSeparators(tyQt->clientFilePath()),
+                                             command, install_.absolutePath()), fmt);
 }
 
 #ifdef _WIN32
@@ -174,8 +172,8 @@ void ArduinoDialog::installWithUAC(const QString &command)
     info.lpFile = "cmd";
     info.nShow = SW_SHOW;
 
-    auto parameters = QString("/C \"\"%1\\%2\" %3 \"%4\" & pause\"").arg(QDir::toNativeSeparators(QCoreApplication::applicationDirPath()), "tyqtc.exe",
-                                                                         command, QDir::toNativeSeparators(install_.absolutePath())).toLocal8Bit();
+    auto parameters = QString("/C \"\"%1\" %2 \"%3\" & pause\"").arg(QDir::toNativeSeparators(tyQt->clientFilePath()), command,
+                                                                     QDir::toNativeSeparators(install_.absolutePath())).toLocal8Bit();
     info.lpParameters = parameters.constData();
 
     BOOL success = ShellExecuteEx(&info);
