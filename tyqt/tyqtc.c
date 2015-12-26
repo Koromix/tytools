@@ -150,6 +150,9 @@ static bool execute_tyqt(LPSTR cmdline, int show, DWORD *ret)
         GetExitCodeProcess(proc.hProcess, ret);
     CloseHandle(proc.hProcess);
 
+    // Small delay to avoid dropping unread output/error data
+    Sleep(50);
+
     return true;
 }
 
