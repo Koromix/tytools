@@ -91,8 +91,8 @@ bool ArduinoInstallation::integrate()
     if (!dest.flush())
         return reportFileError(dest);
 
-    emit log(tr("Backup '%1' to '%2'").arg(nicePath(filename), nicePath(filename + ".bak")));
-    if (!safeCopy(filename, filename + ".bak"))
+    emit log(tr("Backup '%1' to '%2'").arg(nicePath(filename), nicePath(filename + ".notyqt")));
+    if (!safeCopy(filename, filename + ".notyqt"))
         return false;
 
     emit log(tr("Commit changes to '%1'").arg(nicePath(filename)));
@@ -113,8 +113,8 @@ bool ArduinoInstallation::restore()
         return false;
     }
 
-    emit log(tr("Copy '%1' to '%2'").arg(nicePath(filename + ".bak"), nicePath(filename)));
-    if (!safeCopy(filename + ".bak", filename))
+    emit log(tr("Copy '%1' to '%2'").arg(nicePath(filename + ".notyqt"), nicePath(filename)));
+    if (!safeCopy(filename + ".notyqt", filename))
         return false;
 
     update();
