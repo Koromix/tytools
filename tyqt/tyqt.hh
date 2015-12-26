@@ -69,6 +69,7 @@ public:
     int run();
     int runClient();
     int sendRemoteCommand();
+    int integrateArduino();
 
     int runServer();
 

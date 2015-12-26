@@ -14,6 +14,7 @@
 
 #include <getopt.h>
 
+#include "arduino_install.hh"
 #include "commands.hh"
 #include "tyqt.hh"
 
@@ -39,6 +40,8 @@ static const ClientCommand commands[] = {
     {"reset",     &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
     {"reboot",    &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
     {"upload",    &TyQt::sendRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
+    {"integrate", &TyQt::integrateArduino,  NULL,                      NULL},
+    {"restore",   &TyQt::integrateArduino,  NULL,                      NULL},
     {0}
 };
 
@@ -361,6 +364,30 @@ int TyQt::sendRemoteCommand()
     });
 
     return QApplication::exec();
+}
+
+int TyQt::integrateArduino()
+{
+    if (optind >= argc_) {
+        showClientError(helpText());
+        return 1;
+    }
+
+    ArduinoInstallation install(argv_[1]);
+
+    connect(&install, &ArduinoInstallation::log, [](const QString &msg) {
+        printf("%s\n", msg.toLocal8Bit().constData());
+        fflush(stdout);
+    });
+    connect(&install, &ArduinoInstallation::error, [](const QString &msg) {
+        fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
+    });
+
+    if (command_ == "integrate") {
+        return !install.integrate();
+    } else {
+        return !install.restore();
+    }
 }
 
 int TyQt::runServer()

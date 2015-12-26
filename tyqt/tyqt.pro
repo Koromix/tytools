@@ -16,6 +16,7 @@ FORMS += about_dialog.ui \
     selector_dialog.ui
 
 HEADERS += about_dialog.hh \
+    arduino_install.hh \
     board.hh \
     board_widget.hh \
     commands.hh \
@@ -28,6 +29,7 @@ HEADERS += about_dialog.hh \
     tyqt.hh
 
 SOURCES += about_dialog.cc \
+    arduino_install.cc \
     board.cc \
     board_widget.cc \
     commands.cc \
