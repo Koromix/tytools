@@ -6,6 +6,7 @@
  */
 
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFutureWatcher>
 #include <QMessageBox>
 #include <QProcess>
@@ -30,6 +31,7 @@ struct ClientCommand {
 enum {
     OPTION_HELP = 0x100,
     OPTION_VERSION,
+    OPTION_AUTOSTART,
     OPTION_EXPERIMENTAL,
     OPTION_USBTYPE
 };
@@ -51,6 +53,7 @@ static const struct option long_options_[] = {
     {"version",      no_argument,       NULL, OPTION_VERSION},
     {"board",        required_argument, NULL, 'b'},
     {"wait",         no_argument,       NULL, 'w'},
+    {"autostart",    no_argument,       NULL, OPTION_AUTOSTART},
     {"quiet",        no_argument,       NULL, 'q'},
     {"experimental", no_argument,       NULL, OPTION_EXPERIMENTAL},
     {"usbtype",      required_argument, NULL, OPTION_USBTYPE},
@@ -290,6 +293,9 @@ int TyQt::run()
             wait_ = true;
             break;
 
+        case OPTION_AUTOSTART:
+            autostart_ = true;
+            break;
         case 'q':
             ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
             break;
@@ -352,8 +358,25 @@ int TyQt::runClient()
 int TyQt::sendRemoteCommand()
 {
     if (!channel_.connectToMaster()) {
-        showClientError(tr("Cannot connect to main TyQt instance"));
-        return 1;
+        if (autostart_) {
+            QStringList arguments;
+            if (ty_config_experimental)
+                arguments.append("--experimental");
+            if (!QProcess::startDetached(applicationFilePath(), arguments)) {
+                showClientError(tr("Failed to start TyQt main instance"));
+                return 1;
+            }
+
+            QElapsedTimer timer;
+            timer.start();
+            while (!channel_.connectToMaster() && timer.elapsed() < 3000)
+                QThread::msleep(20);
+        }
+
+        if (!channel_.isConnected()) {
+            showClientError(tr("Cannot connect to main TyQt instance"));
+            return 1;
+        }
     }
 
     connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);

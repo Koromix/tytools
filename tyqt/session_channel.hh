@@ -77,6 +77,7 @@ public:
 
     bool listen();
     bool connectToMaster();
+    bool isConnected() const { return client_ && client_->isConnected(); }
     void close();
 
     void send(const QStringList &arguments);

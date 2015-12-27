@@ -29,6 +29,7 @@ class TyQt : public QApplication {
     int argc_;
     char **argv_;
     QString command_;
+    bool autostart_ = false;
     QString board_;
     bool wait_ = false;
     QString usbtype_;
