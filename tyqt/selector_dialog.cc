@@ -39,7 +39,7 @@ shared_ptr<Board> SelectorDialog::selectedBoard() const
 
 void SelectorDialog::selectionChanged(const QItemSelection &selected, const QItemSelection &previous)
 {
-    TY_UNUSED(previous);
+    Q_UNUSED(previous);
 
     if (!selected.indexes().isEmpty()) {
         current_board_ = manager_->board(selected.indexes().front().row());
@@ -54,7 +54,7 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
 
 void SelectorDialog::doubleClicked(const QModelIndex &index)
 {
-    TY_UNUSED(index);
+    Q_UNUSED(index);
     accept();
 }
 

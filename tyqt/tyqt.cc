@@ -183,7 +183,7 @@ void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
     if (reason == QSystemTrayIcon::Trigger)
         setVisible(!visible());
 #else
-    TY_UNUSED(reason);
+    Q_UNUSED(reason);
 #endif
 }
 
@@ -220,7 +220,7 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
 
 void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
 {
-    TY_UNUSED(peer);
+    Q_UNUSED(peer);
 
     QStringList parameters = arguments;
     QString cmd;

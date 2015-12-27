@@ -13,7 +13,6 @@
 #include <QSysInfo>
 #include <QWinEventNotifier>
 
-#include "ty.h"
 #include "arduino_dialog.hh"
 #include "tyqt.hh"
 
@@ -188,7 +187,7 @@ void ArduinoDialog::installWithUAC(const QString &command)
 
     auto notifier = new QWinEventNotifier(info.hProcess, this);
     connect(notifier, &QWinEventNotifier::activated, this, [=](HANDLE h) {
-        TY_UNUSED(h);
+        Q_UNUSED(h);
 
         background_process_ = false;
         install_.update();

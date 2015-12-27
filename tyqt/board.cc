@@ -15,7 +15,6 @@
 
 #include <functional>
 
-#include "ty.h"
 #include "board.hh"
 #include "tyqt.hh"
 
@@ -305,7 +304,7 @@ TaskInterface Board::runningTask() const
 
 void Board::notifyLog(ty_log_level level, const QString &msg)
 {
-    TY_UNUSED(msg);
+    Q_UNUSED(msg);
 
     if (level == TY_LOG_ERROR) {
         error_timer_.start();
@@ -315,7 +314,7 @@ void Board::notifyLog(ty_log_level level, const QString &msg)
 
 void Board::serialReceived(ty_descriptor desc)
 {
-    TY_UNUSED(desc);
+    Q_UNUSED(desc);
 
     QMutexLocker locker(&serial_lock_);
     ty_error_mask(TY_ERROR_MODE);
@@ -361,7 +360,7 @@ void Board::updateSerialDocument()
 
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 {
-    TY_UNUSED(success);
+    Q_UNUSED(success);
 
     if (task_finish_) {
         task_finish_(success, result);
@@ -375,9 +374,9 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 
 void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
 {
-    TY_UNUSED(action);
-    TY_UNUSED(value);
-    TY_UNUSED(max);
+    Q_UNUSED(action);
+    Q_UNUSED(value);
+    Q_UNUSED(max);
 
     emit taskChanged();
 }
@@ -465,14 +464,14 @@ shared_ptr<Board> Manager::find(function<bool(Board &board)> filter)
 
 int Manager::rowCount(const QModelIndex &parent) const
 {
-    TY_UNUSED(parent);
+    Q_UNUSED(parent);
 
     return boards_.size();
 }
 
 int Manager::columnCount(const QModelIndex &parent) const
 {
-    TY_UNUSED(parent);
+    Q_UNUSED(parent);
 
     return 2;
 }
@@ -535,7 +534,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
 
 void Manager::refreshManager(ty_descriptor desc)
 {
-    TY_UNUSED(desc);
+    Q_UNUSED(desc);
 
     tyb_monitor_refresh(manager_);
 }

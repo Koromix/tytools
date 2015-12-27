@@ -7,7 +7,6 @@
 
 #include <QPainter>
 
-#include "ty.h"
 #include "board_widget.hh"
 
 using namespace std;
@@ -84,8 +83,8 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
 QSize BoardItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    TY_UNUSED(option);
-    TY_UNUSED(index);
+    Q_UNUSED(option);
+    Q_UNUSED(index);
 
     return QSize(widget_.minimumWidth(), widget_.height());
 }

@@ -7,7 +7,6 @@
 
 #include <QMutexLocker>
 
-#include "ty.h"
 #include "task.hh"
 #include "tyqt.hh"
 
@@ -73,7 +72,7 @@ TyTask::TyTask(ty_task *task)
     : task_(task)
 {
     ty_task_set_callback(task, [](struct ty_task *task, ty_message_type type, const void *data, void *udata) {
-        TY_UNUSED(task);
+        Q_UNUSED(task);
 
         auto task2 = static_cast<TyTask *>(udata);
         task2->notifyMessage(type, data);
@@ -138,7 +137,7 @@ void TyTask::notifyStatus(const void *data)
         ty_task_cleanup_func *f;
         void *result = ty_task_steal_result(msg->task, &f);
         if (!f)
-            f = [](void *ptr) { TY_UNUSED(ptr); };
+            f = [](void *ptr) { Q_UNUSED(ptr); };
         reportFinished(ty_task_get_return_value(msg->task) >= 0, shared_ptr<void>(result, f));
         break;
     }
@@ -239,8 +238,8 @@ void TaskListener::setTask(TaskInterface *task)
 
 void TaskListener::notifyLog(ty_log_level level, const QString &msg)
 {
-    TY_UNUSED(level);
-    TY_UNUSED(msg);
+    Q_UNUSED(level);
+    Q_UNUSED(msg);
 }
 
 void TaskListener::notifyStarted()
@@ -249,15 +248,15 @@ void TaskListener::notifyStarted()
 
 void TaskListener::notifyFinished(bool success, shared_ptr<void> result)
 {
-    TY_UNUSED(success);
-    TY_UNUSED(result);
+    Q_UNUSED(success);
+    Q_UNUSED(result);
 }
 
 void TaskListener::notifyProgress(const QString &action, unsigned int value, unsigned int max)
 {
-    TY_UNUSED(action);
-    TY_UNUSED(value);
-    TY_UNUSED(max);
+    Q_UNUSED(action);
+    Q_UNUSED(value);
+    Q_UNUSED(max);
 }
 
 void TaskWatcher::notifyLog(ty_log_level level, const QString &msg)

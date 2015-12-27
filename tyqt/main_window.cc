@@ -11,7 +11,6 @@
 #include <QToolButton>
 #include <QUrl>
 
-#include "ty.h"
 #include "about_dialog.hh"
 #include "arduino_dialog.hh"
 #include "board_widget.hh"
@@ -64,8 +63,8 @@ void MainWindow::setBoardDefaults(Board *board)
 
 void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelection &previous)
 {
-    TY_UNUSED(newsel);
-    TY_UNUSED(previous);
+    Q_UNUSED(newsel);
+    Q_UNUSED(previous);
 
     monitorText->setDocument(nullptr);
     for (auto &board: selected_boards_)
@@ -192,7 +191,7 @@ void MainWindow::monitorTextChanged()
 
 void MainWindow::monitorTextScrolled(const QRect &rect, int dy)
 {
-    TY_UNUSED(rect);
+    Q_UNUSED(rect);
 
     if (!dy)
         return;
