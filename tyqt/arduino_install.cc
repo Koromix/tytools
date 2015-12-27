@@ -39,7 +39,7 @@ bool ArduinoInstallation::integrate()
 {
     emit log(tr("Integrate TyQt to '%1'").arg(QDir::toNativeSeparators(dir_.path())));
 
-    auto filename = dir_.filePath("hardware/teensy/avr/platform.txt");
+    auto filename = arduinoPath("hardware/teensy/avr/platform.txt");
     emit log(tr("Rewrite '%1' (to temporary file)").arg(nicePath(filename)));
 
     QFile src(filename);
@@ -107,7 +107,7 @@ bool ArduinoInstallation::restore()
 {
     emit log(tr("Remove TyQt integration from '%1'").arg(QDir::toNativeSeparators(dir_.path())));
 
-    auto filename = dir_.filePath("hardware/teensy/avr/platform.txt");
+    auto filename = arduinoPath("hardware/teensy/avr/platform.txt");
     if (!findMarker(filename, "TyQt")) {
         emit error(tr("This installation is not using TyQt"));
         return false;
@@ -131,15 +131,15 @@ void ArduinoInstallation::updateState()
     if (dir_.path().isEmpty() || !dir_.exists())
         return;
 
-    arduino_version_ = readVersion("lib/version.txt");
+    arduino_version_ = readVersion(arduinoPath("lib/version.txt"));
     if (arduino_version_.isEmpty())
         return;
-    teensyduino_version_ = readVersion("lib/teensyduino.txt");
+    teensyduino_version_ = readVersion(arduinoPath("lib/teensyduino.txt"));
     if (teensyduino_version_.isEmpty())
         return;
 
     valid_ = true;
-    integrated_ = findMarker(dir_.filePath("hardware/teensy/avr/platform.txt"), "TyQt");
+    integrated_ = findMarker(arduinoPath("hardware/teensy/avr/platform.txt"), "TyQt");
 }
 
 bool ArduinoInstallation::safeCopy(const QString &filename, const QString &new_filename)
@@ -172,7 +172,7 @@ bool ArduinoInstallation::safeCopy(const QString &filename, const QString &new_f
 
 QString ArduinoInstallation::readVersion(const QString &filename)
 {
-    QFile file(dir_.filePath(filename));
+    QFile file(filename);
 
     if (!file.exists())
         return "";
@@ -198,7 +198,16 @@ bool ArduinoInstallation::findMarker(const QString &filename, const QString &mar
     return false;
 }
 
-QString ArduinoInstallation::nicePath(const QString &path)
+QString ArduinoInstallation::arduinoPath(const QString &path) const
+{
+#ifdef __APPLE__
+    return dir_.filePath("Contents/Java/" + path);
+#else
+    return dir_.filePath(path);
+#endif
+}
+
+QString ArduinoInstallation::nicePath(const QString &path) const
 {
     return QDir::toNativeSeparators(dir_.relativeFilePath(path));
 }

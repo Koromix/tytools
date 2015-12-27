@@ -48,11 +48,12 @@ private:
     void updateState();
 
     bool safeCopy(const QString &filename, const QString &new_filename);
-
     QString readVersion(const QString &filename);
     bool findMarker(const QString &filename, const QString &marker);
 
-    QString nicePath(const QString &path);
+    QString arduinoPath(const QString &path) const;
+    QString nicePath(const QString &path) const;
+
     bool reportFileError(const QFileDevice &file);
 };
 

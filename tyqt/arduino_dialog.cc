@@ -97,7 +97,12 @@ void ArduinoDialog::on_arduinoPath_editingFinished()
 
 void ArduinoDialog::on_browseButton_clicked()
 {
+#ifdef __APPLE__
+    auto path = QFileDialog::getOpenFileName(this, tr("Select Arduino application"), "",
+                                             tr("Applications (*.app)"));
+#else
     auto path = QFileDialog::getExistingDirectory(this, tr("Select Arduino directory"));
+#endif
     if (path.isEmpty())
         return;
     path = QDir::toNativeSeparators(path);
