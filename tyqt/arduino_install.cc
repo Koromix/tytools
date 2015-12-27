@@ -73,7 +73,7 @@ bool ArduinoInstallation::integrate()
             out << "tools.teensyloader.upload.params.quiet=--quiet\n"
                    "tools.teensyloader.upload.params.verbose=\n"
                    "tools.teensyloader.upload.pattern=\"{cmd.path}\" upload --autostart --wait"
-                   " --board=@{serial.port} --usbtype {build.usbtype} \"{build.path}/{build.project_name}.hex\"\n";
+                   " \"{build.path}/{build.project_name}.hex\"\n";
             integrated = true;
         }
     }
