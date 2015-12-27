@@ -97,7 +97,7 @@ void ArduinoDialog::on_arduinoPath_editingFinished()
 
 void ArduinoDialog::on_browseButton_clicked()
 {
-    auto path = QFileDialog::getExistingDirectory(this);
+    auto path = QFileDialog::getExistingDirectory(this, tr("Select Arduino directory"));
     if (path.isEmpty())
         return;
     path = QDir::toNativeSeparators(path);
