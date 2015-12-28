@@ -11,7 +11,8 @@
     #include <alloca.h>
 #endif
 #include <getopt.h>
-#include "ty.h"
+#include "ty/firmware.h"
+#include "ty/task.h"
 #include "main.h"
 
 enum {

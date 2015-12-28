@@ -7,7 +7,6 @@
 
 #include <getopt.h>
 #include <stdarg.h>
-#include "ty.h"
 #include "main.h"
 
 static const char *short_options = MAIN_SHORT_OPTIONS "O:vw";

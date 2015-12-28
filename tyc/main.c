@@ -10,7 +10,7 @@
     #include <signal.h>
     #include <sys/wait.h>
 #endif
-#include "ty.h"
+#include "ty/version.h"
 #include "main.h"
 
 struct command {

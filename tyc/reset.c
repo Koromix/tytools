@@ -6,7 +6,7 @@
  */
 
 #include <getopt.h>
-#include "ty.h"
+#include "ty/task.h"
 #include "main.h"
 
 static const char *short_options = MAIN_SHORT_OPTIONS "b";

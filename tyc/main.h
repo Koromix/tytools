@@ -8,7 +8,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "ty.h"
+#include "ty/common.h"
+#include "ty/board.h"
 
 TY_C_BEGIN
 
