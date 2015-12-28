@@ -57,6 +57,10 @@ else()
     set(TY_LIBRARIES ty_shared)
 endif()
 
+# Recompute the version string after each commit, does not work for tags though
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git/logs/HEAD")
+    configure_file("${CMAKE_SOURCE_DIR}/.git/logs/HEAD" git_logs_HEAD COPYONLY)
+endif()
 if(WIN32 AND NOT CMAKE_CROSSCOMPILING)
     execute_process(COMMAND "${CMAKE_SOURCE_DIR}/scripts/git-version.bat"
         OUTPUT_VARIABLE TY_VERSION_HEADER)
