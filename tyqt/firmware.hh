@@ -12,7 +12,7 @@
 
 #include <memory>
 
-#include "ty.h"
+#include "ty/firmware.h"
 
 class Firmware : public std::enable_shared_from_this<Firmware> {
     tyb_firmware *fw_ = nullptr;

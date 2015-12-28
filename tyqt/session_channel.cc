@@ -15,7 +15,7 @@
     #include <windows.h>
 #endif
 
-#include "ty.h"
+#include "ty/common.h"
 #include "session_channel.hh"
 
 #ifdef _WIN32

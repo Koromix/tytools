@@ -8,8 +8,8 @@
 #include <QDesktopServices>
 #include <QUrl>
 
-#include "ty.h"
 #include "about_dialog.hh"
+#include "ty/version.h"
 
 AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent, f)

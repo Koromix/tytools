@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 
-#include "ty.h"
+#include "ty/board.h"
 #include "descriptor_notifier.hh"
 #include "firmware.hh"
 #include "task.hh"

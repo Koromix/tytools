@@ -17,7 +17,7 @@
 #include <functional>
 #include <vector>
 
-#include "ty.h"
+#include "ty/system.h"
 
 class DescriptorNotifier : public QObject {
     Q_OBJECT

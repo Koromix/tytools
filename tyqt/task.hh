@@ -16,7 +16,7 @@
 #include <memory>
 #include <vector>
 
-#include "ty.h"
+#include "ty/task.h"
 
 class Task : public std::enable_shared_from_this<Task> {
     ty_task_status status_ = TY_TASK_STATUS_READY;

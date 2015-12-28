@@ -18,6 +18,7 @@
 #include "arduino_install.hh"
 #include "commands.hh"
 #include "tyqt.hh"
+#include "ty/version.h"
 
 struct ClientCommand {
     const char *name;
