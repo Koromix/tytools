@@ -412,17 +412,18 @@ static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *dat
     /* We may get errors along the way (while the bootloader works) so try again
        until timeout expires. */
     start = ty_millis();
-    do {
-        r = tyd_hid_write(iface->h, buf, size);
-        if (r >= 0)
-            return 0;
-
+    ty_error_mask(TY_ERROR_IO);
+restart:
+    r = tyd_hid_write(iface->h, buf, size);
+    if (r == TY_ERROR_IO && ty_millis() - start < timeout) {
         ty_delay(10);
-    } while (ty_millis() - start <= timeout);
-    if (r < 0)
-        return (int)r;
+        goto restart;
+    }
+    ty_error_unmask();
+    if (r == TY_ERROR_IO)
+        ty_error(TY_ERROR_IO, "%s", ty_error_last_message());
 
-    return 0;
+    return r < 0 ? (int)r : 0;
 }
 
 static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata)
