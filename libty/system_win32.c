@@ -105,6 +105,25 @@ bool ty_compare_paths(const char *path1, const char *path2)
     return strcasecmp(path1, path2) == 0;
 }
 
+unsigned int ty_descriptor_get_modes(ty_descriptor desc)
+{
+    DWORD tmp;
+    switch (GetFileType(desc)) {
+    case FILE_TYPE_PIPE:
+        return TY_DESCRIPTOR_MODE_FIFO;
+    case FILE_TYPE_CHAR:
+        if (GetConsoleMode(desc, &tmp)) {
+            return TY_DESCRIPTOR_MODE_DEVICE | TY_DESCRIPTOR_MODE_TERMINAL;
+        } else {
+            return TY_DESCRIPTOR_MODE_DEVICE;
+        }
+    case FILE_TYPE_DISK:
+        return TY_DESCRIPTOR_MODE_FILE;
+    }
+
+    return 0;
+}
+
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);
@@ -122,16 +141,6 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     }
 
     return set->id[ret - WAIT_OBJECT_0];
-}
-
-bool ty_terminal_available(ty_descriptor desc)
-{
-    DWORD mode;
-
-    if (!desc)
-        return false;
-
-    return GetConsoleMode(desc, &mode);
 }
 
 int ty_terminal_setup(int flags)

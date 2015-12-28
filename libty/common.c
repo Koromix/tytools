@@ -56,12 +56,18 @@ static void print_log(const void *data)
 
 static void print_progress(const void *data)
 {
+    static bool init = false, show_progress;
     const ty_progress_message *msg = data;
 
     if (TY_LOG_INFO < ty_config_quiet)
         return;
 
-    if (ty_terminal_available(TY_DESCRIPTOR_STDOUT)) {
+    if (!init) {
+        show_progress = ty_descriptor_get_modes(TY_DESCRIPTOR_STDOUT) & TY_DESCRIPTOR_MODE_TERMINAL;
+        init = true;
+    }
+
+    if (show_progress) {
         if (msg->value)
             printf("\r");
         printf("%s... %u%%", msg->action, 100 * msg->value / msg->max);

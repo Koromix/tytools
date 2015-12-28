@@ -84,6 +84,30 @@ void ty_delay(unsigned int ms)
     } while (r);
 }
 
+unsigned int ty_descriptor_get_modes(ty_descriptor desc)
+{
+    struct stat sb;
+    int r;
+
+    r = fstat(desc, &sb);
+    if (r < 0)
+        return 0;
+
+    if (S_ISFIFO(sb.st_mode) || S_ISSOCK(sb.st_mode)) {
+        return TY_DESCRIPTOR_MODE_FIFO;
+    } else if (S_ISBLK(sb.st_mode) || S_ISCHR(sb.st_mode)) {
+        if (isatty(desc)) {
+            return TY_DESCRIPTOR_MODE_DEVICE | TY_DESCRIPTOR_MODE_TERMINAL;
+        } else {
+            return TY_DESCRIPTOR_MODE_DEVICE;
+        }
+    } else if (S_ISREG(sb.st_mode)) {
+        return TY_DESCRIPTOR_MODE_FILE;
+    }
+
+    return 0;
+}
+
 #ifdef __APPLE__
 
 int ty_poll(const ty_descriptor_set *set, int timeout)
@@ -196,11 +220,6 @@ bool ty_compare_paths(const char *path1, const char *path2)
         return false;
 
     return sb1.st_dev == sb2.st_dev && sb1.st_ino == sb2.st_ino;
-}
-
-bool ty_terminal_available(ty_descriptor desc)
-{
-    return isatty(desc);
 }
 
 int ty_terminal_setup(int flags)

@@ -35,6 +35,13 @@ typedef int ty_descriptor;
     #define TY_DESCRIPTOR_STDERR 2
 #endif
 
+enum {
+    TY_DESCRIPTOR_MODE_FIFO = 1,
+    TY_DESCRIPTOR_MODE_DEVICE = 2,
+    TY_DESCRIPTOR_MODE_TERMINAL = 4,
+    TY_DESCRIPTOR_MODE_FILE = 8
+};
+
 typedef struct ty_descriptor_set {
     unsigned int count;
     ty_descriptor desc[64];
@@ -63,11 +70,12 @@ TY_PUBLIC void ty_descriptor_set_clear(ty_descriptor_set *set);
 TY_PUBLIC void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
 TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
+TY_PUBLIC unsigned int ty_descriptor_get_modes(ty_descriptor desc);
+
 TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
 
 TY_PUBLIC bool ty_compare_paths(const char *path1, const char *path2);
 
-TY_PUBLIC bool ty_terminal_available(ty_descriptor desc);
 TY_PUBLIC int ty_terminal_setup(int flags);
 TY_PUBLIC void ty_terminal_restore(void);
 

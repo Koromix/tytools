@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 #ifdef _WIN32
     app.setClientConsole(open_tyqtc_bridge());
 #else
-    app.setClientConsole(ty_terminal_available(TY_DESCRIPTOR_STDOUT));
+    app.setClientConsole(ty_descriptor_get_modes(TY_DESCRIPTOR_STDOUT) != TY_DESCRIPTOR_MODE_DEVICE);
 #endif
 
     return app.exec();

@@ -453,12 +453,12 @@ int monitor(int argc, char *argv[])
         goto usage;
     }
 
-    if (ty_terminal_available(TY_DESCRIPTOR_STDIN)) {
+    if (ty_descriptor_get_modes(TY_DESCRIPTOR_STDIN) & TY_DESCRIPTOR_MODE_TERMINAL) {
 #ifdef _WIN32
         if (terminal_flags & TY_TERMINAL_RAW && !(terminal_flags & TY_TERMINAL_SILENT)) {
             terminal_flags |= TY_TERMINAL_SILENT;
 
-            if (ty_terminal_available(TY_DESCRIPTOR_STDOUT))
+            if (ty_descriptor_get_modes(TY_DESCRIPTOR_STDOUT) & TY_DESCRIPTOR_MODE_TERMINAL)
                 fake_echo = true;
         }
 
