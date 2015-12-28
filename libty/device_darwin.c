@@ -1130,7 +1130,7 @@ static ssize_t send_report(tyd_handle *h, IOHIDReportType type, const uint8_t *b
     // FIXME: detect various errors, here and elsewhere for common kIOReturn values
     kret = IOHIDDeviceSetReport(h->hid, type, report, buf, (CFIndex)size);
     if (kret != kIOReturnSuccess)
-        return ty_error(TY_ERROR_SYSTEM, "IOHIDDeviceSetReport() failed");
+        return ty_error(TY_ERROR_IO, "IOHIDDeviceSetReport() failed on '%s'", h->dev->path);
 
     return (ssize_t)size + !report;
 }

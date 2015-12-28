@@ -272,7 +272,8 @@ restart:
         if (r < 0) {
             if (errno == EINTR)
                 goto restart;
-            return ty_error(TY_ERROR_SYSTEM, "poll('%s') failed: %s", h->dev->path,
+
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
                             strerror(errno));
         }
         if (!r)
@@ -281,17 +282,11 @@ restart:
 
     r = read(h->fd, buf, size);
     if (r < 0) {
-        switch (errno) {
-        case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-        case EWOULDBLOCK:
-#endif
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
-        case EIO:
-        case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->path, strerror(errno));
+
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+                        strerror(errno));
     }
 
     return r;
@@ -317,28 +312,18 @@ ssize_t tyd_serial_write(struct tyd_handle *h, const char *buf, ssize_t size)
 restart:
     r = poll(&pfd, 1, -1);
     if (r < 0) {
-        switch (errno) {
-        case EINTR:
+        if (errno == EINTR)
             goto restart;
-        case EIO:
-        case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "poll('%s') failed: %s", h->dev->path,
+
+        return ty_error(TY_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
                         strerror(errno));
     }
     assert(r == 1);
 
     r = write(h->fd, buf, (size_t)size);
-    if (r < 0) {
-        switch (errno) {
-        case EIO:
-        case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "write('%s') failed: %s", h->dev->path,
+    if (r < 0)
+        return ty_error(TY_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
                         strerror(errno));
-    }
 
     return r;
 }

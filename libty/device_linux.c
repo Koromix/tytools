@@ -405,13 +405,13 @@ int tyd_hid_parse_descriptor(tyd_handle *h, tyd_hid_descriptor *desc)
 
     r = ioctl(h->fd, HIDIOCGRDESCSIZE, &size);
     if (r < 0)
-        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESCSIZE) failed: %s",
+        return ty_error(TY_ERROR_IO, "ioctl('%s', HIDIOCGRDESCSIZE) failed: %s",
                         h->dev->path, strerror(errno));
 
     report.size = (uint32_t)size;
     r = ioctl(h->fd, HIDIOCGRDESC, &report);
     if (r < 0)
-        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESC) failed: %s", h->dev->path,
+        return ty_error(TY_ERROR_IO, "ioctl('%s', HIDIOCGRDESC) failed: %s", h->dev->path,
                         strerror(errno));
 
     memset(desc, 0, sizeof(*desc));
@@ -442,7 +442,8 @@ restart:
         if (r < 0) {
             if (errno == EINTR)
                 goto restart;
-            return ty_error(TY_ERROR_SYSTEM, "poll('%s') failed: %s", h->dev->path,
+
+            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
                             strerror(errno));
         }
         if (!r)
@@ -451,17 +452,11 @@ restart:
 
     r = read(h->fd, buf, size);
     if (r < 0) {
-        switch (errno) {
-        case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-        case EWOULDBLOCK:
-#endif
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
-        case EIO:
-        case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "read('%s') failed: %s", h->dev->path, strerror(errno));
+
+        return ty_error(TY_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+                        strerror(errno));
     }
 
     return r;
@@ -482,14 +477,11 @@ restart:
     // On linux, USB requests timeout after 5000ms and O_NONBLOCK isn't honoured for write
     r = write(h->fd, (const char *)buf, size);
     if (r < 0) {
-        switch (errno) {
-        case EINTR:
+        if (errno == EINTR)
             goto restart;
-        case EIO:
-        case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "write('%s') failed: %s", h->dev->path, strerror(errno));
+
+        return ty_error(TY_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+                        strerror(errno));
     }
 
     return r;
@@ -509,19 +501,10 @@ ssize_t tyd_hid_send_feature_report(tyd_handle *h, const uint8_t *buf, size_t si
 restart:
     r = ioctl(h->fd, HIDIOCSFEATURE(size), (const char *)buf);
     if (r < 0) {
-        switch (errno) {
-        case EINTR:
+        if (errno == EINTR)
             goto restart;
-        case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-        case EWOULDBLOCK:
-#endif
-            return 0;
-        case EIO:
-        case ENXIO:
-            return ty_error(TY_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
-        }
-        return ty_error(TY_ERROR_SYSTEM, "ioctl('%s', HIDIOCSFEATURE) failed: %s", h->dev->path,
+
+        return ty_error(TY_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
                         strerror(errno));
     }
 
