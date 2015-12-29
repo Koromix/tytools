@@ -523,7 +523,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
         case Qt::DisplayRole:
             return board->tag();
         case Qt::ForegroundRole:
-            return QBrush(Qt::lightGray);
+            return QBrush(Qt::darkGray);
         case Qt::TextAlignmentRole:
             return QVariant(Qt::AlignRight | Qt::AlignVCenter);
         }
