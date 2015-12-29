@@ -290,6 +290,8 @@ void MainWindow::on_actionUploadNew_triggered()
 
         fws.push_back(fw);
     }
+    if (fws.empty())
+        return;
 
     for (auto &board: selected_boards_)
         board->upload(fws, board->property("resetAfter").toBool()).start();
