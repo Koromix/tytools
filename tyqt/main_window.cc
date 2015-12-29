@@ -34,6 +34,9 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
     connect(manager, &Manager::boardAdded, this, &MainWindow::setBoardDefaults);
 
+    // The blue selection frame displayed on OSX looks awful
+    boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
+
     monitorText->setWordWrapMode(QTextOption::NoWrap);
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
     connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
