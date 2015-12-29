@@ -93,11 +93,6 @@ TyQt::TyQt(int &argc, char *argv[])
 
 TyQt::~TyQt()
 {
-    for (auto win: main_windows_) {
-        win->disconnect(this);
-        delete win;
-    }
-
     ty_message_redirect(ty_message_default_handler, nullptr);
 }
 
@@ -117,7 +112,7 @@ QString TyQt::clientFilePath() const
 
 SelectorDialog *TyQt::openSelector()
 {
-    auto dialog = new SelectorDialog(&manager_, main_windows_.empty() ? nullptr : main_windows_.front());
+    auto dialog = new SelectorDialog(&manager_, getMainWindow());
     dialog->setAttribute(Qt::WA_DeleteOnClose);
 
     activateMainWindow();
@@ -125,34 +120,34 @@ SelectorDialog *TyQt::openSelector()
     return dialog;
 }
 
+MainWindow *TyQt::getMainWindow() const
+{
+    for (auto widget: topLevelWidgets()) {
+        if (widget->inherits("MainWindow"))
+            return qobject_cast<MainWindow *>(widget);
+    }
+
+    return nullptr;
+}
+
 void TyQt::openMainWindow()
 {
-    MainWindow *win = new MainWindow(&manager_);
-
+    auto win = new MainWindow(&manager_);
     win->setAttribute(Qt::WA_DeleteOnClose);
-    connect(win, &MainWindow::destroyed, this, [=]() {
-        auto it = find(main_windows_.begin(), main_windows_.end(), win);
-        if (it != main_windows_.end())
-            main_windows_.erase(it);
-
-        /* Some environments (such as KDE Plasma) keep the application running when a tray
-           icon/status notifier exists, and we don't want that. */
-        if (main_windows_.empty())
-            quit();
-    });
-    main_windows_.push_back(win);
 
     connect(this, &TyQt::errorMessage, win, &MainWindow::showErrorMessage);
 
     win->show();
 }
 
-void TyQt::activateMainWindow()
+void TyQt::activateMainWindow(MainWindow *win)
 {
-    if (main_windows_.empty())
-        return;
+    if (!win) {
+        win = getMainWindow();
+        if (!win)
+            return;
+    }
 
-    auto win = main_windows_.front();
     win->setWindowState(win->windowState() & ~Qt::WindowMinimized);
     win->raise();
     win->activateWindow();
@@ -166,14 +161,18 @@ void TyQt::reportError(const QString &msg)
 void TyQt::setVisible(bool visible)
 {
     if (visible) {
-        for (auto &win: main_windows_) {
-            win->move(win->property("position").toPoint());
-            win->show();
+        for (auto widget: topLevelWidgets()) {
+            if (widget->inherits("MainWindow")) {
+                widget->move(widget->property("position").toPoint());
+                widget->show();
+            }
         }
     } else {
-        for (auto &win: main_windows_) {
-            win->setProperty("position", win->pos());
-            win->hide();
+        for (auto widget: topLevelWidgets()) {
+            if (widget->inherits("MainWindow")) {
+                widget->setProperty("position", widget->pos());
+                widget->hide();
+            }
         }
     }
 
@@ -444,6 +443,11 @@ int TyQt::runServer()
 
     tray_icon_.show();
     openMainWindow();
+
+    /* Some environments (such as KDE Plasma) keep the application running when a tray
+       icon/status notifier exists, and we don't want that. Not sure I get why that
+       happens because quitWhenLastClosed is true, but this works. */
+    connect(this, &TyQt::lastWindowClosed, this, &TyQt::quit);
 
     if (!manager_.start()) {
         showClientError(ty_error_last_message());

@@ -40,8 +40,6 @@ class TyQt : public QApplication {
 
     Manager manager_;
 
-    std::vector<MainWindow *> main_windows_;
-
     QAction *action_visible_;
     QAction *action_quit_;
     QSystemTrayIcon tray_icon_;
@@ -66,6 +64,8 @@ public:
 
     SelectorDialog *openSelector();
 
+    MainWindow *getMainWindow() const;
+
     bool visible() const { return action_visible_->isChecked(); }
 
     void setClientConsole(bool console) { client_console_ = console; }
@@ -80,7 +80,7 @@ public:
 
 public slots:
     void openMainWindow();
-    void activateMainWindow();
+    void activateMainWindow(MainWindow *win = nullptr);
 
     void reportError(const QString &msg);
 
