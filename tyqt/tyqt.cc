@@ -17,6 +17,8 @@
 
 #include "arduino_install.hh"
 #include "commands.hh"
+#include "main_window.hh"
+#include "selector_dialog.hh"
 #include "tyqt.hh"
 #include "ty/version.h"
 

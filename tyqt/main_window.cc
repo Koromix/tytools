@@ -13,6 +13,7 @@
 
 #include "about_dialog.hh"
 #include "arduino_dialog.hh"
+#include "board.hh"
 #include "board_widget.hh"
 #include "commands.hh"
 #include "main_window.hh"

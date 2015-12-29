@@ -8,8 +8,11 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include "board.hh"
 #include "commands.hh"
+#include "firmware.hh"
 #include "selector_dialog.hh"
+#include "task.hh"
 #include "tyqt.hh"
 
 using namespace std;

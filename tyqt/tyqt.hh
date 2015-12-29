@@ -10,14 +10,16 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QMenu>
 #include <QSystemTrayIcon>
 
 #include <memory>
 
 #include "board.hh"
-#include "main_window.hh"
-#include "selector_dialog.hh"
 #include "session_channel.hh"
+
+class MainWindow;
+class SelectorDialog;
 
 #define tyQt (TyQt::instance())
 

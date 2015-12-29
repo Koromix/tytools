@@ -10,9 +10,8 @@
 
 #include <QStringList>
 
-#include "board.hh"
-#include "firmware.hh"
-#include "task.hh"
+class Board;
+class TaskInterface;
 
 namespace Commands {
     TaskInterface execute(const QString &cmd, const QStringList &parameters);

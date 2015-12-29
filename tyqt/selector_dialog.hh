@@ -10,8 +10,10 @@
 
 #include <memory>
 
-#include "board.hh"
 #include "ui_selector_dialog.h"
+
+class Board;
+class Manager;
 
 class SelectorDialog : public QDialog, private Ui::SelectorDialog {
     Q_OBJECT

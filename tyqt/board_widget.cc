@@ -7,6 +7,7 @@
 
 #include <QPainter>
 
+#include "board.hh"
 #include "board_widget.hh"
 
 using namespace std;

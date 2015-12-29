@@ -11,8 +11,10 @@
 #include <memory>
 #include <vector>
 
-#include "board.hh"
 #include "ui_main_window.h"
+
+class Board;
+class Manager;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT

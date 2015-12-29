@@ -10,8 +10,9 @@
 
 #include <QItemDelegate>
 
-#include "board.hh"
 #include "ui_board_widget.h"
+
+class Board;
 
 class BoardWidget : public QWidget, private Ui::BoardWidget {
     Q_OBJECT

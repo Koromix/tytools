@@ -7,6 +7,7 @@
 
 #include <QPushButton>
 
+#include "board.hh"
 #include "selector_dialog.hh"
 
 using namespace std;
