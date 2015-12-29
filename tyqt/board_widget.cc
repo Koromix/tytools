@@ -54,16 +54,18 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
         icon = ":/board_missing";
         widget_.setStatus(tr("(missing)"));
     }
-    if (board->errorOccured())
-        icon = ":/board_error";
-    widget_.setIcon(QPixmap(icon));
 
     auto task = board->runningTask();
     if (task.status() == TY_TASK_STATUS_RUNNING) {
+        icon = ":/board_working";
         widget_.setProgress(task.progress(), task.progressMaximum());
     } else {
         widget_.setProgress(0, 0);
     }
+
+    if (board->errorOccured())
+        icon = ":/board_error";
+    widget_.setIcon(QPixmap(icon));
 
     QPalette pal = option.palette;
     if (option.state & QStyle::State_Selected) {

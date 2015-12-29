@@ -35,6 +35,7 @@ Board::Board(tyb_board *board, QObject *parent)
     connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
 
     connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
+    connect(&task_watcher_, &TaskWatcher::started, this, &Board::taskChanged);
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
     connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
 
