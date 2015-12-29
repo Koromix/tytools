@@ -20,316 +20,319 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QListView" name="boardList">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
-      <property name="minimumSize">
-       <size>
-        <width>210</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>210</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="selectionMode">
-       <enum>QAbstractItemView::ExtendedSelection</enum>
-      </property>
-      <property name="selectionRectVisible">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="infoTab">
-       <attribute name="title">
-        <string>&amp;Information</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Model:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="modelText">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Serial Number:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="serialText">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Location:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="locationText">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_6">
-          <property name="text">
-           <string>Interfaces:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QTreeWidget" name="interfaceTree">
-          <property name="uniformRowHeights">
-           <bool>true</bool>
-          </property>
-          <attribute name="headerDefaultSectionSize">
-           <number>140</number>
-          </attribute>
-          <attribute name="headerMinimumSectionSize">
-           <number>100</number>
-          </attribute>
-          <attribute name="headerStretchLastSection">
-           <bool>true</bool>
-          </attribute>
-          <column>
-           <property name="text">
-            <string>Name</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>Path</string>
-           </property>
-          </column>
-         </widget>
-        </item>
-       </layout>
+      <widget class="QListView" name="boardList">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="horizontalScrollBarPolicy">
+        <enum>Qt::ScrollBarAlwaysOff</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="selectionRectVisible">
+        <bool>true</bool>
+       </property>
       </widget>
-      <widget class="QWidget" name="monitorTab">
-       <attribute name="title">
-        <string>&amp;Monitor</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QPlainTextEdit" name="monitorText">
-          <property name="minimumSize">
-           <size>
-            <width>240</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="undoRedoEnabled">
-           <bool>false</bool>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-          <property name="textInteractionFlags">
-           <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QLineEdit" name="monitorEdit">
-            <property name="placeholderText">
-             <string>Send data...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="sendButton">
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>2</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="infoTab">
+        <attribute name="title">
+         <string>&amp;Information</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Model:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="modelText">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Serial Number:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="serialText">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Location:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="locationText">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Interfaces:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="interfaceTree">
+           <property name="uniformRowHeights">
+            <bool>true</bool>
+           </property>
+           <attribute name="headerDefaultSectionSize">
+            <number>140</number>
+           </attribute>
+           <attribute name="headerMinimumSectionSize">
+            <number>100</number>
+           </attribute>
+           <attribute name="headerStretchLastSection">
+            <bool>true</bool>
+           </attribute>
+           <column>
             <property name="text">
-             <string>Send</string>
+             <string>Name</string>
             </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="uploadTab">
-       <attribute name="title">
-        <string>&amp;Settings</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>Upload</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
+           </column>
+           <column>
+            <property name="text">
+             <string>Path</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="monitorTab">
+        <attribute name="title">
+         <string>&amp;Monitor</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QPlainTextEdit" name="monitorText">
+           <property name="minimumSize">
+            <size>
+             <width>240</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
+           <property name="undoRedoEnabled">
+            <bool>false</bool>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+           <property name="textInteractionFlags">
+            <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1,0">
-             <item>
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>Firmware:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="firmwarePath">
-               <property name="clearButtonEnabled">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="firmwareBrowseButton">
-               <property name="text">
-                <string>Browse...</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="resetAfterUpload">
-             <property name="text">
-              <string>Reset device after successful upload</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_2">
-          <property name="title">
-           <string>Monitor</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_6">
-           <item>
-            <widget class="QCheckBox" name="clearOnReset">
-             <property name="text">
-              <string>Clear serial on reset</string>
+            <widget class="QLineEdit" name="monitorEdit">
+             <property name="placeholderText">
+              <string>Send data...</string>
              </property>
             </widget>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <item>
-              <widget class="QCheckBox" name="echo">
-               <property name="text">
-                <string>Echo</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="newlineComboBox">
-               <property name="currentIndex">
-                <number>1</number>
-               </property>
-               <item>
-                <property name="text">
-                 <string>No line ending</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Newline (LF)</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Carriage return (CR)</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Both (CRLF)</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-            </layout>
+            <widget class="QPushButton" name="sendButton">
+             <property name="text">
+              <string>Send</string>
+             </property>
+            </widget>
            </item>
           </layout>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="logTab">
-       <attribute name="title">
-        <string>&amp;Log</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QPlainTextEdit" name="logText">
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-          <property name="maximumBlockCount">
-           <number>1000</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="uploadTab">
+        <attribute name="title">
+         <string>&amp;Settings</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QGroupBox" name="groupBox">
+           <property name="title">
+            <string>Upload</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1,0">
+              <item>
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Firmware:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="firmwarePath">
+                <property name="clearButtonEnabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="firmwareBrowseButton">
+                <property name="text">
+                 <string>Browse...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="resetAfterUpload">
+              <property name="text">
+               <string>Reset device after successful upload</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="title">
+            <string>Monitor</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+             <widget class="QCheckBox" name="clearOnReset">
+              <property name="text">
+               <string>Clear serial on reset</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <item>
+               <widget class="QCheckBox" name="echo">
+                <property name="text">
+                 <string>Echo</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="newlineComboBox">
+                <property name="currentIndex">
+                 <number>1</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>No line ending</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Newline (LF)</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Carriage return (CR)</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Both (CRLF)</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="logTab">
+        <attribute name="title">
+         <string>&amp;Log</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QPlainTextEdit" name="logText">
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+           <property name="maximumBlockCount">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
