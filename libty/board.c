@@ -87,6 +87,7 @@ static const char *capability_names[] = {
 #else
     #define MANUAL_REBOOT_DELAY 5000
 #endif
+#define FINAL_TASK_TIMEOUT 5000
 
 static void drop_callback(struct callback *callback)
 {
@@ -1317,7 +1318,11 @@ wait:
         if (r < 0)
             return r;
 
-        ty_delay(600);
+        r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RUN, FINAL_TASK_TIMEOUT);
+        if (r < 0)
+            return r;
+        if (!r)
+            return ty_error(TY_ERROR_TIMEOUT, "Reset does not seem to work");
     } else {
         ty_log(TY_LOG_INFO, "Firmware uploaded, reset the board to use it");
     }
@@ -1404,7 +1409,12 @@ static int run_reset(ty_task *task)
     if (r < 0)
         return r;
 
-    ty_delay(600);
+    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_RUN, FINAL_TASK_TIMEOUT);
+    if (r < 0)
+        return r;
+    if (!r)
+        return ty_error(TY_ERROR_TIMEOUT, "Reset does not seem to work");
+
     return 0;
 }
 
@@ -1433,7 +1443,12 @@ static int run_reboot(ty_task *task)
     if (r < 0)
         return r;
 
-    ty_delay(600);
+    r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_UPLOAD, FINAL_TASK_TIMEOUT);
+    if (r < 0)
+        return r;
+    if (!r)
+        return ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work");
+
     return 0;
 }
 
