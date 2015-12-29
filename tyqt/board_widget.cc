@@ -18,11 +18,6 @@ BoardWidget::BoardWidget(QWidget *parent)
     setupUi(this);
 }
 
-void BoardWidget::setAvailable(bool available)
-{
-    boardIcon->setEnabled(available);
-}
-
 void BoardWidget::setProgress(unsigned int progress, unsigned int total)
 {
     if (total) {
@@ -44,19 +39,25 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.resize(option.rect.size());
 
-    widget_.setAvailable(board->state() == TYB_BOARD_STATE_ONLINE);
-
-    widget_.setIcon(QPixmap(board->errorOccured() ? ":/board_error" : ":/board"));
     widget_.setModel(board->modelName());
     widget_.setTag(board->tag());
+
+    const char *icon = nullptr;
     // FIXME: add better way to detect current board mode
     if (board->isSerialAvailable()) {
+        icon = ":/board_running";
         widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"));
     } else if (board->isUploadAvailable()) {
+        icon = ":/board_bootloader";
+        widget_.setIcon(QPixmap(board->errorOccured() ? ":/board_error" : ":/board"));
         widget_.setStatus(tr("(bootloader)"));
     } else {
+        icon = ":/board_missing";
         widget_.setStatus(tr("(missing)"));
     }
+    if (board->errorOccured())
+        icon = ":/board_error";
+    widget_.setIcon(QPixmap(icon));
 
     auto task = board->runningTask();
     if (task.status() == TY_TASK_STATUS_RUNNING) {

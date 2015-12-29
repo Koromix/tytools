@@ -54,21 +54,21 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>48</width>
-       <height>48</height>
+       <width>36</width>
+       <height>36</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>48</width>
-       <height>48</height>
+       <width>36</width>
+       <height>36</height>
       </size>
      </property>
      <property name="text">
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="tyqt.qrc">:/board</pixmap>
+      <pixmap resource="tyqt.qrc">:/board_running</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
