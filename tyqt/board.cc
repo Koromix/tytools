@@ -126,6 +126,11 @@ std::vector<BoardInterfaceInfo> Board::interfaces() const
     return vec;
 }
 
+bool Board::isRunning() const
+{
+    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RUN);
+}
+
 bool Board::isUploadAvailable() const
 {
     return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();

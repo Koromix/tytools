@@ -43,8 +43,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setTag(board->tag());
 
     const char *icon = nullptr;
-    // FIXME: add better way to detect current board mode
-    if (board->isSerialAvailable()) {
+    if (board->isRunning()) {
         icon = ":/board_running";
         widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"));
     } else if (board->isUploadAvailable()) {

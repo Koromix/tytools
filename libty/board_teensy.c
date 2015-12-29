@@ -231,6 +231,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
         tyd_serial_set_attributes(iface->h, 115200, 0);
 
         iface->desc = "Serial";
+        iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
         break;
@@ -254,6 +255,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
 
         case TEENSY_USAGE_PAGE_SEREMU:
             iface->desc = "Seremu";
+            iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
             iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
             iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
             break;

@@ -74,6 +74,7 @@ const tyb_board_family *tyb_board_families[] = {
 };
 
 static const char *capability_names[] = {
+    "run",
     "upload",
     "reset",
     "reboot",

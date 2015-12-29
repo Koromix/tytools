@@ -26,6 +26,7 @@ typedef struct tyb_board_model tyb_board_model;
 
 // Keep in sync with capability_names in board.c
 typedef enum tyb_board_capability {
+    TYB_BOARD_CAPABILITY_RUN,
     TYB_BOARD_CAPABILITY_UPLOAD,
     TYB_BOARD_CAPABILITY_RESET,
     TYB_BOARD_CAPABILITY_REBOOT,

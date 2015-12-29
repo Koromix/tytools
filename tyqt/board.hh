@@ -78,6 +78,7 @@ public:
 
     std::vector<BoardInterfaceInfo> interfaces() const;
 
+    bool isRunning() const;
     bool isUploadAvailable() const;
     bool isResetAvailable() const;
     bool isRebootAvailable() const;
