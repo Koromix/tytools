@@ -157,6 +157,20 @@ bool Board::errorOccured() const
     return error_timer_.remainingTime() > 0;
 }
 
+QString Board::statusIconFileName() const
+{
+    if (errorOccured())
+        return ":/board_error";
+    if (running_task_.status() == TY_TASK_STATUS_RUNNING)
+        return ":/board_working";
+    if (isRunning())
+        return ":/board_running";
+    if (isUploadAvailable())
+        return ":/board_bootloader";
+
+    return ":/board_missing";
+}
+
 void Board::setFirmware(const QString &firmware)
 {
     firmware_ = firmware;
@@ -511,7 +525,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
         case Qt::DisplayRole:
             return board->modelName();
         case Qt::DecorationRole:
-            return QIcon(":/board");
+            return QIcon(board->statusIconFileName());
         case Qt::ToolTipRole:
             return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4\n\nFirmware: %5")
                            .arg(board->modelName())

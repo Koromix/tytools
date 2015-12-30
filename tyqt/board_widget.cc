@@ -39,33 +39,24 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.resize(option.rect.size());
 
+    widget_.setIcon(QPixmap(board->statusIconFileName()));
     widget_.setModel(board->modelName());
     widget_.setTag(board->tag());
 
-    const char *icon = nullptr;
     if (board->isRunning()) {
-        icon = ":/board_running";
         widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"));
     } else if (board->isUploadAvailable()) {
-        icon = ":/board_bootloader";
-        widget_.setIcon(QPixmap(board->errorOccured() ? ":/board_error" : ":/board"));
         widget_.setStatus(tr("(bootloader)"));
     } else {
-        icon = ":/board_missing";
         widget_.setStatus(tr("(missing)"));
     }
 
     auto task = board->runningTask();
     if (task.status() == TY_TASK_STATUS_RUNNING) {
-        icon = ":/board_working";
         widget_.setProgress(task.progress(), task.progressMaximum());
     } else {
         widget_.setProgress(0, 0);
     }
-
-    if (board->errorOccured())
-        icon = ":/board_error";
-    widget_.setIcon(QPixmap(icon));
 
     QPalette pal = option.palette;
     if (option.state & QStyle::State_Selected) {

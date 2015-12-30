@@ -86,6 +86,8 @@ public:
 
     bool errorOccured() const;
 
+    QString statusIconFileName() const;
+
     void setFirmware(const QString &firmware);
     QString firmware() const;
     QString firmwareName() const;
