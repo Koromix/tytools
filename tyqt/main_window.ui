@@ -82,26 +82,37 @@
          <item>
           <widget class="QLabel" name="label_5">
            <property name="text">
-            <string>Serial Number:</string>
+            <string>Serial Number / Location:</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="serialText">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QLineEdit" name="serialText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="locationText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QLabel" name="label_3">
+          <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Location:</string>
+            <string>Firmware:</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="locationText">
+          <widget class="QLineEdit" name="firmwareText">
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -565,6 +576,7 @@
   <tabstop>modelText</tabstop>
   <tabstop>serialText</tabstop>
   <tabstop>locationText</tabstop>
+  <tabstop>firmwareText</tabstop>
   <tabstop>interfaceTree</tabstop>
   <tabstop>monitorText</tabstop>
   <tabstop>monitorEdit</tabstop>

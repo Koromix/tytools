@@ -29,6 +29,8 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 public:
     MainWindow(Manager *manager, QWidget *parent = nullptr);
 
+    bool event(QEvent *ev) override;
+
 public slots:
     void showErrorMessage(const QString &msg);
 

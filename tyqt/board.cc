@@ -284,7 +284,8 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
         auto fw = static_cast<tyb_firmware *>(result.get());
         setFirmware(tyb_firmware_get_filename(fw));
         firmware_name_ = tyb_firmware_get_name(fw);
-        emit propertyChanged("firmwareName", firmware_name_);
+
+        emit boardChanged();
     });
 }
 

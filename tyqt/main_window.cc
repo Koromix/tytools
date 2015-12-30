@@ -126,6 +126,7 @@ void MainWindow::refreshBoardsInfo()
         modelText->setText(current_board_->modelName());
         locationText->setText(current_board_->location());
         serialText->setText(QString::number(current_board_->serialNumber()));
+        firmwareText->setText(current_board_->firmwareName());
 
         interfaceTree->clear();
         for (auto iface: current_board_->interfaces()) {
