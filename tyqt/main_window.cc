@@ -56,6 +56,14 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
         setBoardDefaults(board.get());
 }
 
+bool MainWindow::event(QEvent *ev)
+{
+    if (ev->type() == QEvent::StatusTip)
+        return true;
+
+    return QMainWindow::event(ev);
+}
+
 QString MainWindow::makeFirmwareFilter()
 {
     QString exts;
