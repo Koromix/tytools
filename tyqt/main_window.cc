@@ -27,6 +27,15 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     setupUi(this);
     refreshBoardsInfo();
 
+    auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
+    if (uploadButton) {
+        auto uploadMenu = new QMenu(this);
+        uploadMenu->addAction(actionUploadNew);
+
+        uploadButton->setMenu(uploadMenu);
+        uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
+    }
+
     connect(actionQuit, &QAction::triggered, TyQt::instance(), &TyQt::quit);
 
     boardList->setModel(manager);
