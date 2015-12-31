@@ -17,6 +17,9 @@
    <iconset resource="tyqt.qrc">
     <normaloff>:/tyqt</normaloff>:/tyqt</iconset>
   </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>true</bool>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
