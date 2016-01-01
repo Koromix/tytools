@@ -1,5 +1,14 @@
+# Build and IDE files
 build
-*.hex
-.tags*
 CMakeLists.txt.*
 *.pro.*
+.tags*
+
+# I like to keep a bunch of test firmwares around
+*.hex
+*.elf
+
+# Don't show the static Qt5 builds
+qt5/*
+!qt5/README.md
+!qt5/build-static-qt5.sh
