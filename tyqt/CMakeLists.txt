@@ -5,7 +5,7 @@
 
 find_package(Qt5 REQUIRED
     COMPONENTS Widgets Network PrintSupport
-    HINTS "${CMAKE_BINARY_DIR}/qt5"
+    HINTS "${CMAKE_SOURCE_DIR}/qt5/${HOST}"
     NO_CMAKE_FIND_ROOT_PATH)
 
 set(TYQT_SOURCES about_dialog.cc
