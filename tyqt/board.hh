@@ -29,7 +29,7 @@ class Board;
 class BoardTask;
 
 struct BoardInterfaceInfo {
-    QString desc;
+    QString name;
     QString path;
 
     uint16_t capabilities;

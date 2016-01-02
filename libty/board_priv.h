@@ -37,7 +37,7 @@ struct tyb_board_interface {
 
     const struct _tyb_board_interface_vtable *vtable;
 
-    const char *desc;
+    const char *name;
 
     const tyb_board_model *model;
     uint64_t serial;

@@ -138,7 +138,7 @@ static int print_interface_info(tyb_board_interface *iface, void *udata)
 {
     TY_UNUSED(udata);
 
-    print_field(tyb_board_interface_get_desc(iface), "%s",
+    print_field(tyb_board_interface_get_name(iface), "%s",
                 tyd_device_get_path(tyb_board_interface_get_device(iface)));
 
     return 0;

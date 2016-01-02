@@ -230,7 +230,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
            so try to break the loop here. */
         tyd_serial_set_attributes(iface->h, 115200, 0);
 
-        iface->desc = "Serial";
+        iface->name = "Serial";
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
@@ -246,7 +246,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
             iface->model = identify_model(&desc);
             iface->serial = parse_bootloader_serial(tyd_device_get_serial_number(iface->dev));
 
-            iface->desc = "HalfKay Bootloader";
+            iface->name = "HalfKay Bootloader";
             if (iface->model) {
                 iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_UPLOAD;
                 iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RESET;
@@ -254,7 +254,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
             break;
 
         case TEENSY_USAGE_PAGE_SEREMU:
-            iface->desc = "Seremu";
+            iface->name = "Seremu";
             iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
             iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
             iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;

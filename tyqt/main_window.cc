@@ -138,7 +138,7 @@ void MainWindow::refreshBoardsInfo()
 
         interfaceTree->clear();
         for (auto iface: current_board_->interfaces()) {
-            auto item = new QTreeWidgetItem(QStringList{iface.desc, iface.path});
+            auto item = new QTreeWidgetItem(QStringList{iface.name, iface.path});
             item->setToolTip(1, iface.path);
 
             new QTreeWidgetItem(item, QStringList{tr("capabilities"),

@@ -113,7 +113,7 @@ std::vector<BoardInterfaceInfo> Board::interfaces() const
 
     tyb_board_list_interfaces(board_, [](tyb_board_interface *iface, void *udata) {
         BoardInterfaceInfo info;
-        info.desc = tyb_board_interface_get_desc(iface);
+        info.name = tyb_board_interface_get_name(iface);
         info.path = tyb_board_interface_get_path(iface);
         info.capabilities = tyb_board_interface_get_capabilities(iface);
         info.number = tyb_board_interface_get_interface_number(iface);

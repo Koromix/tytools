@@ -1122,10 +1122,10 @@ void tyb_board_interface_unref(tyb_board_interface *iface)
     free(iface);
 }
 
-const char *tyb_board_interface_get_desc(const tyb_board_interface *iface)
+const char *tyb_board_interface_get_name(const tyb_board_interface *iface)
 {
     assert(iface);
-    return iface->desc;
+    return iface->name;
 }
 
 int tyb_board_interface_get_capabilities(const tyb_board_interface *iface)

@@ -146,7 +146,7 @@ TY_PUBLIC int tyb_board_reboot(tyb_board *board);
 TY_PUBLIC tyb_board_interface *tyb_board_interface_ref(tyb_board_interface *iface);
 TY_PUBLIC void tyb_board_interface_unref(tyb_board_interface *iface);
 
-TY_PUBLIC const char *tyb_board_interface_get_desc(const tyb_board_interface *iface);
+TY_PUBLIC const char *tyb_board_interface_get_name(const tyb_board_interface *iface);
 TY_PUBLIC int tyb_board_interface_get_capabilities(const tyb_board_interface *iface);
 
 TY_PUBLIC uint8_t tyb_board_interface_get_interface_number(const tyb_board_interface *iface);
