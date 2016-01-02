@@ -217,11 +217,11 @@ static int teensy_open_interface(tyb_board_interface *iface)
         return 0;
     }
 
-    if (!iface->h) {
-        r = tyd_device_open(iface->dev, &iface->h);
-        if (r < 0)
-            return r;
-    }
+    /* FIXME: do we always need to open? and we may be able to list
+       more devices (at least on Windows) without READ/WRITE rights. */
+    r = tyb_board_interface_open(iface);
+    if (r < 0)
+        return r;
 
     switch (tyd_device_get_type(iface->dev)) {
     case TYD_DEVICE_SERIAL:
@@ -239,7 +239,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
     case TYD_DEVICE_HID:
         r = tyd_hid_parse_descriptor(iface->h, &desc);
         if (r < 0)
-            return r;
+            goto cleanup;
 
         switch (desc.usage_page) {
         case TEENSY_USAGE_PAGE_BOOTLOADER:
@@ -261,7 +261,8 @@ static int teensy_open_interface(tyb_board_interface *iface)
             break;
 
         default:
-            return 0;
+            r = 0;
+            goto cleanup;
         }
 
         break;
@@ -271,7 +272,10 @@ static int teensy_open_interface(tyb_board_interface *iface)
         iface->model = &teensy_unknown_model;
     iface->vtable = &teensy_vtable;
 
-    return 1;
+    r = 1;
+cleanup:
+    tyb_board_interface_close(iface);
+    return r;
 }
 
 // FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)

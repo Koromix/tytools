@@ -35,6 +35,9 @@ struct tyb_board_interface {
 
     unsigned int refcount;
 
+    ty_mutex open_lock;
+    unsigned int open_count;
+
     const struct _tyb_board_interface_vtable *vtable;
 
     const char *name;

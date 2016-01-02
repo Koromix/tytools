@@ -222,7 +222,7 @@ static tyb_board *find_board(tyb_monitor *manager, const char *location)
     return NULL;
 }
 
-static int open_interface(tyd_device *dev, tyb_board_interface **riface)
+static int open_new_interface(tyd_device *dev, tyb_board_interface **riface)
 {
     tyb_board_interface *iface;
     const char *serial;
@@ -234,6 +234,10 @@ static int open_interface(tyd_device *dev, tyb_board_interface **riface)
         goto error;
     }
     iface->refcount = 1;
+
+    r = ty_mutex_init(&iface->open_lock, TY_MUTEX_FAST);
+    if (r < 0)
+        goto error;
 
     iface->dev = tyd_device_ref(dev);
 
@@ -290,7 +294,7 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
     tyb_monitor_event event;
     int r;
 
-    r = open_interface(dev, &iface);
+    r = open_new_interface(dev, &iface);
     if (r <= 0)
         goto error;
 
@@ -857,74 +861,10 @@ const char *tyb_board_get_model_name(const tyb_board *board)
     return model->name;
 }
 
-tyb_board_interface *tyb_board_get_interface(const tyb_board *board, tyb_board_capability cap)
-{
-    assert(board);
-    assert((int)cap < (int)TY_COUNTOF(board->cap2iface));
-
-    tyb_board_interface *iface;
-
-    ty_mutex_lock(&((tyb_board *)board)->interfaces_lock);
-
-    iface = board->cap2iface[cap];
-    if (iface)
-        tyb_board_interface_ref(iface);
-
-    ty_mutex_unlock(&((tyb_board *)board)->interfaces_lock);
-
-    return iface;
-}
-
 int tyb_board_get_capabilities(const tyb_board *board)
 {
     assert(board);
     return board->capabilities;
-}
-
-tyd_device *tyb_board_get_device(const tyb_board *board, tyb_board_capability cap)
-{
-    assert(board);
-
-    tyb_board_interface *iface;
-    tyd_device *dev;
-
-    iface = tyb_board_get_interface(board, cap);
-    if (!iface)
-        return NULL;
-
-    dev = iface->dev;
-
-    tyb_board_interface_unref(iface);
-    return dev;
-}
-
-tyd_handle *tyb_board_get_handle(const tyb_board *board, tyb_board_capability cap)
-{
-    assert(board);
-
-    tyb_board_interface *iface;
-    tyd_handle *h;
-
-    iface = tyb_board_get_interface(board, cap);
-    if (!iface)
-        return NULL;
-
-    h = iface->h;
-
-    tyb_board_interface_unref(iface);
-    return h;
-}
-
-void tyb_board_get_descriptors(const tyb_board *board, tyb_board_capability cap, struct ty_descriptor_set *set, int id)
-{
-    assert(board);
-
-    tyb_board_interface *iface = tyb_board_get_interface(board, cap);
-    if (!iface)
-        return;
-
-    tyd_device_get_descriptors(iface->h, set, id);
-    tyb_board_interface_unref(iface);
 }
 
 int tyb_board_list_interfaces(tyb_board *board, tyb_board_list_interfaces_func *f, void *udata)
@@ -945,6 +885,35 @@ int tyb_board_list_interfaces(tyb_board *board, tyb_board_list_interfaces_func *
             break;
     }
 
+    ty_mutex_unlock(&board->interfaces_lock);
+    return r;
+}
+
+int tyb_board_open_interface(tyb_board *board, tyb_board_capability cap, tyb_board_interface **riface)
+{
+    assert(board);
+    assert((int)cap < (int)TY_COUNTOF(board->cap2iface));
+    assert(riface);
+
+    tyb_board_interface *iface;
+    int r;
+
+    ty_mutex_lock(&board->interfaces_lock);
+
+    iface = board->cap2iface[cap];
+    if (!iface) {
+        r = 0;
+        goto cleanup;
+    }
+
+    r = tyb_board_interface_open(iface);
+    if (r < 0)
+        goto cleanup;
+
+    *riface = iface;
+    r = 1;
+
+cleanup:
     ty_mutex_unlock(&board->interfaces_lock);
     return r;
 }
@@ -989,13 +958,15 @@ int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, int flags)
     tyb_board_interface *iface;
     int r;
 
-    iface = tyb_board_get_interface(board, TYB_BOARD_CAPABILITY_SERIAL);
-    if (!iface)
+    r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_SERIAL, &iface);
+    if (r < 0)
+        return r;
+    if (!r)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
     r = (*iface->vtable->serial_set_attributes)(iface, rate, flags);
 
-    tyb_board_interface_unref(iface);
+    tyb_board_interface_close(iface);
     return r;
 }
 
@@ -1008,13 +979,15 @@ ssize_t tyb_board_serial_read(tyb_board *board, char *buf, size_t size, int time
     tyb_board_interface *iface;
     ssize_t r;
 
-    iface = tyb_board_get_interface(board, TYB_BOARD_CAPABILITY_SERIAL);
-    if (!iface)
+    r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_SERIAL, &iface);
+    if (r < 0)
+        return r;
+    if (!r)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
     r = (*iface->vtable->serial_read)(iface, buf, size, timeout);
 
-    tyb_board_interface_unref(iface);
+    tyb_board_interface_close(iface);
     return r;
 }
 
@@ -1026,8 +999,10 @@ ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size)
     tyb_board_interface *iface;
     ssize_t r;
 
-    iface = tyb_board_get_interface(board, TYB_BOARD_CAPABILITY_SERIAL);
-    if (!iface)
+    r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_SERIAL, &iface);
+    if (r < 0)
+        return r;
+    if (!r)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
 
     if (!size)
@@ -1035,7 +1010,7 @@ ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size)
 
     r = (*iface->vtable->serial_write)(iface, buf, size);
 
-    tyb_board_interface_unref(iface);
+    tyb_board_interface_close(iface);
     return r;
 }
 
@@ -1044,11 +1019,13 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *fw, tyb_board_upload_progre
     assert(board);
     assert(fw);
 
-    tyb_board_interface *iface;
+    tyb_board_interface *iface = NULL;
     int r;
 
-    iface = tyb_board_get_interface(board, TYB_BOARD_CAPABILITY_UPLOAD);
-    if (!iface) {
+    r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_UPLOAD, &iface);
+    if (r < 0)
+        goto cleanup;
+    if (!r) {
         r = ty_error(TY_ERROR_MODE, "Firmware upload is not available in this mode");
         goto cleanup;
     }
@@ -1062,7 +1039,7 @@ int tyb_board_upload(tyb_board *board, tyb_firmware *fw, tyb_board_upload_progre
     r = (*iface->vtable->upload)(iface, fw, pf, udata);
 
 cleanup:
-    tyb_board_interface_unref(iface);
+    tyb_board_interface_close(iface);
     return r;
 }
 
@@ -1073,13 +1050,15 @@ int tyb_board_reset(tyb_board *board)
     tyb_board_interface *iface;
     int r;
 
-    iface = tyb_board_get_interface(board, TYB_BOARD_CAPABILITY_RESET);
-    if (!iface)
+    r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_RESET, &iface);
+    if (r < 0)
+        return r;
+    if (!r)
         return ty_error(TY_ERROR_MODE, "Cannot reset in this mode");
 
     r = (*iface->vtable->reset)(iface);
 
-    tyb_board_interface_unref(iface);
+    tyb_board_interface_close(iface);
     return r;
 }
 
@@ -1090,13 +1069,15 @@ int tyb_board_reboot(tyb_board *board)
     tyb_board_interface *iface;
     int r;
 
-    iface = tyb_board_get_interface(board, TYB_BOARD_CAPABILITY_REBOOT);
-    if (!iface)
+    r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_REBOOT, &iface);
+    if (r < 0)
+        return r;
+    if (!r)
         return ty_error(TY_ERROR_MODE, "Cannot reboot in this mode");
 
     r = (*iface->vtable->reboot)(iface);
 
-    tyb_board_interface_unref(iface);
+    tyb_board_interface_close(iface);
     return r;
 }
 
@@ -1117,9 +1098,49 @@ void tyb_board_interface_unref(tyb_board_interface *iface)
 
         tyd_device_close(iface->h);
         tyd_device_unref(iface->dev);
+
+        ty_mutex_release(&iface->open_lock);
     }
 
     free(iface);
+}
+
+int tyb_board_interface_open(tyb_board_interface *iface)
+{
+    assert(iface);
+
+    int r;
+
+    ty_mutex_lock(&iface->open_lock);
+
+    if (!iface->h) {
+        r = tyd_device_open(iface->dev, &iface->h);
+        if (r < 0)
+            goto cleanup;
+    }
+    iface->open_count++;
+
+    tyb_board_interface_ref(iface);
+    r = 0;
+
+cleanup:
+    ty_mutex_unlock(&iface->open_lock);
+    return r;
+}
+
+void tyb_board_interface_close(tyb_board_interface *iface)
+{
+    if (!iface)
+        return;
+
+    ty_mutex_lock(&iface->open_lock);
+    if (!--iface->open_count) {
+        tyd_device_close(iface->h);
+        iface->h = NULL;
+    }
+    ty_mutex_unlock(&iface->open_lock);
+
+    tyb_board_interface_unref(iface);
 }
 
 const char *tyb_board_interface_get_name(const tyb_board_interface *iface)
@@ -1163,7 +1184,8 @@ void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struc
     assert(iface);
     assert(set);
 
-    tyd_device_get_descriptors(iface->h, set, id);
+    if (iface->h)
+        tyd_device_get_descriptors(iface->h, set, id);
 }
 
 static int new_task(tyb_board *board, const struct _ty_task_vtable *vtable, ty_task **rtask)

@@ -150,7 +150,7 @@ void MainWindow::refreshBoardsInfo()
         }
 
         monitorTab->setEnabled(true);
-        monitorEdit->setEnabled(current_board_->isSerialAvailable());
+        monitorEdit->setEnabled(current_board_->isMonitorAttached());
         actionClearMonitor->setEnabled(true);
         uploadTab->setEnabled(true);
     } else {

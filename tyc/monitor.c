@@ -197,13 +197,25 @@ static void stop_stdin_thread(void)
 
 #endif
 
-static void fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
+static int fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
 {
     ty_descriptor_set_clear(set);
 
     tyb_monitor_get_descriptors(tyb_board_get_manager(board), set, 1);
-    if (directions & DIRECTION_INPUT)
-        tyb_board_get_descriptors(board, TYB_BOARD_CAPABILITY_SERIAL, set, 2);
+    if (directions & DIRECTION_INPUT) {
+        tyb_board_interface *iface;
+        int r;
+
+        r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_SERIAL, &iface);
+        if (r < 0)
+            return r;
+
+        tyb_board_interface_get_descriptors(iface, set, 2);
+
+        /* tyb_board_interface_unref() keeps iface->open_count > 0 so the interface
+           does not get closed, and we can monitor the handle. */
+        tyb_board_interface_unref(iface);
+    }
 #ifdef _WIN32
     if (directions & DIRECTION_OUTPUT) {
         if (input_available) {
@@ -216,6 +228,8 @@ static void fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
     if (directions & DIRECTION_OUTPUT)
         ty_descriptor_set_add(set, STDIN_FILENO, 3);
 #endif
+
+    return 0;
 }
 
 static int loop(tyb_board *board, int outfd)
@@ -230,7 +244,9 @@ restart:
     if (r < 0)
         return (int)r;
 
-    fill_descriptor_set(&set, board);
+    r = fill_descriptor_set(&set, board);
+    if (r < 0)
+        return (int)r;
     timeout = -1;
 
     printf("Monitoring '%s'\n", tyb_board_get_tag(board));

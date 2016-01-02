@@ -119,17 +119,13 @@ TY_PUBLIC const tyb_board_model *tyb_board_get_model(const tyb_board *board);
 TY_PUBLIC const char *tyb_board_get_model_name(const tyb_board *board);
 
 TY_PUBLIC int tyb_board_list_interfaces(tyb_board *board, tyb_board_list_interfaces_func *f, void *udata);
-TY_PUBLIC tyb_board_interface *tyb_board_get_interface(const tyb_board *board, tyb_board_capability cap);
+TY_PUBLIC int tyb_board_open_interface(tyb_board *board, tyb_board_capability cap, tyb_board_interface **riface);
 
 TY_PUBLIC int tyb_board_get_capabilities(const tyb_board *board);
 static inline bool tyb_board_has_capability(const tyb_board *board, tyb_board_capability cap)
 {
     return tyb_board_get_capabilities(board) & (1 << cap);
 }
-
-TY_PUBLIC tyd_device *tyb_board_get_device(const tyb_board *board, tyb_board_capability cap);
-TY_PUBLIC tyd_handle *tyb_board_get_handle(const tyb_board *board, tyb_board_capability cap);
-TY_PUBLIC void tyb_board_get_descriptors(const tyb_board *board, tyb_board_capability cap, struct ty_descriptor_set *set, int id);
 
 TY_PUBLIC int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int timeout);
 
@@ -143,6 +139,8 @@ TY_PUBLIC int tyb_board_reboot(tyb_board *board);
 
 TY_PUBLIC tyb_board_interface *tyb_board_interface_ref(tyb_board_interface *iface);
 TY_PUBLIC void tyb_board_interface_unref(tyb_board_interface *iface);
+TY_PUBLIC int tyb_board_interface_open(tyb_board_interface *iface);
+TY_PUBLIC void tyb_board_interface_close(tyb_board_interface *iface);
 
 TY_PUBLIC const char *tyb_board_interface_get_name(const tyb_board_interface *iface);
 TY_PUBLIC int tyb_board_interface_get_capabilities(const tyb_board_interface *iface);

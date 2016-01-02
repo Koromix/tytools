@@ -55,6 +55,7 @@ shared_ptr<Board> Board::createBoard(tyb_board *board)
 
 Board::~Board()
 {
+    tyb_board_interface_close(serial_iface_);
     tyb_board_unref(board_);
 }
 
@@ -386,19 +387,9 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
 void Board::refreshBoard()
 {
     if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL)) {
-        if (!serial_available_) {
-            if (clear_on_reset_)
-                serial_document_.clear();
-
-            ty_descriptor_set set = {};
-            tyb_board_get_descriptors(board_, TYB_BOARD_CAPABILITY_SERIAL, &set, 1);
-
-            serial_notifier_.setDescriptorSet(&set);
-            serial_available_ = true;
-        }
-    } else if (serial_available_) {
-        serial_notifier_.clear();
-        serial_available_ = false;
+        openSerialInterface();
+    } else {
+        closeSerialInterface();
     }
 
     if (state() == TYB_BOARD_STATE_DROPPED) {
@@ -406,6 +397,38 @@ void Board::refreshBoard()
     } else {
         emit boardChanged();
     }
+}
+
+bool Board::openSerialInterface()
+{
+    if (serial_iface_)
+        return true;
+
+    ty_descriptor_set set = {};
+    int r;
+
+    r = tyb_board_open_interface(board_, TYB_BOARD_CAPABILITY_SERIAL, &serial_iface_);
+    if (r < 0) {
+        notifyLog(TY_LOG_ERROR, ty_error_last_message());
+        return false;
+    }
+    tyb_board_interface_get_descriptors(serial_iface_, &set, 1);
+    serial_notifier_.setDescriptorSet(&set);
+
+    if (clear_on_reset_)
+        serial_document_.clear();
+
+    return true;
+}
+
+void Board::closeSerialInterface()
+{
+    if (!serial_iface_)
+        return;
+
+    serial_notifier_.clear();
+    tyb_board_interface_close(serial_iface_);
+    serial_iface_ = nullptr;
 }
 
 TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, shared_ptr<void> result)> finish)

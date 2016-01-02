@@ -41,7 +41,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     tyb_board *board_;
 
-    bool serial_available_ = false;
+    tyb_board_interface *serial_iface_ = nullptr;
     DescriptorNotifier serial_notifier_;
     QMutex serial_lock_;
     char serial_buf_[262144];
@@ -105,6 +105,8 @@ public:
     TaskInterface reset();
     TaskInterface reboot();
 
+    bool isMonitorAttached() const { return serial_iface_; }
+
     bool sendSerial(const QByteArray &buf);
 
     TaskInterface runningTask() const;
@@ -131,6 +133,8 @@ private:
     Board(tyb_board *board, QObject *parent = nullptr);
 
     void refreshBoard();
+    bool openSerialInterface();
+    void closeSerialInterface();
 
     TaskInterface wrapBoardTask(ty_task *task,
                                 std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
