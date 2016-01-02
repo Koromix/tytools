@@ -118,6 +118,7 @@ std::vector<BoardInterfaceInfo> Board::interfaces() const
         info.path = tyb_board_interface_get_path(iface);
         info.capabilities = tyb_board_interface_get_capabilities(iface);
         info.number = tyb_board_interface_get_interface_number(iface);
+        info.open = tyb_board_interface_get_handle(iface);
 
         auto vec = reinterpret_cast<std::vector<BoardInterfaceInfo> *>(udata);
         vec->push_back(info);

@@ -34,6 +34,7 @@ struct BoardInterfaceInfo {
 
     uint16_t capabilities;
     uint8_t number;
+    bool open;
 };
 
 class Board : public QObject, public std::enable_shared_from_this<Board> {
