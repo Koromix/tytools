@@ -144,11 +144,17 @@
          </item>
          <item>
           <widget class="QTreeWidget" name="interfaceTree">
+           <property name="indentation">
+            <number>0</number>
+           </property>
+           <property name="rootIsDecorated">
+            <bool>false</bool>
+           </property>
            <property name="uniformRowHeights">
             <bool>true</bool>
            </property>
            <attribute name="headerDefaultSectionSize">
-            <number>140</number>
+            <number>100</number>
            </attribute>
            <attribute name="headerMinimumSectionSize">
             <number>100</number>

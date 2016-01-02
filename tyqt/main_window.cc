@@ -137,14 +137,18 @@ void MainWindow::refreshBoardsInfo()
         firmwareText->setText(current_board_->firmwareName());
 
         interfaceTree->clear();
-        for (auto iface: current_board_->interfaces()) {
-            auto item = new QTreeWidgetItem(QStringList{iface.name, iface.path});
-            item->setToolTip(1, iface.path);
+        for (auto &iface: current_board_->interfaces()) {
+            auto title = tr("%1 %2").arg(iface.name, iface.open ? tr("(open)") : "");
 
-            new QTreeWidgetItem(item, QStringList{tr("capabilities"),
-                                Board::makeCapabilityList(current_board_->capabilities()).join(", ")});
-            new QTreeWidgetItem(item, QStringList{tr("location"),
-                                QString("%1:%2").arg(current_board_->location(), QString::number(iface.number))});
+            auto item = new QTreeWidgetItem();
+            item->setText(0, title);
+            item->setText(1, iface.path);
+
+            auto tooltip = tr("%1\n+ Location: %2\n+ Interface Number: %3\n+ Capabilities: %4")
+                           .arg(title).arg(iface.path).arg(iface.number)
+                           .arg(Board::makeCapabilityList(iface.capabilities).join(", "));
+            item->setToolTip(0, tooltip);
+            item->setToolTip(1, tooltip);
 
             interfaceTree->addTopLevelItem(item);
         }
