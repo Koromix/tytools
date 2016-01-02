@@ -101,8 +101,6 @@ public:
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
-    void refreshBoard();
-
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after = true);
     TaskInterface reset();
     TaskInterface reboot();
@@ -131,6 +129,8 @@ private slots:
 
 private:
     Board(tyb_board *board, QObject *parent = nullptr);
+
+    void refreshBoard();
 
     TaskInterface wrapBoardTask(ty_task *task,
                                 std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
@@ -184,12 +184,13 @@ private slots:
     void refreshManager(ty_descriptor desc);
 
 private:
+    iterator findBoardIterator(tyb_board *board);
+
     int handleEvent(tyb_board *board, tyb_monitor_event event);
     void handleAddedEvent(tyb_board *board);
     void handleChangedEvent(tyb_board *board);
-    void handleDroppedEvent(tyb_board *board);
 
-    void refreshBoardItem(Board *board);
+    void refreshBoardItem(tyb_board *board);
 };
 
 #endif

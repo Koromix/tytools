@@ -244,25 +244,6 @@ QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
     }
 }
 
-void Board::refreshBoard()
-{
-    if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL)) {
-        if (!serial_available_) {
-            if (clear_on_reset_)
-                serial_document_.clear();
-
-            ty_descriptor_set set = {};
-            tyb_board_get_descriptors(board_, TYB_BOARD_CAPABILITY_SERIAL, &set, 1);
-
-            serial_notifier_.setDescriptorSet(&set);
-            serial_available_ = true;
-        }
-    } else if (serial_available_) {
-        serial_notifier_.clear();
-        serial_available_ = false;
-    }
-}
-
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
 {
     vector<tyb_firmware *> fws2;
@@ -400,6 +381,31 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
     Q_UNUSED(max);
 
     emit taskChanged();
+}
+
+void Board::refreshBoard()
+{
+    if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL)) {
+        if (!serial_available_) {
+            if (clear_on_reset_)
+                serial_document_.clear();
+
+            ty_descriptor_set set = {};
+            tyb_board_get_descriptors(board_, TYB_BOARD_CAPABILITY_SERIAL, &set, 1);
+
+            serial_notifier_.setDescriptorSet(&set);
+            serial_available_ = true;
+        }
+    } else if (serial_available_) {
+        serial_notifier_.clear();
+        serial_available_ = false;
+    }
+
+    if (state() == TYB_BOARD_STATE_DROPPED) {
+        emit boardDropped();
+    } else {
+        emit boardChanged();
+    }
 }
 
 TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, shared_ptr<void> result)> finish)
@@ -569,72 +575,65 @@ int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
 
     case TYB_MONITOR_EVENT_CHANGED:
     case TYB_MONITOR_EVENT_DISAPPEARED:
-        handleChangedEvent(board);
-        break;
-
     case TYB_MONITOR_EVENT_DROPPED:
-        handleDroppedEvent(board);
+        handleChangedEvent(board);
         break;
     }
 
     return 0;
 }
 
+Manager::iterator Manager::findBoardIterator(tyb_board *board)
+{
+    return find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
+}
+
 void Manager::handleAddedEvent(tyb_board *board)
 {
-    auto proxy_ptr = Board::createBoard(board);
-    Board *proxy = proxy_ptr.get();
+    auto ptr = Board::createBoard(board);
 
-    proxy->serial_notifier_.moveToThread(&serial_thread_);
+    ptr->serial_notifier_.moveToThread(&serial_thread_);
 
-    connect(proxy, &Board::taskChanged, this, [=]() {
-        refreshBoardItem(proxy);
+    connect(ptr.get(), &Board::boardChanged, this, [=]() {
+        refreshBoardItem(board);
+    });
+    connect(ptr.get(), &Board::boardDropped, this, [=]() {
+        refreshBoardItem(board);
+    });
+    connect(ptr.get(), &Board::taskChanged, this, [=]() {
+        refreshBoardItem(board);
     });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
-    boards_.push_back(proxy_ptr);
+    boards_.push_back(ptr);
     endInsertRows();
 
-    emit boardAdded(proxy);
+    emit boardAdded(ptr.get());
 }
 
 void Manager::handleChangedEvent(tyb_board *board)
 {
-    auto it = find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
+    auto it = findBoardIterator(board);
     if (it == boards_.end())
         return;
+    auto ptr = *it;
 
-    auto proxy = *it;
-    proxy->refreshBoard();
-
-    QModelIndex index = createIndex(it - boards_.begin(), 0);
-    emit dataChanged(index, index);
-
-    emit proxy->boardChanged();
+    ptr->refreshBoard();
 }
 
-void Manager::handleDroppedEvent(tyb_board *board)
+void Manager::refreshBoardItem(tyb_board *board)
 {
-    auto it = find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
+    auto it = findBoardIterator(board);
     if (it == boards_.end())
         return;
+    auto ptr = *it;
 
-    auto proxy = *it;
-    proxy->refreshBoard();
-
-    beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
-    boards_.erase(it);
-    endRemoveRows();
-
-    emit proxy->boardDropped();
-}
-
-void Manager::refreshBoardItem(Board *board)
-{
-    auto it = find_if(boards_.begin(), boards_.end(), [&](std::shared_ptr<Board> &ptr) { return ptr.get() == board; });
-    if (it == boards_.end())
-        return;
-
-    QModelIndex index = createIndex(it - boards_.begin(), 0);
-    dataChanged(index, index);
+    if (tyb_board_get_state(ptr->board_) == TYB_BOARD_STATE_DROPPED) {
+        beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
+        boards_.erase(it);
+        endRemoveRows();
+    } else {
+        auto index = createIndex(it - boards_.begin(), 0);
+        dataChanged(index, index);
+    }
 }
