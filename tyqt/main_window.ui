@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>619</width>
-    <height>461</height>
+    <width>610</width>
+    <height>398</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,57 +69,71 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Model:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="modelText">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Serial Number / Location:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <item>
-            <widget class="QLineEdit" name="serialText">
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="modelText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item>
-            <widget class="QLineEdit" name="locationText">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Model:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="firmwareText">
              <property name="readOnly">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Firmware:</string>
              </property>
             </widget>
            </item>
           </layout>
          </item>
          <item>
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Firmware:</string>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout_2"/>
          </item>
          <item>
-          <widget class="QLineEdit" name="firmwareText">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Serial Number:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="serialText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="locationText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Location:</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <widget class="QLabel" name="label_6">
@@ -357,7 +371,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>619</width>
+     <width>610</width>
      <height>23</height>
     </rect>
    </property>
@@ -600,9 +614,9 @@
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>modelText</tabstop>
+  <tabstop>firmwareText</tabstop>
   <tabstop>serialText</tabstop>
   <tabstop>locationText</tabstop>
-  <tabstop>firmwareText</tabstop>
   <tabstop>interfaceTree</tabstop>
   <tabstop>monitorText</tabstop>
   <tabstop>monitorEdit</tabstop>
