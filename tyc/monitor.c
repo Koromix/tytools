@@ -233,7 +233,7 @@ restart:
     fill_descriptor_set(&set, board);
     timeout = -1;
 
-    printf("Connection ready\n");
+    printf("Monitoring '%s'\n", tyb_board_get_tag(board));
 
     while (true) {
         if (!set.count)
