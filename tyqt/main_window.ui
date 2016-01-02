@@ -466,7 +466,6 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionUpload"/>
-   <addaction name="separator"/>
    <addaction name="actionReset"/>
    <addaction name="actionReboot"/>
   </widget>
