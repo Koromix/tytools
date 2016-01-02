@@ -396,6 +396,7 @@
     <addaction name="actionMinimalInterface"/>
     <addaction name="separator"/>
     <addaction name="actionClearMonitor"/>
+    <addaction name="actionAttachMonitor"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -468,6 +469,8 @@
    <addaction name="actionUpload"/>
    <addaction name="actionReset"/>
    <addaction name="actionReboot"/>
+   <addaction name="separator"/>
+   <addaction name="actionAttachMonitor"/>
   </widget>
   <action name="actionUpload">
    <property name="icon">
@@ -572,6 +575,24 @@
   <action name="actionIntegrateToArduino">
    <property name="text">
     <string>&amp;Integrate to Arduino</string>
+   </property>
+  </action>
+  <action name="actionAttachMonitor">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="tyqt.qrc">
+     <normaloff>:/monitor</normaloff>:/monitor</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Monitor</string>
+   </property>
+   <property name="toolTip">
+    <string>Monitor</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
    </property>
   </action>
  </widget>

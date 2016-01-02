@@ -295,6 +295,28 @@ TaskInterface Board::reboot()
     return wrapBoardTask(task);
 }
 
+bool Board::attachMonitor()
+{
+    if (isSerialAvailable()) {
+        serial_attach_ = openSerialInterface();
+        if (!serial_attach_)
+            return false;
+    } else {
+        serial_attach_ = true;
+    }
+
+    emit boardChanged();
+    return true;
+}
+
+void Board::detachMonitor()
+{
+    closeSerialInterface();
+    serial_attach_ = false;
+
+    emit boardChanged();
+}
+
 bool Board::sendSerial(const QByteArray &buf)
 {
     return tyb_board_serial_write(board_, buf.data(), buf.size()) > 0;
@@ -386,7 +408,7 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
 
 void Board::refreshBoard()
 {
-    if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL)) {
+    if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
         openSerialInterface();
     } else {
         closeSerialInterface();

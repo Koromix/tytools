@@ -41,6 +41,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     tyb_board *board_;
 
+    bool serial_attach_ = true;
     tyb_board_interface *serial_iface_ = nullptr;
     DescriptorNotifier serial_notifier_;
     QMutex serial_lock_;
@@ -105,7 +106,10 @@ public:
     TaskInterface reset();
     TaskInterface reboot();
 
+    bool attachMonitor();
+    void detachMonitor();
     bool isMonitorAttached() const { return serial_iface_; }
+    bool autoAttachMonitor() const { return serial_attach_; }
 
     bool sendSerial(const QByteArray &buf);
 

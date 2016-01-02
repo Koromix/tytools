@@ -61,6 +61,7 @@ private slots:
 
     void on_monitorEdit_returnPressed();
     void on_clearOnReset_toggled(bool checked);
+    void on_actionAttachMonitor_triggered(bool checked);
     void on_actionClearMonitor_triggered();
 
     void on_actionMinimalInterface_toggled(bool checked);

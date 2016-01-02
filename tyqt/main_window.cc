@@ -153,6 +153,8 @@ void MainWindow::refreshBoardsInfo()
         monitorEdit->setEnabled(current_board_->isMonitorAttached());
         actionClearMonitor->setEnabled(true);
         uploadTab->setEnabled(true);
+        actionAttachMonitor->setEnabled(true);
+        actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
     } else {
         setWindowTitle("TyQt");
 
@@ -165,6 +167,7 @@ void MainWindow::refreshBoardsInfo()
         monitorTab->setEnabled(false);
         actionClearMonitor->setEnabled(false);
         uploadTab->setEnabled(false);
+        actionAttachMonitor->setEnabled(false);
     }
 
     bool upload = false, reset = false, reboot = false;
@@ -362,6 +365,21 @@ void MainWindow::on_clearOnReset_toggled(bool checked)
         return;
 
     current_board_->setClearOnReset(checked);
+}
+
+void MainWindow::on_actionAttachMonitor_triggered(bool checked)
+{
+    if (!current_board_)
+        return;
+
+    if (checked) {
+        current_board_->attachMonitor();
+    } else {
+        current_board_->detachMonitor();
+    }
+    /* Show the correct state if something failed, setChecked() does not trigger
+       this signal. */
+    actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
 }
 
 void MainWindow::on_actionClearMonitor_triggered()
