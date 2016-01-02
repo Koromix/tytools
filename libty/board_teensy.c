@@ -246,7 +246,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
             iface->model = identify_model(&desc);
             iface->serial = parse_bootloader_serial(tyd_device_get_serial_number(iface->dev));
 
-            iface->name = "HalfKay Bootloader";
+            iface->name = "HalfKay";
             if (iface->model) {
                 iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_UPLOAD;
                 iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RESET;
