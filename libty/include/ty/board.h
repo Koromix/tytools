@@ -113,11 +113,10 @@ TY_PUBLIC tyb_board_state tyb_board_get_state(const tyb_board *board);
 
 TY_PUBLIC const char *tyb_board_get_tag(const tyb_board *board);
 TY_PUBLIC const char *tyb_board_get_location(const tyb_board *board);
+TY_PUBLIC uint64_t tyb_board_get_serial_number(const tyb_board *board);
 
 TY_PUBLIC const tyb_board_model *tyb_board_get_model(const tyb_board *board);
 TY_PUBLIC const char *tyb_board_get_model_name(const tyb_board *board);
-
-TY_PUBLIC uint64_t tyb_board_get_serial_number(const tyb_board *board);
 
 TY_PUBLIC int tyb_board_list_interfaces(tyb_board *board, tyb_board_list_interfaces_func *f, void *udata);
 TY_PUBLIC tyb_board_interface *tyb_board_get_interface(const tyb_board *board, tyb_board_capability cap);
@@ -135,7 +134,6 @@ TY_PUBLIC void tyb_board_get_descriptors(const tyb_board *board, tyb_board_capab
 TY_PUBLIC int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int timeout);
 
 TY_PUBLIC int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, int flags);
-
 TY_PUBLIC ssize_t tyb_board_serial_read(tyb_board *board, char *buf, size_t size, int timeout);
 TY_PUBLIC ssize_t tyb_board_serial_write(tyb_board *board, const char *buf, size_t size);
 

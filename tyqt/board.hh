@@ -83,7 +83,6 @@ public:
     bool isResetAvailable() const;
     bool isRebootAvailable() const;
     bool isSerialAvailable() const;
-
     bool errorOccured() const;
 
     QString statusIconFileName() const;

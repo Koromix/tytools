@@ -834,6 +834,12 @@ const char *tyb_board_get_location(const tyb_board *board)
     return board->location;
 }
 
+uint64_t tyb_board_get_serial_number(const tyb_board *board)
+{
+    assert(board);
+    return board->serial;
+}
+
 const tyb_board_model *tyb_board_get_model(const tyb_board *board)
 {
     assert(board);
@@ -873,12 +879,6 @@ int tyb_board_get_capabilities(const tyb_board *board)
 {
     assert(board);
     return board->capabilities;
-}
-
-uint64_t tyb_board_get_serial_number(const tyb_board *board)
-{
-    assert(board);
-    return board->serial;
 }
 
 tyd_device *tyb_board_get_device(const tyb_board *board, tyb_board_capability cap)

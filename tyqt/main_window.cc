@@ -364,16 +364,16 @@ void MainWindow::on_clearOnReset_toggled(bool checked)
     current_board_->setClearOnReset(checked);
 }
 
+void MainWindow::on_actionClearMonitor_triggered()
+{
+    clearMonitor();
+}
+
 void MainWindow::on_actionMinimalInterface_toggled(bool checked)
 {
     toolBar->setVisible(!checked);
     boardList->setVisible(!checked);
     statusbar->setVisible(!checked);
-}
-
-void MainWindow::on_actionClearMonitor_triggered()
-{
-    clearMonitor();
 }
 
 void MainWindow::on_firmwareBrowseButton_clicked()
