@@ -197,7 +197,7 @@ int parse_main_option(int argc, char *argv[], int c)
 
     case 'q':
         ty_config_quiet++;
-        break;
+        return 0;
     case MAIN_OPTION_EXPERIMENTAL:
         ty_config_experimental = true;
         return 0;
