@@ -165,7 +165,7 @@ QString Board::statusIconFileName() const
     if (running_task_.status() == TY_TASK_STATUS_RUNNING)
         return ":/board_working";
     if (isRunning())
-        return ":/board_running";
+        return isMonitorAttached() ? ":/board_attached" : ":/board_detached";
     if (isUploadAvailable())
         return ":/board_bootloader";
 

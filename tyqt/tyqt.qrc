@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="board_running">images/board_running.png</file>
+        <file alias="board_attached">images/board_attached.png</file>
+        <file alias="board_detached">images/board_detached.png</file>
         <file alias="board_bootloader">images/board_bootloader.png</file>
         <file alias="board_missing">images/board_missing.png</file>
         <file alias="board_working">images/board_working.png</file>
