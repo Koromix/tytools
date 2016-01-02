@@ -528,12 +528,12 @@ QVariant Manager::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole:
             return QIcon(board->statusIconFileName());
         case Qt::ToolTipRole:
-            return QString(tr("%1\n\nCapabilities: %2\nLocation: %3\nSerial Number: %4\n\nFirmware: %5")
-                           .arg(board->modelName())
-                           .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")))
-                           .arg(board->location())
-                           .arg(QString::number(board->serialNumber()))
-                           .arg(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)")));
+            return tr("%1\n+ Location: %2\n+ Serial Number: %3\n+ Firmware: %4\n+ Capabilities: %5")
+                   .arg(board->modelName())
+                   .arg(board->location())
+                   .arg(QString::number(board->serialNumber()))
+                   .arg(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"))
+                   .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
         case Qt::SizeHintRole:
             return QSize(0, 24);
         }
