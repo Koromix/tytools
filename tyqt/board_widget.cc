@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
+#include <QFontMetrics>
 #include <QPainter>
 
 #include "board.hh"
@@ -16,6 +17,12 @@ BoardWidget::BoardWidget(QWidget *parent)
     : QWidget(parent)
 {
     setupUi(this);
+}
+
+void BoardWidget::setStatus(const QString &status)
+{
+    QFontMetrics metrics(statusLabel->font());
+    statusLabel->setText(metrics.elidedText(status, Qt::ElideRight, statusLabel->width()));
 }
 
 void BoardWidget::setProgress(unsigned int progress, unsigned int total)

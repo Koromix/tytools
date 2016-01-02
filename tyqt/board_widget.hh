@@ -22,7 +22,7 @@ public:
     void setIcon(const QPixmap &pixmap) { boardIcon->setPixmap(pixmap); }
     void setModel(const QString &model) { modelLabel->setText(model); }
     void setTag(const QString &tag) { tagLabel->setText(tag); }
-    void setStatus(const QString &status) { statusLabel->setText(status); }
+    void setStatus(const QString &status);
 
     void setProgress(unsigned int progress, unsigned int total);
 };
