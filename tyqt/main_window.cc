@@ -27,6 +27,12 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     setupUi(this);
     refreshBoardsInfo();
 
+    /* Only stretch the tab widget when resizing the window, I can't manage to replicate this
+       with the Designer alone. */
+    splitter->setStretchFactor(0, 0);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes({1, 1});
+
     auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
     if (uploadButton) {
         auto uploadMenu = new QMenu(this);
