@@ -261,6 +261,10 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    r = ty_init();
+    if (r < 0)
+        return EXIT_FAILURE;
+
     // We'll print our own, for consistency
     opterr = 0;
 
@@ -268,6 +272,7 @@ int main(int argc, char *argv[])
 
     tyb_board_unref(main_board);
     tyb_monitor_free(board_manager);
+    ty_release();
 
     return r;
 }

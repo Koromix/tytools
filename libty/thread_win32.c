@@ -35,6 +35,8 @@ TY_INIT()
         WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(h, "WakeConditionVariable");
         WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(h, "WakeAllConditionVariable");
     }
+
+    return 0;
 }
 
 struct thread_context {

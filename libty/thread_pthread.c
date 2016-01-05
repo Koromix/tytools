@@ -14,7 +14,7 @@
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t thread_cond = PTHREAD_COND_INITIALIZER;
 
-TY_EXIT()
+TY_RELEASE()
 {
     pthread_cond_destroy(&thread_cond);
     pthread_mutex_destroy(&thread_mutex);

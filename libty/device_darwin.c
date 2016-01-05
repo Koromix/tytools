@@ -80,6 +80,8 @@ TY_INIT()
 
     if (major >= 15)
         new_usb_stack = true;
+
+    return 0;
 }
 
 static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, char **rs)

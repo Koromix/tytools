@@ -37,6 +37,8 @@ TY_INIT()
     _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
     _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
     _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
+
+    return 0;
 }
 
 char *ty_win32_strerror(DWORD err)

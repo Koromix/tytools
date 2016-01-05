@@ -274,6 +274,11 @@ int TyQt::run()
         argc_--;
     }
 
+    int r = ty_init();
+    if (r < 0)
+        return 1;
+    struct Releaser { ~Releaser() { ty_release(); } } releaser;
+
     opterr = 0;
     int c;
     while ((c = getopt_long(argc_, argv_, short_options_, long_options_, NULL)) != -1) {

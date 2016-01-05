@@ -34,6 +34,8 @@ TY_INIT()
     assert(h);
 
     ProcessIdToSessionId_ = reinterpret_cast<ProcessIdToSessionId_func *>(GetProcAddress(h, "ProcessIdToSessionId"));
+
+    return 0;
 }
 
 #endif

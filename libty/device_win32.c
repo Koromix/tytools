@@ -100,6 +100,8 @@ TY_INIT()
     assert(h);
 
     CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(h, "CancelIoEx");
+
+    return 0;
 }
 
 static void free_controller(struct usb_controller *controller)

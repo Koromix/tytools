@@ -34,12 +34,29 @@
     #define TY_NORETURN __attribute__((__noreturn__))
     #define TY_POSSIBLY_UNUSED __attribute__((__unused__))
 
-    #define TY_INIT() \
-        __attribute__((constructor)) \
-        static void TY_UNIQUE_ID(init_)(void)
-    #define TY_EXIT() \
-        __attribute__((destructor)) \
-        static void TY_UNIQUE_ID(exit_)(void)
+    #ifdef __APPLE__
+        #define TY_INIT() \
+            static int TY_UNIQUE_ID(init_)(void); \
+            static int (*TY_UNIQUE_ID(init_ptr_))(void) __attribute((__section__("__DATA,TY_INIT"),__used__)) \
+                = &TY_UNIQUE_ID(init_); \
+            static int TY_UNIQUE_ID(init_)(void)
+        #define TY_RELEASE() \
+            static void TY_UNIQUE_ID(release_)(void); \
+            static void (*TY_UNIQUE_ID(release_ptr_))(void) __attribute((__section__("__DATA,TY_RELEASE"),__used__)) \
+                = &TY_UNIQUE_ID(release_); \
+            static void TY_UNIQUE_ID(release_)(void)
+    #else
+        #define TY_INIT() \
+            static int TY_UNIQUE_ID(init_)(void); \
+            static int (*TY_UNIQUE_ID(init_ptr_))(void) __attribute((__section__("TY_INIT"),__used__)) \
+                = &TY_UNIQUE_ID(init_); \
+            static int TY_UNIQUE_ID(init_)(void)
+        #define TY_RELEASE() \
+            static void TY_UNIQUE_ID(release_)(void); \
+            static void (*TY_UNIQUE_ID(release_ptr_))(void) __attribute((__section__("TY_RELEASE"),__used__)) \
+                = &TY_UNIQUE_ID(release_); \
+            static void TY_UNIQUE_ID(release_)(void)
+    #endif
 
     #define TY_WARNING_DISABLE_SIGN_CONVERSION \
         _Pragma("GCC diagnostic push"); \
@@ -124,6 +141,9 @@ typedef void ty_message_func(struct ty_task *task, ty_message_type type, const v
 
 TY_PUBLIC extern ty_log_level ty_config_quiet;
 TY_PUBLIC extern bool ty_config_experimental;
+
+TY_PUBLIC int ty_init(void);
+TY_PUBLIC void ty_release(void);
 
 TY_PUBLIC void ty_message_default_handler(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
