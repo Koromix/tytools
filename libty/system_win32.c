@@ -27,10 +27,7 @@ static bool saved_console_mode;
 
 TY_INIT()
 {
-    HANDLE h = GetModuleHandle("kernel32.dll");
-    assert(h);
-
-    GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(h, "GetTickCount64");
+    GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(GetModuleHandle("kernel32.dll"), "GetTickCount64");
     if (!GetTickCount64_)
         GetTickCount64_ = GetTickCount64_fallback;
 

@@ -30,11 +30,7 @@ using namespace std;
 
 TY_INIT()
 {
-    HMODULE h = GetModuleHandle("kernel32.dll");
-    assert(h);
-
-    ProcessIdToSessionId_ = reinterpret_cast<ProcessIdToSessionId_func *>(GetProcAddress(h, "ProcessIdToSessionId"));
-
+    ProcessIdToSessionId_ = reinterpret_cast<ProcessIdToSessionId_func *>(GetProcAddress(GetModuleHandle("kernel32.dll"), "ProcessIdToSessionId"));
     return 0;
 }
 

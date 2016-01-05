@@ -23,17 +23,14 @@ static WakeAllConditionVariable_func *WakeAllConditionVariable_;
 
 TY_INIT()
 {
-    HANDLE h;
-
-    h = GetModuleHandle("kernel32.dll");
-    assert(h);
+    HANDLE kernel32 = GetModuleHandle("kernel32.dll");
 
     // Condition Variables appeared on Vista, emulate them on Windows XP
-    InitializeConditionVariable_ = (InitializeConditionVariable_func *)GetProcAddress(h, "InitializeConditionVariable");
+    InitializeConditionVariable_ = (InitializeConditionVariable_func *)GetProcAddress(kernel32, "InitializeConditionVariable");
     if (InitializeConditionVariable_) {
-        SleepConditionVariableCS_ = (SleepConditionVariableCS_func *)GetProcAddress(h, "SleepConditionVariableCS");
-        WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(h, "WakeConditionVariable");
-        WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(h, "WakeAllConditionVariable");
+        SleepConditionVariableCS_ = (SleepConditionVariableCS_func *)GetProcAddress(kernel32, "SleepConditionVariableCS");
+        WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(kernel32, "WakeConditionVariable");
+        WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(kernel32, "WakeAllConditionVariable");
     }
 
     return 0;

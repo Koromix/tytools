@@ -96,11 +96,7 @@ static const struct _tyd_device_vtable win32_device_vtable;
 
 TY_INIT()
 {
-    HMODULE h = LoadLibrary("kernel32.dll");
-    assert(h);
-
-    CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(h, "CancelIoEx");
-
+    CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(GetModuleHandle("kernel32.dll"), "CancelIoEx");
     return 0;
 }
 
