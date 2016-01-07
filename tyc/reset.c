@@ -9,20 +9,20 @@
 #include "ty/task.h"
 #include "main.h"
 
-static const char *short_options = MAIN_SHORT_OPTIONS "b";
+static const char *short_options = COMMON_SHORT_OPTIONS"b";
 static const struct option long_options[] = {
-    MAIN_LONG_OPTIONS
+    COMMON_LONG_OPTIONS
     {"bootloader", no_argument, NULL, 'b'},
     {0}
 };
 
 static bool bootloader = false;
 
-void print_reset_usage(FILE *f)
+static void print_reset_usage(FILE *f)
 {
     fprintf(f, "usage: tyc reset\n\n");
 
-    print_main_options(f);
+    print_common_options(f);
     fprintf(f, "\n");
 
     fprintf(f, "Reset options:\n"
@@ -38,21 +38,18 @@ int reset(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
+        HANDLE_COMMON_OPTIONS(c, print_reset_usage);
+
         case 'b':
             bootloader = true;
-            break;
-
-        default:
-            r = parse_main_option(argc, argv, c);
-            if (r)
-                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
             break;
         }
     }
 
     if (argc > optind) {
         ty_log(TY_LOG_ERROR, "No positional argument is allowed");
-        goto usage;
+        print_reset_usage(stderr);
+        return EXIT_FAILURE;
     }
 
     r = get_board(&board);
@@ -73,8 +70,4 @@ cleanup:
     ty_task_unref(task);
     tyb_board_unref(board);
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
-
-usage:
-    print_reset_usage(stderr);
-    return EXIT_FAILURE;
 }

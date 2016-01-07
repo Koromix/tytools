@@ -20,9 +20,9 @@ enum {
     UPLOAD_OPTION_NORESET
 };
 
-static const char *short_options = MAIN_SHORT_OPTIONS "f:w";
+static const char *short_options = COMMON_SHORT_OPTIONS"f:w";
 static const struct option long_options[] = {
-    MAIN_LONG_OPTIONS
+    COMMON_LONG_OPTIONS
     {"format",     required_argument, NULL, 'f'},
     {"nocheck",    no_argument,       NULL, UPLOAD_OPTION_NOCHECK},
     {"noreset",    no_argument,       NULL, UPLOAD_OPTION_NORESET},
@@ -33,11 +33,11 @@ static const struct option long_options[] = {
 static int upload_flags = 0;
 static const char *firmware_format = NULL;
 
-void print_upload_usage(FILE *f)
+static void print_upload_usage(FILE *f)
 {
     fprintf(f, "usage: tyc upload [options] <firmwares>\n\n");
 
-    print_main_options(f);
+    print_common_options(f);
     fprintf(f, "\n");
 
     fprintf(f, "Upload options:\n"
@@ -64,6 +64,8 @@ int upload(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
+        HANDLE_COMMON_OPTIONS(c, print_upload_usage);
+
         case UPLOAD_OPTION_NOCHECK:
             upload_flags |= TYB_UPLOAD_NOCHECK;
             break;
@@ -77,18 +79,13 @@ int upload(int argc, char *argv[])
         case 'f':
             firmware_format = optarg;
             break;
-
-        default:
-            r = parse_main_option(argc, argv, c);
-            if (r)
-                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
-            break;
         }
     }
 
     if (optind >= argc) {
         ty_log(TY_LOG_ERROR, "Missing firmware filename");
-        goto usage;
+        print_upload_usage(stderr);
+        return EXIT_FAILURE;
     } else if (argc - optind > TYB_UPLOAD_MAX_FIRMWARES) {
         ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %d files",
                TYB_UPLOAD_MAX_FIRMWARES);
@@ -120,8 +117,4 @@ cleanup:
     ty_task_unref(task);
     tyb_board_unref(board);
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
-
-usage:
-    print_upload_usage(stderr);
-    return EXIT_FAILURE;
 }

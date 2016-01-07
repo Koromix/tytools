@@ -15,17 +15,9 @@
 
 struct command {
     const char *name;
-
     int (*f)(int argc, char *argv[]);
-    void (*usage)(FILE *f);
-
     const char *description;
 };
-
-void print_list_usage(FILE *f);
-void print_monitor_usage(FILE *f);
-void print_reset_usage(FILE *f);
-void print_upload_usage(FILE *f);
 
 int list(int argc, char *argv[]);
 int monitor(int argc, char *argv[]);
@@ -33,14 +25,13 @@ int reset(int argc, char *argv[]);
 int upload(int argc, char *argv[]);
 
 static const struct command commands[] = {
-    {"list",    list,    print_list_usage,    "List available boards"},
-    {"monitor", monitor, print_monitor_usage, "Open serial (or emulated) connection with board"},
-    {"reset",   reset,   print_reset_usage,   "Reset board"},
-    {"upload",  upload,  print_upload_usage,  "Upload new firmware"},
+    {"list",    list,    "List available boards"},
+    {"monitor", monitor, "Open serial (or emulated) connection with board"},
+    {"reset",   reset,   "Reset board"},
+    {"upload",  upload,  "Upload new firmware"},
     {0}
 };
 
-static const struct command *current_command;
 static const char *board_tag = NULL;
 
 static tyb_monitor *board_manager;
@@ -63,7 +54,7 @@ static void print_main_usage(FILE *f)
 {
     fprintf(f, "usage: tyc <command> [options]\n\n");
 
-    print_main_options(f);
+    print_common_options(f);
     fprintf(f, "\n");
 
     fprintf(f, "Commands:\n");
@@ -79,16 +70,7 @@ static void print_main_usage(FILE *f)
     }
 }
 
-static void print_usage(FILE *f, const struct command *cmd)
-{
-    if (cmd) {
-        cmd->usage(f);
-    } else {
-        print_main_usage(f);
-    }
-}
-
-void print_main_options(FILE *f)
+void print_common_options(FILE *f)
 {
     fprintf(f, "General options:\n"
                "       --help               Show help message\n"
@@ -179,55 +161,35 @@ int get_board(tyb_board **rboard)
     return 0;
 }
 
-int parse_main_option(int argc, char *argv[], int c)
+bool parse_common_option(int argc, char *argv[], int c)
 {
     TY_UNUSED(argc);
 
     switch (c) {
-    case MAIN_OPTION_HELP:
-        print_usage(stdout, current_command);
-        return 1;
-    case MAIN_OPTION_VERSION:
-        print_version(stdout);
-        return 1;
-
-    case MAIN_OPTION_BOARD:
+    case COMMON_OPTION_BOARD:
         board_tag = optarg;
-        return 0;
-
+        break;
     case 'q':
         ty_config_quiet++;
-        return 0;
-    case MAIN_OPTION_EXPERIMENTAL:
+        break;
+    case COMMON_OPTION_EXPERIMENTAL:
         ty_config_experimental = true;
-        return 0;
+        break;
 
     case ':':
         ty_log(TY_LOG_ERROR, "Option '%s' takes an argument", argv[optind - 1]);
-        print_usage(stderr, current_command);
-        return TY_ERROR_PARAM;
+        return false;
     case '?':
         ty_log(TY_LOG_ERROR, "Unknown option '%s'", argv[optind - 1]);
-        print_usage(stderr, current_command);
-        return TY_ERROR_PARAM;
+        return false;
     }
 
-    assert(false);
-    return 0;
-}
-
-static const struct command *find_command(const char *name)
-{
-    for (const struct command *cmd = commands; cmd->name; cmd++) {
-        if (strcmp(cmd->name, name) == 0)
-            return cmd;
-    }
-
-    return NULL;
+    return true;
 }
 
 int main(int argc, char *argv[])
 {
+    const struct command *cmd;
     int r;
 
     if (argc < 2) {
@@ -237,25 +199,22 @@ int main(int argc, char *argv[])
 
     if (strcmp(argv[1], "help") == 0 || strcmp(argv[1], "--help") == 0) {
         if (argc > 2 && *argv[2] != '-') {
-            const struct command *cmd = find_command(argv[2]);
-            if (cmd) {
-                print_usage(stdout, cmd);
-            } else {
-                ty_log(TY_LOG_ERROR, "Unknown command '%s'", argv[2]);
-                print_usage(stderr, NULL);
-            }
+            argv[1] = argv[2];
+            argv[2] = "--help";
         } else {
-            print_usage(stdout, NULL);
+            print_main_usage(stdout);
+            return EXIT_SUCCESS;
         }
-
-        return EXIT_SUCCESS;
     } else if (strcmp(argv[1], "--version") == 0) {
         print_version(stdout);
         return EXIT_SUCCESS;
     }
 
-    current_command = find_command(argv[1]);
-    if (!current_command) {
+    for (cmd = commands; cmd->name; cmd++) {
+        if (strcmp(cmd->name, argv[1]) == 0)
+            break;
+    }
+    if (!cmd->name) {
         ty_log(TY_LOG_ERROR, "Unknown command '%s'", argv[1]);
         print_main_usage(stderr);
         return EXIT_FAILURE;
@@ -268,7 +227,7 @@ int main(int argc, char *argv[])
     // We'll print our own, for consistency
     opterr = 0;
 
-    r = (*current_command->f)(argc - 1, argv + 1);
+    r = (*cmd->f)(argc - 1, argv + 1);
 
     tyb_board_unref(main_board);
     tyb_monitor_free(board_manager);

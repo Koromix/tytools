@@ -19,9 +19,9 @@ enum {
     MONITOR_OPTION_TIMEOUT_EOF
 };
 
-static const char *short_options = MAIN_SHORT_OPTIONS "b:d:D:f:p:rRs";
+static const char *short_options = COMMON_SHORT_OPTIONS"b:d:D:f:p:rRs";
 static const struct option long_options[] = {
-    MAIN_LONG_OPTIONS
+    COMMON_LONG_OPTIONS
     {"baud",        required_argument, NULL, 'b'},
     {"databits",    required_argument, NULL, 'd'},
     {"direction",   required_argument, NULL, 'D'},
@@ -63,11 +63,11 @@ static char input_line[BUFFER_SIZE];
 static ssize_t input_ret;
 #endif
 
-void print_monitor_usage(FILE *f)
+static void print_monitor_usage(FILE *f)
 {
     fprintf(f, "usage: tyc monitor [options]\n\n");
 
-    print_main_options(f);
+    print_common_options(f);
     fprintf(f, "\n");
 
     fprintf(f, "Monitor options:\n"
@@ -375,6 +375,8 @@ int monitor(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
+        HANDLE_COMMON_OPTIONS(c, print_monitor_usage);
+
         case 's':
             terminal_flags |= TY_TERMINAL_SILENT;
             break;
@@ -391,7 +393,8 @@ int monitor(int argc, char *argv[])
                 directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
             } else {
                 ty_log(TY_LOG_ERROR, "--direction must be one off input, output or both");
-                goto usage;
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -400,7 +403,8 @@ int monitor(int argc, char *argv[])
             device_rate = (uint32_t)strtoul(optarg, NULL, 10);
             if (errno) {
                 ty_log(TY_LOG_ERROR, "--baud requires a number");
-                goto usage;
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
             }
             break;
         case 'd':
@@ -413,7 +417,8 @@ int monitor(int argc, char *argv[])
                 device_flags |= TYD_SERIAL_7BITS_CSIZE;
             } else if (strcmp(optarg, "8") != 0) {
                 ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
-                goto usage;
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
             }
         case 'f':
             device_flags &= ~TYD_SERIAL_FLOW_MASK;
@@ -423,7 +428,8 @@ int monitor(int argc, char *argv[])
                 device_flags |= TYD_SERIAL_RTSCTS_FLOW;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") == 0) {
                 ty_log(TY_LOG_ERROR, "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
-                goto usage;
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
             }
             break;
         case MONITOR_OPTION_NORESET:
@@ -437,7 +443,8 @@ int monitor(int argc, char *argv[])
                 device_flags |= TYD_SERIAL_EVEN_PARITY;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") != 0) {
                 ty_log(TY_LOG_ERROR, "--parity must be one off o (odd), e (even) or n (none)");
-                goto usage;
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
             }
             break;
 
@@ -450,23 +457,19 @@ int monitor(int argc, char *argv[])
             timeout_eof = (int)strtol(optarg, NULL, 10);
             if (errno) {
                 ty_log(TY_LOG_ERROR, "--timeout requires a number");
-                goto usage;
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
             }
             if (timeout_eof < 0)
                 timeout_eof = -1;
-            break;
-
-        default:
-            r = parse_main_option(argc, argv, c);
-            if (r)
-                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
             break;
         }
     }
 
     if (argc > optind) {
         ty_log(TY_LOG_ERROR, "No positional argument is allowed");
-        goto usage;
+        print_monitor_usage(stderr);
+        return EXIT_FAILURE;
     }
 
     if (ty_descriptor_get_modes(TY_DESCRIPTOR_STDIN) & TY_DESCRIPTOR_MODE_TERMINAL) {
@@ -516,8 +519,4 @@ cleanup:
 #endif
     tyb_board_unref(board);
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
-
-usage:
-    print_monitor_usage(stderr);
-    return EXIT_FAILURE;
 }

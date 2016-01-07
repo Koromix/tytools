@@ -16,27 +16,35 @@ TY_C_BEGIN
 struct tyb_monitor;
 struct tyb_board;
 
-void print_main_options(FILE *f);
-
-int parse_main_option(int argc, char *argv[], int c);
+void print_common_options(FILE *f);
+bool parse_common_option(int argc, char *argv[], int c);
 
 int get_manager(tyb_monitor **rmanager);
 int get_board(tyb_board **rboard);
 
 enum {
-    MAIN_OPTION_HELP = 0x100,
-    MAIN_OPTION_VERSION,
-    MAIN_OPTION_BOARD,
-    MAIN_OPTION_EXPERIMENTAL
+    COMMON_OPTION_HELP = 0x100,
+    COMMON_OPTION_BOARD,
+    COMMON_OPTION_EXPERIMENTAL
 };
 
-#define MAIN_SHORT_OPTIONS ":q"
-#define MAIN_LONG_OPTIONS \
-    {"help",         no_argument,       NULL, MAIN_OPTION_HELP}, \
-    {"version",      no_argument,       NULL, MAIN_OPTION_VERSION}, \
-    {"board",        required_argument, NULL, MAIN_OPTION_BOARD}, \
+#define COMMON_SHORT_OPTIONS ":q"
+#define COMMON_LONG_OPTIONS \
+    {"help",         no_argument,       NULL, COMMON_OPTION_HELP}, \
+    {"board",        required_argument, NULL, COMMON_OPTION_BOARD}, \
     {"quiet",        no_argument,       NULL, 'q'}, \
-    {"experimental", no_argument,       NULL, MAIN_OPTION_EXPERIMENTAL},
+    {"experimental", no_argument,       NULL, COMMON_OPTION_EXPERIMENTAL},
+
+#define HANDLE_COMMON_OPTIONS(c, usage) \
+    case COMMON_OPTION_HELP: \
+        usage(stdout); \
+        return EXIT_SUCCESS; \
+    default: \
+        if (!parse_common_option(argc, argv, (c))) { \
+            usage(stderr); \
+            return EXIT_SUCCESS; \
+        } \
+        break;
 
 TY_C_END
 

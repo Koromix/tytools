@@ -9,9 +9,9 @@
 #include <stdarg.h>
 #include "main.h"
 
-static const char *short_options = MAIN_SHORT_OPTIONS "O:vw";
+static const char *short_options = COMMON_SHORT_OPTIONS"O:vw";
 static const struct option long_options[] = {
-    MAIN_LONG_OPTIONS
+    COMMON_LONG_OPTIONS
     {"output",  required_argument, NULL, 'O'},
     {"verbose", no_argument,       NULL, 'v'},
     {"watch",   no_argument,       NULL, 'w'},
@@ -36,11 +36,11 @@ static enum collection_type collections[8];
 static unsigned int collection_depth;
 static bool collection_started;
 
-void print_list_usage(FILE *f)
+static void print_list_usage(FILE *f)
 {
     fprintf(f, "usage: tyc list [options]\n\n");
 
-    print_main_options(f);
+    print_common_options(f);
     fprintf(f, "\n");
 
     fprintf(f, "List options:\n"
@@ -211,6 +211,8 @@ int list(int argc, char *argv[])
     int c;
     while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
         switch (c) {
+        HANDLE_COMMON_OPTIONS(c, print_list_usage);
+
         case 'O':
             if (strcmp(optarg, "plain") == 0) {
                 output = OUTPUT_PLAIN;
@@ -218,28 +220,23 @@ int list(int argc, char *argv[])
                 output = OUTPUT_JSON;
             } else {
                 ty_log(TY_LOG_ERROR, "--output must be one off plain or json");
-                goto usage;
+                print_list_usage(stderr);
+                return EXIT_FAILURE;
             }
             break;
         case 'v':
             verbose = true;
             break;
-
         case 'w':
             watch = true;
-            break;
-
-        default:
-            r = parse_main_option(argc, argv, c);
-            if (r)
-                return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
             break;
         }
     }
 
     if (argc > optind) {
         ty_log(TY_LOG_ERROR, "No positional argument is allowed");
-        goto usage;
+        print_list_usage(stderr);
+        return EXIT_FAILURE;
     }
 
     r = get_manager(&manager);
@@ -261,8 +258,4 @@ int list(int argc, char *argv[])
     }
 
     return EXIT_SUCCESS;
-
-usage:
-    print_list_usage(stderr);
-    return EXIT_FAILURE;
 }
