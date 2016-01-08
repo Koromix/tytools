@@ -46,6 +46,8 @@ static const ClientCommand commands[] = {
     {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
     {"integrate", &TyQt::integrateArduino,     NULL,                      NULL},
     {"restore",   &TyQt::integrateArduino,     NULL,                      NULL},
+    // Hidden command for Arduino 1.0.6 integration
+    {"avrdude",   &TyQt::fakeAvrdudeUpload,    NULL,                      NULL},
     {0}
 };
 
@@ -470,6 +472,54 @@ int TyQt::integrateArduino(int argc, char *argv[])
     } else {
         return install.restore() ? EXIT_SUCCESS : EXIT_FAILURE;
     }
+}
+
+int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
+{
+    QString upload;
+    bool verbose = false;
+
+    optind = 0;
+    int c;
+    /* Ignore most switches, we need to pass the ones taking an argument to getopt() or
+       their arguments will be treated as concatenated single-character switches. */
+    while ((c = getopt(argc, argv, "U:vp:b:B:c:C:E:i:P:x:")) != -1) {
+        switch (c) {
+        case 'U':
+            upload = optarg;
+            break;
+        case 'v':
+            verbose = true;
+            break;
+        }
+    }
+
+
+    /* The only avrdude operation we support is -Uflash:w:filename[:format] (format is ignored)
+       and of course filename can contain colons (the Windows drive separator, for example). */
+    auto op_parts = QString(upload).split(":");
+    if (op_parts.count() < 3 || op_parts.takeFirst() != "flash" || op_parts.takeFirst() != "w") {
+        showClientError(tr("Invalid '-U' upload string '%1'").arg(upload));
+        return EXIT_FAILURE;
+    }
+    if (op_parts.count() > 1)
+        op_parts.removeLast();
+    upload = op_parts.join(':');
+
+    /* I could factorize sendRemoteCommand() but I like to keep the whole fakeAvrdudeUpload()
+       thing isolated. Ugly, but non-invasive. */
+    command_ = "upload";
+    const char *fake_argv[8];
+    int fake_argc = 0;
+    fake_argv[fake_argc++] = argv[0];
+    fake_argv[fake_argc++] = "--autostart";
+    fake_argv[fake_argc++] = "--wait";
+    if (!verbose)
+        fake_argv[fake_argc++] = "--quiet";
+    auto filename = upload.toLocal8Bit();
+    fake_argv[fake_argc++] = filename.constData();
+
+    return executeRemoteCommand(fake_argc, const_cast<char **>(fake_argv));
 }
 
 QString TyQt::helpText()

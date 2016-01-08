@@ -72,6 +72,7 @@ public:
     int runMainInstance(int argc, char *argv[]);
     int executeRemoteCommand(int argc, char *argv[]);
     int integrateArduino(int argc, char *argv[]);
+    int fakeAvrdudeUpload(int argc, char *argv[]);
 
 public slots:
     void openMainWindow();
