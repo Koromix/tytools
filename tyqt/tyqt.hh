@@ -31,10 +31,7 @@ class TyQt : public QApplication {
     int argc_;
     char **argv_;
     QString command_;
-    bool autostart_ = false;
-    QString board_;
     bool wait_ = false;
-    QString usbtype_;
 
     SessionChannel channel_;
 
@@ -71,12 +68,10 @@ public:
     void setClientConsole(bool console) { client_console_ = console; }
     bool clientConsole() const { return client_console_; }
 
-    int run();
-    int runClient();
-    int sendRemoteCommand();
-    int integrateArduino();
-
-    int runServer();
+    int run(int argc, char *argv[]);
+    int runMainInstance(int argc, char *argv[]);
+    int executeRemoteCommand(int argc, char *argv[]);
+    int integrateArduino(int argc, char *argv[]);
 
 public slots:
     void openMainWindow();

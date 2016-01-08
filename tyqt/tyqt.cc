@@ -25,7 +25,7 @@
 struct ClientCommand {
     const char *name;
 
-    int (TyQt::*f)();
+    int (TyQt::*f)(int argc, char *argv[]);
 
     const char *arg;
     const char *description;
@@ -33,30 +33,29 @@ struct ClientCommand {
 
 enum {
     OPTION_HELP = 0x100,
-    OPTION_VERSION,
     OPTION_AUTOSTART,
     OPTION_USBTYPE
 };
 
 static const ClientCommand commands[] = {
-    {"open",      &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
-    {"activate",  &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Bring TyQt window to foreground")},
-    {"reset",     &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
-    {"reboot",    &TyQt::sendRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
-    {"upload",    &TyQt::sendRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
-    {"integrate", &TyQt::integrateArduino,  NULL,                      NULL},
-    {"restore",   &TyQt::integrateArduino,  NULL,                      NULL},
+    {"run",       &TyQt::runMainInstance,      NULL,                      NULL},
+    {"open",      &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
+    {"activate",  &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Bring TyQt window to foreground")},
+    {"reset",     &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
+    {"reboot",    &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
+    {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
+    {"integrate", &TyQt::integrateArduino,     NULL,                      NULL},
+    {"restore",   &TyQt::integrateArduino,     NULL,                      NULL},
     {0}
 };
 
-static const char *short_options_ = ":b:wq";
-static const struct option long_options_[] = {
+static const char *short_options = ":qwb:";
+static const struct option long_options[] = {
     {"help",         no_argument,       NULL, OPTION_HELP},
-    {"version",      no_argument,       NULL, OPTION_VERSION},
-    {"board",        required_argument, NULL, 'b'},
-    {"wait",         no_argument,       NULL, 'w'},
-    {"autostart",    no_argument,       NULL, OPTION_AUTOSTART},
     {"quiet",        no_argument,       NULL, 'q'},
+    {"autostart",    no_argument,       NULL, OPTION_AUTOSTART},
+    {"wait",         no_argument,       NULL, 'w'},
+    {"board",        required_argument, NULL, 'b'},
     {"usbtype",      required_argument, NULL, OPTION_USBTYPE},
     {0}
 };
@@ -96,7 +95,7 @@ TyQt::~TyQt()
 
 int TyQt::exec()
 {
-    return tyQt->run();
+    return tyQt->run(tyQt->argc_, tyQt->argv_);
 }
 
 QString TyQt::clientFilePath() const
@@ -264,165 +263,77 @@ error:
     exit(1);
 }
 
-int TyQt::run()
+int TyQt::run(int argc, char *argv[])
 {
-    if (argc_ >= 2 && argv_[1][0] != '-') {
-        command_ = argv_[1];
-        argv_++;
-        argc_--;
+    if (argc >= 2) {
+        if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "help") == 0) {
+            showClientMessage(helpText());
+            return EXIT_SUCCESS;
+        }
+        if (strcmp(argv[1], "--version") == 0) {
+            showClientMessage(QString("%1 %2").arg(applicationName(), applicationVersion()));
+            return EXIT_SUCCESS;
+        }
+
+        if (argv[1][0] != '-') {
+            command_ = argv[1];
+            argv[1] = argv[0];
+            argc--;
+            argv++;
+        }
     }
 
     int r = ty_init();
     if (r < 0)
-        return 1;
+        return EXIT_FAILURE;
     struct Releaser { ~Releaser() { ty_release(); } } releaser;
-
-    opterr = 0;
-    int c;
-    while ((c = getopt_long(argc_, argv_, short_options_, long_options_, NULL)) != -1) {
-        switch (c) {
-        case OPTION_HELP:
-            showClientMessage(helpText());
-            return 0;
-        case OPTION_VERSION:
-            showClientMessage(QString("%1 %2").arg(applicationName(), applicationVersion()));
-            return 0;
-
-        case 'b':
-            board_ = optarg;
-            break;
-        case 'w':
-            wait_ = true;
-            break;
-
-        case OPTION_AUTOSTART:
-            autostart_ = true;
-            break;
-        case 'q':
-            ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
-            break;
-
-        /* Hidden option to improve the Arduino integration. Basically, if mode is set and does
-           not contain "_SERIAL", --board is ignored. This way the IDE serial port selection
-           is ignored when uploading to a non-serial board. */
-        case OPTION_USBTYPE:
-            usbtype_ = optarg;
-            break;
-
-        case ':':
-            showClientError(tr("Option '%1' takes an argument\n%2").arg(argv_[optind - 1])
-                                                                   .arg(helpText()));
-            return 1;
-        case '?':
-            showClientError(tr("Unknown option '%1'\n%2").arg(argv_[optind - 1]).arg(helpText()));
-            return 1;
-        }
-    }
-
-    if (command_.isEmpty() && optind < argc_) {
-        showClientError(tr("Command must be placed first\n%1").arg(helpText()));
-        return 1;
-    }
 
 #ifdef _WIN32
     // tyqtc should not launch TyQt, it's only a console interface
     if (command_.isEmpty() && client_console_) {
         showClientMessage(helpText());
-        return 0;
+        return EXIT_SUCCESS;
     }
 #endif
 
-    if (!command_.isEmpty())
-        return runClient();
-
-    if (channel_.lock()) {
-        return runServer();
-    } else {
-        command_ = "open";
-        return runClient();
+    if (command_.isEmpty()) {
+        if (channel_.lock()) {
+            command_ = "run";
+        } else {
+            command_ = "open";
+        }
     }
-}
 
-int TyQt::runClient()
-{
-    for (const ClientCommand *cmd = commands; cmd->name; cmd++) {
+    // We'll print our own, for consistency
+    opterr = 0;
+
+    for (auto cmd = commands; cmd->name; cmd++) {
         if (command_ == cmd->name)
-            return (this->*(cmd->f))();
+            return (this->*(cmd->f))(argc, argv);
     }
 
     showClientError(tr("Unknown command '%1'\n%2").arg(command_, helpText()));
-    return 1;
+    return EXIT_FAILURE;
 }
 
-int TyQt::sendRemoteCommand()
+int TyQt::runMainInstance(int argc, char *argv[])
 {
-    if (!channel_.connectToMaster()) {
-        if (autostart_) {
-            if (!QProcess::startDetached(applicationFilePath())) {
-                showClientError(tr("Failed to start TyQt main instance"));
-                return 1;
-            }
-
-            QElapsedTimer timer;
-            timer.start();
-            while (!channel_.connectToMaster() && timer.elapsed() < 3000)
-                QThread::msleep(20);
-        }
-
-        if (!channel_.isConnected()) {
-            showClientError(tr("Cannot connect to main TyQt instance"));
-            return 1;
+    optind = 0;
+    int c;
+    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
+        switch (c) {
+        case OPTION_HELP:
+            showClientMessage(helpText());
+            return EXIT_SUCCESS;
+        case 'q':
+            ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
+            break;
         }
     }
 
-    connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
-
-    // Hack for Arduino integration, see getopt loop in TyQt::run()
-    if (!usbtype_.isEmpty() && !usbtype_.contains("_SERIAL"))
-        board_ = "";
-
-    QStringList arguments = {command_, QDir::currentPath(), board_};
-    for (int i = optind; i < argc_; i++)
-        arguments.append(argv_[i]);
-    channel_.send(arguments);
-
-    connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
-        showClientError(tr("Main TyQt instance closed the connection"));
-        exit(1);
-    });
-
-    return QApplication::exec();
-}
-
-int TyQt::integrateArduino()
-{
-    if (optind >= argc_) {
-        showClientError(helpText());
-        return 1;
-    }
-
-    ArduinoInstallation install(argv_[1]);
-
-    connect(&install, &ArduinoInstallation::log, [](const QString &msg) {
-        printf("%s\n", msg.toLocal8Bit().constData());
-        fflush(stdout);
-    });
-    connect(&install, &ArduinoInstallation::error, [](const QString &msg) {
-        fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
-    });
-
-    if (command_ == "integrate") {
-        return !install.integrate();
-    } else {
-        return !install.restore();
-    }
-}
-
-int TyQt::runServer()
-{
     if (!channel_.lock()) {
         showClientError(tr("Cannot start main TyQt instance, lock file in place"));
-        return 1;
+        return EXIT_FAILURE;
     }
 
     connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
@@ -448,13 +359,117 @@ int TyQt::runServer()
 
     if (!manager_.start()) {
         showClientError(ty_error_last_message());
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (!channel_.listen())
         reportError(tr("Failed to start session channel, single-instance mode won't work"));
 
     return QApplication::exec();
+}
+
+int TyQt::executeRemoteCommand(int argc, char *argv[])
+{
+    bool autostart = false;
+    QString board, usbtype;
+
+    optind = 0;
+    int c;
+    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
+        switch (c) {
+        case OPTION_HELP:
+            showClientMessage(helpText());
+            return EXIT_SUCCESS;
+        case 'q':
+            ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
+            break;
+
+        case OPTION_AUTOSTART:
+            autostart = true;
+            break;
+        case 'w':
+            wait_ = true;
+            break;
+        case 'b':
+            board = optarg;
+            break;
+        /* Hidden option to improve the Arduino integration. Basically, if mode is set and does
+           not contain "_SERIAL", --board is ignored. This way the IDE serial port selection
+           is ignored when uploading to a non-serial board. */
+        case OPTION_USBTYPE:
+            usbtype = optarg;
+            break;
+
+        case ':':
+            showClientError(tr("Option '%1' takes an argument\n%2").arg(argv[optind - 1])
+                                                                   .arg(helpText()));
+            return EXIT_FAILURE;
+        case '?':
+            showClientError(tr("Unknown option '%1'\n%2").arg(argv[optind - 1]).arg(helpText()));
+            return EXIT_FAILURE;
+        }
+    }
+
+    if (!channel_.connectToMaster()) {
+        if (autostart) {
+            if (!QProcess::startDetached(applicationFilePath(), {"-qqq"})) {
+                showClientError(tr("Failed to start TyQt main instance"));
+                return EXIT_FAILURE;
+            }
+
+            QElapsedTimer timer;
+            timer.start();
+            while (!channel_.connectToMaster() && timer.elapsed() < 3000)
+                QThread::msleep(20);
+        }
+
+        if (!channel_.isConnected()) {
+            showClientError(tr("Cannot connect to main TyQt instance"));
+            return EXIT_FAILURE;
+        }
+    }
+
+    connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
+
+    // Hack for Arduino integration, see getopt loop in TyQt::run()
+    if (!usbtype.isEmpty() && !usbtype.contains("_SERIAL"))
+        board = "";
+
+    QStringList arguments = {command_, QDir::currentPath(), board};
+    for (int i = optind; i < argc; i++)
+        arguments.append(argv[i]);
+    channel_.send(arguments);
+
+    connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
+        showClientError(tr("Main TyQt instance closed the connection"));
+        exit(1);
+    });
+
+    return QApplication::exec();
+}
+
+int TyQt::integrateArduino(int argc, char *argv[])
+{
+    if (argc < 2) {
+        showClientError(helpText());
+        return EXIT_FAILURE;
+    }
+
+    ArduinoInstallation install(argv[1]);
+
+    connect(&install, &ArduinoInstallation::log, [](const QString &msg) {
+        printf("%s\n", msg.toLocal8Bit().constData());
+        fflush(stdout);
+    });
+    connect(&install, &ArduinoInstallation::error, [](const QString &msg) {
+        fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
+    });
+
+    if (command_ == "integrate") {
+        return install.integrate() ? EXIT_SUCCESS : EXIT_FAILURE;
+    } else {
+        return install.restore() ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
 }
 
 QString TyQt::helpText()
