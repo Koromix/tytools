@@ -24,16 +24,14 @@ int get_board(tyb_board **rboard);
 
 enum {
     COMMON_OPTION_HELP = 0x100,
-    COMMON_OPTION_BOARD,
-    COMMON_OPTION_EXPERIMENTAL
+    COMMON_OPTION_BOARD
 };
 
 #define COMMON_SHORT_OPTIONS ":q"
 #define COMMON_LONG_OPTIONS \
     {"help",         no_argument,       NULL, COMMON_OPTION_HELP}, \
     {"board",        required_argument, NULL, COMMON_OPTION_BOARD}, \
-    {"quiet",        no_argument,       NULL, 'q'}, \
-    {"experimental", no_argument,       NULL, COMMON_OPTION_EXPERIMENTAL},
+    {"quiet",        no_argument,       NULL, 'q'},
 
 #define HANDLE_COMMON_OPTIONS(c, usage) \
     case COMMON_OPTION_HELP: \

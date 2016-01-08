@@ -435,7 +435,8 @@ restart:
 static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata)
 {
     if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, use --experimental", iface->model->name);
+        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, enable experimental mode",
+                        iface->model->name);
 
     const uint8_t *image;
     size_t size;
@@ -475,7 +476,8 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board
 static int teensy_reset(tyb_board_interface *iface)
 {
     if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, use --experimental", iface->model->name);
+        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, enable experimental mode",
+                        iface->model->name);
 
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }

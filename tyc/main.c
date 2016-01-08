@@ -76,8 +76,7 @@ void print_common_options(FILE *f)
                "       --help               Show help message\n"
                "       --version            Display version information\n\n"
                "       --board <tag>        Work with board <tag> instead of first detected\n"
-               "   -q, --quiet              Disable output, use -qqq to silence errors\n"
-               "       --experimental       Enable experimental features (use with caution)\n");
+               "   -q, --quiet              Disable output, use -qqq to silence errors\n");
 }
 
 static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata)
@@ -171,9 +170,6 @@ bool parse_common_option(int argc, char *argv[], int c)
         break;
     case 'q':
         ty_config_quiet++;
-        break;
-    case COMMON_OPTION_EXPERIMENTAL:
-        ty_config_experimental = true;
         break;
 
     case ':':

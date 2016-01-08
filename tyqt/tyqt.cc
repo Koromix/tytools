@@ -35,7 +35,6 @@ enum {
     OPTION_HELP = 0x100,
     OPTION_VERSION,
     OPTION_AUTOSTART,
-    OPTION_EXPERIMENTAL,
     OPTION_USBTYPE
 };
 
@@ -58,7 +57,6 @@ static const struct option long_options_[] = {
     {"wait",         no_argument,       NULL, 'w'},
     {"autostart",    no_argument,       NULL, OPTION_AUTOSTART},
     {"quiet",        no_argument,       NULL, 'q'},
-    {"experimental", no_argument,       NULL, OPTION_EXPERIMENTAL},
     {"usbtype",      required_argument, NULL, OPTION_USBTYPE},
     {0}
 };
@@ -303,9 +301,6 @@ int TyQt::run()
         case 'q':
             ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
             break;
-        case OPTION_EXPERIMENTAL:
-            ty_config_experimental = true;
-            break;
 
         /* Hidden option to improve the Arduino integration. Basically, if mode is set and does
            not contain "_SERIAL", --board is ignored. This way the IDE serial port selection
@@ -363,10 +358,7 @@ int TyQt::sendRemoteCommand()
 {
     if (!channel_.connectToMaster()) {
         if (autostart_) {
-            QStringList arguments;
-            if (ty_config_experimental)
-                arguments.append("--experimental");
-            if (!QProcess::startDetached(applicationFilePath(), arguments)) {
+            if (!QProcess::startDetached(applicationFilePath())) {
                 showClientError(tr("Failed to start TyQt main instance"));
                 return 1;
             }
@@ -473,8 +465,7 @@ QString TyQt::helpText()
                       "       --version            Display version information\n\n"
                       "   -w, --wait               Wait until task completion\n"
                       "   -b, --board <tag>        Work with board <tag> instead of first detected\n"
-                      "   -q, --quiet              Disable output, use -qqq to silence errors\n"
-                      "       --experimental       Enable experimental features (use with caution)\n\n"
+                      "   -q, --quiet              Disable output, use -qqq to silence errors\n\n"
                       "Commands:\n");
 
     for (auto cmd = commands; cmd->name; cmd++) {
