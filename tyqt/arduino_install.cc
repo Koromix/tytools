@@ -270,6 +270,10 @@ void ArduinoInstallation::updateState()
         return;
 
     arduino_version_ = readVersion(arduinoPath("lib/version.txt"));
+#ifdef __APPLE__
+    if (arduino_version_.isEmpty())
+        arduino_version_ = readVersion(dir_.filePath("Contents/Resources/Java/lib/version.txt"));
+#endif
     if (arduino_version_.isEmpty())
         return;
     arduino_legacy_ = arduino_version_.startsWith("1.0.");
@@ -344,7 +348,11 @@ bool ArduinoInstallation::findMarker(const QString &filename, const QString &mar
 QString ArduinoInstallation::arduinoPath(const QString &path) const
 {
 #ifdef __APPLE__
-    return dir_.filePath("Contents/Java/" + path);
+    if (arduino_legacy_) {
+        return dir_.filePath("Contents/Resources/Java/" + path);
+    } else {
+        return dir_.filePath("Contents/Java/" + path);
+    }
 #else
     return dir_.filePath(path);
 #endif
