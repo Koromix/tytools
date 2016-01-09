@@ -18,7 +18,9 @@ class ArduinoInstallation: public QObject {
 
     bool valid_;
     bool integrated_;
+
     QString arduino_version_;
+    bool arduino_legacy_;
     QString teensyduino_version_;
 
 public:
@@ -32,7 +34,9 @@ public:
 
     bool isValid() const { return valid_; }
     bool isIntegrated() const { return integrated_; }
+
     QString arduinoVersion() const { return arduino_version_; }
+    bool isArduinoLegacy() const { return arduino_legacy_; }
     QString teensyduinoVersion() const { return teensyduino_version_; }
 
     bool integrate();
@@ -45,6 +49,10 @@ signals:
     void error(const QString &msg);
 
 private:
+    bool integrateLegacy();
+    bool writeAvrdudeScript();
+    bool restoreLegacy();
+
     void updateState();
 
     bool safeCopy(const QString &filename, const QString &new_filename);

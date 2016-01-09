@@ -37,6 +37,9 @@ void ArduinoInstallation::update()
 
 bool ArduinoInstallation::integrate()
 {
+    if (arduino_legacy_)
+        return integrateLegacy();
+
     emit log(tr("Integrate TyQt to '%1'").arg(QDir::toNativeSeparators(dir_.path())));
 
     auto filename = arduinoPath("hardware/teensy/avr/platform.txt");
@@ -107,7 +110,12 @@ bool ArduinoInstallation::restore()
 {
     emit log(tr("Remove TyQt integration from '%1'").arg(QDir::toNativeSeparators(dir_.path())));
 
-    auto filename = arduinoPath("hardware/teensy/avr/platform.txt");
+    QString filename;
+    if (arduino_legacy_) {
+        filename = arduinoPath("hardware/teensy/boards.txt");
+    } else {
+        filename = arduinoPath("hardware/teensy/avr/platform.txt");
+    }
     if (!findMarker(filename, "TyQt")) {
         emit error(tr("This installation is not using TyQt"));
         return false;
@@ -117,7 +125,135 @@ bool ArduinoInstallation::restore()
     if (!safeCopy(filename + ".notyqt", filename))
         return false;
 
+    if (arduino_legacy_) {
+#ifdef _WIN32
+        emit log(tr("Remove avrdude script '%1'").arg("hardware/tools/tyqt_avrdude.bat"));
+        QFile::remove(arduinoPath("hardware/tools/tyqt_avrdude.bat"));
+#else
+        emit log(tr("Remove avrdude script '%1'").arg("hardware/tools/tyqt_avrdude.sh"));
+        QFile::remove(arduinoPath("hardware/tools/tyqt_avrdude.sh"));
+#endif
+    }
+
     update();
+    return true;
+}
+
+bool ArduinoInstallation::integrateLegacy()
+{
+    emit log(tr("Integrate TyQt to '%1' (legacy)").arg(QDir::toNativeSeparators(dir_.path())));
+
+    auto filename = arduinoPath("hardware/teensy/boards.txt");
+    emit log(tr("Rewrite '%1' (to temporary file)").arg(nicePath(filename)));
+
+    QFile src(filename);
+    QSaveFile dest(filename);
+
+    if (!src.open(QIODevice::ReadOnly | QIODevice::Text))
+        return reportFileError(src);
+    if (!dest.open(QIODevice::WriteOnly | QIODevice::Text))
+        return reportFileError(dest);
+
+    QTextStream in(&src), out(&dest);
+    QStringList models;
+    for (unsigned int i = 1; !in.atEnd(); i++) {
+        auto line = in.readLine();
+
+        if (line.contains("TyQt", Qt::CaseInsensitive)) {
+            emit error(tr("This installation is already patched"));
+            return false;
+        }
+
+        if (line.startsWith("teensy") && line.contains("upload.avrdude_wrapper")) {
+            models.append(line.section('.', 0, 0));
+
+            emit log(tr(" + Comment out line %1 '%2...'").arg(i).arg(line.left(22)));
+            out << "#";
+        } else if (line.contains("teensy_post_compile")) {
+            emit log(tr(" + Comment out line %1 '%2...'").arg(i).arg(line.left(22)));
+            out << "#";
+        }
+        out << line << "\n";
+    }
+    if (models.isEmpty()) {
+        emit error(tr("Failed to add TyQt instructions"));
+        return false;
+    }
+
+    out << "\n## TyQt (legacy Arduino)\n";
+    for (auto &model: models) {
+        emit log(tr(" + Add TyQt instructions for '%1'").arg(model));
+#ifdef _WIN32
+        out << QString("%1.upload.avrdude_wrapper=tyqt_avrdude.bat\n").arg(model);
+#else
+        out << QString("%1.upload.avrdude_wrapper=tyqt_avrdude.sh\n").arg(model);
+#endif
+    }
+
+    if (src.error())
+        return reportFileError(src);
+    src.close();
+
+    if (dest.error())
+        return reportFileError(dest);
+    if (!dest.flush())
+        return reportFileError(dest);
+
+    if (!writeAvrdudeScript())
+        return false;
+
+    emit log(tr("Backup '%1' to '%2'").arg(nicePath(filename), nicePath(filename + ".notyqt")));
+    if (!safeCopy(filename, filename + ".notyqt"))
+        return false;
+
+    emit log(tr("Commit changes to '%1'").arg(nicePath(filename)));
+    if (!dest.commit())
+        return reportFileError(dest);
+
+    update();
+    return true;
+}
+
+bool ArduinoInstallation::writeAvrdudeScript()
+{
+#ifdef _WIN32
+    QFile script(arduinoPath("hardware/tools/tyqt_avrdude.bat"));
+    emit log(tr("Write avrdude script to '%1'").arg(nicePath(script.fileName())));
+
+    if (!script.open(QIODevice::WriteOnly | QIODevice::Text))
+        return reportFileError(script);
+
+    QTextStream script_out(&script);
+    script_out << "@echo off\n";
+    script_out << QString("\"%1\" avrdude %*\n")
+                  .arg(QDir::toNativeSeparators(QCoreApplication::applicationFilePath()));
+
+    if (script.error())
+        return reportFileError(script);
+    if (!script.flush())
+        return reportFileError(script);
+#else
+    QFile script(arduinoPath("hardware/tools/tyqt_avrdude.sh"));
+    emit log(tr("Write avrdude script to '%1'").arg(nicePath(script.fileName())));
+
+    if (!script.open(QIODevice::WriteOnly | QIODevice::Text))
+        return reportFileError(script);
+
+    QTextStream script_out(&script);
+    script_out << "#!/bin/sh\n";
+    script_out << QString("\"%1\" avrdude \"$@\"\n").arg(QCoreApplication::applicationFilePath());
+
+    if (script.error())
+        return reportFileError(script);
+    if (!script.flush())
+        return reportFileError(script);
+    script.close();
+
+    if (!script.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner |
+                               QFile::ReadGroup | QFile::ExeGroup | QFile::ReadOther | QFile::ExeOther))
+        return reportFileError(script);
+#endif
+
     return true;
 }
 
@@ -125,7 +261,9 @@ void ArduinoInstallation::updateState()
 {
     valid_ = false;
     integrated_ = false;
+
     arduino_version_ = "";
+    arduino_legacy_ = false;
     teensyduino_version_ = "";
 
     if (dir_.path().isEmpty() || !dir_.exists())
@@ -134,12 +272,17 @@ void ArduinoInstallation::updateState()
     arduino_version_ = readVersion(arduinoPath("lib/version.txt"));
     if (arduino_version_.isEmpty())
         return;
+    arduino_legacy_ = arduino_version_.startsWith("1.0.");
     teensyduino_version_ = readVersion(arduinoPath("lib/teensyduino.txt"));
     if (teensyduino_version_.isEmpty())
         return;
 
     valid_ = true;
-    integrated_ = findMarker(arduinoPath("hardware/teensy/avr/platform.txt"), "TyQt");
+    if (arduino_legacy_) {
+        integrated_ = findMarker(arduinoPath("hardware/teensy/boards.txt"), "TyQt");
+    } else {
+        integrated_ = findMarker(arduinoPath("hardware/teensy/avr/platform.txt"), "TyQt");
+    }
 }
 
 bool ArduinoInstallation::safeCopy(const QString &filename, const QString &new_filename)
