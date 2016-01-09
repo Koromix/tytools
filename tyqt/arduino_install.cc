@@ -76,7 +76,7 @@ bool ArduinoInstallation::integrate()
             out << "tools.teensyloader.upload.params.quiet=--quiet\n"
                    "tools.teensyloader.upload.params.verbose=\n"
                    "tools.teensyloader.upload.pattern=\"{cmd.path}\" upload --autostart --wait"
-                   " \"{build.path}/{build.project_name}.hex\"\n";
+                   " {upload.verbose} \"{build.path}/{build.project_name}.hex\"\n";
             integrated = true;
         }
     }
