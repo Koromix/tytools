@@ -1,14 +1,10 @@
 ![TyQt Logo](/tyqt/images/banner.png)
 
-# Introduction
+TyQt can help you track and monitor your Teensy devices. It runs on Linux, Windows and Mac OS X.
+You can download binaries in the [release section](https://github.com/Koromix/ty/releases).
 
-ty is a collection of tools to manage Teensy devices (or teensies). It provides:
-- TyQt, a simple GUI to manage devices
-- tyc, a command-line tool
-- libty, a C library
-
-It currently runs on Linux, Windows and Mac OS X. You can download binaries in the
-[release section](https://github.com/Koromix/ty/releases).
+There is also a command-line version called `tyc` which does not depend on Qt and provides similar
+features. It is packaged with TyQt in the release files.
 
 - [Command-line usage](#tyc)
   - [List devices](#tyc_list)
