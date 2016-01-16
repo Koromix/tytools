@@ -61,11 +61,17 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
         find_library(qtpcre_LIBRARIES_OPTIMIZED qtpcre
             HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
             NO_CMAKE_FIND_ROOT_PATH)
+        find_library(qtfreetype_LIBRARIES_DEBUG qtfreetyped
+            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+            NO_CMAKE_FIND_ROOT_PATH)
+        find_library(qtfreetype_LIBRARIES_OPTIMIZED qtfreetype
+            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+            NO_CMAKE_FIND_ROOT_PATH)
 
         target_link_libraries(tyqt
             Qt5::QWindowsIntegrationPlugin imm32 winmm
-            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG} ${qtpcre_LIBRARIES_DEBUG}
-            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED} ${qtpcre_LIBRARIES_OPTIMIZED})
+            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG} ${qtpcre_LIBRARIES_DEBUG} ${qtfreetype_LIBRARIES_DEBUG}
+            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED} ${qtpcre_LIBRARIES_OPTIMIZED} ${qtfreetype_LIBRARIES_OPTIMIZED})
     elseif(APPLE)
         find_library(COCOA_LIBRARIES Cocoa)
         find_library(CARBON_LIBRARIES Carbon)

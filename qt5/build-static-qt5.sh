@@ -31,20 +31,16 @@ HOST=${@:$OPTIND+1:1}
 
 case "$HOST" in
     i686-w64-mingw32)
-        NATIVE_FLAGS="-platform win32-g++"
-        CROSS_FLAGS="-xplatform win32-g++ -device-option CROSS_COMPILE=i686-w64-mingw32-"
+        NATIVE_FLAGS="-platform win32-g++ -qt-zlib -qt-freetype"
+        CROSS_FLAGS="-xplatform win32-g++ -device-option CROSS_COMPILE=i686-w64-mingw32- -no-pkg-config -qt-zlib -qt-freetype"
         ;;
     x86_64-w64-mingw32)
-        NATIVE_FLAGS="-platform win32-g++"
-        CROSS_FLAGS="-xplatform win32-g++ -device-option CROSS_COMPILE=x86_64-w64-mingw32-"
+        NATIVE_FLAGS="-platform win32-g++ -qt-zlib -qt-freetype"
+        CROSS_FLAGS="-xplatform win32-g++ -device-option CROSS_COMPILE=x86_64-w64-mingw32- -no-pkg-config -qt-zlib -qt-freetype"
         ;;
     x86_64-darwin-clang)
-        NATIVE_FLAGS="-platform macx-clang"
-        CROSS_FLAGS="-xplatform macx-clang -device-option CROSS_COMPILE=x86_64-darwin-clang-"
-        ;;
-    x86_64-darwin-gcc)
-        NATIVE_FLAGS="-platform macx-g++"
-        CROSS_FLAGS="-xplatform macx-g++ -device-option CROSS_COMPILE=x86_64-darwin-clang-"
+        NATIVE_FLAGS="-platform macx-clang -no-pkg-config"
+        CROSS_FLAGS="-xplatform macx-clang -device-option CROSS_COMPILE=x86_64-darwin-clang- -no-pkg-config"
         ;;
 
     *)
@@ -75,5 +71,5 @@ mkdir "$DESTDIR"
 tar Jxf qtbase-opensource-src-$VERSION.tar.xz -C "$DESTDIR" --strip-components 1
 cd "$DESTDIR"
 
-./configure -static -opensource -confirm-license -nomake examples $HOST_FLAGS -no-pkg-config -no-opengl -no-harfbuzz -no-icu -no-cups -qt-pcre
+./configure -static -opensource -confirm-license -nomake examples $HOST_FLAGS -no-opengl -no-harfbuzz -no-icu -no-cups -qt-pcre
 make
