@@ -135,6 +135,7 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
 
     ty_list_init(&board->interfaces);
 
+    assert(iface->model);
     board->model = iface->model;
     board->serial = iface->serial;
 
@@ -282,9 +283,19 @@ static tyb_board_interface *find_interface(tyb_monitor *manager, tyd_device *dev
     return NULL;
 }
 
-static inline bool model_is_valid(const tyb_board_model *model)
+static bool model_is_real(const tyb_board_model *model)
 {
     return model && model->code_size;
+}
+
+static bool iface_is_compatible(tyb_board_interface *iface, tyb_board *board)
+{
+    if (model_is_real(iface->model) && model_is_real(board->model) && iface->model != board->model)
+        return false;
+    if (iface->serial && board->serial && iface->serial != board->serial)
+        return false;
+
+    return true;
 }
 
 static int add_interface(tyb_monitor *manager, tyd_device *dev)
@@ -300,29 +311,28 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
 
     board = find_board(manager, tyd_device_get_location(dev));
 
-    /* Maybe the device notifications came in the wrong order, or somehow the device removal
-       notifications were dropped somewhere and we never got it, so use heuristics to improve
-       board change detection. */
-    if (board) {
-        if ((model_is_valid(iface->model) && model_is_valid(board->model) && iface->model != board->model)
-                || iface->serial != board->serial) {
-            if (board->state == TYB_BOARD_STATE_ONLINE)
-                close_board(board);
-            drop_board(board);
+    /* Maybe the device notifications came in the wrong order, or somehow the device
+       removal notifications were dropped somewhere and we never got them, so use
+       heuristics to improve board change detection. */
+    if (board && !iface_is_compatible(iface, board)) {
+        if (board->state == TYB_BOARD_STATE_ONLINE)
+            close_board(board);
+        drop_board(board);
 
-            tyb_board_unref(board);
-            board = NULL;
-        } else if (board->vid != tyd_device_get_vid(dev) || board->pid != tyd_device_get_pid(dev)) {
+        tyb_board_unref(board);
+        board = NULL;
+    }
+
+    if (board) {
+        if (board->vid != tyd_device_get_vid(dev) || board->pid != tyd_device_get_pid(dev)) {
             if (board->state == TYB_BOARD_STATE_ONLINE)
                 close_board(board);
 
             board->vid = tyd_device_get_vid(dev);
             board->pid = tyd_device_get_pid(dev);
         }
-    }
 
-    if (board) {
-        if (model_is_valid(iface->model))
+        if (model_is_real(iface->model))
             board->model = iface->model;
         if (iface->serial)
             board->serial = iface->serial;
@@ -1276,7 +1286,7 @@ static int run_upload(ty_task *task)
 
     if (flags & TYB_UPLOAD_NOCHECK) {
         fw = task->upload.fws[0];
-    } else if (model_is_valid(board->model)) {
+    } else if (model_is_real(board->model)) {
         r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
         if (r < 0)
             return r;
@@ -1312,7 +1322,6 @@ wait:
     }
 
     if (!fw) {
-        // FIXME: make sure board->model is set
         r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
         if (r < 0)
             return r;
