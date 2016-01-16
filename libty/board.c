@@ -7,7 +7,10 @@
 
 #include "ty/common.h"
 #include "compat.h"
-#ifndef _WIN32
+#ifdef _WIN32
+    #include <malloc.h>
+#else
+    #include <alloca.h>
     #include <sys/stat.h>
 #endif
 #include "ty/board.h"
@@ -788,22 +791,38 @@ bool tyb_board_matches_tag(tyb_board *board, const char *id)
     assert(board);
 
     uint64_t serial;
-    char *location;
+    char *ptr, *family = NULL, *location = NULL;
 
     if (!id)
         return true;
 
-    serial = strtoull(id, &location, 10);
-    if (*location == '@' && location[1]) {
-        location++;
-    } else if (!*location || *location == '@') {
-        location = NULL;
-    } else {
-        ty_error(TY_ERROR_PARAM, "Incorrect board tag '%s', use [<serial>][@<location>]", id);
+    serial = strtoull(id, &ptr, 10);
+    if (*ptr == '-') {
+        location = strchr(++ptr, '@');
+        if (location > ptr) {
+            size_t len = (size_t)(location - ptr);
+            if (len > 32)
+                len = 32;
+            family = alloca(len + 1);
+            memcpy(family, ptr, len);
+            family[len] = 0;
+        } else if (!location && ptr[1]) {
+            family = ptr;
+        }
+        if (location && !*++location)
+            location = NULL;
+    } else if (*ptr == '@') {
+        if (ptr[1])
+            location = ptr + 1;
+    } else if (*ptr) {
+        ty_error(TY_ERROR_PARAM,
+                 "Incorrect board tag '%s', syntax is [<serial>][#<family>][@<location>]", id);
         return false;
     }
 
     if (serial && serial != board->serial)
+        return false;
+    if (family && strcmp(family, board->model->family->name) != 0)
         return false;
     if (location && strcmp(location, board->location) != 0 &&
             !tyb_board_list_interfaces(board, match_interface, location))
