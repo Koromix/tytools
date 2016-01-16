@@ -142,7 +142,7 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
     board->vid = tyd_device_get_vid(iface->dev);
     board->pid = tyd_device_get_pid(iface->dev);
 
-    r = asprintf(&board->tag, "%"PRIu64"@%s", board->serial, board->location);
+    r = asprintf(&board->tag, "%"PRIu64"-%s", board->serial, board->model->family->name);
     if (r < 0) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;

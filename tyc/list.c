@@ -176,12 +176,13 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
         print_field("action", "%s", action);
         print_field("tag", "%s", tyb_board_get_tag(board));
         print_field("serial", "%"PRIu64, tyb_board_get_serial_number(board));
-        print_field("location", "%s", tyb_board_get_location(board));
         if (model)
             print_field("model", "%s", tyb_board_model_get_name(model));
     }
 
     if (verbose && ((event != TYB_MONITOR_EVENT_DROPPED && event != TYB_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {
+        print_field("location", "%s", tyb_board_get_location(board));
+
         int capabilities = tyb_board_get_capabilities(board);
 
         start_collection("capabilities", COLLECTION_LIST);
