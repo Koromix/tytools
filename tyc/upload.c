@@ -5,11 +5,6 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#ifdef _WIN32
-    #include <malloc.h>
-#else
-    #include <alloca.h>
-#endif
 #include <getopt.h>
 #include "ty/firmware.h"
 #include "ty/task.h"

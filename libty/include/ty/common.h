@@ -11,6 +11,11 @@
 // Avoid msvcrt's limited versions of printf/scanf functions
 #define __USE_MINGW_ANSI_STDIO 1
 
+#ifdef _WIN32
+    #include <malloc.h>
+#else
+    #include <alloca.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
