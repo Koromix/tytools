@@ -31,9 +31,9 @@ or an OS-specific device path (e.g. /dev/hidraw1 or COM1). Either can be omitted
 Tag filter       | Result
 ---------------- | ---------------------------------------------------------------------------
 714230           | Select board with serial number 714230
-@usb-1-2-2       | Select the board plugged in USB port 'usb-1-2-2'
-@COM1            | Select the board linked to the OS-specific device 'COM1'
-714230@usb-1-2-2 | Select the board plugged in 'usb-1-2-2' only if its serial number is 714230
+@usb-1-2-2       | Select board plugged in USB port 'usb-1-2-2'
+@COM1            | Select board linked to the OS-specific device 'COM1'
+714230@usb-1-2-2 | Select board plugged in 'usb-1-2-2' and with serial number is 714230
 
 You can learn about the various commands using `tyc help`. Get specific help for them using
 `tyc help <command>`.
