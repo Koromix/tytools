@@ -369,6 +369,11 @@ void MainWindow::on_monitorEdit_returnPressed()
     current_board_->sendSerial(s.toUtf8());
 }
 
+void MainWindow::on_sendButton_clicked()
+{
+    emit monitorEdit->returnPressed();
+}
+
 void MainWindow::on_clearOnReset_toggled(bool checked)
 {
     if (!current_board_)
