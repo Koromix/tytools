@@ -258,7 +258,7 @@ void MainWindow::on_firmwarePath_editingFinished()
     if (!firmwarePath->text().isEmpty()) {
         QString filename = QFileInfo(firmwarePath->text()).canonicalFilePath();
         if (filename.isEmpty()) {
-            tyQt->reportError(tr("Path '%1' is not valid").arg(firmwarePath->text()));
+            tyQt->reportError(tr("Path '%1' does not exist").arg(firmwarePath->text()));
             return;
         }
         filename = QDir::toNativeSeparators(filename);
@@ -289,9 +289,11 @@ void MainWindow::on_actionUpload_triggered()
         return;
     }
 
-    unsigned int uploaded = 0;
+    unsigned int fws_count = 0;
     for (auto &board: selected_boards_) {
         if (!board->firmware().isEmpty()) {
+            fws_count++;
+
             auto fw = Firmware::load(board->firmware());
             if (!fw) {
                 board->notifyLog(TY_LOG_ERROR, ty_error_last_message());
@@ -299,10 +301,9 @@ void MainWindow::on_actionUpload_triggered()
             }
 
             board->upload({fw}).start();
-            uploaded++;
         }
     }
-    if (!uploaded)
+    if (!fws_count)
         tyQt->reportError("No board has a set firmware, try using 'Upload New Firmware'");
 }
 

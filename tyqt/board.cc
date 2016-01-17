@@ -321,7 +321,14 @@ void Board::detachMonitor()
 
 bool Board::sendSerial(const QByteArray &buf)
 {
-    return tyb_board_serial_write(board_, buf.data(), buf.size()) > 0;
+    ssize_t r = tyb_board_serial_write(board_, buf.data(), buf.size());
+    if (r < 0) {
+        emit notifyLog(TY_LOG_ERROR, ty_error_last_message());
+        return false;
+    }
+
+    return true;
+
 }
 
 TaskInterface Board::runningTask() const
