@@ -10,6 +10,8 @@
 #include <QFutureWatcher>
 #include <QMessageBox>
 #include <QProcess>
+#include <QSettings>
+#include <QTextCodec>
 #include <QThread>
 #include <QTimer>
 
@@ -67,6 +69,7 @@ using namespace std;
 TyQt::TyQt(int &argc, char *argv[])
     : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
+    setOrganizationName("TyQt");
     setApplicationName("TyQt");
     setApplicationVersion(TY_VERSION);
 
@@ -350,6 +353,12 @@ int TyQt::runMainInstance(int argc, char *argv[])
                 tyQt->reportError(print->msg);
         }
     }, nullptr);
+
+    settings_ = new QSettings(QSettings::IniFormat, QSettings::UserScope,
+                              organizationName(), applicationName(), this);
+    settings_->setIniCodec(QTextCodec::codecForName("UTF-8"));
+    db_.setSettings(settings_);
+    manager_.setDatabase(&db_);
 
     tray_icon_.show();
     openMainWindow();

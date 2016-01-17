@@ -8,6 +8,7 @@
 #include <QCoreApplication>
 #include <QDynamicPropertyChangeEvent>
 #include <QIcon>
+#include <QMetaProperty>
 #include <QMutexLocker>
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
@@ -16,6 +17,7 @@
 #include <functional>
 
 #include "board.hh"
+#include "database.hh"
 #include "tyqt.hh"
 
 using namespace std;
@@ -653,6 +655,7 @@ void Manager::handleAddedEvent(tyb_board *board)
 {
     auto ptr = Board::createBoard(board);
 
+    restoreBoardSettings(*ptr);
     ptr->serial_notifier_.moveToThread(&serial_thread_);
 
     connect(ptr.get(), &Board::boardChanged, this, [=]() {
@@ -665,10 +668,9 @@ void Manager::handleAddedEvent(tyb_board *board)
         refreshBoardItem(findBoardIterator(board));
     });
     connect(ptr.get(), &Board::settingChanged, this, [=](const QString &key, const QVariant &value) {
-        Q_UNUSED(key);
-        Q_UNUSED(value);
-
-        refreshBoardItem(findBoardIterator(board));
+        auto it = findBoardIterator(board);
+        refreshBoardItem(it);
+        saveBoardSetting(**it, key, value);
     });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
@@ -699,5 +701,31 @@ void Manager::refreshBoardItem(iterator it)
     } else {
         auto index = createIndex(it - boards_.begin(), 0);
         dataChanged(index, index);
+    }
+}
+
+void Manager::saveBoardSetting(const Board &board, const QString &key, const QVariant &value)
+{
+    if (!db_)
+        return;
+
+    db_->put(QString("board.%1/%2").arg(board.id(), key), value);
+}
+
+void Manager::restoreBoardSettings(Board &board)
+{
+    if (!db_)
+        return;
+
+    auto meta = board.metaObject();
+    auto count = meta->propertyCount();
+    for (int i = meta->propertyOffset(); i < count; i++) {
+        auto prop = meta->property(i);
+        if (!prop.isStored())
+            continue;
+
+        auto value = db_->get(QString("board.%1/%2").arg(board.id(), prop.name()));
+        if (value.isValid())
+            prop.write(&board, value);
     }
 }

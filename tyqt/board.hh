@@ -23,6 +23,7 @@
 #include "firmware.hh"
 #include "task.hh"
 
+class Database;
 
 struct BoardInterfaceInfo {
     QString name;
@@ -155,6 +156,8 @@ private:
 class Manager : public QAbstractListModel {
     Q_OBJECT
 
+    Database *db_ = nullptr;
+
     tyb_monitor *manager_ = nullptr;
     DescriptorNotifier manager_notifier_;
 
@@ -169,6 +172,9 @@ public:
     Manager(QObject *parent = nullptr)
         : QAbstractListModel(parent) {}
     virtual ~Manager();
+
+    void setDatabase(Database *db) { db_ = db; }
+    Database *database() const { return db_; }
 
     bool start();
 
@@ -207,6 +213,9 @@ private:
     void handleChangedEvent(tyb_board *board);
 
     void refreshBoardItem(iterator it);
+
+    void saveBoardSetting(const Board &board, const QString &key, const QVariant &value);
+    void restoreBoardSettings(Board &board);
 };
 
 #endif

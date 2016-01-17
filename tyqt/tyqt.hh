@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "board.hh"
+#include "database.hh"
 #include "session_channel.hh"
 
 class MainWindow;
@@ -34,6 +35,9 @@ class TyQt : public QApplication {
     bool wait_ = false;
 
     SessionChannel channel_;
+
+    QSettings *settings_ = nullptr;
+    SettingsDatabase db_;
 
     Manager manager_;
 
