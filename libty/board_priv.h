@@ -59,12 +59,13 @@ struct tyb_board {
 
     tyb_board_state state;
 
+    char *id;
     char *tag;
-    char *location;
 
     uint16_t vid;
     uint16_t pid;
     uint64_t serial;
+    char *location;
 
     ty_mutex interfaces_lock;
     ty_list_head interfaces;

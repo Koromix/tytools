@@ -93,6 +93,20 @@ QString Board::modelName() const
     return tyb_board_model_get_name(model);
 }
 
+QString Board::id() const
+{
+    return tyb_board_get_id(board_);
+}
+
+void Board::setTag(const QString &tag)
+{
+    int r = tyb_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
+    if (r < 0)
+        throw bad_alloc();
+
+    emit propertyChanged("tag", tag);
+}
+
 QString Board::tag() const
 {
     return tyb_board_get_tag(board_);

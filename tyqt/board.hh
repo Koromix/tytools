@@ -70,7 +70,10 @@ public:
     const tyb_board_model *model() const;
     QString modelName() const;
 
+    QString id() const;
+    void setTag(const QString &tag);
     QString tag() const;
+
     QString location() const;
     uint64_t serialNumber() const;
 

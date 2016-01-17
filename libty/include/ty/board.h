@@ -111,7 +111,10 @@ TY_PUBLIC tyb_monitor *tyb_board_get_manager(const tyb_board *board);
 
 TY_PUBLIC tyb_board_state tyb_board_get_state(const tyb_board *board);
 
+TY_PUBLIC const char *tyb_board_get_id(const tyb_board *board);
+TY_PUBLIC int tyb_board_set_tag(tyb_board *board, const char *tag);
 TY_PUBLIC const char *tyb_board_get_tag(const tyb_board *board);
+
 TY_PUBLIC const char *tyb_board_get_location(const tyb_board *board);
 TY_PUBLIC uint64_t tyb_board_get_serial_number(const tyb_board *board);
 

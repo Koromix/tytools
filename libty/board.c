@@ -145,11 +145,12 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
     board->vid = tyd_device_get_vid(iface->dev);
     board->pid = tyd_device_get_pid(iface->dev);
 
-    r = asprintf(&board->tag, "%"PRIu64"-%s", board->serial, board->model->family->name);
+    r = asprintf(&board->id, "%"PRIu64"-%s", board->serial, board->model->family->name);
     if (r < 0) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
+    board->tag = board->id;
 
     board->manager = manager;
     ty_list_add_tail(&manager->boards, &board->list);
@@ -764,7 +765,9 @@ void tyb_board_unref(tyb_board *board)
             return;
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
-        free(board->tag);
+        if (board->tag != board->id)
+            free(board->tag);
+        free(board->id);
         free(board->location);
 
         ty_mutex_release(&board->interfaces_lock);
@@ -795,6 +798,8 @@ bool tyb_board_matches_tag(tyb_board *board, const char *id)
 
     if (!id)
         return true;
+    if (board->tag != board->id && strcmp(id, board->tag) == 0)
+        return true;
 
     serial = strtoull(id, &ptr, 10);
     if (*ptr == '-') {
@@ -815,8 +820,6 @@ bool tyb_board_matches_tag(tyb_board *board, const char *id)
         if (ptr[1])
             location = ptr + 1;
     } else if (*ptr) {
-        ty_error(TY_ERROR_PARAM,
-                 "Incorrect board tag '%s', syntax is [<serial>][#<family>][@<location>]", id);
         return false;
     }
 
@@ -853,6 +856,33 @@ tyb_board_state tyb_board_get_state(const tyb_board *board)
 {
     assert(board);
     return board->state;
+}
+
+const char *tyb_board_get_id(const tyb_board *board)
+{
+    assert(board);
+    return board->id;
+}
+
+int tyb_board_set_tag(tyb_board *board, const char *tag)
+{
+    assert(board);
+
+    char *new_tag;
+
+    if (tag) {
+        new_tag = strdup(tag);
+        if (!new_tag)
+            return ty_error(TY_ERROR_MEMORY, NULL);
+    } else {
+        new_tag = board->id;
+    }
+
+    if (board->tag != board->id)
+        free(board->tag);
+    board->tag = new_tag;
+
+    return 0;
 }
 
 const char *tyb_board_get_tag(const tyb_board *board)
