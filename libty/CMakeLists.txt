@@ -112,8 +112,4 @@ else()
     install(TARGETS ty_static DESTINATION lib)
     install(DIRECTORY ../libty/include/ DESTINATION include)
     install(FILES "${CMAKE_BINARY_DIR}/ty/version.h" DESTINATION include/ty)
-
-    if(LINUX)
-        install(FILES ../contrib/udev/teensy.rules DESTINATION lib/udev/rules.d RENAME 49-teensy.rules)
-    endif()
 endif()
