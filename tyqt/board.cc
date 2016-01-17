@@ -539,14 +539,12 @@ shared_ptr<Board> Manager::find(function<bool(Board &board)> filter)
 int Manager::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-
     return boards_.size();
 }
 
 int Manager::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-
     return 2;
 }
 
@@ -571,7 +569,6 @@ QVariant Manager::data(const QModelIndex &index, int role) const
 {
     if (index.row() >= static_cast<int>(boards_.size()))
         return QVariant();
-
     auto board = boards_[index.row()];
 
     if (index.column() == 0) {
@@ -625,7 +622,6 @@ bool Manager::setData(const QModelIndex &index, const QVariant &value, int role)
 void Manager::refreshManager(ty_descriptor desc)
 {
     Q_UNUSED(desc);
-
     tyb_monitor_refresh(manager_);
 }
 

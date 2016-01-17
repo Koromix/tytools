@@ -49,7 +49,6 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 {
     if (index.row() >= static_cast<int>(model_->boardCount()))
         return;
-
     auto board = model_->board(index.row());
 
     widget_.resize(option.rect.size());

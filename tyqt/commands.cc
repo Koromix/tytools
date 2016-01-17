@@ -172,9 +172,12 @@ TaskInterface Commands::upload(const QString &tag, const QStringList &filenames)
     } else if (manager->boardCount() == 1) {
         board = manager->board(0);
     } else {
-        if (filenames.count() == 1)
-            board = manager->find([&](Board &board) { return ty_compare_paths(board.firmware().toLocal8Bit().constData(),
-                                                                              filenames[0].toLocal8Bit().constData()); });
+        if (filenames.count() == 1) {
+            board = manager->find([&](Board &board) {
+                return ty_compare_paths(board.firmware().toLocal8Bit().constData(),
+                                        filenames[0].toLocal8Bit().constData());
+            });
+        }
 
         if (!board) {
             return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
