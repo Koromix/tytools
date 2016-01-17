@@ -23,10 +23,6 @@
 #include "firmware.hh"
 #include "task.hh"
 
-class Manager;
-class Board;
-
-class BoardTask;
 
 struct BoardInterfaceInfo {
     QString name;
