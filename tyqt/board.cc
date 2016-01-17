@@ -619,6 +619,22 @@ QVariant Manager::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
+Qt::ItemFlags Manager::flags(const QModelIndex &index) const
+{
+    Q_UNUSED(index);
+    return Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsEnabled;
+}
+
+bool Manager::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (role != Qt::EditRole || index.row() >= static_cast<int>(boards_.size()))
+        return false;
+    auto board = boards_[index.row()];
+
+    board->setTag(value.toString());
+    return true;
+}
+
 void Manager::refreshManager(ty_descriptor desc)
 {
     Q_UNUSED(desc);

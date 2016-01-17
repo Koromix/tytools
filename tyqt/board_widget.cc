@@ -6,6 +6,7 @@
  */
 
 #include <QFontMetrics>
+#include <QLineEdit>
 #include <QPainter>
 
 #include "board.hh"
@@ -35,6 +36,13 @@ void BoardWidget::setProgress(unsigned int progress, unsigned int total)
     } else {
         stackedWidget->setCurrentIndex(0);
     }
+}
+
+QRect BoardWidget::tagGeometry() const
+{
+    auto geometry = tagLabel->geometry();
+    geometry.moveTo(tagLabel->mapTo(this, QPoint()));
+    return geometry;
 }
 
 void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -88,4 +96,27 @@ QSize BoardItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QMod
     Q_UNUSED(index);
 
     return QSize(widget_.minimumWidth(), widget_.height());
+}
+
+void BoardItemDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
+{
+    if (index.row() >= static_cast<int>(model_->boardCount()))
+        return;
+    auto board = model_->board(index.row());
+
+    auto text = qobject_cast<QLineEdit *>(editor);
+    if (text)
+        text->setText(board->tag());
+}
+
+void BoardItemDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    Q_UNUSED(index);
+
+    if (!editor)
+        return;
+
+    auto geometry = widget_.tagGeometry();
+    geometry.moveTopLeft(option.rect.topLeft() + geometry.topLeft());
+    editor->setGeometry(geometry);
 }
