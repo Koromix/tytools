@@ -24,15 +24,15 @@ position in the host USB topology. Meaning if it stays on the same USB port, it 
 for ty. That's necessary because across reboots and resets, Teensies look completely different to
 the host.
 
-To target a specific device, use `tyc <command> --board "[<serial>][#<family>][@<location>]"`.
+To target a specific device, use `tyc <command> --board "[<serial>][-<family>][@<location>]"`.
 _serial_ is the USB serial number, _family_ is the board family name and _location_ can be the
 virtual path computed by ty (see `tyc list`) or an OS device path (e.g. /dev/hidraw1 or COM1).
-Any of them can be omitted. See examples in the table below.
+Any of them can be omitted. See the examples in the table below.
 
 Tag filter       | Result
 ---------------- | ---------------------------------------------------------------------------
 714230           | Select board with serial number 714230
-#Teensy          | Select board with family name 'Teensy'
+-Teensy          | Select board with family name 'Teensy'
 @usb-1-2-2       | Select board plugged in USB port 'usb-1-2-2'
 @COM1            | Select board linked to the OS-specific device 'COM1'
 714230@usb-1-2-2 | Select board plugged in 'usb-1-2-2' and with serial number is 714230
