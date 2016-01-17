@@ -132,9 +132,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
 void MainWindow::refreshBoardsInfo()
 {
     if (current_board_) {
-        setWindowTitle(QString("TyQt - %1 - %2")
-                       .arg(current_board_->modelName())
-                       .arg(current_board_->tag()));
+        setWindowTitle(QString("%1 | %2").arg(current_board_->tag(), current_board_->modelName()));
 
         infoTab->setEnabled(true);
         modelText->setText(current_board_->modelName());
