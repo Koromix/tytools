@@ -204,7 +204,10 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="sendButton">
+            <widget class="QToolButton" name="sendButton">
+             <property name="focusPolicy">
+              <enum>Qt::StrongFocus</enum>
+             </property>
              <property name="text">
               <string>Send</string>
              </property>
@@ -242,7 +245,10 @@
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="firmwareBrowseButton">
+               <widget class="QToolButton" name="firmwareBrowseButton">
+                <property name="focusPolicy">
+                 <enum>Qt::StrongFocus</enum>
+                </property>
                 <property name="text">
                  <string>Browse...</string>
                 </property>
