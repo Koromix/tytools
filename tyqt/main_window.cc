@@ -135,10 +135,11 @@ void MainWindow::refreshBoardsInfo()
         setWindowTitle(QString("%1 | %2").arg(current_board_->tag(), current_board_->modelName()));
 
         infoTab->setEnabled(true);
+        idText->setText(current_board_->id());
+        firmwareText->setText(current_board_->firmwareName());
         modelText->setText(current_board_->modelName());
         locationText->setText(current_board_->location());
         serialText->setText(QString::number(current_board_->serialNumber()));
-        firmwareText->setText(current_board_->firmwareName());
 
         interfaceTree->clear();
         for (auto &iface: current_board_->interfaces()) {
@@ -167,6 +168,8 @@ void MainWindow::refreshBoardsInfo()
         setWindowTitle("TyQt");
 
         infoTab->setEnabled(false);
+        idText->clear();
+        firmwareText->clear();
         modelText->clear();
         locationText->clear();
         serialText->clear();

@@ -58,20 +58,6 @@
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <layout class="QGridLayout" name="gridLayout">
-           <item row="1" column="0">
-            <widget class="QLineEdit" name="modelText">
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>Model:</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="1">
             <widget class="QLineEdit" name="firmwareText">
              <property name="readOnly">
@@ -86,35 +72,63 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Identity:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="idText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="0">
+           <item row="0" column="1">
             <widget class="QLabel" name="label_5">
              <property name="text">
               <string>Serial Number:</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
+           <item row="1" column="1">
             <widget class="QLineEdit" name="serialText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
+           <item row="1" column="2">
             <widget class="QLineEdit" name="locationText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
+           <item row="0" column="2">
             <widget class="QLabel" name="label_3">
              <property name="text">
               <string>Location:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="modelText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Model:</string>
              </property>
             </widget>
            </item>
@@ -369,7 +383,7 @@
      <x>0</x>
      <y>0</y>
      <width>610</width>
-     <height>23</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="contextMenuPolicy">
@@ -610,8 +624,9 @@
  <tabstops>
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>
-  <tabstop>modelText</tabstop>
+  <tabstop>idText</tabstop>
   <tabstop>firmwareText</tabstop>
+  <tabstop>modelText</tabstop>
   <tabstop>serialText</tabstop>
   <tabstop>locationText</tabstop>
   <tabstop>interfaceTree</tabstop>
