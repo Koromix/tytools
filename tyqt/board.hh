@@ -36,6 +36,11 @@ struct BoardInterfaceInfo {
 class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_OBJECT
 
+    Q_PROPERTY(QString tag READ tag WRITE setTag)
+    Q_PROPERTY(QString firmware READ firmware WRITE setFirmware STORED false)
+    Q_PROPERTY(bool resetAfter READ resetAfter WRITE setResetAfter)
+    Q_PROPERTY(bool clearOnReset READ clearOnReset WRITE setClearOnReset)
+
     tyb_board *board_;
 
     bool serial_attach_ = true;
@@ -49,8 +54,10 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QTimer error_timer_;
 
     QString firmware_;
-    QString firmware_name_;
+    bool reset_after_ = true;
     bool clear_on_reset_ = false;
+
+    QString firmware_name_;
 
     TaskInterface running_task_;
     TaskWatcher task_watcher_;
@@ -71,9 +78,6 @@ public:
     QString modelName() const;
 
     QString id() const;
-    void setTag(const QString &tag);
-    QString tag() const;
-
     QString location() const;
     uint64_t serialNumber() const;
 
@@ -87,22 +91,25 @@ public:
     bool errorOccured() const;
 
     QString statusIconFileName() const;
-
-    void setFirmware(const QString &firmware);
-    QString firmware() const;
     QString firmwareName() const;
-    void setClearOnReset(bool clear);
-    bool clearOnReset() const;
+
+    void setTag(const QString &tag);
+    QString tag() const { return tyb_board_get_tag(board_); }
+    void setFirmware(const QString &firmware);
+    QString firmware() const { return firmware_; }
+    void setResetAfter(bool reset_after);
+    bool resetAfter() const { return reset_after_; }
+    void setClearOnReset(bool clear_on_reset);
+    bool clearOnReset() const { return clear_on_reset_; }
 
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);
 
-    bool event(QEvent *e) override;
-
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
-    TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after = true);
+    TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws);
+    TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface reset();
     TaskInterface reboot();
 
@@ -118,10 +125,9 @@ public:
 signals:
     void boardChanged();
     void boardDropped();
-
-    void propertyChanged(const QByteArray &name, const QVariant &value);
-
     void taskChanged();
+
+    void settingChanged(const QString &name, const QVariant &value);
 
 public slots:
     void notifyLog(ty_log_level level, const QString &msg);
@@ -200,7 +206,7 @@ private:
     void handleAddedEvent(tyb_board *board);
     void handleChangedEvent(tyb_board *board);
 
-    void refreshBoardItem(tyb_board *board);
+    void refreshBoardItem(iterator it);
 };
 
 #endif

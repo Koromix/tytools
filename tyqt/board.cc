@@ -98,20 +98,6 @@ QString Board::id() const
     return tyb_board_get_id(board_);
 }
 
-void Board::setTag(const QString &tag)
-{
-    int r = tyb_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
-    if (r < 0)
-        throw bad_alloc();
-
-    emit propertyChanged("tag", tag);
-}
-
-QString Board::tag() const
-{
-    return tyb_board_get_tag(board_);
-}
-
 QString Board::location() const
 {
     return tyb_board_get_location(board_);
@@ -187,31 +173,35 @@ QString Board::statusIconFileName() const
     return ":/board_missing";
 }
 
-void Board::setFirmware(const QString &firmware)
-{
-    firmware_ = firmware;
-    emit propertyChanged("firmware", firmware);
-}
-
-QString Board::firmware() const
-{
-    return firmware_;
-}
-
 QString Board::firmwareName() const
 {
     return firmware_name_;
 }
 
-void Board::setClearOnReset(bool clear)
+void Board::setTag(const QString &tag)
 {
-    clear_on_reset_ = clear;
-    emit propertyChanged("clearOnReset", clear);
+    int r = tyb_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
+    if (r < 0)
+        throw bad_alloc();
+    emit settingChanged("tag", tag);
 }
 
-bool Board::clearOnReset() const
+void Board::setFirmware(const QString &firmware)
 {
-    return clear_on_reset_;
+    firmware_ = firmware;
+    emit settingChanged("firmware", firmware);
+}
+
+void Board::setResetAfter(bool reset_after)
+{
+    reset_after_ = reset_after;
+    emit settingChanged("resetAfter", reset_after);
+}
+
+void Board::setClearOnReset(bool clear_on_reset)
+{
+    clear_on_reset_ = clear_on_reset;
+    emit settingChanged("clearOnReset", clear_on_reset);
 }
 
 QTextDocument &Board::serialDocument()
@@ -225,16 +215,6 @@ void Board::appendToSerialDocument(const QString &s)
     cursor.movePosition(QTextCursor::End);
 
     cursor.insertText(s);
-}
-
-bool Board::event(QEvent *e)
-{
-    if (e->type() == QEvent::DynamicPropertyChange) {
-        QDynamicPropertyChangeEvent *ce = static_cast<QDynamicPropertyChangeEvent *>(e);
-        emit propertyChanged(ce->propertyName(), property(ce->propertyName()));
-    }
-
-    return QObject::event(e);
 }
 
 QStringList Board::makeCapabilityList(uint16_t capabilities)
@@ -258,6 +238,11 @@ QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
     } else {
         return list.join(", ");
     }
+}
+
+TaskInterface Board::upload(const std::vector<std::shared_ptr<Firmware>> &fws)
+{
+    return upload(fws, resetAfter());
 }
 
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
@@ -671,13 +656,19 @@ void Manager::handleAddedEvent(tyb_board *board)
     ptr->serial_notifier_.moveToThread(&serial_thread_);
 
     connect(ptr.get(), &Board::boardChanged, this, [=]() {
-        refreshBoardItem(board);
+        refreshBoardItem(findBoardIterator(board));
     });
     connect(ptr.get(), &Board::boardDropped, this, [=]() {
-        refreshBoardItem(board);
+        refreshBoardItem(findBoardIterator(board));
     });
     connect(ptr.get(), &Board::taskChanged, this, [=]() {
-        refreshBoardItem(board);
+        refreshBoardItem(findBoardIterator(board));
+    });
+    connect(ptr.get(), &Board::settingChanged, this, [=](const QString &key, const QVariant &value) {
+        Q_UNUSED(key);
+        Q_UNUSED(value);
+
+        refreshBoardItem(findBoardIterator(board));
     });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
@@ -697,11 +688,8 @@ void Manager::handleChangedEvent(tyb_board *board)
     ptr->refreshBoard();
 }
 
-void Manager::refreshBoardItem(tyb_board *board)
+void Manager::refreshBoardItem(iterator it)
 {
-    auto it = findBoardIterator(board);
-    if (it == boards_.end())
-        return;
     auto ptr = *it;
 
     if (tyb_board_get_state(ptr->board_) == TYB_BOARD_STATE_DROPPED) {

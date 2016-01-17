@@ -36,13 +36,12 @@ public slots:
 
 private:
     static QString makeFirmwareFilter();
+    void selectFirstBoard();
 
 private slots:
-    void setBoardDefaults(Board *board);
-
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void refreshBoardsInfo();
-    void updatePropertyField(const QByteArray &name, const QVariant &value);
+    void updateSettingField(const QString &name, const QVariant &value);
 
     void monitorTextChanged();
     void monitorTextScrolled(const QRect &rect, int dy);

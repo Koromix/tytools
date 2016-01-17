@@ -47,7 +47,10 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
     boardList->setModel(manager);
     boardList->setItemDelegate(new BoardItemDelegate(manager));
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
-    connect(manager, &Manager::boardAdded, this, &MainWindow::setBoardDefaults);
+    connect(manager, &Manager::boardAdded, this, [=](Board *board) {
+        Q_UNUSED(board);
+        selectFirstBoard();
+    });
 
     // The blue selection frame displayed on OSX looks awful
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
@@ -58,8 +61,7 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
 
     logText->setMaximumBlockCount(1000);
 
-    for (auto &board: *manager)
-        setBoardDefaults(board.get());
+    selectFirstBoard();
 }
 
 bool MainWindow::event(QEvent *ev)
@@ -80,10 +82,8 @@ QString MainWindow::makeFirmwareFilter()
     return tr("Binary Files (%1);;All Files (*)").arg(exts);
 }
 
-void MainWindow::setBoardDefaults(Board *board)
+void MainWindow::selectFirstBoard()
 {
-    board->setProperty("resetAfter", true);
-
     if (!boardList->currentIndex().isValid() && manager_->boardCount())
         boardList->setCurrentIndex(manager_->index(0, 0));
 }
@@ -110,7 +110,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         current_board_ = selected_boards_.front();
 
         firmwarePath->setText(current_board_->firmware());
-        resetAfterUpload->setChecked(current_board_->property("resetAfter").toBool());
+        resetAfterUpload->setChecked(current_board_->resetAfter());
         clearOnReset->setChecked(current_board_->clearOnReset());
 
         monitor_autoscroll_ = true;
@@ -119,7 +119,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         monitorText->moveCursor(QTextCursor::End);
         monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
 
-        connect(current_board_.get(), &Board::propertyChanged, this, &MainWindow::updatePropertyField);
+        connect(current_board_.get(), &Board::settingChanged, this, &MainWindow::updateSettingField);
     } else {
         firmwarePath->clear();
     }
@@ -193,7 +193,7 @@ void MainWindow::refreshBoardsInfo()
     actionReboot->setEnabled(reboot);
 }
 
-void MainWindow::updatePropertyField(const QByteArray &name, const QVariant &value)
+void MainWindow::updateSettingField(const QString &name, const QVariant &value)
 {
     if (name == "firmware") {
         firmwarePath->setText(value.toString());
@@ -274,7 +274,7 @@ void MainWindow::on_resetAfterUpload_toggled(bool checked)
     if (!current_board_)
         return;
 
-    current_board_->setProperty("resetAfter", checked);
+    current_board_->setResetAfter(checked);
 }
 
 void MainWindow::on_actionNewWindow_triggered()
@@ -298,7 +298,7 @@ void MainWindow::on_actionUpload_triggered()
                 continue;
             }
 
-            board->upload({fw}, board->property("resetAfter").toBool()).start();
+            board->upload({fw}).start();
             uploaded++;
         }
     }
@@ -326,7 +326,7 @@ void MainWindow::on_actionUploadNew_triggered()
         return;
 
     for (auto &board: selected_boards_)
-        board->upload(fws, board->property("resetAfter").toBool()).start();
+        board->upload(fws).start();
 }
 
 void MainWindow::on_actionReset_triggered()
