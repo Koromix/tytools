@@ -107,14 +107,13 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     Q_UNUSED(previous);
 
     monitorText->setDocument(nullptr);
+
     for (auto &board: selected_boards_)
         board->disconnect(this);
-    if (current_board_)
-        current_board_ = nullptr;
+    current_board_ = nullptr;
 
     selected_boards_.clear();
-    auto selected = boardList->selectionModel()->selectedIndexes();
-    for (auto &idx: selected) {
+    for (auto &idx: boardList->selectionModel()->selectedIndexes()) {
         if (idx.column() == 0)
             selected_boards_.push_back(manager_->board(idx.row()));
     }
@@ -126,6 +125,12 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         resetAfterUpload->setChecked(current_board_->resetAfter());
         clearOnReset->setChecked(current_board_->clearOnReset());
 
+        infoTab->setEnabled(true);
+        monitorTab->setEnabled(true);
+        actionClearMonitor->setEnabled(true);
+        uploadTab->setEnabled(true);
+        actionAttachMonitor->setEnabled(true);
+
         monitor_autoscroll_ = true;
         monitor_cursor_ = QTextCursor();
         monitorText->setDocument(&current_board_->serialDocument());
@@ -135,10 +140,25 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         connect(current_board_.get(), &Board::settingChanged, this, &MainWindow::updateSettingField);
     } else {
         firmwarePath->clear();
+        resetAfterUpload->setChecked(false);
+        clearOnReset->setChecked(false);
+
+        infoTab->setEnabled(false);
+        idText->clear();
+        firmwareText->clear();
+        modelText->clear();
+        locationText->clear();
+        serialText->clear();
+        interfaceTree->clear();
+
+        monitorTab->setEnabled(false);
+        actionClearMonitor->setEnabled(false);
+        uploadTab->setEnabled(false);
+        actionAttachMonitor->setEnabled(false);
     }
+
     for (auto &board: selected_boards_)
         connect(board.get(), &Board::boardChanged, this, &MainWindow::refreshBoardsInfo);
-
     refreshBoardsInfo();
 }
 
@@ -147,7 +167,6 @@ void MainWindow::refreshBoardsInfo()
     updateWindowTitle();
 
     if (current_board_) {
-        infoTab->setEnabled(true);
         idText->setText(current_board_->id());
         firmwareText->setText(current_board_->firmwareName());
         modelText->setText(current_board_->modelName());
@@ -171,25 +190,8 @@ void MainWindow::refreshBoardsInfo()
             interfaceTree->addTopLevelItem(item);
         }
 
-        monitorTab->setEnabled(true);
         monitorEdit->setEnabled(current_board_->isMonitorAttached());
-        actionClearMonitor->setEnabled(true);
-        uploadTab->setEnabled(true);
-        actionAttachMonitor->setEnabled(true);
         actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
-    } else {
-        infoTab->setEnabled(false);
-        idText->clear();
-        firmwareText->clear();
-        modelText->clear();
-        locationText->clear();
-        serialText->clear();
-        interfaceTree->clear();
-
-        monitorTab->setEnabled(false);
-        actionClearMonitor->setEnabled(false);
-        uploadTab->setEnabled(false);
-        actionAttachMonitor->setEnabled(false);
     }
 
     bool upload = false, reset = false, reboot = false;
