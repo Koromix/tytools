@@ -87,10 +87,11 @@ static const char *capability_names[] = {
 #define DROP_BOARD_DELAY 15000
 #ifdef _WIN32
     #define MANUAL_REBOOT_DELAY 15000
+    #define FINAL_TASK_TIMEOUT 8000
 #else
     #define MANUAL_REBOOT_DELAY 5000
+    #define FINAL_TASK_TIMEOUT 5000
 #endif
-#define FINAL_TASK_TIMEOUT 5000
 
 static void drop_callback(struct callback *callback)
 {
