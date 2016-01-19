@@ -82,6 +82,19 @@ QString MainWindow::makeFirmwareFilter()
     return tr("Binary Files (%1);;All Files (*)").arg(exts);
 }
 
+void MainWindow::updateWindowTitle()
+{
+    if (current_board_) {
+        setWindowTitle(QString("%1 | %2 | %3").arg(current_board_->tag(), current_board_->modelName(),
+                                                   QCoreApplication::applicationName()));
+    } else if (selected_boards_.size() > 0) {
+        setWindowTitle(tr("%1 boards selected | %2").arg(selected_boards_.size())
+                                                    .arg(QCoreApplication::applicationName()));
+    } else {
+        setWindowTitle(QCoreApplication::applicationName());
+    }
+}
+
 void MainWindow::selectFirstBoard()
 {
     if (!boardList->currentIndex().isValid() && manager_->boardCount())
@@ -131,9 +144,9 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
 
 void MainWindow::refreshBoardsInfo()
 {
-    if (current_board_) {
-        setWindowTitle(QString("%1 | %2").arg(current_board_->tag(), current_board_->modelName()));
+    updateWindowTitle();
 
+    if (current_board_) {
         infoTab->setEnabled(true);
         idText->setText(current_board_->id());
         firmwareText->setText(current_board_->firmwareName());
@@ -165,8 +178,6 @@ void MainWindow::refreshBoardsInfo()
         actionAttachMonitor->setEnabled(true);
         actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
     } else {
-        setWindowTitle("TyQt");
-
         infoTab->setEnabled(false);
         idText->clear();
         firmwareText->clear();
@@ -195,6 +206,8 @@ void MainWindow::refreshBoardsInfo()
 
 void MainWindow::updateSettingField(const QString &name, const QVariant &value)
 {
+    updateWindowTitle();
+
     if (name == "firmware") {
         firmwarePath->setText(value.toString());
     } else if (name == "resetAfter") {

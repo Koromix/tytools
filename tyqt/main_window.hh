@@ -36,6 +36,8 @@ public slots:
 
 private:
     static QString makeFirmwareFilter();
+
+    void updateWindowTitle();
     void selectFirstBoard();
 
 private slots:
