@@ -185,9 +185,16 @@ TaskInterface Commands::upload(const QString &tag, const QStringList &filenames)
         }
 
         if (!board) {
-            return make_task<BoardSelectorTask>("Upload", [=](Board &board) {
+            auto task = make_shared<BoardSelectorTask>("Upload", [=](Board &board) {
                 return upload(board, filenames);
             });
+            if (filenames.count() == 1) {
+                task->setDescription(TyQt::tr("Upload '%1' to:").arg(QFileInfo(filenames[0]).fileName()));
+            } else {
+                task->setDescription(TyQt::tr("Upload %1 firmwares to:").arg(filenames.count()));
+            }
+
+            return TaskInterface(task);
         }
     }
 
