@@ -18,12 +18,17 @@
 using namespace std;
 
 class BoardSelectorTask : public Task, private TaskListener {
-    QString title_;
+    QString action_;
+    QString desc_;
+
     function<TaskInterface(Board &)> f_;
 
 public:
-    BoardSelectorTask(const QString &title, function<TaskInterface(Board &)> f)
-        : title_(title), f_(f) {}
+    BoardSelectorTask(const QString &action, function<TaskInterface(Board &)> f)
+        : action_(action), f_(f) {}
+
+    void setDescription(const QString &desc) { desc_ = desc; }
+    QString description() const { return desc_; }
 
     bool start() override;
 
@@ -38,7 +43,7 @@ bool BoardSelectorTask::start()
     reportLog(TY_LOG_INFO, "Waiting for user selection");
     reportStarted();
 
-    auto dialog = tyQt->openSelector();
+    auto dialog = tyQt->openSelector(action_, desc_);
     if (!dialog) {
         reportFinished(false, nullptr);
         return true;
@@ -47,7 +52,7 @@ bool BoardSelectorTask::start()
     auto ptr = shared_from_this();
     QObject::connect(dialog, &SelectorDialog::boardSelected, [this, ptr](Board *board) {
         if (!board) {
-            reportLog(TY_LOG_INFO, QString("%1 was canceled").arg(title_));
+            reportLog(TY_LOG_INFO, QString("%1 was canceled").arg(action_));
             reportFinished(false, nullptr);
             return;
         }

@@ -61,7 +61,7 @@ public:
     static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
     Manager *manager() { return &manager_; }
 
-    SelectorDialog *openSelector();
+    SelectorDialog *openSelector(const QString &action = QString(), const QString &desc = QString());
 
     MainWindow *getMainWindow() const;
 
