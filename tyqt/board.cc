@@ -581,7 +581,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
     if (index.column() == 0) {
         switch (role) {
         case Qt::DisplayRole:
-            return board->modelName();
+            return board->tag();
         case Qt::DecorationRole:
             return QIcon(board->statusIconFileName());
         case Qt::ToolTipRole:
@@ -599,7 +599,7 @@ QVariant Manager::data(const QModelIndex &index, int role) const
            make a proxy later if there's a problem. */
         switch (role) {
         case Qt::DisplayRole:
-            return board->tag();
+            return board->modelName();
         case Qt::ForegroundRole:
             return QBrush(Qt::darkGray);
         case Qt::TextAlignmentRole:
