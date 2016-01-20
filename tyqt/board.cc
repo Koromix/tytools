@@ -712,7 +712,7 @@ void Manager::saveBoardSetting(const Board &board, const QString &key, const QVa
     if (!db_)
         return;
 
-    db_->put(QString("board.%1/%2").arg(board.id(), key), value);
+    db_->put(QString("%1/%2").arg(board.id(), key), value);
 }
 
 void Manager::restoreBoardSettings(Board &board)
@@ -727,7 +727,7 @@ void Manager::restoreBoardSettings(Board &board)
         if (!prop.isStored())
             continue;
 
-        auto value = db_->get(QString("board.%1/%2").arg(board.id(), prop.name()));
+        auto value = db_->get(QString("%1/%2").arg(board.id(), prop.name()));
         if (value.isValid())
             prop.write(&board, value);
     }

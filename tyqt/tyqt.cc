@@ -69,7 +69,7 @@ using namespace std;
 TyQt::TyQt(int &argc, char *argv[])
     : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
-    setOrganizationName("TyQt");
+    setOrganizationName("ty");
     setApplicationName("TyQt");
     setApplicationVersion(TY_VERSION);
 
@@ -354,11 +354,8 @@ int TyQt::runMainInstance(int argc, char *argv[])
         }
     }, nullptr);
 
-    settings_ = new QSettings(QSettings::IniFormat, QSettings::UserScope,
-                              organizationName(), applicationName(), this);
-    settings_->setIniCodec(QTextCodec::codecForName("UTF-8"));
-    db_.setSettings(settings_);
-    manager_.setDatabase(&db_);
+    loadSettings("boards", manager_db_);
+    manager_.setDatabase(&manager_db_);
 
     tray_icon_.show();
     openMainWindow();
@@ -529,6 +526,14 @@ int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
     fake_argv[fake_argc++] = filename.constData();
 
     return executeRemoteCommand(fake_argc, const_cast<char **>(fake_argv));
+}
+
+void TyQt::loadSettings(const QString &name, SettingsDatabase &db)
+{
+    auto settings = new QSettings(QSettings::IniFormat, QSettings::UserScope,
+                                  organizationName(), name, this);
+    settings->setIniCodec(QTextCodec::codecForName("UTF-8"));
+    db.setSettings(settings);
 }
 
 QString TyQt::helpText()

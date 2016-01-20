@@ -36,10 +36,8 @@ class TyQt : public QApplication {
 
     SessionChannel channel_;
 
-    QSettings *settings_ = nullptr;
-    SettingsDatabase db_;
-
     Manager manager_;
+    SettingsDatabase manager_db_;
 
     QAction *action_visible_;
     QAction *action_quit_;
@@ -90,6 +88,8 @@ signals:
     void errorMessage(const QString &msg);
 
 private:
+    void loadSettings(const QString &name, SettingsDatabase &db);
+
     QString helpText();
     void showClientMessage(const QString &msg);
     void showClientError(const QString &msg);
