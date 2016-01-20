@@ -292,7 +292,7 @@
             <item>
              <widget class="QCheckBox" name="clearOnReset">
               <property name="text">
-               <string>Clear serial on reset</string>
+               <string>Clear monitor on reset</string>
               </property>
              </widget>
             </item>
