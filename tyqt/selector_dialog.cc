@@ -33,6 +33,12 @@ SelectorDialog::SelectorDialog(Manager *manager, QWidget *parent)
     }
 }
 
+void SelectorDialog::setAction(const QString &action)
+{
+    action_ = action;
+    setWindowTitle(QString("%1 | %2").arg(action, QCoreApplication::applicationName()));
+}
+
 shared_ptr<Board> SelectorDialog::selectedBoard() const
 {
     return result() ? current_board_ : nullptr;

@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>404</width>
-    <height>169</height>
+    <width>360</width>
+    <height>180</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="descriptionLabel">
      <property name="text">
-      <string>Please select a board:</string>
+      <string notr="true">selection</string>
      </property>
     </widget>
    </item>
