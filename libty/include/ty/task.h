@@ -8,7 +8,7 @@
 #ifndef TY_TASK_H
 #define TY_TASK_H
 
-#include "ty/common.h"
+#include "common.h"
 
 TY_C_BEGIN
 

@@ -7,13 +7,11 @@
 
 #include <QDir>
 #include <QElapsedTimer>
-#include <QFutureWatcher>
 #include <QMessageBox>
 #include <QProcess>
 #include <QSettings>
 #include <QTextCodec>
 #include <QThread>
-#include <QTimer>
 
 #include <getopt.h>
 

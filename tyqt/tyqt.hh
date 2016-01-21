@@ -13,8 +13,6 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 
-#include <memory>
-
 #include "board.hh"
 #include "database.hh"
 #include "session_channel.hh"

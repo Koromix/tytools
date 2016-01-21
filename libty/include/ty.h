@@ -9,7 +9,6 @@
 #define TY_H
 
 #include "ty/common.h"
-
 #include "ty/board.h"
 #include "ty/device.h"
 #include "ty/firmware.h"

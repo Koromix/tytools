@@ -7,17 +7,11 @@
 
 #include "ty/common.h"
 #include "compat.h"
-#ifdef _WIN32
-    #include <malloc.h>
-#else
-    #include <alloca.h>
+#ifndef _WIN32
     #include <sys/stat.h>
 #endif
-#include "ty/board.h"
 #include "board_priv.h"
 #include "ty/firmware.h"
-#include "htable.h"
-#include "list.h"
 #include "ty/system.h"
 #include "task_priv.h"
 #include "ty/timer.h"

@@ -10,6 +10,7 @@
 
 #include "ty/common.h"
 #include "ty/board.h"
+#include "ty/device.h"
 #include "htable.h"
 #include "list.h"
 #include "ty/task.h"

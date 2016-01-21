@@ -11,6 +11,7 @@
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
+#include "ty/device.h"
 #include "ty/system.h"
 #include "main.h"
 

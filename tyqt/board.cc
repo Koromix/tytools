@@ -5,16 +5,12 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <QCoreApplication>
-#include <QDynamicPropertyChangeEvent>
 #include <QIcon>
 #include <QMetaProperty>
 #include <QMutexLocker>
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
 #include <QTextCursor>
-
-#include <functional>
 
 #include "board.hh"
 #include "database.hh"

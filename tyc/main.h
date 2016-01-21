@@ -13,9 +13,6 @@
 
 TY_C_BEGIN
 
-struct tyb_monitor;
-struct tyb_board;
-
 void print_common_options(FILE *f);
 bool parse_common_option(int argc, char *argv[], int c);
 
