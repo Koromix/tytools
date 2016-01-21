@@ -236,10 +236,10 @@ void *tyb_board_get_udata(const tyb_board *board)
     return board->udata;
 }
 
-tyb_monitor *tyb_board_get_manager(const tyb_board *board)
+tyb_monitor *tyb_board_get_monitor(const tyb_board *board)
 {
     assert(board);
-    return board->manager;
+    return board->monitor;
 }
 
 tyb_board_state tyb_board_get_state(const tyb_board *board)
@@ -372,9 +372,9 @@ struct wait_for_context {
     tyb_board_capability capability;
 };
 
-static int wait_for_callback(tyb_monitor *manager, void *udata)
+static int wait_for_callback(tyb_monitor *monitor, void *udata)
 {
-    TY_UNUSED(manager);
+    TY_UNUSED(monitor);
 
     struct wait_for_context *ctx = udata;
 
@@ -388,7 +388,7 @@ int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int ti
 {
     assert(board);
 
-    tyb_monitor *manager = board->manager;
+    tyb_monitor *monitor = board->monitor;
     struct wait_for_context ctx;
 
     if (board->state == TYB_BOARD_STATE_DROPPED)
@@ -397,7 +397,7 @@ int tyb_board_wait_for(tyb_board *board, tyb_board_capability capability, int ti
     ctx.board = board;
     ctx.capability = capability;
 
-    return tyb_monitor_wait(manager, wait_for_callback, &ctx, timeout);
+    return tyb_monitor_wait(monitor, wait_for_callback, &ctx, timeout);
 }
 
 int tyb_board_serial_set_attributes(tyb_board *board, uint32_t rate, int flags)

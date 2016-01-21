@@ -207,7 +207,7 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
 
 int list(int argc, char *argv[])
 {
-    tyb_monitor *manager;
+    tyb_monitor *monitor;
     int r;
 
     int c;
@@ -241,20 +241,20 @@ int list(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    r = get_manager(&manager);
+    r = get_monitor(&monitor);
     if (r < 0)
         return EXIT_FAILURE;
 
-    r = tyb_monitor_list(manager, list_callback, NULL);
+    r = tyb_monitor_list(monitor, list_callback, NULL);
     if (r < 0)
         return EXIT_FAILURE;
 
     if (watch) {
-        r = tyb_monitor_register_callback(manager, list_callback, NULL);
+        r = tyb_monitor_register_callback(monitor, list_callback, NULL);
         if (r < 0)
             return EXIT_FAILURE;
 
-        r = tyb_monitor_wait(manager, NULL, NULL, -1);
+        r = tyb_monitor_wait(monitor, NULL, NULL, -1);
         if (r < 0)
             return EXIT_FAILURE;
     }

@@ -202,7 +202,7 @@ static int fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
 {
     ty_descriptor_set_clear(set);
 
-    tyb_monitor_get_descriptors(tyb_board_get_manager(board), set, 1);
+    tyb_monitor_get_descriptors(tyb_board_get_monitor(board), set, 1);
     if (directions & DIRECTION_INPUT) {
         tyb_board_interface *iface;
         int r;
@@ -265,7 +265,7 @@ restart:
             return 0;
 
         case 1:
-            r = tyb_monitor_refresh(tyb_board_get_manager(board));
+            r = tyb_monitor_refresh(tyb_board_get_monitor(board));
             if (r < 0)
                 return (int)r;
 

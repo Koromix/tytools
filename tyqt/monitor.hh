@@ -26,8 +26,8 @@ class Manager : public QAbstractListModel {
 
     Database *db_ = nullptr;
 
-    tyb_monitor *manager_ = nullptr;
-    DescriptorNotifier manager_notifier_;
+    tyb_monitor *monitor_ = nullptr;
+    DescriptorNotifier monitor_notifier_;
 
     QThread serial_thread_;
 
@@ -46,7 +46,7 @@ public:
 
     bool start();
 
-    tyb_monitor *manager() const { return manager_; }
+    tyb_monitor *monitor() const { return monitor_; }
 
     iterator begin() { return boards_.begin(); }
     iterator end() { return boards_.end(); }

@@ -53,7 +53,7 @@ struct tyb_board_interface {
 };
 
 struct tyb_board {
-    struct tyb_monitor *manager;
+    struct tyb_monitor *monitor;
     ty_list_head list;
 
     unsigned int refcount;

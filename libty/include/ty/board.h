@@ -79,7 +79,7 @@ TY_PUBLIC bool tyb_board_matches_tag(tyb_board *board, const char *id);
 TY_PUBLIC void tyb_board_set_udata(tyb_board *board, void *udata);
 TY_PUBLIC void *tyb_board_get_udata(const tyb_board *board);
 
-TY_PUBLIC struct tyb_monitor *tyb_board_get_manager(const tyb_board *board);
+TY_PUBLIC struct tyb_monitor *tyb_board_get_monitor(const tyb_board *board);
 
 TY_PUBLIC tyb_board_state tyb_board_get_state(const tyb_board *board);
 

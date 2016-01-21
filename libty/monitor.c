@@ -56,7 +56,7 @@ static void drop_callback(struct callback *callback)
 
 static int trigger_callbacks(tyb_board *board, tyb_monitor_event event)
 {
-    ty_list_foreach(cur, &board->manager->callbacks) {
+    ty_list_foreach(cur, &board->monitor->callbacks) {
         struct callback *callback = ty_container_of(cur, struct callback, list);
         int r;
 
@@ -70,7 +70,7 @@ static int trigger_callbacks(tyb_board *board, tyb_monitor_event event)
     return 0;
 }
 
-static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board **rboard)
+static int add_board(tyb_monitor *monitor, tyb_board_interface *iface, tyb_board **rboard)
 {
     tyb_board *board;
     int r;
@@ -108,8 +108,8 @@ static int add_board(tyb_monitor *manager, tyb_board_interface *iface, tyb_board
     }
     board->tag = board->id;
 
-    board->manager = manager;
-    ty_list_add_tail(&manager->boards, &board->list);
+    board->monitor = monitor;
+    ty_list_add_tail(&monitor->boards, &board->list);
 
     *rboard = board;
     return 0;
@@ -146,17 +146,17 @@ static void close_board(tyb_board *board)
 
 static int add_missing_board(tyb_board *board)
 {
-    tyb_monitor *manager = board->manager;
+    tyb_monitor *monitor = board->monitor;
 
     board->missing_since = ty_millis();
     if (board->missing.prev)
         ty_list_remove(&board->missing);
-    ty_list_add_tail(&manager->missing_boards, &board->missing);
+    ty_list_add_tail(&monitor->missing_boards, &board->missing);
 
     // There may be other boards waiting to be dropped, set timeout for the next in line
-    board = ty_list_get_first(&manager->missing_boards, tyb_board, missing);
+    board = ty_list_get_first(&monitor->missing_boards, tyb_board, missing);
 
-    return ty_timer_set(manager->timer, ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since),
+    return ty_timer_set(monitor->timer, ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since),
                         TY_TIMER_ONESHOT);
 }
 
@@ -171,9 +171,9 @@ static void drop_board(tyb_board *board)
     ty_list_remove(&board->list);
 }
 
-static tyb_board *find_board(tyb_monitor *manager, const char *location)
+static tyb_board *find_board(tyb_monitor *monitor, const char *location)
 {
-    ty_list_foreach(cur, &manager->boards) {
+    ty_list_foreach(cur, &monitor->boards) {
         tyb_board *board = ty_container_of(cur, tyb_board, list);
 
         if (strcmp(board->location, location) == 0)
@@ -231,9 +231,9 @@ error:
     return r;
 }
 
-static tyb_board_interface *find_interface(tyb_monitor *manager, tyd_device *dev)
+static tyb_board_interface *find_interface(tyb_monitor *monitor, tyd_device *dev)
 {
-    ty_htable_foreach_hash(cur, &manager->interfaces, ty_htable_hash_ptr(dev)) {
+    ty_htable_foreach_hash(cur, &monitor->interfaces, ty_htable_hash_ptr(dev)) {
         tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, hnode);
 
         if (iface->dev == dev)
@@ -254,7 +254,7 @@ static bool iface_is_compatible(tyb_board_interface *iface, tyb_board *board)
     return true;
 }
 
-static int add_interface(tyb_monitor *manager, tyd_device *dev)
+static int add_interface(tyb_monitor *monitor, tyd_device *dev)
 {
     tyb_board_interface *iface = NULL;
     tyb_board *board = NULL;
@@ -265,7 +265,7 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
     if (r <= 0)
         goto error;
 
-    board = find_board(manager, tyd_device_get_location(dev));
+    board = find_board(monitor, tyd_device_get_location(dev));
 
     /* Maybe the device notifications came in the wrong order, or somehow the device
        removal notifications were dropped somewhere and we never got them, so use
@@ -295,7 +295,7 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
 
         event = TYB_MONITOR_EVENT_CHANGED;
     } else {
-        r = add_board(manager, iface, &board);
+        r = add_board(monitor, iface, &board);
         if (r < 0)
             goto error;
 
@@ -307,7 +307,7 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
     ty_mutex_lock(&board->interfaces_lock);
 
     ty_list_add_tail(&board->interfaces, &iface->list);
-    ty_htable_add(&manager->interfaces, ty_htable_hash_ptr(iface->dev), &iface->hnode);
+    ty_htable_add(&monitor->interfaces, ty_htable_hash_ptr(iface->dev), &iface->hnode);
 
     for (int i = 0; i < (int)TY_COUNTOF(board->cap2iface); i++) {
         if (iface->capabilities & (1 << i))
@@ -328,13 +328,13 @@ error:
     return r;
 }
 
-static int remove_interface(tyb_monitor *manager, tyd_device *dev)
+static int remove_interface(tyb_monitor *monitor, tyd_device *dev)
 {
     tyb_board_interface *iface;
     tyb_board *board;
     int r;
 
-    iface = find_interface(manager, dev);
+    iface = find_interface(monitor, dev);
     if (!iface)
         return 0;
 
@@ -374,14 +374,14 @@ static int remove_interface(tyb_monitor *manager, tyd_device *dev)
 
 static int device_callback(tyd_device *dev, tyd_monitor_event event, void *udata)
 {
-    tyb_monitor *manager = udata;
+    tyb_monitor *monitor = udata;
 
     switch (event) {
     case TYD_MONITOR_EVENT_ADDED:
-        return add_interface(manager, dev);
+        return add_interface(monitor, dev);
 
     case TYD_MONITOR_EVENT_REMOVED:
-        return remove_interface(manager, dev);
+        return remove_interface(monitor, dev);
     }
 
     assert(false);
@@ -389,128 +389,128 @@ static int device_callback(tyd_device *dev, tyd_monitor_event event, void *udata
 }
 
 // FIXME: improve the sequential/parallel API
-int tyb_monitor_new(int flags, tyb_monitor **rmanager)
+int tyb_monitor_new(int flags, tyb_monitor **rmonitor)
 {
-    assert(rmanager);
+    assert(rmonitor);
 
-    tyb_monitor *manager;
+    tyb_monitor *monitor;
     int r;
 
-    manager = calloc(1, sizeof(*manager));
-    if (!manager) {
+    monitor = calloc(1, sizeof(*monitor));
+    if (!monitor) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
 
-    manager->flags = flags;
+    monitor->flags = flags;
 
-    r = tyd_monitor_new(&manager->monitor);
+    r = tyd_monitor_new(&monitor->monitor);
     if (r < 0)
         goto error;
 
-    r = tyd_monitor_register_callback(manager->monitor, device_callback, manager);
+    r = tyd_monitor_register_callback(monitor->monitor, device_callback, monitor);
     if (r < 0)
         goto error;
 
-    r = ty_timer_new(&manager->timer);
+    r = ty_timer_new(&monitor->timer);
     if (r < 0)
         goto error;
 
-    r = ty_mutex_init(&manager->refresh_mutex, TY_MUTEX_FAST);
+    r = ty_mutex_init(&monitor->refresh_mutex, TY_MUTEX_FAST);
     if (r < 0)
         goto error;
 
-    r = ty_cond_init(&manager->refresh_cond);
+    r = ty_cond_init(&monitor->refresh_cond);
     if (r < 0)
         goto error;
 
-    ty_list_init(&manager->boards);
-    ty_list_init(&manager->missing_boards);
+    ty_list_init(&monitor->boards);
+    ty_list_init(&monitor->missing_boards);
 
-    r = ty_htable_init(&manager->interfaces, 64);
+    r = ty_htable_init(&monitor->interfaces, 64);
     if (r < 0)
         goto error;
 
-    ty_list_init(&manager->callbacks);
+    ty_list_init(&monitor->callbacks);
 
-    *rmanager = manager;
+    *rmonitor = monitor;
     return 0;
 
 error:
-    tyb_monitor_free(manager);
+    tyb_monitor_free(monitor);
     return r;
 }
 
-void tyb_monitor_free(tyb_monitor *manager)
+void tyb_monitor_free(tyb_monitor *monitor)
 {
-    if (manager) {
-        ty_cond_release(&manager->refresh_cond);
-        ty_mutex_release(&manager->refresh_mutex);
+    if (monitor) {
+        ty_cond_release(&monitor->refresh_cond);
+        ty_mutex_release(&monitor->refresh_mutex);
 
-        tyd_monitor_free(manager->monitor);
-        ty_timer_free(manager->timer);
+        tyd_monitor_free(monitor->monitor);
+        ty_timer_free(monitor->timer);
 
-        ty_list_foreach(cur, &manager->callbacks) {
+        ty_list_foreach(cur, &monitor->callbacks) {
             struct callback *callback = ty_container_of(cur, struct callback, list);
             free(callback);
         }
 
-        ty_list_foreach(cur, &manager->boards) {
+        ty_list_foreach(cur, &monitor->boards) {
             tyb_board *board = ty_container_of(cur, tyb_board, list);
             tyb_board_unref(board);
         }
 
-        ty_htable_release(&manager->interfaces);
+        ty_htable_release(&monitor->interfaces);
     }
 
-    free(manager);
+    free(monitor);
 }
 
-void tyb_monitor_set_udata(tyb_monitor *manager, void *udata)
+void tyb_monitor_set_udata(tyb_monitor *monitor, void *udata)
 {
-    assert(manager);
-    manager->udata = udata;
+    assert(monitor);
+    monitor->udata = udata;
 }
 
-void *tyb_monitor_get_udata(const tyb_monitor *manager)
+void *tyb_monitor_get_udata(const tyb_monitor *monitor)
 {
-    assert(manager);
-    return manager->udata;
+    assert(monitor);
+    return monitor->udata;
 }
 
-void tyb_monitor_get_descriptors(const tyb_monitor *manager, ty_descriptor_set *set, int id)
+void tyb_monitor_get_descriptors(const tyb_monitor *monitor, ty_descriptor_set *set, int id)
 {
-    assert(manager);
+    assert(monitor);
     assert(set);
 
-    tyd_monitor_get_descriptors(manager->monitor, set, id);
-    ty_timer_get_descriptors(manager->timer, set, id);
+    tyd_monitor_get_descriptors(monitor->monitor, set, id);
+    ty_timer_get_descriptors(monitor->timer, set, id);
 }
 
-int tyb_monitor_register_callback(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata)
+int tyb_monitor_register_callback(tyb_monitor *monitor, tyb_monitor_callback_func *f, void *udata)
 {
-    assert(manager);
+    assert(monitor);
     assert(f);
 
     struct callback *callback = calloc(1, sizeof(*callback));
     if (!callback)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    callback->id = manager->callback_id++;
+    callback->id = monitor->callback_id++;
     callback->f = f;
     callback->udata = udata;
 
-    ty_list_add_tail(&manager->callbacks, &callback->list);
+    ty_list_add_tail(&monitor->callbacks, &callback->list);
 
     return callback->id;
 }
 
-void tyb_monitor_deregister_callback(tyb_monitor *manager, int id)
+void tyb_monitor_deregister_callback(tyb_monitor *monitor, int id)
 {
-    assert(manager);
+    assert(monitor);
     assert(id >= 0);
 
-    ty_list_foreach(cur, &manager->callbacks) {
+    ty_list_foreach(cur, &monitor->callbacks) {
         struct callback *callback = ty_container_of(cur, struct callback, list);
         if (callback->id == id) {
             drop_callback(callback);
@@ -519,20 +519,20 @@ void tyb_monitor_deregister_callback(tyb_monitor *manager, int id)
     }
 }
 
-int tyb_monitor_refresh(tyb_monitor *manager)
+int tyb_monitor_refresh(tyb_monitor *monitor)
 {
-    assert(manager);
+    assert(monitor);
 
     int r;
 
-    if (ty_timer_rearm(manager->timer)) {
-        ty_list_foreach(cur, &manager->missing_boards) {
+    if (ty_timer_rearm(monitor->timer)) {
+        ty_list_foreach(cur, &monitor->missing_boards) {
             tyb_board *board = ty_container_of(cur, tyb_board, missing);
             int timeout;
 
             timeout = ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since);
             if (timeout) {
-                r = ty_timer_set(manager->timer, timeout, TY_TIMER_ONESHOT);
+                r = ty_timer_set(monitor->timer, timeout, TY_TIMER_ONESHOT);
                 if (r < 0)
                     return r;
                 break;
@@ -543,58 +543,58 @@ int tyb_monitor_refresh(tyb_monitor *manager)
         }
     }
 
-    if (!manager->enumerated) {
-        manager->enumerated = true;
+    if (!monitor->enumerated) {
+        monitor->enumerated = true;
 
         // FIXME: never listed devices if error on enumeration (unlink the real refresh)
-        r = tyd_monitor_list(manager->monitor, device_callback, manager);
+        r = tyd_monitor_list(monitor->monitor, device_callback, monitor);
         if (r < 0)
             return r;
 
         return 0;
     }
 
-    r = tyd_monitor_refresh(manager->monitor);
+    r = tyd_monitor_refresh(monitor->monitor);
     if (r < 0)
         return r;
 
-    ty_mutex_lock(&manager->refresh_mutex);
-    ty_cond_broadcast(&manager->refresh_cond);
-    ty_mutex_unlock(&manager->refresh_mutex);
+    ty_mutex_lock(&monitor->refresh_mutex);
+    ty_cond_broadcast(&monitor->refresh_cond);
+    ty_mutex_unlock(&monitor->refresh_mutex);
 
     return 0;
 }
 
-int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, void *udata, int timeout)
+int tyb_monitor_wait(tyb_monitor *monitor, tyb_monitor_wait_func *f, void *udata, int timeout)
 {
-    assert(manager);
-    assert(f || !(manager->flags & TYB_MONITOR_PARALLEL_WAIT));
+    assert(monitor);
+    assert(f || !(monitor->flags & TYB_MONITOR_PARALLEL_WAIT));
 
     ty_descriptor_set set = {0};
     uint64_t start;
     int r;
 
     start = ty_millis();
-    if (manager->flags & TYB_MONITOR_PARALLEL_WAIT) {
-        ty_mutex_lock(&manager->refresh_mutex);
-        while (!(r = (*f)(manager, udata))) {
-            r = ty_cond_wait(&manager->refresh_cond, &manager->refresh_mutex, ty_adjust_timeout(timeout, start));
+    if (monitor->flags & TYB_MONITOR_PARALLEL_WAIT) {
+        ty_mutex_lock(&monitor->refresh_mutex);
+        while (!(r = (*f)(monitor, udata))) {
+            r = ty_cond_wait(&monitor->refresh_cond, &monitor->refresh_mutex, ty_adjust_timeout(timeout, start));
             if (!r)
                 break;
         }
-        ty_mutex_unlock(&manager->refresh_mutex);
+        ty_mutex_unlock(&monitor->refresh_mutex);
 
         return r;
     } else {
-        tyb_monitor_get_descriptors(manager, &set, 1);
+        tyb_monitor_get_descriptors(monitor, &set, 1);
 
         do {
-            r = tyb_monitor_refresh(manager);
+            r = tyb_monitor_refresh(monitor);
             if (r < 0)
                 return (int)r;
 
             if (f) {
-                r = (*f)(manager, udata);
+                r = (*f)(monitor, udata);
                 if (r)
                     return r;
             }
@@ -605,12 +605,12 @@ int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, void *udata
     }
 }
 
-int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata)
+int tyb_monitor_list(tyb_monitor *monitor, tyb_monitor_callback_func *f, void *udata)
 {
-    assert(manager);
+    assert(monitor);
     assert(f);
 
-    ty_list_foreach(cur, &manager->boards) {
+    ty_list_foreach(cur, &monitor->boards) {
         tyb_board *board = ty_container_of(cur, tyb_board, list);
         int r;
 

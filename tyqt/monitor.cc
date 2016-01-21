@@ -22,39 +22,39 @@ Manager::~Manager()
     serial_thread_.wait();
 
     // Just making sure nothing depends on the manager when it's destroyed
-    manager_notifier_.clear();
+    monitor_notifier_.clear();
     boards_.clear();
 
-    tyb_monitor_free(manager_);
+    tyb_monitor_free(monitor_);
 }
 
 bool Manager::start()
 {
-    if (manager_)
+    if (monitor_)
         return true;
 
-    int r = tyb_monitor_new(TYB_MONITOR_PARALLEL_WAIT, &manager_);
+    int r = tyb_monitor_new(TYB_MONITOR_PARALLEL_WAIT, &monitor_);
     if (r < 0)
         return false;
-    r = tyb_monitor_register_callback(manager_, [](tyb_board *board, tyb_monitor_event event, void *udata) {
+    r = tyb_monitor_register_callback(monitor_, [](tyb_board *board, tyb_monitor_event event, void *udata) {
         Manager *model = static_cast<Manager *>(udata);
         return model->handleEvent(board, event);
     }, this);
     if (r < 0) {
-        tyb_monitor_free(manager_);
-        manager_ = nullptr;
+        tyb_monitor_free(monitor_);
+        monitor_ = nullptr;
 
         return false;
     }
 
     ty_descriptor_set set = {};
-    tyb_monitor_get_descriptors(manager_, &set, 1);
-    manager_notifier_.setDescriptorSet(&set);
-    connect(&manager_notifier_, &DescriptorNotifier::activated, this, &Manager::refreshManager);
+    tyb_monitor_get_descriptors(monitor_, &set, 1);
+    monitor_notifier_.setDescriptorSet(&set);
+    connect(&monitor_notifier_, &DescriptorNotifier::activated, this, &Manager::refreshManager);
 
     serial_thread_.start();
 
-    tyb_monitor_refresh(manager_);
+    tyb_monitor_refresh(monitor_);
 
     return true;
 }
@@ -173,7 +173,7 @@ bool Manager::setData(const QModelIndex &index, const QVariant &value, int role)
 void Manager::refreshManager(ty_descriptor desc)
 {
     Q_UNUSED(desc);
-    tyb_monitor_refresh(manager_);
+    tyb_monitor_refresh(monitor_);
 }
 
 int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
