@@ -19,8 +19,6 @@ struct tyb_firmware;
 struct tyd_handle;
 struct ty_task;
 
-typedef struct tyb_monitor tyb_monitor;
-
 typedef struct tyb_board tyb_board;
 typedef struct tyb_board_interface tyb_board_interface;
 
