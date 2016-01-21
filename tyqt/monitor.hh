@@ -21,7 +21,7 @@ class Board;
 class Database;
 struct tyb_board;
 
-class Manager : public QAbstractListModel {
+class Monitor : public QAbstractListModel {
     Q_OBJECT
 
     Database *db_ = nullptr;
@@ -37,9 +37,9 @@ public:
     typedef decltype(boards_)::iterator iterator;
     typedef decltype(boards_)::const_iterator const_iterator;
 
-    Manager(QObject *parent = nullptr)
+    Monitor(QObject *parent = nullptr)
         : QAbstractListModel(parent) {}
-    virtual ~Manager();
+    virtual ~Monitor();
 
     void setDatabase(Database *db) { db_ = db; }
     Database *database() const { return db_; }
@@ -71,7 +71,7 @@ signals:
     void boardAdded(Board *board);
 
 private slots:
-    void refreshManager(ty_descriptor desc);
+    void refresh(ty_descriptor desc);
 
 private:
     iterator findBoardIterator(tyb_board *board);

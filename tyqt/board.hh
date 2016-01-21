@@ -148,7 +148,7 @@ private:
     TaskInterface wrapBoardTask(ty_task *task,
                                 std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
 
-    friend class Manager;
+    friend class Monitor;
 };
 
 #endif

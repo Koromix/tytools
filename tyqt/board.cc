@@ -22,7 +22,7 @@ Board::Board(tyb_board *board, QObject *parent)
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setMaximumBlockCount(200000);
 
-    // The manager will move the serial notifier to a dedicated thread
+    // The monitor will move the serial notifier to a dedicated thread
     connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived,
             Qt::DirectConnection);
 

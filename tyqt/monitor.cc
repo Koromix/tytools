@@ -16,19 +16,19 @@
 
 using namespace std;
 
-Manager::~Manager()
+Monitor::~Monitor()
 {
     serial_thread_.quit();
     serial_thread_.wait();
 
-    // Just making sure nothing depends on the manager when it's destroyed
+    // Just making sure nothing depends on the monitor when it's destroyed
     monitor_notifier_.clear();
     boards_.clear();
 
     tyb_monitor_free(monitor_);
 }
 
-bool Manager::start()
+bool Monitor::start()
 {
     if (monitor_)
         return true;
@@ -37,7 +37,7 @@ bool Manager::start()
     if (r < 0)
         return false;
     r = tyb_monitor_register_callback(monitor_, [](tyb_board *board, tyb_monitor_event event, void *udata) {
-        Manager *model = static_cast<Manager *>(udata);
+        Monitor *model = static_cast<Monitor *>(udata);
         return model->handleEvent(board, event);
     }, this);
     if (r < 0) {
@@ -50,7 +50,7 @@ bool Manager::start()
     ty_descriptor_set set = {};
     tyb_monitor_get_descriptors(monitor_, &set, 1);
     monitor_notifier_.setDescriptorSet(&set);
-    connect(&monitor_notifier_, &DescriptorNotifier::activated, this, &Manager::refreshManager);
+    connect(&monitor_notifier_, &DescriptorNotifier::activated, this, &Monitor::refresh);
 
     serial_thread_.start();
 
@@ -59,12 +59,12 @@ bool Manager::start()
     return true;
 }
 
-vector<shared_ptr<Board>> Manager::boards()
+vector<shared_ptr<Board>> Monitor::boards()
 {
     return boards_;
 }
 
-shared_ptr<Board> Manager::board(unsigned int i)
+shared_ptr<Board> Monitor::board(unsigned int i)
 {
     if (i >= boards_.size())
         return nullptr;
@@ -72,12 +72,12 @@ shared_ptr<Board> Manager::board(unsigned int i)
     return boards_[i];
 }
 
-unsigned int Manager::boardCount() const
+unsigned int Monitor::boardCount() const
 {
     return boards_.size();
 }
 
-shared_ptr<Board> Manager::find(function<bool(Board &board)> filter)
+shared_ptr<Board> Monitor::find(function<bool(Board &board)> filter)
 {
     auto board = find_if(boards_.begin(), boards_.end(), [&](shared_ptr<Board> &ptr) { return filter(*ptr); });
 
@@ -87,19 +87,19 @@ shared_ptr<Board> Manager::find(function<bool(Board &board)> filter)
     return *board;
 }
 
-int Manager::rowCount(const QModelIndex &parent) const
+int Monitor::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return boards_.size();
 }
 
-int Manager::columnCount(const QModelIndex &parent) const
+int Monitor::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
     return 2;
 }
 
-QVariant Manager::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant Monitor::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Vertical)
         return QVariant();
@@ -116,7 +116,7 @@ QVariant Manager::headerData(int section, Qt::Orientation orientation, int role)
     return QVariant();
 }
 
-QVariant Manager::data(const QModelIndex &index, int role) const
+QVariant Monitor::data(const QModelIndex &index, int role) const
 {
     if (index.row() >= static_cast<int>(boards_.size()))
         return QVariant();
@@ -154,13 +154,13 @@ QVariant Manager::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-Qt::ItemFlags Manager::flags(const QModelIndex &index) const
+Qt::ItemFlags Monitor::flags(const QModelIndex &index) const
 {
     Q_UNUSED(index);
     return Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsEnabled;
 }
 
-bool Manager::setData(const QModelIndex &index, const QVariant &value, int role)
+bool Monitor::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if (role != Qt::EditRole || index.row() >= static_cast<int>(boards_.size()))
         return false;
@@ -170,13 +170,13 @@ bool Manager::setData(const QModelIndex &index, const QVariant &value, int role)
     return true;
 }
 
-void Manager::refreshManager(ty_descriptor desc)
+void Monitor::refresh(ty_descriptor desc)
 {
     Q_UNUSED(desc);
     tyb_monitor_refresh(monitor_);
 }
 
-int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
+int Monitor::handleEvent(tyb_board *board, tyb_monitor_event event)
 {
     switch (event) {
     case TYB_MONITOR_EVENT_ADDED:
@@ -193,12 +193,12 @@ int Manager::handleEvent(tyb_board *board, tyb_monitor_event event)
     return 0;
 }
 
-Manager::iterator Manager::findBoardIterator(tyb_board *board)
+Monitor::iterator Monitor::findBoardIterator(tyb_board *board)
 {
     return find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
 }
 
-void Manager::handleAddedEvent(tyb_board *board)
+void Monitor::handleAddedEvent(tyb_board *board)
 {
     auto ptr = Board::createBoard(board);
 
@@ -227,7 +227,7 @@ void Manager::handleAddedEvent(tyb_board *board)
     emit boardAdded(ptr.get());
 }
 
-void Manager::handleChangedEvent(tyb_board *board)
+void Monitor::handleChangedEvent(tyb_board *board)
 {
     auto it = findBoardIterator(board);
     if (it == boards_.end())
@@ -237,7 +237,7 @@ void Manager::handleChangedEvent(tyb_board *board)
     ptr->refreshBoard();
 }
 
-void Manager::refreshBoardItem(iterator it)
+void Monitor::refreshBoardItem(iterator it)
 {
     auto ptr = *it;
 
@@ -251,7 +251,7 @@ void Manager::refreshBoardItem(iterator it)
     }
 }
 
-void Manager::saveBoardSetting(const Board &board, const QString &key, const QVariant &value)
+void Monitor::saveBoardSetting(const Board &board, const QString &key, const QVariant &value)
 {
     if (!db_)
         return;
@@ -259,7 +259,7 @@ void Manager::saveBoardSetting(const Board &board, const QString &key, const QVa
     db_->put(QString("%1/%2").arg(board.id(), key), value);
 }
 
-void Manager::restoreBoardSettings(Board &board)
+void Monitor::restoreBoardSettings(Board &board)
 {
     if (!db_)
         return;

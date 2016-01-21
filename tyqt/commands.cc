@@ -126,18 +126,18 @@ TaskInterface Commands::activateMainWindow()
 
 TaskInterface Commands::reset(const QString &tag)
 {
-    auto manager = tyQt->manager();
+    auto monitor = tyQt->monitor();
 
-    if (!manager->boardCount())
+    if (!monitor->boardCount())
         return make_task<FailedTask>(TyQt::tr("No board available"));
 
     shared_ptr<Board> board;
     if (!tag.isEmpty()) {
-        board = manager->find([&](Board &board) { return board.matchesTag(tag); });
+        board = monitor->find([&](Board &board) { return board.matchesTag(tag); });
         if (!board)
             return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
     } else {
-        board = manager->board(0);
+        board = monitor->board(0);
     }
 
     return board->reset();
@@ -145,18 +145,18 @@ TaskInterface Commands::reset(const QString &tag)
 
 TaskInterface Commands::reboot(const QString &tag)
 {
-    auto manager = tyQt->manager();
+    auto monitor = tyQt->monitor();
 
-    if (!manager->boardCount())
+    if (!monitor->boardCount())
         return make_task<FailedTask>(TyQt::tr("No board available"));
 
     shared_ptr<Board> board;
     if (!tag.isEmpty()) {
-        board = manager->find([&](Board &board) { return board.matchesTag(tag); });
+        board = monitor->find([&](Board &board) { return board.matchesTag(tag); });
         if (!board)
             return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
     } else {
-        board = manager->board(0);
+        board = monitor->board(0);
     }
 
     return board->reboot();
@@ -164,21 +164,21 @@ TaskInterface Commands::reboot(const QString &tag)
 
 TaskInterface Commands::upload(const QString &tag, const QStringList &filenames)
 {
-    auto manager = tyQt->manager();
+    auto monitor = tyQt->monitor();
 
-    if (!manager->boardCount())
+    if (!monitor->boardCount())
         return make_task<FailedTask>(TyQt::tr("No board available"));
 
     shared_ptr<Board> board;
     if (!tag.isEmpty()) {
-        board = manager->find([&](Board &board) { return board.matchesTag(tag); });
+        board = monitor->find([&](Board &board) { return board.matchesTag(tag); });
         if (!board)
             return make_task<FailedTask>(TyQt::tr("Cannot find board '%1'").arg(tag));
-    } else if (manager->boardCount() == 1) {
-        board = manager->board(0);
+    } else if (monitor->boardCount() == 1) {
+        board = monitor->board(0);
     } else {
         if (filenames.count() == 1) {
-            board = manager->find([&](Board &board) {
+            board = monitor->find([&](Board &board) {
                 return ty_compare_paths(board.firmware().toLocal8Bit().constData(),
                                         filenames[0].toLocal8Bit().constData());
             });

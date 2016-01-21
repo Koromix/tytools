@@ -13,12 +13,12 @@
 
 using namespace std;
 
-SelectorDialog::SelectorDialog(Manager *manager, QWidget *parent)
-    : QDialog(parent), manager_(manager)
+SelectorDialog::SelectorDialog(Monitor *monitor, QWidget *parent)
+    : QDialog(parent), monitor_(monitor)
 {
     setupUi(this);
 
-    tree->setModel(manager);
+    tree->setModel(monitor);
     connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &SelectorDialog::selectionChanged);
     connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::doubleClicked);
 
@@ -26,9 +26,9 @@ SelectorDialog::SelectorDialog(Manager *manager, QWidget *parent)
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
-    current_board_ = manager->board(0);
+    current_board_ = monitor->board(0);
     if (current_board_) {
-        tree->setCurrentIndex(manager->index(0, 0));
+        tree->setCurrentIndex(monitor->index(0, 0));
     } else {
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
     }
@@ -50,7 +50,7 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
     Q_UNUSED(previous);
 
     if (!selected.indexes().isEmpty()) {
-        current_board_ = manager_->board(selected.indexes().front().row());
+        current_board_ = monitor_->board(selected.indexes().front().row());
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
     } else {
         current_board_ = nullptr;
@@ -72,9 +72,9 @@ void SelectorDialog::done(int result)
     emit boardSelected(result ? current_board_.get() : nullptr);
 }
 
-shared_ptr<Board> SelectorDialog::getBoard(Manager *manager, QWidget *parent)
+shared_ptr<Board> SelectorDialog::getBoard(Monitor *monitor, QWidget *parent)
 {
-    SelectorDialog dialog(manager, parent);
+    SelectorDialog dialog(monitor, parent);
 
     dialog.exec();
 

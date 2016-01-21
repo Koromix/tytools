@@ -33,12 +33,12 @@ public:
 class BoardItemDelegate : public QItemDelegate {
     Q_OBJECT
 
-    Manager *model_;
+    Monitor *model_;
 
     mutable BoardWidget widget_;
 
 public:
-    BoardItemDelegate(Manager *model)
+    BoardItemDelegate(Monitor *model)
         : QItemDelegate(model), model_(model) {}
 
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
