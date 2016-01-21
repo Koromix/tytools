@@ -92,6 +92,7 @@ TY_PUBLIC int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *
 TY_PUBLIC const char *tyb_board_family_get_name(const tyb_board_family *family);
 TY_PUBLIC int tyb_board_family_list_models(const tyb_board_family *family, tyb_board_family_list_models_func *f, void *udata);
 
+TY_PUBLIC bool tyb_board_model_is_real(const tyb_board_model *model);
 TY_PUBLIC bool tyb_board_model_test_firmware(const tyb_board_model *model, const struct tyb_firmware *fw,
                                              const tyb_board_model **rguesses, unsigned int *rcount);
 

@@ -282,14 +282,10 @@ static tyb_board_interface *find_interface(tyb_monitor *manager, tyd_device *dev
     return NULL;
 }
 
-static bool model_is_real(const tyb_board_model *model)
-{
-    return model && model->code_size;
-}
-
 static bool iface_is_compatible(tyb_board_interface *iface, tyb_board *board)
 {
-    if (model_is_real(iface->model) && model_is_real(board->model) && iface->model != board->model)
+    if (tyb_board_model_is_real(iface->model) && tyb_board_model_is_real(board->model)
+            && iface->model != board->model)
         return false;
     if (iface->serial && board->serial && iface->serial != board->serial)
         return false;
@@ -331,7 +327,7 @@ static int add_interface(tyb_monitor *manager, tyd_device *dev)
             board->pid = tyd_device_get_pid(dev);
         }
 
-        if (model_is_real(iface->model))
+        if (tyb_board_model_is_real(iface->model))
             board->model = iface->model;
         if (iface->serial)
             board->serial = iface->serial;
@@ -687,6 +683,11 @@ int tyb_board_family_list_models(const tyb_board_family *family, tyb_board_famil
     }
 
     return 0;
+}
+
+bool tyb_board_model_is_real(const tyb_board_model *model)
+{
+    return model && model->code_size;
 }
 
 bool tyb_board_model_test_firmware(const tyb_board_model *model, const tyb_firmware *fw,
@@ -1330,7 +1331,7 @@ static int run_upload(ty_task *task)
 
     if (flags & TYB_UPLOAD_NOCHECK) {
         fw = task->upload.fws[0];
-    } else if (model_is_real(board->model)) {
+    } else if (tyb_board_model_is_real(board->model)) {
         r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
         if (r < 0)
             return r;
