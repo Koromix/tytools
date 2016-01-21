@@ -21,6 +21,7 @@
 #include "ty/board.h"
 #include "descriptor_notifier.hh"
 #include "firmware.hh"
+#include "ty/monitor.h"
 #include "task.hh"
 
 class Database;

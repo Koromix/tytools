@@ -14,6 +14,7 @@ TY_C_BEGIN
 
 struct ty_descriptor_set;
 struct tyd_device;
+struct tyb_monitor;
 struct tyb_firmware;
 struct tyd_handle;
 struct ty_task;
@@ -44,17 +45,6 @@ typedef enum tyb_board_state {
 } tyb_board_state;
 
 enum {
-    TYB_MONITOR_PARALLEL_WAIT = 1
-};
-
-typedef enum tyb_monitor_event {
-    TYB_MONITOR_EVENT_ADDED,
-    TYB_MONITOR_EVENT_CHANGED,
-    TYB_MONITOR_EVENT_DISAPPEARED,
-    TYB_MONITOR_EVENT_DROPPED
-} tyb_monitor_event;
-
-enum {
     TYB_UPLOAD_WAIT = 1,
     TYB_UPLOAD_NORESET = 2,
     TYB_UPLOAD_NOCHECK = 4
@@ -62,32 +52,11 @@ enum {
 
 #define TYB_UPLOAD_MAX_FIRMWARES 256
 
-typedef int tyb_monitor_callback_func(tyb_board *board, tyb_monitor_event event, void *udata);
-typedef int tyb_monitor_wait_func(tyb_monitor *manager, void *udata);
-
 typedef int tyb_board_family_list_models_func(const tyb_board_model *model, void *udata);
-
 typedef int tyb_board_list_interfaces_func(tyb_board_interface *iface, void *udata);
-
 typedef int tyb_board_upload_progress_func(const tyb_board *board, const struct tyb_firmware *fw, size_t uploaded, void *udata);
 
 TY_PUBLIC extern const tyb_board_family *tyb_board_families[];
-
-TY_PUBLIC int tyb_monitor_new(int flags, tyb_monitor **rmanager);
-TY_PUBLIC void tyb_monitor_free(tyb_monitor *manager);
-
-TY_PUBLIC void tyb_monitor_set_udata(tyb_monitor *manager, void *udata);
-TY_PUBLIC void *tyb_monitor_get_udata(const tyb_monitor *manager);
-
-TY_PUBLIC void tyb_monitor_get_descriptors(const tyb_monitor *manager, struct ty_descriptor_set *set, int id);
-
-TY_PUBLIC int tyb_monitor_register_callback(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata);
-TY_PUBLIC void tyb_monitor_deregister_callback(tyb_monitor *manager, int id);
-
-TY_PUBLIC int tyb_monitor_refresh(tyb_monitor *manager);
-TY_PUBLIC int tyb_monitor_wait(tyb_monitor *manager, tyb_monitor_wait_func *f, void *udata, int timeout);
-
-TY_PUBLIC int tyb_monitor_list(tyb_monitor *manager, tyb_monitor_callback_func *f, void *udata);
 
 TY_PUBLIC const char *tyb_board_family_get_name(const tyb_board_family *family);
 TY_PUBLIC int tyb_board_family_list_models(const tyb_board_family *family, tyb_board_family_list_models_func *f, void *udata);
@@ -110,7 +79,7 @@ TY_PUBLIC bool tyb_board_matches_tag(tyb_board *board, const char *id);
 TY_PUBLIC void tyb_board_set_udata(tyb_board *board, void *udata);
 TY_PUBLIC void *tyb_board_get_udata(const tyb_board *board);
 
-TY_PUBLIC tyb_monitor *tyb_board_get_manager(const tyb_board *board);
+TY_PUBLIC struct tyb_monitor *tyb_board_get_manager(const tyb_board *board);
 
 TY_PUBLIC tyb_board_state tyb_board_get_state(const tyb_board *board);
 

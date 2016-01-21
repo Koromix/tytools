@@ -14,6 +14,7 @@ HEADERS += include/ty.h \
     include/ty/common.h \
     include/ty/device.h \
     include/ty/firmware.h \
+    include/ty/monitor.h \
     include/ty/system.h \
     include/ty/task.h \
     include/ty/thread.h \
@@ -37,6 +38,7 @@ SOURCES += board.c \
     firmware_elf.c \
     firmware_ihex.c \
     htable.c \
+    monitor.c \
     system.c \
     task.c
 

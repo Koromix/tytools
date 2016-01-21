@@ -10,6 +10,7 @@
 
 #include "ty/common.h"
 #include "ty/board.h"
+#include "ty/monitor.h"
 
 TY_C_BEGIN
 
