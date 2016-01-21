@@ -17,6 +17,7 @@
 #include "board_widget.hh"
 #include "commands.hh"
 #include "main_window.hh"
+#include "monitor.hh"
 #include "tyqt.hh"
 
 using namespace std;

@@ -19,6 +19,7 @@ set(TYQT_SOURCES about_dialog.cc
                  database.cc
                  descriptor_notifier.cc
                  firmware.cc
+                 monitor.cc
                  selector_dialog.cc
                  session_channel.cc
                  task.cc

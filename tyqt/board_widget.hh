@@ -11,6 +11,7 @@
 #include <QItemDelegate>
 
 #include "board.hh"
+#include "monitor.hh"
 #include "ui_board_widget.h"
 
 class BoardWidget : public QWidget, private Ui::BoardWidget {
