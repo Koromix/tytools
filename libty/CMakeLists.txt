@@ -8,6 +8,7 @@ set(TY_SOURCES include/ty.h
                include/ty/common.h
                include/ty/device.h
                include/ty/firmware.h
+               include/ty/monitor.h
                include/ty/system.h
                include/ty/task.h
                include/ty/thread.h
@@ -26,6 +27,7 @@ set(TY_SOURCES include/ty.h
                firmware_priv.h
                htable.c
                list.h
+               monitor.c
                system.c
                task.c
                task_priv.h)

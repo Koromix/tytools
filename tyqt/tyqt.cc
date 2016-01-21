@@ -7,13 +7,11 @@
 
 #include <QDir>
 #include <QElapsedTimer>
-#include <QFutureWatcher>
 #include <QMessageBox>
 #include <QProcess>
 #include <QSettings>
 #include <QTextCodec>
 #include <QThread>
-#include <QTimer>
 
 #include <getopt.h>
 
@@ -21,6 +19,7 @@
 #include "commands.hh"
 #include "main_window.hh"
 #include "selector_dialog.hh"
+#include "task.hh"
 #include "tyqt.hh"
 #include "ty/version.h"
 
@@ -114,7 +113,7 @@ QString TyQt::clientFilePath() const
 
 SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
 {
-    auto dialog = new SelectorDialog(&manager_, getMainWindow());
+    auto dialog = new SelectorDialog(&monitor_, getMainWindow());
     dialog->setAttribute(Qt::WA_DeleteOnClose);
 
     if (!action.isEmpty())
@@ -138,7 +137,7 @@ MainWindow *TyQt::getMainWindow() const
 
 void TyQt::openMainWindow()
 {
-    auto win = new MainWindow(&manager_);
+    auto win = new MainWindow(&monitor_);
     win->setAttribute(Qt::WA_DeleteOnClose);
 
     connect(this, &TyQt::errorMessage, win, &MainWindow::showErrorMessage);
@@ -358,8 +357,8 @@ int TyQt::runMainInstance(int argc, char *argv[])
         }
     }, nullptr);
 
-    loadSettings("boards", manager_db_);
-    manager_.setDatabase(&manager_db_);
+    loadSettings("boards", monitor_db_);
+    monitor_.setDatabase(&monitor_db_);
 
     tray_icon_.show();
     openMainWindow();
@@ -369,7 +368,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
        happens because quitWhenLastClosed is true, but this works. */
     connect(this, &TyQt::lastWindowClosed, this, &TyQt::quit);
 
-    if (!manager_.start()) {
+    if (!monitor_.start()) {
         showClientError(ty_error_last_message());
         return EXIT_FAILURE;
     }

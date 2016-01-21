@@ -34,7 +34,7 @@ static const struct command commands[] = {
 
 static const char *board_tag = NULL;
 
-static tyb_monitor *board_manager;
+static tyb_monitor *board_monitor;
 static tyb_board *main_board;
 
 static void print_version(FILE *f)
@@ -104,47 +104,47 @@ static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata
     return 0;
 }
 
-static int init_manager()
+static int init_monitor()
 {
-    if (board_manager)
+    if (board_monitor)
         return 0;
 
-    tyb_monitor *manager = NULL;
+    tyb_monitor *monitor = NULL;
     int r;
 
-    r = tyb_monitor_new(0, &manager);
+    r = tyb_monitor_new(0, &monitor);
     if (r < 0)
         goto error;
 
-    r = tyb_monitor_register_callback(manager, board_callback, NULL);
+    r = tyb_monitor_register_callback(monitor, board_callback, NULL);
     if (r < 0)
         goto error;
 
-    r = tyb_monitor_refresh(manager);
+    r = tyb_monitor_refresh(monitor);
     if (r < 0)
         goto error;
 
-    board_manager = manager;
+    board_monitor = monitor;
     return 0;
 
 error:
-    tyb_monitor_free(manager);
+    tyb_monitor_free(monitor);
     return r;
 }
 
-int get_manager(tyb_monitor **rmanager)
+int get_monitor(tyb_monitor **rmonitor)
 {
-    int r = init_manager();
+    int r = init_monitor();
     if (r < 0)
         return r;
 
-    *rmanager = board_manager;
+    *rmonitor = board_monitor;
     return 0;
 }
 
 int get_board(tyb_board **rboard)
 {
-    int r = init_manager();
+    int r = init_monitor();
     if (r < 0)
         return r;
 
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
     r = (*cmd->f)(argc - 1, argv + 1);
 
     tyb_board_unref(main_board);
-    tyb_monitor_free(board_manager);
+    tyb_monitor_free(board_monitor);
     ty_release();
 
     return r;

@@ -13,10 +13,8 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 
-#include <memory>
-
-#include "board.hh"
 #include "database.hh"
+#include "monitor.hh"
 #include "session_channel.hh"
 
 class MainWindow;
@@ -36,8 +34,8 @@ class TyQt : public QApplication {
 
     SessionChannel channel_;
 
-    Manager manager_;
-    SettingsDatabase manager_db_;
+    Monitor monitor_;
+    SettingsDatabase monitor_db_;
 
     QAction *action_visible_;
     QAction *action_quit_;
@@ -59,7 +57,7 @@ public:
     QString clientFilePath() const;
 
     static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
-    Manager *manager() { return &manager_; }
+    Monitor *monitor() { return &monitor_; }
 
     SelectorDialog *openSelector(const QString &action = QString(), const QString &desc = QString());
 

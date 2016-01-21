@@ -9,10 +9,10 @@
 #define TY_H
 
 #include "ty/common.h"
-
 #include "ty/board.h"
 #include "ty/device.h"
 #include "ty/firmware.h"
+#include "ty/monitor.h"
 #include "ty/system.h"
 #include "ty/task.h"
 #include "ty/thread.h"

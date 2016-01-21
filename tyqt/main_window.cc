@@ -17,12 +17,13 @@
 #include "board_widget.hh"
 #include "commands.hh"
 #include "main_window.hh"
+#include "monitor.hh"
 #include "tyqt.hh"
 
 using namespace std;
 
-MainWindow::MainWindow(Manager *manager, QWidget *parent)
-    : QMainWindow(parent), manager_(manager)
+MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
+    : QMainWindow(parent), monitor_(monitor)
 {
     setupUi(this);
     refreshBoardsInfo();
@@ -44,10 +45,10 @@ MainWindow::MainWindow(Manager *manager, QWidget *parent)
 
     connect(actionQuit, &QAction::triggered, TyQt::instance(), &TyQt::quit);
 
-    boardList->setModel(manager);
-    boardList->setItemDelegate(new BoardItemDelegate(manager));
+    boardList->setModel(monitor);
+    boardList->setItemDelegate(new BoardItemDelegate(monitor));
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this, &MainWindow::selectionChanged);
-    connect(manager, &Manager::boardAdded, this, [=](Board *board) {
+    connect(monitor, &Monitor::boardAdded, this, [=](Board *board) {
         Q_UNUSED(board);
         selectFirstBoard();
     });
@@ -97,8 +98,8 @@ void MainWindow::updateWindowTitle()
 
 void MainWindow::selectFirstBoard()
 {
-    if (!boardList->currentIndex().isValid() && manager_->boardCount())
-        boardList->setCurrentIndex(manager_->index(0, 0));
+    if (!boardList->currentIndex().isValid() && monitor_->boardCount())
+        boardList->setCurrentIndex(monitor_->index(0, 0));
 }
 
 void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelection &previous)
@@ -115,7 +116,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     selected_boards_.clear();
     for (auto &idx: boardList->selectionModel()->selectedIndexes()) {
         if (idx.column() == 0)
-            selected_boards_.push_back(manager_->board(idx.row()));
+            selected_boards_.push_back(monitor_->board(idx.row()));
     }
 
     if (selected_boards_.size() == 1) {

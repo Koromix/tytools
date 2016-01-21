@@ -10,16 +10,14 @@
 
 #include "ty/common.h"
 #include "ty/board.h"
+#include "ty/monitor.h"
 
 TY_C_BEGIN
-
-struct tyb_monitor;
-struct tyb_board;
 
 void print_common_options(FILE *f);
 bool parse_common_option(int argc, char *argv[], int c);
 
-int get_manager(tyb_monitor **rmanager);
+int get_monitor(tyb_monitor **rmonitor);
 int get_board(tyb_board **rboard);
 
 enum {

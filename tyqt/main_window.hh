@@ -14,12 +14,12 @@
 #include "ui_main_window.h"
 
 class Board;
-class Manager;
+class Monitor;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 
-    Manager *manager_;
+    Monitor *monitor_;
     std::shared_ptr<Board> current_board_;
     std::vector<std::shared_ptr<Board>> selected_boards_;
 
@@ -27,7 +27,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QTextCursor monitor_cursor_;
 
 public:
-    MainWindow(Manager *manager, QWidget *parent = nullptr);
+    MainWindow(Monitor *monitor, QWidget *parent = nullptr);
 
     bool event(QEvent *ev) override;
 
