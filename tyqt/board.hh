@@ -94,10 +94,13 @@ public:
 
     void setTag(const QString &tag);
     QString tag() const { return tyb_board_get_tag(board_); }
+
     void setFirmware(const QString &firmware);
     QString firmware() const { return firmware_; }
+
     void setResetAfter(bool reset_after);
     bool resetAfter() const { return reset_after_; }
+
     void setClearOnReset(bool clear_on_reset);
     bool clearOnReset() const { return clear_on_reset_; }
 
