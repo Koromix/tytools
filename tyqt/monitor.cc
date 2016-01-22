@@ -107,9 +107,9 @@ QVariant Monitor::headerData(int section, Qt::Orientation orientation, int role)
     if (role == Qt::DisplayRole) {
         switch (section) {
         case 0:
-            return tr("Model");
+            return tr("Board");
         case 1:
-            return tr("Location");
+            return tr("Model");
         }
     }
 
