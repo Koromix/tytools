@@ -20,6 +20,7 @@ Board::Board(tyb_board *board, QObject *parent)
     : QObject(parent), board_(tyb_board_ref(board))
 {
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
+    serial_document_.setUndoRedoEnabled(false);
     setScrollBackLimit(200000);
 
     // The monitor will move the serial notifier to a dedicated thread
