@@ -63,6 +63,7 @@ private slots:
     void on_monitorEdit_returnPressed();
     void on_sendButton_clicked();
     void on_clearOnReset_toggled(bool checked);
+    void on_scrollBackLimitSpin_valueChanged(int value);
     void on_actionAttachMonitor_triggered(bool checked);
     void on_actionClearMonitor_triggered();
 

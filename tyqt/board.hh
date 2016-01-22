@@ -39,6 +39,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_PROPERTY(QString firmware READ firmware WRITE setFirmware STORED false)
     Q_PROPERTY(bool resetAfter READ resetAfter WRITE setResetAfter)
     Q_PROPERTY(bool clearOnReset READ clearOnReset WRITE setClearOnReset)
+    Q_PROPERTY(unsigned int scrollBackLimit READ scrollBackLimit WRITE setScrollBackLimit)
 
     tyb_board *board_;
 
@@ -103,6 +104,9 @@ public:
 
     void setClearOnReset(bool clear_on_reset);
     bool clearOnReset() const { return clear_on_reset_; }
+
+    void setScrollBackLimit(unsigned int limit);
+    unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
 
     QTextDocument &serialDocument();
     void appendToSerialDocument(const QString& s);

@@ -20,7 +20,7 @@ Board::Board(tyb_board *board, QObject *parent)
     : QObject(parent), board_(tyb_board_ref(board))
 {
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
-    serial_document_.setMaximumBlockCount(200000);
+    setScrollBackLimit(200000);
 
     // The monitor will move the serial notifier to a dedicated thread
     connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived,
@@ -198,6 +198,12 @@ void Board::setClearOnReset(bool clear_on_reset)
 {
     clear_on_reset_ = clear_on_reset;
     emit settingChanged("clearOnReset", clear_on_reset);
+}
+
+void Board::setScrollBackLimit(unsigned int limit)
+{
+    serial_document_.setMaximumBlockCount(limit);
+    emit settingChanged("scrollBackLimit", limit);
 }
 
 QTextDocument &Board::serialDocument()
