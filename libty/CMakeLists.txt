@@ -88,6 +88,7 @@ endif()
 configure_file(config.h.in config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
+list(APPEND TY_LINK_LIBRARIES ${HS_LIBRARIES})
 find_package(Threads)
 list(APPEND TY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 

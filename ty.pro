@@ -5,7 +5,7 @@
 
 TEMPLATE = subdirs
 
-SUBDIRS = libty tyc tyqt
+SUBDIRS = libhs/src libty tyc tyqt
 CONFIG += ordered
 
 win32 {

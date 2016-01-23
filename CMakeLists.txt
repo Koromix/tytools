@@ -6,6 +6,11 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(ty C CXX)
 
+# Don't contaminate external projects with our variables, I know you're supposed to
+# use ExternalProject... but add_subdirectory() avoids a lot of ExternalProject's mess.
+set(HS_BUILD_EXAMPLES OFF)
+add_subdirectory(libhs)
+
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     set(CMAKE_COMPILER_IS_CLANG 1)
 endif()
@@ -67,10 +72,16 @@ elseif(APPLE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-include_directories(libty/include ${CMAKE_BINARY_DIR})
+include_directories(libhs/include libty/include ${CMAKE_BINARY_DIR})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(TY_SHARED_LIBHS OFF CACHE BOOL "Use libhs as a dynamic library")
 set(TY_SHARED_LIBTY OFF CACHE BOOL "Use libty as a dynamic library")
+if(TY_SHARED_LIBHS)
+    set(HS_LIBRARIES hs_shared)
+else()
+    set(HS_LIBRARIES hs_static)
+endif()
 if(TY_SHARED_LIBTY)
     set(TY_LIBRARIES ty_shared)
 else()

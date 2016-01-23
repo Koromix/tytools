@@ -42,6 +42,8 @@ SOURCES += board.c \
     system.c \
     task.c
 
+LIBS += -lhs
+
 win32 {
     LIBS += -lhid -lsetupapi
 
