@@ -6,7 +6,6 @@
 set(TY_SOURCES include/ty.h
                include/ty/board.h
                include/ty/common.h
-               include/ty/device.h
                include/ty/firmware.h
                include/ty/monitor.h
                include/ty/system.h
@@ -19,8 +18,6 @@ set(TY_SOURCES include/ty.h
                board_priv.h
                common.c
                compat.c
-               device.c
-               device_priv.h
                firmware.c
                firmware_elf.c
                firmware_ihex.c
@@ -32,10 +29,7 @@ set(TY_SOURCES include/ty.h
                task.c
                task_priv.h)
 if(LINUX)
-    list(APPEND TY_SOURCES device_linux.c
-                           device_posix.c
-                           device_posix_priv.h
-                           system_posix.c
+    list(APPEND TY_SOURCES system_posix.c
                            thread_pthread.c
                            timer_linux.c)
 
@@ -45,17 +39,13 @@ if(LINUX)
     include_directories(${LIBUDEV_INCLUDE_DIRS})
     list(APPEND TY_LINK_LIBRARIES ${LIBUDEV_LIBRARIES})
 elseif(WIN32)
-    list(APPEND TY_SOURCES device_win32.c
-                           system_win32.c
+    list(APPEND TY_SOURCES system_win32.c
                            thread_win32.c
                            timer_win32.c)
 
     list(APPEND TY_LINK_LIBRARIES setupapi hid)
 elseif(APPLE)
-    list(APPEND TY_SOURCES device_darwin.c
-                           device_posix.c
-                           device_posix_priv.h
-                           system_posix.c
+    list(APPEND TY_SOURCES system_posix.c
                            thread_pthread.c
                            timer_kqueue.c)
 
