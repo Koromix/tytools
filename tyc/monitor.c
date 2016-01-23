@@ -11,7 +11,7 @@
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
-#include "ty/device.h"
+#include "hs/serial.h"
 #include "ty/system.h"
 #include "main.h"
 
@@ -409,24 +409,24 @@ int monitor(int argc, char *argv[])
             }
             break;
         case 'd':
-           device_flags &= ~TYD_SERIAL_CSIZE_MASK;
+           device_flags &= ~HS_SERIAL_MASK_CSIZE;
             if (strcmp(optarg, "5") == 0) {
-                device_flags |= TYD_SERIAL_5BITS_CSIZE;
+                device_flags |= HS_SERIAL_CSIZE_5BITS;
             } else if (strcmp(optarg, "6") == 0) {
-                device_flags |= TYD_SERIAL_6BITS_CSIZE;
+                device_flags |= HS_SERIAL_CSIZE_6BITS;
             } else if (strcmp(optarg, "7") == 0) {
-                device_flags |= TYD_SERIAL_7BITS_CSIZE;
+                device_flags |= HS_SERIAL_CSIZE_7BITS;
             } else if (strcmp(optarg, "8") != 0) {
                 ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
         case 'f':
-            device_flags &= ~TYD_SERIAL_FLOW_MASK;
+            device_flags &= ~HS_SERIAL_MASK_FLOW;
             if (strcmp(optarg, "x") == 0 || strcmp(optarg, "xonxoff") == 0) {
-                device_flags |= TYD_SERIAL_XONXOFF_FLOW;
+                device_flags |= HS_SERIAL_FLOW_XONXOFF;
             } else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "rtscts") == 0) {
-                device_flags |= TYD_SERIAL_RTSCTS_FLOW;
+                device_flags |= HS_SERIAL_FLOW_RTSCTS;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") == 0) {
                 ty_log(TY_LOG_ERROR, "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
                 print_monitor_usage(stderr);
@@ -434,14 +434,14 @@ int monitor(int argc, char *argv[])
             }
             break;
         case MONITOR_OPTION_NORESET:
-            device_flags |= TYD_SERIAL_NOHUP_CLOSE;
+            device_flags |= HS_SERIAL_CLOSE_NOHUP;
             break;
         case 'p':
-            device_flags &= ~TYD_SERIAL_PARITY_MASK;
+            device_flags &= ~HS_SERIAL_MASK_PARITY;
             if (strcmp(optarg, "o") == 0 || strcmp(optarg, "odd") == 0) {
-                device_flags |= TYD_SERIAL_ODD_PARITY;
+                device_flags |= HS_SERIAL_PARITY_ODD;
             } else if (strcmp(optarg, "e") == 0 || strcmp(optarg, "even") == 0) {
-                device_flags |= TYD_SERIAL_EVEN_PARITY;
+                device_flags |= HS_SERIAL_PARITY_EVEN;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") != 0) {
                 ty_log(TY_LOG_ERROR, "--parity must be one off o (odd), e (even) or n (none)");
                 print_monitor_usage(stderr);

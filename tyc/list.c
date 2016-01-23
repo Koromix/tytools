@@ -7,7 +7,6 @@
 
 #include <getopt.h>
 #include <stdarg.h>
-#include "ty/device.h"
 #include "main.h"
 
 static const char *short_options = COMMON_SHORT_OPTIONS"O:vw";
@@ -139,8 +138,7 @@ static int print_interface_info(tyb_board_interface *iface, void *udata)
 {
     TY_UNUSED(udata);
 
-    print_field(tyb_board_interface_get_name(iface), "%s",
-                tyd_device_get_path(tyb_board_interface_get_device(iface)));
+    print_field(tyb_board_interface_get_name(iface), "%s", tyb_board_interface_get_path(iface));
 
     return 0;
 }

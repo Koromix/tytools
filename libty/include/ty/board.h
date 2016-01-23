@@ -13,10 +13,10 @@
 TY_C_BEGIN
 
 struct ty_descriptor_set;
-struct tyd_device;
+struct hs_device;
 struct tyb_monitor;
 struct tyb_firmware;
-struct tyd_handle;
+struct hs_handle;
 struct ty_task;
 
 typedef struct tyb_board tyb_board;
@@ -121,8 +121,8 @@ TY_PUBLIC int tyb_board_interface_get_capabilities(const tyb_board_interface *if
 TY_PUBLIC uint8_t tyb_board_interface_get_interface_number(const tyb_board_interface *iface);
 TY_PUBLIC const char *tyb_board_interface_get_path(const tyb_board_interface *iface);
 
-TY_PUBLIC struct tyd_device *tyb_board_interface_get_device(const tyb_board_interface *iface);
-TY_PUBLIC struct tyd_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface);
+TY_PUBLIC struct hs_device *tyb_board_interface_get_device(const tyb_board_interface *iface);
+TY_PUBLIC struct hs_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface);
 TY_PUBLIC void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struct ty_descriptor_set *set, int id);
 
 TY_PUBLIC int tyb_upload(tyb_board *board, struct tyb_firmware **fws, unsigned int fws_count,

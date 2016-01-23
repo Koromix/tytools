@@ -7,6 +7,9 @@
 
 #include "ty/common.h"
 #include "compat.h"
+#include "hs/device.h"
+#include "hs/hid.h"
+#include "hs/serial.h"
 #include "ty/board.h"
 #include "board_priv.h"
 #include "ty/firmware.h"
@@ -28,6 +31,9 @@ struct tyb_board_model {
 };
 
 #define TEENSY_VID 0x16C0
+
+#define SEREMU_TX_SIZE 32
+#define SEREMU_RX_SIZE 64
 
 enum {
     TEENSY_USAGE_PAGE_BOOTLOADER = 0xFF9C,
@@ -154,9 +160,7 @@ static const tyb_board_model *teensy_models[] = {
     NULL
 };
 
-static const size_t seremu_packet_size = 32;
-
-static const tyb_board_model *identify_model(const tyd_hid_descriptor *desc)
+static const tyb_board_model *identify_model(const hs_hid_descriptor *desc)
 {
     if (desc->usage_page != TEENSY_USAGE_PAGE_BOOTLOADER)
         return NULL;
@@ -196,13 +200,13 @@ static uint64_t parse_bootloader_serial(const char *s)
 
 static int teensy_open_interface(tyb_board_interface *iface)
 {
-    tyd_hid_descriptor desc;
+    hs_hid_descriptor desc;
     int r;
 
-    if (tyd_device_get_vid(iface->dev) != TEENSY_VID)
+    if (hs_device_get_vid(iface->dev) != TEENSY_VID)
         return 0;
 
-    switch (tyd_device_get_pid(iface->dev)) {
+    switch (hs_device_get_pid(iface->dev)) {
     case 0x478:
     case 0x482:
     case 0x483:
@@ -223,12 +227,12 @@ static int teensy_open_interface(tyb_board_interface *iface)
     if (r < 0)
         return r;
 
-    switch (tyd_device_get_type(iface->dev)) {
-    case TYD_DEVICE_SERIAL:
+    switch (hs_device_get_type(iface->dev)) {
+    case HS_DEVICE_TYPE_SERIAL:
         /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
            around and reuse them. The device will keep rebooting if 134 is what stays around,
            so try to break the loop here. */
-        tyd_serial_set_attributes(iface->h, 115200, 0);
+        hs_serial_set_attributes(iface->h, 115200, 0);
 
         iface->name = "Serial";
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
@@ -236,15 +240,17 @@ static int teensy_open_interface(tyb_board_interface *iface)
         iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
         break;
 
-    case TYD_DEVICE_HID:
-        r = tyd_hid_parse_descriptor(iface->h, &desc);
-        if (r < 0)
+    case HS_DEVICE_TYPE_HID:
+        r = hs_hid_parse_descriptor(iface->h, &desc);
+        if (r < 0) {
+            r = _ty_libhs_translate_error(r);
             goto cleanup;
+        }
 
         switch (desc.usage_page) {
         case TEENSY_USAGE_PAGE_BOOTLOADER:
             iface->model = identify_model(&desc);
-            iface->serial = parse_bootloader_serial(tyd_device_get_serial_number(iface->dev));
+            iface->serial = parse_bootloader_serial(hs_device_get_serial_number_string(iface->dev));
 
             iface->name = "HalfKay";
             if (iface->model) {
@@ -311,27 +317,40 @@ static unsigned int teensy_guess_models(const tyb_firmware *fw,
 
 static int teensy_serial_set_attributes(tyb_board_interface *iface, uint32_t rate, int flags)
 {
-    if (tyd_device_get_type(iface->dev) != TYD_DEVICE_SERIAL)
+    int r;
+
+    if (hs_device_get_type(iface->dev) != HS_DEVICE_TYPE_SERIAL)
         return 0;
 
-    return tyd_serial_set_attributes(iface->h, rate, flags);
+    r = hs_serial_set_attributes(iface->h, rate, flags);
+    if (r < 0)
+        return _ty_libhs_translate_error(r);
+
+    return 0;
 }
 
 static ssize_t teensy_serial_read(tyb_board_interface *iface, char *buf, size_t size, int timeout)
 {
+    uint8_t hid_buf[SEREMU_RX_SIZE + 1];
     ssize_t r;
 
-    switch (tyd_device_get_type(iface->dev)) {
-    case TYD_DEVICE_SERIAL:
-        return tyd_serial_read(iface->h, buf, size, timeout);
-
-    case TYD_DEVICE_HID:
-        r = tyd_hid_read(iface->h, (uint8_t *)buf, size, timeout);
+    switch (hs_device_get_type(iface->dev)) {
+    case HS_DEVICE_TYPE_SERIAL:
+        r = hs_serial_read(iface->h, (uint8_t *)buf, size, timeout);
         if (r < 0)
-            return r;
-        if (!r)
+            return _ty_libhs_translate_error((int)r);
+        return r;
+
+    case HS_DEVICE_TYPE_HID:
+        r = hs_hid_read(iface->h, hid_buf, sizeof(hid_buf), timeout);
+        if (r < 0)
+            return _ty_libhs_translate_error((int)r);
+        if (r < 2)
             return 0;
-        return (ssize_t)strnlen(buf, (size_t)r);
+
+        r = (ssize_t)strnlen((char *)hid_buf + 1, (size_t)(r - 1));
+        memcpy(buf, hid_buf + 1, (size_t)r);
+        return r;
     }
 
     assert(false);
@@ -340,24 +359,27 @@ static ssize_t teensy_serial_read(tyb_board_interface *iface, char *buf, size_t 
 
 static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, size_t size)
 {
-    uint8_t report[seremu_packet_size + 1];
+    uint8_t report[SEREMU_TX_SIZE + 1];
     size_t total = 0;
     ssize_t r;
 
-    switch (tyd_device_get_type(iface->dev)) {
-    case TYD_DEVICE_SERIAL:
-        return tyd_serial_write(iface->h, buf, (ssize_t)size);
+    switch (hs_device_get_type(iface->dev)) {
+    case HS_DEVICE_TYPE_SERIAL:
+        r = hs_serial_write(iface->h, (uint8_t *)buf, (ssize_t)size);
+        if (r < 0)
+            return _ty_libhs_translate_error((int)r);
+        return r;
 
-    case TYD_DEVICE_HID:
+    case HS_DEVICE_TYPE_HID:
         /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so no binary
            transfers. */
         for (size_t i = 0; i < size;) {
             memset(report, 0, sizeof(report));
-            memcpy(report + 1, buf + i, TY_MIN(seremu_packet_size, size - i));
+            memcpy(report + 1, buf + i, TY_MIN(SEREMU_TX_SIZE, size - i));
 
-            r = tyd_hid_write(iface->h, report, sizeof(report));
+            r = hs_hid_write(iface->h, report, sizeof(report));
             if (r < 0)
-                return r;
+                return _ty_libhs_translate_error((int)r);
             if (!r)
                 break;
 
@@ -418,18 +440,21 @@ static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *dat
     /* We may get errors along the way (while the bootloader works) so try again
        until timeout expires. */
     start = ty_millis();
-    ty_error_mask(TY_ERROR_IO);
+    hs_error_mask(HS_ERROR_IO);
 restart:
-    r = tyd_hid_write(iface->h, buf, size);
-    if (r == TY_ERROR_IO && ty_millis() - start < timeout) {
+    r = hs_hid_write(iface->h, buf, size);
+    if (r == HS_ERROR_IO && ty_millis() - start < timeout) {
         ty_delay(10);
         goto restart;
     }
-    ty_error_unmask();
-    if (r == TY_ERROR_IO)
-        ty_error(TY_ERROR_IO, "%s", ty_error_last_message());
+    hs_error_unmask();
+    if (r < 0) {
+        if (r == HS_ERROR_IO)
+            return ty_error(TY_ERROR_IO, "%s", ty_error_last_message());
+        return _ty_libhs_translate_error((int)r);
+    }
 
-    return r < 0 ? (int)r : 0;
+    return 0;
 }
 
 static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata)
@@ -489,21 +514,26 @@ static int teensy_reboot(tyb_board_interface *iface)
     int r;
 
     r = TY_ERROR_UNSUPPORTED;
-    switch (tyd_device_get_type(iface->dev)) {
-    case TYD_DEVICE_SERIAL:
-        r = tyd_serial_set_attributes(iface->h, 134, 0);
-        if (!r) {
+    switch (hs_device_get_type(iface->dev)) {
+    case HS_DEVICE_TYPE_SERIAL:
+        r = hs_serial_set_attributes(iface->h, 134, 0);
+        // FIXME: LIBHS ugly construct
+        if (r < 0) {
+            r = _ty_libhs_translate_error(r);
+        } else {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
                the device will keep rebooting when opened. */
             ty_error_mask(TY_ERROR_SYSTEM);
-            tyd_serial_set_attributes(iface->h, 115200, 0);
+            hs_serial_set_attributes(iface->h, 115200, 0);
             ty_error_unmask();
         }
         break;
 
-    case TYD_DEVICE_HID:
-        r = (int)tyd_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
-        if (r >= 0) {
+    case HS_DEVICE_TYPE_HID:
+        r = (int)hs_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
+        if (r < 0) {
+            r = _ty_libhs_translate_error(r);
+        } else {
             assert(r == sizeof(seremu_magic));
             r = 0;
         }

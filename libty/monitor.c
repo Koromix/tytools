@@ -7,6 +7,8 @@
 
 #include "ty/common.h"
 #include "compat.h"
+#include "hs/device.h"
+#include "hs/monitor.h"
 #include "board_priv.h"
 #include "ty/monitor.h"
 #include "ty/system.h"
@@ -15,7 +17,7 @@
 struct tyb_monitor {
     int flags;
 
-    tyd_monitor *monitor;
+    hs_monitor *monitor;
     ty_timer *timer;
 
     bool enumerated;
@@ -25,6 +27,7 @@ struct tyb_monitor {
 
     ty_mutex refresh_mutex;
     ty_cond refresh_cond;
+    int callback_ret;
 
     ty_list_head boards;
     ty_list_head missing_boards;
@@ -82,7 +85,7 @@ static int add_board(tyb_monitor *monitor, tyb_board_interface *iface, tyb_board
     }
     board->refcount = 1;
 
-    board->location = strdup(tyd_device_get_location(iface->dev));
+    board->location = strdup(hs_device_get_location(iface->dev));
     if (!board->location) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
@@ -98,8 +101,8 @@ static int add_board(tyb_monitor *monitor, tyb_board_interface *iface, tyb_board
     board->model = iface->model;
     board->serial = iface->serial;
 
-    board->vid = tyd_device_get_vid(iface->dev);
-    board->pid = tyd_device_get_pid(iface->dev);
+    board->vid = hs_device_get_vid(iface->dev);
+    board->pid = hs_device_get_pid(iface->dev);
 
     r = asprintf(&board->id, "%"PRIu64"-%s", board->serial, board->model->family->name);
     if (r < 0) {
@@ -183,7 +186,7 @@ static tyb_board *find_board(tyb_monitor *monitor, const char *location)
     return NULL;
 }
 
-static int open_new_interface(tyd_device *dev, tyb_board_interface **riface)
+static int open_new_interface(hs_device *dev, tyb_board_interface **riface)
 {
     tyb_board_interface *iface;
     const char *serial;
@@ -200,9 +203,9 @@ static int open_new_interface(tyd_device *dev, tyb_board_interface **riface)
     if (r < 0)
         goto error;
 
-    iface->dev = tyd_device_ref(dev);
+    iface->dev = hs_device_ref(dev);
 
-    serial = tyd_device_get_serial_number(dev);
+    serial = hs_device_get_serial_number_string(dev);
     if (serial)
         iface->serial = strtoull(serial, NULL, 10);
 
@@ -231,7 +234,7 @@ error:
     return r;
 }
 
-static tyb_board_interface *find_interface(tyb_monitor *monitor, tyd_device *dev)
+static tyb_board_interface *find_interface(tyb_monitor *monitor, hs_device *dev)
 {
     ty_htable_foreach_hash(cur, &monitor->interfaces, ty_htable_hash_ptr(dev)) {
         tyb_board_interface *iface = ty_container_of(cur, tyb_board_interface, hnode);
@@ -254,7 +257,7 @@ static bool iface_is_compatible(tyb_board_interface *iface, tyb_board *board)
     return true;
 }
 
-static int add_interface(tyb_monitor *monitor, tyd_device *dev)
+static int add_interface(tyb_monitor *monitor, hs_device *dev)
 {
     tyb_board_interface *iface = NULL;
     tyb_board *board = NULL;
@@ -265,7 +268,7 @@ static int add_interface(tyb_monitor *monitor, tyd_device *dev)
     if (r <= 0)
         goto error;
 
-    board = find_board(monitor, tyd_device_get_location(dev));
+    board = find_board(monitor, hs_device_get_location(dev));
 
     /* Maybe the device notifications came in the wrong order, or somehow the device
        removal notifications were dropped somewhere and we never got them, so use
@@ -280,12 +283,12 @@ static int add_interface(tyb_monitor *monitor, tyd_device *dev)
     }
 
     if (board) {
-        if (board->vid != tyd_device_get_vid(dev) || board->pid != tyd_device_get_pid(dev)) {
+        if (board->vid != hs_device_get_vid(dev) || board->pid != hs_device_get_pid(dev)) {
             if (board->state == TYB_BOARD_STATE_ONLINE)
                 close_board(board);
 
-            board->vid = tyd_device_get_vid(dev);
-            board->pid = tyd_device_get_pid(dev);
+            board->vid = hs_device_get_vid(dev);
+            board->pid = hs_device_get_pid(dev);
         }
 
         if (tyb_board_model_is_real(iface->model))
@@ -328,7 +331,7 @@ error:
     return r;
 }
 
-static int remove_interface(tyb_monitor *monitor, tyd_device *dev)
+static int remove_interface(tyb_monitor *monitor, hs_device *dev)
 {
     tyb_board_interface *iface;
     tyb_board *board;
@@ -372,16 +375,18 @@ static int remove_interface(tyb_monitor *monitor, tyd_device *dev)
     return r;
 }
 
-static int device_callback(tyd_device *dev, tyd_monitor_event event, void *udata)
+static int device_callback(hs_device *dev, void *udata)
 {
     tyb_monitor *monitor = udata;
 
-    switch (event) {
-    case TYD_MONITOR_EVENT_ADDED:
-        return add_interface(monitor, dev);
+    switch (hs_device_get_status(dev)) {
+    case HS_DEVICE_STATUS_ONLINE:
+        monitor->callback_ret = add_interface(monitor, dev);
+        return !!monitor->callback_ret;
 
-    case TYD_MONITOR_EVENT_REMOVED:
-        return remove_interface(monitor, dev);
+    case HS_DEVICE_STATUS_DISCONNECTED:
+        monitor->callback_ret = remove_interface(monitor, dev);
+        return !!monitor->callback_ret;
     }
 
     assert(false);
@@ -404,13 +409,17 @@ int tyb_monitor_new(int flags, tyb_monitor **rmonitor)
 
     monitor->flags = flags;
 
-    r = tyd_monitor_new(&monitor->monitor);
-    if (r < 0)
+    r = hs_monitor_new(NULL, 0, &monitor->monitor);
+    if (r < 0) {
+        r = _ty_libhs_translate_error(r);
         goto error;
+    }
 
-    r = tyd_monitor_register_callback(monitor->monitor, device_callback, monitor);
-    if (r < 0)
+    r = hs_monitor_start(monitor->monitor);
+    if (r < 0) {
+        r = _ty_libhs_translate_error(r);
         goto error;
+    }
 
     r = ty_timer_new(&monitor->timer);
     if (r < 0)
@@ -447,7 +456,7 @@ void tyb_monitor_free(tyb_monitor *monitor)
         ty_cond_release(&monitor->refresh_cond);
         ty_mutex_release(&monitor->refresh_mutex);
 
-        tyd_monitor_free(monitor->monitor);
+        hs_monitor_free(monitor->monitor);
         ty_timer_free(monitor->timer);
 
         ty_list_foreach(cur, &monitor->callbacks) {
@@ -483,7 +492,7 @@ void tyb_monitor_get_descriptors(const tyb_monitor *monitor, ty_descriptor_set *
     assert(monitor);
     assert(set);
 
-    tyd_monitor_get_descriptors(monitor->monitor, set, id);
+    ty_descriptor_set_add(set, hs_monitor_get_descriptor(monitor->monitor), id);
     ty_timer_get_descriptors(monitor->timer, set, id);
 }
 
@@ -547,16 +556,25 @@ int tyb_monitor_refresh(tyb_monitor *monitor)
         monitor->enumerated = true;
 
         // FIXME: never listed devices if error on enumeration (unlink the real refresh)
-        r = tyd_monitor_list(monitor->monitor, device_callback, monitor);
+        r = hs_monitor_list(monitor->monitor, device_callback, monitor);
         if (r < 0)
             return r;
 
         return 0;
     }
 
-    r = tyd_monitor_refresh(monitor->monitor);
-    if (r < 0)
-        return r;
+    r = hs_monitor_refresh(monitor->monitor, device_callback, monitor);
+    if (r < 0) {
+        /* The callback is in libty, and we need a way to get the error code without it
+           being converted from a libhs error code. */
+        if (monitor->callback_ret) {
+            r = monitor->callback_ret;
+            monitor->callback_ret = 0;
+            return r;
+        }
+
+        return _ty_libhs_translate_error(r);
+    }
 
     ty_mutex_lock(&monitor->refresh_mutex);
     ty_cond_broadcast(&monitor->refresh_cond);

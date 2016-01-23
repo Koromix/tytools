@@ -10,6 +10,7 @@
 #ifndef _WIN32
     #include <sys/stat.h>
 #endif
+#include "hs/device.h"
 #include "board_priv.h"
 #include "ty/firmware.h"
 #include "ty/monitor.h"
@@ -545,8 +546,8 @@ void tyb_board_interface_unref(tyb_board_interface *iface)
             return;
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
-        tyd_device_close(iface->h);
-        tyd_device_unref(iface->dev);
+        hs_handle_close(iface->h);
+        hs_device_unref(iface->dev);
 
         ty_mutex_release(&iface->open_lock);
     }
@@ -563,9 +564,11 @@ int tyb_board_interface_open(tyb_board_interface *iface)
     ty_mutex_lock(&iface->open_lock);
 
     if (!iface->h) {
-        r = tyd_device_open(iface->dev, &iface->h);
-        if (r < 0)
+        r = hs_device_open(iface->dev, &iface->h);
+        if (r < 0) {
+            r = _ty_libhs_translate_error(r);
             goto cleanup;
+        }
     }
     iface->open_count++;
 
@@ -584,7 +587,7 @@ void tyb_board_interface_close(tyb_board_interface *iface)
 
     ty_mutex_lock(&iface->open_lock);
     if (!--iface->open_count) {
-        tyd_device_close(iface->h);
+        hs_handle_close(iface->h);
         iface->h = NULL;
     }
     ty_mutex_unlock(&iface->open_lock);
@@ -607,22 +610,22 @@ int tyb_board_interface_get_capabilities(const tyb_board_interface *iface)
 const char *tyb_board_interface_get_path(const tyb_board_interface *iface)
 {
     assert(iface);
-    return tyd_device_get_path(iface->dev);
+    return hs_device_get_path(iface->dev);
 }
 
 uint8_t tyb_board_interface_get_interface_number(const tyb_board_interface *iface)
 {
     assert(iface);
-    return tyd_device_get_interface_number(iface->dev);
+    return hs_device_get_interface_number(iface->dev);
 }
 
-tyd_device *tyb_board_interface_get_device(const tyb_board_interface *iface)
+hs_device *tyb_board_interface_get_device(const tyb_board_interface *iface)
 {
     assert(iface);
     return iface->dev;
 }
 
-tyd_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface)
+hs_handle *tyb_board_interface_get_handle(const tyb_board_interface *iface)
 {
     assert(iface);
     return iface->h;
@@ -634,7 +637,7 @@ void tyb_board_interface_get_descriptors(const tyb_board_interface *iface, struc
     assert(set);
 
     if (iface->h)
-        tyd_device_get_descriptors(iface->h, set, id);
+        ty_descriptor_set_add(set, hs_handle_get_descriptor(iface->h), id);
 }
 
 static int new_task(tyb_board *board, const struct _ty_task_vtable *vtable, ty_task **rtask)
