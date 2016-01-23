@@ -8,6 +8,7 @@
 #include "ty/common.h"
 #include "compat.h"
 #include <stdarg.h>
+#include "hs/common.h"
 #include "ty/system.h"
 #include "task_priv.h"
 
@@ -39,6 +40,7 @@ static __thread unsigned int mask_count;
 
 static __thread char last_error_msg[256];
 
+static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 TY_INIT()
 {
     const char *value;
@@ -50,6 +52,8 @@ TY_INIT()
     value = getenv("TY_EXPERIMENTAL");
     if (value && strcmp(value, "0") != 0 && strcmp(value, "") != 0)
         ty_config_experimental = true;
+
+    hs_log_set_handler(libhs_log_handler, NULL);
 
     return 0;
 }
@@ -294,4 +298,53 @@ void _ty_message(ty_task *task, ty_message_type type, const void *data)
     (*handler)(task, type, data, handler_udata);
     if (task && task->callback)
         (*task->callback)(task, type, data, task->callback_udata);
+}
+
+int _ty_libhs_translate_error(int err)
+{
+    if (err >= 0)
+        return err;
+
+    switch ((hs_error_code)err) {
+    case HS_ERROR_MEMORY:
+        return TY_ERROR_MEMORY;
+    case HS_ERROR_NOT_FOUND:
+        return TY_ERROR_NOT_FOUND;
+    case HS_ERROR_ACCESS:
+        return TY_ERROR_ACCESS;
+    case HS_ERROR_IO:
+        return TY_ERROR_IO;
+    case HS_ERROR_SYSTEM:
+        return TY_ERROR_SYSTEM;
+    }
+
+    assert(false);
+    return TY_ERROR_OTHER;
+}
+
+static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata)
+{
+    TY_UNUSED(udata);
+
+    ty_log_message msg;
+
+    err = _ty_libhs_translate_error(err);
+    if (ty_error_is_masked(err))
+        return;
+
+    switch (level) {
+    case HS_LOG_DEBUG:
+        msg.level = TY_LOG_DEBUG;
+        break;
+    case HS_LOG_WARNING:
+        msg.level = TY_LOG_WARNING;
+        break;
+    case HS_LOG_ERROR:
+        msg.level = TY_LOG_ERROR;
+        break;
+    }
+    msg.err = err;
+    msg.msg = log;
+
+    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
 }
