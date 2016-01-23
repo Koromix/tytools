@@ -25,7 +25,7 @@ Monitor::~Monitor()
     monitor_notifier_.clear();
     boards_.clear();
 
-    tyb_monitor_free(monitor_);
+    ty_monitor_free(monitor_);
 }
 
 bool Monitor::start()
@@ -33,28 +33,28 @@ bool Monitor::start()
     if (monitor_)
         return true;
 
-    int r = tyb_monitor_new(TYB_MONITOR_PARALLEL_WAIT, &monitor_);
+    int r = ty_monitor_new(TY_MONITOR_PARALLEL_WAIT, &monitor_);
     if (r < 0)
         return false;
-    r = tyb_monitor_register_callback(monitor_, [](tyb_board *board, tyb_monitor_event event, void *udata) {
+    r = ty_monitor_register_callback(monitor_, [](ty_board *board, ty_monitor_event event, void *udata) {
         Monitor *model = static_cast<Monitor *>(udata);
         return model->handleEvent(board, event);
     }, this);
     if (r < 0) {
-        tyb_monitor_free(monitor_);
+        ty_monitor_free(monitor_);
         monitor_ = nullptr;
 
         return false;
     }
 
     ty_descriptor_set set = {};
-    tyb_monitor_get_descriptors(monitor_, &set, 1);
+    ty_monitor_get_descriptors(monitor_, &set, 1);
     monitor_notifier_.setDescriptorSet(&set);
     connect(&monitor_notifier_, &DescriptorNotifier::activated, this, &Monitor::refresh);
 
     serial_thread_.start();
 
-    tyb_monitor_refresh(monitor_);
+    ty_monitor_refresh(monitor_);
 
     return true;
 }
@@ -173,19 +173,19 @@ bool Monitor::setData(const QModelIndex &index, const QVariant &value, int role)
 void Monitor::refresh(ty_descriptor desc)
 {
     Q_UNUSED(desc);
-    tyb_monitor_refresh(monitor_);
+    ty_monitor_refresh(monitor_);
 }
 
-int Monitor::handleEvent(tyb_board *board, tyb_monitor_event event)
+int Monitor::handleEvent(ty_board *board, ty_monitor_event event)
 {
     switch (event) {
-    case TYB_MONITOR_EVENT_ADDED:
+    case TY_MONITOR_EVENT_ADDED:
         handleAddedEvent(board);
         break;
 
-    case TYB_MONITOR_EVENT_CHANGED:
-    case TYB_MONITOR_EVENT_DISAPPEARED:
-    case TYB_MONITOR_EVENT_DROPPED:
+    case TY_MONITOR_EVENT_CHANGED:
+    case TY_MONITOR_EVENT_DISAPPEARED:
+    case TY_MONITOR_EVENT_DROPPED:
         handleChangedEvent(board);
         break;
     }
@@ -193,12 +193,12 @@ int Monitor::handleEvent(tyb_board *board, tyb_monitor_event event)
     return 0;
 }
 
-Monitor::iterator Monitor::findBoardIterator(tyb_board *board)
+Monitor::iterator Monitor::findBoardIterator(ty_board *board)
 {
     return find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
 }
 
-void Monitor::handleAddedEvent(tyb_board *board)
+void Monitor::handleAddedEvent(ty_board *board)
 {
     auto ptr = Board::createBoard(board);
 
@@ -227,7 +227,7 @@ void Monitor::handleAddedEvent(tyb_board *board)
     emit boardAdded(ptr.get());
 }
 
-void Monitor::handleChangedEvent(tyb_board *board)
+void Monitor::handleChangedEvent(ty_board *board)
 {
     auto it = findBoardIterator(board);
     if (it == boards_.end())
@@ -241,7 +241,7 @@ void Monitor::refreshBoardItem(iterator it)
 {
     auto ptr = *it;
 
-    if (tyb_board_get_state(ptr->board_) == TYB_BOARD_STATE_DROPPED) {
+    if (ty_board_get_state(ptr->board_) == TY_BOARD_STATE_DROPPED) {
         beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
         boards_.erase(it);
         endRemoveRows();

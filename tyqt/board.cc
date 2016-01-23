@@ -16,8 +16,8 @@
 
 using namespace std;
 
-Board::Board(tyb_board *board, QObject *parent)
-    : QObject(parent), board_(tyb_board_ref(board))
+Board::Board(ty_board *board, QObject *parent)
+    : QObject(parent), board_(ty_board_ref(board))
 {
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setUndoRedoEnabled(false);
@@ -39,11 +39,11 @@ Board::Board(tyb_board *board, QObject *parent)
     refreshBoard();
 }
 
-shared_ptr<Board> Board::createBoard(tyb_board *board)
+shared_ptr<Board> Board::createBoard(ty_board *board)
 {
     // Work around the private constructor for make_shared()
     struct BoardSharedEnabler : public Board {
-        BoardSharedEnabler(tyb_board *board)
+        BoardSharedEnabler(ty_board *board)
             : Board(board) {}
     };
 
@@ -52,70 +52,70 @@ shared_ptr<Board> Board::createBoard(tyb_board *board)
 
 Board::~Board()
 {
-    tyb_board_interface_close(serial_iface_);
-    tyb_board_unref(board_);
+    ty_board_interface_close(serial_iface_);
+    ty_board_unref(board_);
 }
 
-tyb_board *Board::board() const
+ty_board *Board::board() const
 {
     return board_;
 }
 
 bool Board::matchesTag(const QString &id)
 {
-    return tyb_board_matches_tag(board_, id.toLocal8Bit().constData());
+    return ty_board_matches_tag(board_, id.toLocal8Bit().constData());
 }
 
-tyb_board_state Board::state() const
+ty_board_state Board::state() const
 {
-    return tyb_board_get_state(board_);
+    return ty_board_get_state(board_);
 }
 
 uint16_t Board::capabilities() const
 {
-    return tyb_board_get_capabilities(board_);
+    return ty_board_get_capabilities(board_);
 }
 
-const tyb_board_model *Board::model() const
+const ty_board_model *Board::model() const
 {
-    return tyb_board_get_model(board_);
+    return ty_board_get_model(board_);
 }
 
 QString Board::modelName() const
 {
-    auto model = tyb_board_get_model(board_);
+    auto model = ty_board_get_model(board_);
     if (!model)
         return tr("(unknown)");
 
-    return tyb_board_model_get_name(model);
+    return ty_board_model_get_name(model);
 }
 
 QString Board::id() const
 {
-    return tyb_board_get_id(board_);
+    return ty_board_get_id(board_);
 }
 
 QString Board::location() const
 {
-    return tyb_board_get_location(board_);
+    return ty_board_get_location(board_);
 }
 
 uint64_t Board::serialNumber() const
 {
-    return tyb_board_get_serial_number(board_);
+    return ty_board_get_serial_number(board_);
 }
 
 std::vector<BoardInterfaceInfo> Board::interfaces() const
 {
     std::vector<BoardInterfaceInfo> vec;
 
-    tyb_board_list_interfaces(board_, [](tyb_board_interface *iface, void *udata) {
+    ty_board_list_interfaces(board_, [](ty_board_interface *iface, void *udata) {
         BoardInterfaceInfo info;
-        info.name = tyb_board_interface_get_name(iface);
-        info.path = tyb_board_interface_get_path(iface);
-        info.capabilities = tyb_board_interface_get_capabilities(iface);
-        info.number = tyb_board_interface_get_interface_number(iface);
-        info.open = tyb_board_interface_get_handle(iface);
+        info.name = ty_board_interface_get_name(iface);
+        info.path = ty_board_interface_get_path(iface);
+        info.capabilities = ty_board_interface_get_capabilities(iface);
+        info.number = ty_board_interface_get_interface_number(iface);
+        info.open = ty_board_interface_get_handle(iface);
 
         auto vec = reinterpret_cast<std::vector<BoardInterfaceInfo> *>(udata);
         vec->push_back(info);
@@ -128,27 +128,27 @@ std::vector<BoardInterfaceInfo> Board::interfaces() const
 
 bool Board::isRunning() const
 {
-    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RUN);
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RUN);
 }
 
 bool Board::isUploadAvailable() const
 {
-    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();
 }
 
 bool Board::isResetAvailable() const
 {
-    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_RESET) || isRebootAvailable();
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || isRebootAvailable();
 }
 
 bool Board::isRebootAvailable() const
 {
-    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_REBOOT);
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_REBOOT);
 }
 
 bool Board::isSerialAvailable() const
 {
-    return tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL);
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
 }
 
 bool Board::errorOccured() const
@@ -177,7 +177,7 @@ QString Board::firmwareName() const
 
 void Board::setTag(const QString &tag)
 {
-    int r = tyb_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
+    int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
     if (r < 0)
         throw bad_alloc();
     emit settingChanged("tag", tag);
@@ -224,9 +224,9 @@ QStringList Board::makeCapabilityList(uint16_t capabilities)
 {
     QStringList list;
 
-    for (unsigned int i = 0; i < TYB_BOARD_CAPABILITY_COUNT; i++) {
+    for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
         if (capabilities & (1 << i))
-            list.append(tyb_board_capability_get_name(static_cast<tyb_board_capability>(i)));
+            list.append(ty_board_capability_get_name(static_cast<ty_board_capability>(i)));
     }
 
     return list;
@@ -250,7 +250,7 @@ TaskInterface Board::upload(const std::vector<std::shared_ptr<Firmware>> &fws)
 
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
 {
-    vector<tyb_firmware *> fws2;
+    vector<ty_firmware *> fws2;
     ty_task *task;
     int r;
 
@@ -258,7 +258,7 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
     for (auto &fw: fws)
         fws2.push_back(fw->firmware());
 
-    r = tyb_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TYB_UPLOAD_NORESET, &task);
+    r = ty_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TY_UPLOAD_NORESET, &task);
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
 
@@ -266,9 +266,9 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
         if (!success)
             return;
 
-        auto fw = static_cast<tyb_firmware *>(result.get());
-        setFirmware(tyb_firmware_get_filename(fw));
-        firmware_name_ = tyb_firmware_get_name(fw);
+        auto fw = static_cast<ty_firmware *>(result.get());
+        setFirmware(ty_firmware_get_filename(fw));
+        firmware_name_ = ty_firmware_get_name(fw);
 
         emit boardChanged();
     });
@@ -279,7 +279,7 @@ TaskInterface Board::reset()
     ty_task *task;
     int r;
 
-    r = tyb_reset(board_, &task);
+    r = ty_reset(board_, &task);
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
 
@@ -291,7 +291,7 @@ TaskInterface Board::reboot()
     ty_task *task;
     int r;
 
-    r = tyb_reboot(board_, &task);
+    r = ty_reboot(board_, &task);
     if (r < 0)
         return make_task<FailedTask>(ty_error_last_message());
 
@@ -322,7 +322,7 @@ void Board::detachMonitor()
 
 bool Board::sendSerial(const QByteArray &buf)
 {
-    ssize_t r = tyb_board_serial_write(board_, buf.data(), buf.size());
+    ssize_t r = ty_board_serial_write(board_, buf.data(), buf.size());
     if (r < 0) {
         emit notifyLog(TY_LOG_ERROR, ty_error_last_message());
         return false;
@@ -363,7 +363,7 @@ void Board::serialReceived(ty_descriptor desc)
         if (serial_buf_len_ == sizeof(serial_buf_))
             break;
 
-        int r = tyb_board_serial_read(board_, serial_buf_ + serial_buf_len_,
+        int r = ty_board_serial_read(board_, serial_buf_ + serial_buf_len_,
                                       sizeof(serial_buf_) - serial_buf_len_, 0);
         if (r < 0) {
             serial_notifier_.clear();
@@ -418,13 +418,13 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
 
 void Board::refreshBoard()
 {
-    if (tyb_board_has_capability(board_, TYB_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
+    if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
         openSerialInterface();
     } else {
         closeSerialInterface();
     }
 
-    if (state() == TYB_BOARD_STATE_DROPPED) {
+    if (state() == TY_BOARD_STATE_DROPPED) {
         emit boardDropped();
     } else {
         emit boardChanged();
@@ -439,12 +439,12 @@ bool Board::openSerialInterface()
     ty_descriptor_set set = {};
     int r;
 
-    r = tyb_board_open_interface(board_, TYB_BOARD_CAPABILITY_SERIAL, &serial_iface_);
+    r = ty_board_open_interface(board_, TY_BOARD_CAPABILITY_SERIAL, &serial_iface_);
     if (r < 0) {
         notifyLog(TY_LOG_ERROR, ty_error_last_message());
         return false;
     }
-    tyb_board_interface_get_descriptors(serial_iface_, &set, 1);
+    ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
 
     if (clear_on_reset_)
@@ -459,7 +459,7 @@ void Board::closeSerialInterface()
         return;
 
     serial_notifier_.clear();
-    tyb_board_interface_close(serial_iface_);
+    ty_board_interface_close(serial_iface_);
     serial_iface_ = nullptr;
 }
 

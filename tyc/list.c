@@ -134,34 +134,34 @@ static void end_collection(void)
     collection_started = !!collection_depth;
 }
 
-static int print_interface_info(tyb_board_interface *iface, void *udata)
+static int print_interface_info(ty_board_interface *iface, void *udata)
 {
     TY_UNUSED(udata);
 
-    print_field(tyb_board_interface_get_name(iface), "%s", tyb_board_interface_get_path(iface));
+    print_field(ty_board_interface_get_name(iface), "%s", ty_board_interface_get_path(iface));
 
     return 0;
 }
 
-static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
+static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
 {
     TY_UNUSED(event);
     TY_UNUSED(udata);
 
-    const tyb_board_model *model = tyb_board_get_model(board);
+    const ty_board_model *model = ty_board_get_model(board);
     const char *action = "";
 
     switch (event) {
-    case TYB_MONITOR_EVENT_ADDED:
+    case TY_MONITOR_EVENT_ADDED:
         action = "add";
         break;
-    case TYB_MONITOR_EVENT_CHANGED:
+    case TY_MONITOR_EVENT_CHANGED:
         action = "change";
         break;
-    case TYB_MONITOR_EVENT_DISAPPEARED:
+    case TY_MONITOR_EVENT_DISAPPEARED:
         action = "miss";
         break;
-    case TYB_MONITOR_EVENT_DROPPED:
+    case TY_MONITOR_EVENT_DROPPED:
         action = "remove";
         break;
     }
@@ -169,30 +169,30 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
     start_collection(NULL, COLLECTION_OBJECT);
 
     if (output == OUTPUT_PLAIN) {
-        printf("%s %s %s", action, tyb_board_get_tag(board),
-               model ? tyb_board_model_get_name(model) : "(unknown)");
+        printf("%s %s %s", action, ty_board_get_tag(board),
+               model ? ty_board_model_get_name(model) : "(unknown)");
     } else {
         print_field("action", "%s", action);
-        print_field("tag", "%s", tyb_board_get_tag(board));
-        print_field("serial", "%"PRIu64, tyb_board_get_serial_number(board));
+        print_field("tag", "%s", ty_board_get_tag(board));
+        print_field("serial", "%"PRIu64, ty_board_get_serial_number(board));
         if (model)
-            print_field("model", "%s", tyb_board_model_get_name(model));
+            print_field("model", "%s", ty_board_model_get_name(model));
     }
 
-    if (verbose && ((event != TYB_MONITOR_EVENT_DROPPED && event != TYB_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {
-        print_field("location", "%s", tyb_board_get_location(board));
+    if (verbose && ((event != TY_MONITOR_EVENT_DROPPED && event != TY_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {
+        print_field("location", "%s", ty_board_get_location(board));
 
-        int capabilities = tyb_board_get_capabilities(board);
+        int capabilities = ty_board_get_capabilities(board);
 
         start_collection("capabilities", COLLECTION_LIST);
-        for (unsigned int i = 0; i < TYB_BOARD_CAPABILITY_COUNT; i++) {
+        for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
             if (capabilities & (1 << i))
-                print_field(NULL, "%s", tyb_board_capability_get_name(i));
+                print_field(NULL, "%s", ty_board_capability_get_name(i));
         }
         end_collection();
 
         start_collection("interfaces", COLLECTION_LIST);
-        tyb_board_list_interfaces(board, print_interface_info, NULL);
+        ty_board_list_interfaces(board, print_interface_info, NULL);
         end_collection();
     }
 
@@ -205,7 +205,7 @@ static int list_callback(tyb_board *board, tyb_monitor_event event, void *udata)
 
 int list(int argc, char *argv[])
 {
-    tyb_monitor *monitor;
+    ty_monitor *monitor;
     int r;
 
     int c;
@@ -243,16 +243,16 @@ int list(int argc, char *argv[])
     if (r < 0)
         return EXIT_FAILURE;
 
-    r = tyb_monitor_list(monitor, list_callback, NULL);
+    r = ty_monitor_list(monitor, list_callback, NULL);
     if (r < 0)
         return EXIT_FAILURE;
 
     if (watch) {
-        r = tyb_monitor_register_callback(monitor, list_callback, NULL);
+        r = ty_monitor_register_callback(monitor, list_callback, NULL);
         if (r < 0)
             return EXIT_FAILURE;
 
-        r = tyb_monitor_wait(monitor, NULL, NULL, -1);
+        r = ty_monitor_wait(monitor, NULL, NULL, -1);
         if (r < 0)
             return EXIT_FAILURE;
     }

@@ -19,14 +19,14 @@
 
 class Board;
 class Database;
-struct tyb_board;
+struct ty_board;
 
 class Monitor : public QAbstractListModel {
     Q_OBJECT
 
     Database *db_ = nullptr;
 
-    tyb_monitor *monitor_ = nullptr;
+    ty_monitor *monitor_ = nullptr;
     DescriptorNotifier monitor_notifier_;
 
     QThread serial_thread_;
@@ -46,7 +46,7 @@ public:
 
     bool start();
 
-    tyb_monitor *monitor() const { return monitor_; }
+    ty_monitor *monitor() const { return monitor_; }
 
     iterator begin() { return boards_.begin(); }
     iterator end() { return boards_.end(); }
@@ -74,11 +74,11 @@ private slots:
     void refresh(ty_descriptor desc);
 
 private:
-    iterator findBoardIterator(tyb_board *board);
+    iterator findBoardIterator(ty_board *board);
 
-    int handleEvent(tyb_board *board, tyb_monitor_event event);
-    void handleAddedEvent(tyb_board *board);
-    void handleChangedEvent(tyb_board *board);
+    int handleEvent(ty_board *board, ty_monitor_event event);
+    void handleAddedEvent(ty_board *board);
+    void handleChangedEvent(ty_board *board);
 
     void refreshBoardItem(iterator it);
 

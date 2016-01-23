@@ -54,7 +54,7 @@ typedef struct Elf32_Phdr {
 #define PT_LOAD 1
 
 struct loader_context {
-    tyb_firmware *fw;
+    ty_firmware *fw;
 
     FILE *fp;
 
@@ -137,7 +137,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     if (phdr.p_type != PT_LOAD || !phdr.p_filesz)
         return 0;
 
-    r = _tyb_firmware_expand_image(ctx->fw, phdr.p_paddr + phdr.p_filesz);
+    r = _ty_firmware_expand_image(ctx->fw, phdr.p_paddr + phdr.p_filesz);
     if (r < 0)
         return r;
     r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, ctx->fw->image + phdr.p_paddr);
@@ -147,7 +147,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     return 1;
 }
 
-int _tyb_firmware_load_elf(tyb_firmware *fw)
+int _ty_firmware_load_elf(ty_firmware *fw)
 {
     assert(fw);
 

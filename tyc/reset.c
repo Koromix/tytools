@@ -31,7 +31,7 @@ static void print_reset_usage(FILE *f)
 
 int reset(int argc, char *argv[])
 {
-    tyb_board *board = NULL;
+    ty_board *board = NULL;
     ty_task *task = NULL;
     int r;
 
@@ -57,9 +57,9 @@ int reset(int argc, char *argv[])
         goto cleanup;
 
     if (bootloader) {
-        r = tyb_reboot(board, &task);
+        r = ty_reboot(board, &task);
     } else {
-        r = tyb_reset(board, &task);
+        r = ty_reset(board, &task);
     }
     if (r < 0)
         goto cleanup;
@@ -68,6 +68,6 @@ int reset(int argc, char *argv[])
 
 cleanup:
     ty_task_unref(task);
-    tyb_board_unref(board);
+    ty_board_unref(board);
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }

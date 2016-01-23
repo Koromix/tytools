@@ -10,7 +10,7 @@
 #include "firmware_priv.h"
 
 struct parser_context {
-    tyb_firmware *fw;
+    ty_firmware *fw;
 
     uint32_t base_offset;
 
@@ -74,7 +74,7 @@ static int parse_line(struct parser_context *ctx, const char *line)
     switch (type) {
     case 0: // data record
         address += ctx->base_offset;
-        r = _tyb_firmware_expand_image(ctx->fw, address + length);
+        r = _ty_firmware_expand_image(ctx->fw, address + length);
         if (r < 0)
             return r;
         for (unsigned int i = 0; i < length; i++)
@@ -122,7 +122,7 @@ parse_error:
                     ctx->fw->filename);
 }
 
-int _tyb_firmware_load_ihex(tyb_firmware *fw)
+int _ty_firmware_load_ihex(ty_firmware *fw)
 {
     assert(fw);
 

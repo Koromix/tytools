@@ -15,8 +15,8 @@
 #include "ty/firmware.h"
 #include "ty/system.h"
 
-struct tyb_board_model {
-    TYB_BOARD_MODEL
+struct ty_board_model {
+    TY_BOARD_MODEL
 
     // Identifcation
     uint8_t usage;
@@ -40,16 +40,16 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
-const tyb_board_family _tyb_teensy_family;
-static const struct _tyb_board_interface_vtable teensy_vtable;
+const ty_board_family _ty_teensy_family;
+static const struct _ty_board_interface_vtable teensy_vtable;
 
-static const tyb_board_model teensy_unknown_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_unknown_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy"
 };
 
-static const tyb_board_model teensy_pp10_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_pp10_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy++ 1.0",
     .mcu = "at90usb646",
 
@@ -63,8 +63,8 @@ static const tyb_board_model teensy_pp10_model = {
     .signature = {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
-static const tyb_board_model teensy_20_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_20_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy 2.0",
     .mcu = "atmega32u4",
 
@@ -78,8 +78,8 @@ static const tyb_board_model teensy_20_model = {
     .signature = {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
-static const tyb_board_model teensy_pp20_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_pp20_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy++ 2.0",
     .mcu = "at90usb1286",
 
@@ -93,8 +93,8 @@ static const tyb_board_model teensy_pp20_model = {
     .signature = {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}
 };
 
-static const tyb_board_model teensy_30_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_30_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy 3.0",
     .mcu = "mk20dx128",
 
@@ -107,8 +107,8 @@ static const tyb_board_model teensy_30_model = {
     .signature = {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
-static const tyb_board_model teensy_31_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_31_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy 3.1",
     .mcu = "mk20dx256",
 
@@ -121,8 +121,8 @@ static const tyb_board_model teensy_31_model = {
     .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
-static const tyb_board_model teensy_lc_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_lc_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy LC",
     .mcu = "mkl26z64",
 
@@ -135,8 +135,8 @@ static const tyb_board_model teensy_lc_model = {
     .signature = {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}
 };
 
-static const tyb_board_model teensy_32_model = {
-    .family = &_tyb_teensy_family,
+static const ty_board_model teensy_32_model = {
+    .family = &_ty_teensy_family,
     .name = "Teensy 3.2",
     .mcu = "mk20dx256",
 
@@ -149,7 +149,7 @@ static const tyb_board_model teensy_32_model = {
     .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
 };
 
-static const tyb_board_model *teensy_models[] = {
+static const ty_board_model *teensy_models[] = {
     &teensy_pp10_model,
     &teensy_20_model,
     &teensy_pp20_model,
@@ -160,13 +160,13 @@ static const tyb_board_model *teensy_models[] = {
     NULL
 };
 
-static const tyb_board_model *identify_model(const hs_hid_descriptor *desc)
+static const ty_board_model *identify_model(const hs_hid_descriptor *desc)
 {
     if (desc->usage_page != TEENSY_USAGE_PAGE_BOOTLOADER)
         return NULL;
 
-    for (const tyb_board_model **cur = teensy_models; *cur; cur++) {
-        const tyb_board_model *model = *cur;
+    for (const ty_board_model **cur = teensy_models; *cur; cur++) {
+        const ty_board_model *model = *cur;
 
         if (model->usage == desc->usage)
             return *cur;
@@ -198,7 +198,7 @@ static uint64_t parse_bootloader_serial(const char *s)
     return serial;
 }
 
-static int teensy_open_interface(tyb_board_interface *iface)
+static int teensy_open_interface(ty_board_interface *iface)
 {
     hs_hid_descriptor desc;
     int r;
@@ -223,7 +223,7 @@ static int teensy_open_interface(tyb_board_interface *iface)
 
     /* FIXME: do we always need to open? and we may be able to list
        more devices (at least on Windows) without READ/WRITE rights. */
-    r = tyb_board_interface_open(iface);
+    r = ty_board_interface_open(iface);
     if (r < 0)
         return r;
 
@@ -235,9 +235,9 @@ static int teensy_open_interface(tyb_board_interface *iface)
         hs_serial_set_attributes(iface->h, 115200, 0);
 
         iface->name = "Serial";
-        iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
-        iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
-        iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
+        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
+        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
+        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
         break;
 
     case HS_DEVICE_TYPE_HID:
@@ -254,16 +254,16 @@ static int teensy_open_interface(tyb_board_interface *iface)
 
             iface->name = "HalfKay";
             if (iface->model) {
-                iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_UPLOAD;
-                iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RESET;
+                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
+                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
             }
             break;
 
         case TEENSY_USAGE_PAGE_SEREMU:
             iface->name = "Seremu";
-            iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_RUN;
-            iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_SERIAL;
-            iface->capabilities |= 1 << TYB_BOARD_CAPABILITY_REBOOT;
+            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
+            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
+            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
             break;
 
         default:
@@ -280,31 +280,31 @@ static int teensy_open_interface(tyb_board_interface *iface)
 
     r = 1;
 cleanup:
-    tyb_board_interface_close(iface);
+    ty_board_interface_close(iface);
     return r;
 }
 
 // FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
-static unsigned int teensy_guess_models(const tyb_firmware *fw,
-                                        const tyb_board_model **rguesses, unsigned int max)
+static unsigned int teensy_guess_models(const ty_firmware *fw,
+                                        const ty_board_model **rguesses, unsigned int max)
 {
     const uint8_t *image;
     size_t size;
     unsigned int count = 0;
 
-    image = tyb_firmware_get_image(fw);
-    size = tyb_firmware_get_size(fw);
+    image = ty_firmware_get_image(fw);
+    size = ty_firmware_get_size(fw);
 
-    if (size < ty_member_sizeof(tyb_board_model, signature))
+    if (size < ty_member_sizeof(ty_board_model, signature))
         return 0;
 
     /* Naive search with each board's signature, not pretty but unless
        thousands of models appear this is good enough. */
-    for (size_t i = 0; i < size - ty_member_sizeof(tyb_board_model, signature); i++) {
-        for (const tyb_board_model **cur = teensy_models; *cur; cur++) {
-            const tyb_board_model *model = *cur;
+    for (size_t i = 0; i < size - ty_member_sizeof(ty_board_model, signature); i++) {
+        for (const ty_board_model **cur = teensy_models; *cur; cur++) {
+            const ty_board_model *model = *cur;
 
-            if (memcmp(image + i, model->signature, ty_member_sizeof(tyb_board_model, signature)) == 0) {
+            if (memcmp(image + i, model->signature, ty_member_sizeof(ty_board_model, signature)) == 0) {
                 rguesses[count++] = model;
                 if (count == max)
                     return count;
@@ -315,7 +315,7 @@ static unsigned int teensy_guess_models(const tyb_firmware *fw,
     return count;
 }
 
-static int teensy_serial_set_attributes(tyb_board_interface *iface, uint32_t rate, int flags)
+static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate, int flags)
 {
     int r;
 
@@ -329,7 +329,7 @@ static int teensy_serial_set_attributes(tyb_board_interface *iface, uint32_t rat
     return 0;
 }
 
-static ssize_t teensy_serial_read(tyb_board_interface *iface, char *buf, size_t size, int timeout)
+static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
 {
     uint8_t hid_buf[SEREMU_RX_SIZE + 1];
     ssize_t r;
@@ -357,7 +357,7 @@ static ssize_t teensy_serial_read(tyb_board_interface *iface, char *buf, size_t 
     return 0;
 }
 
-static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, size_t size)
+static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, size_t size)
 {
     uint8_t report[SEREMU_TX_SIZE + 1];
     size_t total = 0;
@@ -393,7 +393,7 @@ static ssize_t teensy_serial_write(tyb_board_interface *iface, const char *buf, 
     return 0;
 }
 
-static int halfkay_send(tyb_board_interface *iface, size_t addr, const void *data, size_t size, unsigned int timeout)
+static int halfkay_send(ty_board_interface *iface, size_t addr, const void *data, size_t size, unsigned int timeout)
 {
     uint8_t buf[2048] = {0};
     uint64_t start;
@@ -457,7 +457,7 @@ restart:
     return 0;
 }
 
-static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board_upload_progress_func *pf, void *udata)
+static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_upload_progress_func *pf, void *udata)
 {
     if (iface->model->experimental && !ty_config_experimental)
         return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, enable experimental mode",
@@ -467,8 +467,8 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board
     size_t size;
     int r;
 
-    image = tyb_firmware_get_image(fw);
-    size = tyb_firmware_get_size(fw);
+    image = ty_firmware_get_image(fw);
+    size = ty_firmware_get_size(fw);
 
     if (pf) {
         r = (*pf)(iface->board, fw, 0, udata);
@@ -498,7 +498,7 @@ static int teensy_upload(tyb_board_interface *iface, tyb_firmware *fw, tyb_board
     return 0;
 }
 
-static int teensy_reset(tyb_board_interface *iface)
+static int teensy_reset(ty_board_interface *iface)
 {
     if (iface->model->experimental && !ty_config_experimental)
         return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, enable experimental mode",
@@ -507,7 +507,7 @@ static int teensy_reset(tyb_board_interface *iface)
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }
 
-static int teensy_reboot(tyb_board_interface *iface)
+static int teensy_reboot(ty_board_interface *iface)
 {
     static unsigned char seremu_magic[] = {0, 0xA9, 0x45, 0xC2, 0x6B};
 
@@ -543,7 +543,7 @@ static int teensy_reboot(tyb_board_interface *iface)
     return r;
 }
 
-const tyb_board_family _tyb_teensy_family = {
+const ty_board_family _ty_teensy_family = {
     .name = "Teensy",
     .models = teensy_models,
 
@@ -551,7 +551,7 @@ const tyb_board_family _tyb_teensy_family = {
     .guess_models = teensy_guess_models
 };
 
-static const struct _tyb_board_interface_vtable teensy_vtable = {
+static const struct _ty_board_interface_vtable teensy_vtable = {
     .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,

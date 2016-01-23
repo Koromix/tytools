@@ -12,29 +12,29 @@
 
 TY_C_BEGIN
 
-typedef struct tyb_firmware tyb_firmware;
+typedef struct ty_firmware ty_firmware;
 
-typedef struct tyb_firmware_format {
+typedef struct ty_firmware_format {
     const char *name;
     const char *ext;
 
-    int (*load)(tyb_firmware *fw);
-} tyb_firmware_format;
+    int (*load)(ty_firmware *fw);
+} ty_firmware_format;
 
-TY_PUBLIC extern const tyb_firmware_format tyb_firmware_formats[];
+TY_PUBLIC extern const ty_firmware_format ty_firmware_formats[];
 
-#define TYB_FIRMWARE_MAX_SIZE (1024 * 1024)
+#define TY_FIRMWARE_MAX_SIZE (1024 * 1024)
 
-TY_PUBLIC int tyb_firmware_load(const char *filename, const char *format_name, tyb_firmware **rfw);
+TY_PUBLIC int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfw);
 
-TY_PUBLIC tyb_firmware *tyb_firmware_ref(tyb_firmware *fw);
-TY_PUBLIC void tyb_firmware_unref(tyb_firmware *fw);
+TY_PUBLIC ty_firmware *ty_firmware_ref(ty_firmware *fw);
+TY_PUBLIC void ty_firmware_unref(ty_firmware *fw);
 
-TY_PUBLIC const char *tyb_firmware_get_filename(const tyb_firmware *fw);
-TY_PUBLIC const char *tyb_firmware_get_name(const tyb_firmware *fw);
+TY_PUBLIC const char *ty_firmware_get_filename(const ty_firmware *fw);
+TY_PUBLIC const char *ty_firmware_get_name(const ty_firmware *fw);
 
-TY_PUBLIC size_t tyb_firmware_get_size(const tyb_firmware *fw);
-TY_PUBLIC const uint8_t *tyb_firmware_get_image(const tyb_firmware *fw);
+TY_PUBLIC size_t ty_firmware_get_size(const ty_firmware *fw);
+TY_PUBLIC const uint8_t *ty_firmware_get_image(const ty_firmware *fw);
 
 TY_C_END
 
