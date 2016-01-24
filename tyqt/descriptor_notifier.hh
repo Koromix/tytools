@@ -61,9 +61,10 @@ signals:
 
 private:
     void execute(std::function<void()> f);
-
-private slots:
-    void executeAsync(std::function<void()> f);
+    /* On Qt 5.2.1, QMetaObject::invokeMethod() fails on templated types
+       such as std::function<void()>. */
+    typedef std::function<void()> std_function_void_void;
+    Q_INVOKABLE void executeAsync(std_function_void_void f);
 };
 
 #endif

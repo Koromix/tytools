@@ -67,14 +67,15 @@ void DescriptorNotifier::clear()
 void DescriptorNotifier::execute(function<void()> f)
 {
     if (thread() != QThread::currentThread()) {
+        // See descriptor_notifier.hh for information about std_function_void_void
         QMetaObject::invokeMethod(this, "executeAsync", Qt::BlockingQueuedConnection,
-                                  Q_ARG(std::function<void()>, f));
+                                  Q_ARG(std_function_void_void, f));
     } else {
         f();
     }
 }
 
-void DescriptorNotifier::executeAsync(function<void ()> f)
+void DescriptorNotifier::executeAsync(function<void()> f)
 {
     f();
 }
