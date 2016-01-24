@@ -239,6 +239,19 @@ void ty_error_unmask(void)
     mask_count--;
 }
 
+bool ty_error_is_masked(int err)
+{
+    if (err >= 0)
+        return false;
+
+    for (unsigned int i = 0; i < mask_count; i++) {
+        if (mask[i] == err)
+            return true;
+    }
+
+    return false;
+}
+
 const char *ty_error_last_message(void)
 {
     return last_error_msg;
@@ -248,10 +261,8 @@ int ty_error(ty_err err, const char *fmt, ...)
 {
     va_list ap;
 
-    for (unsigned int i = 0; i < mask_count; i++) {
-        if (mask[i] == err)
-            return err;
-    }
+    if (ty_error_is_masked(err))
+        return err;
 
     if (!fmt)
         fmt = generic_error(err);

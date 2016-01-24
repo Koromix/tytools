@@ -155,6 +155,7 @@ TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
 
 TY_PUBLIC void ty_error_mask(ty_err err);
 TY_PUBLIC void ty_error_unmask(void);
+TY_PUBLIC bool ty_error_is_masked(int err);
 
 TY_PUBLIC const char *ty_error_last_message(void);
 
