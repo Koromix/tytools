@@ -70,11 +70,11 @@ endif()
 include_directories(libty/include ${CMAKE_BINARY_DIR})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(STATIC_BINARIES ON CACHE BOOL "Build statically linked binaries")
-if(STATIC_BINARIES)
-    set(TY_LIBRARIES ty_static)
-else()
+set(TY_SHARED_LIBTY OFF CACHE BOOL "Use libty as a dynamic library")
+if(TY_SHARED_LIBTY)
     set(TY_LIBRARIES ty_shared)
+else()
+    set(TY_LIBRARIES ty_static)
 endif()
 
 # Recompute the version string after each commit, does not work for tags though
