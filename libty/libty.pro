@@ -12,7 +12,6 @@ TARGET = ty
 HEADERS += include/ty.h \
     include/ty/board.h \
     include/ty/common.h \
-    include/ty/device.h \
     include/ty/firmware.h \
     include/ty/monitor.h \
     include/ty/system.h \
@@ -22,8 +21,6 @@ HEADERS += include/ty.h \
     board_priv.h \
     compat.h \
     config.h \
-    device_priv.h \
-    device_posix_priv.h \
     firmware_priv.h \
     htable.h \
     list.h \
@@ -33,7 +30,6 @@ SOURCES += board.c \
     board_teensy.c \
     common.c \
     compat.c \
-    device.c \
     firmware.c \
     firmware_elf.c \
     firmware_ihex.c \
@@ -42,11 +38,12 @@ SOURCES += board.c \
     system.c \
     task.c
 
+LIBS += -lhs
+
 win32 {
     LIBS += -lhid -lsetupapi
 
-    SOURCES += device_win32.c \
-        system_win32.c \
+    SOURCES += system_win32.c \
         thread_win32.c \
         timer_win32.c
 }
@@ -54,9 +51,7 @@ win32 {
 linux {
     LIBS += -ludev -lpthread
 
-    SOURCES += device_linux.c \
-        device_posix.c \
-        system_posix.c \
+    SOURCES += system_posix.c \
         thread_pthread.c \
         timer_linux.c
 }
@@ -64,9 +59,7 @@ linux {
 macx {
     LIBS += -framework IOKit -framework CoreFoundation
 
-    SOURCES += device_darwin.c \
-        device_posix.c \
-        system_posix.c \
+    SOURCES += system_posix.c \
         thread_pthread.c \
         timer_kqueue.c
 }

@@ -34,19 +34,19 @@ static const struct command commands[] = {
 
 static const char *board_tag = NULL;
 
-static tyb_monitor *board_monitor;
-static tyb_board *main_board;
+static ty_monitor *board_monitor;
+static ty_board *main_board;
 
 static void print_version(FILE *f)
 {
     fprintf(f, "tyc "TY_VERSION"\n");
 }
 
-static int print_family_model(const tyb_board_model *model, void *udata)
+static int print_family_model(const ty_board_model *model, void *udata)
 {
     FILE *f = udata;
 
-    fprintf(f, "   - %-22s (%s)\n", tyb_board_model_get_name(model), tyb_board_model_get_mcu(model));
+    fprintf(f, "   - %-22s (%s)\n", ty_board_model_get_name(model), ty_board_model_get_mcu(model));
     return 0;
 }
 
@@ -63,10 +63,10 @@ static void print_main_usage(FILE *f)
     fputc('\n', f);
 
     fprintf(f, "Supported models:\n");
-    for (const tyb_board_family **cur = tyb_board_families; *cur; cur++) {
-        const tyb_board_family *family = *cur;
+    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
+        const ty_board_family *family = *cur;
 
-        tyb_board_family_list_models(family, print_family_model, f);
+        ty_board_family_list_models(family, print_family_model, f);
     }
 }
 
@@ -79,23 +79,23 @@ void print_common_options(FILE *f)
                "   -q, --quiet              Disable output, use -qqq to silence errors\n");
 }
 
-static int board_callback(tyb_board *board, tyb_monitor_event event, void *udata)
+static int board_callback(ty_board *board, ty_monitor_event event, void *udata)
 {
     TY_UNUSED(udata);
 
     switch (event) {
-    case TYB_MONITOR_EVENT_ADDED:
-        if (!main_board && tyb_board_matches_tag(board, board_tag))
-            main_board = tyb_board_ref(board);
+    case TY_MONITOR_EVENT_ADDED:
+        if (!main_board && ty_board_matches_tag(board, board_tag))
+            main_board = ty_board_ref(board);
         break;
 
-    case TYB_MONITOR_EVENT_CHANGED:
-    case TYB_MONITOR_EVENT_DISAPPEARED:
+    case TY_MONITOR_EVENT_CHANGED:
+    case TY_MONITOR_EVENT_DISAPPEARED:
         break;
 
-    case TYB_MONITOR_EVENT_DROPPED:
+    case TY_MONITOR_EVENT_DROPPED:
         if (main_board == board) {
-            tyb_board_unref(main_board);
+            ty_board_unref(main_board);
             main_board = NULL;
         }
         break;
@@ -109,18 +109,18 @@ static int init_monitor()
     if (board_monitor)
         return 0;
 
-    tyb_monitor *monitor = NULL;
+    ty_monitor *monitor = NULL;
     int r;
 
-    r = tyb_monitor_new(0, &monitor);
+    r = ty_monitor_new(0, &monitor);
     if (r < 0)
         goto error;
 
-    r = tyb_monitor_register_callback(monitor, board_callback, NULL);
+    r = ty_monitor_register_callback(monitor, board_callback, NULL);
     if (r < 0)
         goto error;
 
-    r = tyb_monitor_refresh(monitor);
+    r = ty_monitor_refresh(monitor);
     if (r < 0)
         goto error;
 
@@ -128,11 +128,11 @@ static int init_monitor()
     return 0;
 
 error:
-    tyb_monitor_free(monitor);
+    ty_monitor_free(monitor);
     return r;
 }
 
-int get_monitor(tyb_monitor **rmonitor)
+int get_monitor(ty_monitor **rmonitor)
 {
     int r = init_monitor();
     if (r < 0)
@@ -142,7 +142,7 @@ int get_monitor(tyb_monitor **rmonitor)
     return 0;
 }
 
-int get_board(tyb_board **rboard)
+int get_board(ty_board **rboard)
 {
     int r = init_monitor();
     if (r < 0)
@@ -156,7 +156,7 @@ int get_board(tyb_board **rboard)
         }
     }
 
-    *rboard = tyb_board_ref(main_board);
+    *rboard = ty_board_ref(main_board);
     return 0;
 }
 
@@ -225,8 +225,8 @@ int main(int argc, char *argv[])
 
     r = (*cmd->f)(argc - 1, argv + 1);
 
-    tyb_board_unref(main_board);
-    tyb_monitor_free(board_monitor);
+    ty_board_unref(main_board);
+    ty_monitor_free(board_monitor);
     ty_release();
 
     return r;

@@ -11,7 +11,7 @@
 
 TY_C_BEGIN
 
-struct tyb_firmware {
+struct ty_firmware {
     unsigned int refcount;
 
     char *name;
@@ -23,6 +23,6 @@ struct tyb_firmware {
     char filename[];
 };
 
-int _tyb_firmware_expand_image(tyb_firmware *fw, size_t size);
+int _ty_firmware_expand_image(ty_firmware *fw, size_t size);
 
 TY_C_END

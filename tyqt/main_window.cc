@@ -76,7 +76,7 @@ bool MainWindow::event(QEvent *ev)
 QString MainWindow::makeFirmwareFilter()
 {
     QString exts;
-    for (auto format = tyb_firmware_formats; format->name; format++)
+    for (auto format = ty_firmware_formats; format->name; format++)
         exts += QString("*%1 ").arg(format->ext);
     exts.chop(1);
 

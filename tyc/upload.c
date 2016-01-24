@@ -43,15 +43,15 @@ static void print_upload_usage(FILE *f)
                "You can pass multiple firmwares, and tyc will upload the first compatible.\n");
 
     fprintf(f, "Supported firmware formats: ");
-    for (const tyb_firmware_format *format = tyb_firmware_formats; format->name; format++)
-        fprintf(f, "%s%s", format != tyb_firmware_formats ? ", " : "", format->name);
+    for (const ty_firmware_format *format = ty_firmware_formats; format->name; format++)
+        fprintf(f, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
     fprintf(f, ".\n");
 }
 
 int upload(int argc, char *argv[])
 {
-    tyb_board *board = NULL;
-    tyb_firmware **fws;
+    ty_board *board = NULL;
+    ty_firmware **fws;
     unsigned int fws_count;
     ty_task *task = NULL;
     int r;
@@ -62,13 +62,13 @@ int upload(int argc, char *argv[])
         HANDLE_COMMON_OPTIONS(c, print_upload_usage);
 
         case UPLOAD_OPTION_NOCHECK:
-            upload_flags |= TYB_UPLOAD_NOCHECK;
+            upload_flags |= TY_UPLOAD_NOCHECK;
             break;
         case UPLOAD_OPTION_NORESET:
-            upload_flags |= TYB_UPLOAD_NORESET;
+            upload_flags |= TY_UPLOAD_NORESET;
             break;
         case 'w':
-            upload_flags |= TYB_UPLOAD_WAIT;
+            upload_flags |= TY_UPLOAD_WAIT;
             break;
 
         case 'f':
@@ -81,10 +81,10 @@ int upload(int argc, char *argv[])
         ty_log(TY_LOG_ERROR, "Missing firmware filename");
         print_upload_usage(stderr);
         return EXIT_FAILURE;
-    } else if (argc - optind > TYB_UPLOAD_MAX_FIRMWARES) {
+    } else if (argc - optind > TY_UPLOAD_MAX_FIRMWARES) {
         ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %d files",
-               TYB_UPLOAD_MAX_FIRMWARES);
-        argc = optind + TYB_UPLOAD_MAX_FIRMWARES;
+               TY_UPLOAD_MAX_FIRMWARES);
+        argc = optind + TY_UPLOAD_MAX_FIRMWARES;
     }
 
     r = get_board(&board);
@@ -94,15 +94,15 @@ int upload(int argc, char *argv[])
     fws = alloca((size_t)(argc - optind) * sizeof(*fws));
     fws_count = 0;
     for (unsigned int i = (unsigned int)optind; i < (unsigned int)argc; i++) {
-        r = tyb_firmware_load(argv[i], firmware_format, &fws[fws_count]);
+        r = ty_firmware_load(argv[i], firmware_format, &fws[fws_count]);
         if (r < 0)
             goto cleanup;
         fws_count++;
     }
 
-    r = tyb_upload(board, fws, fws_count, upload_flags, &task);
+    r = ty_upload(board, fws, fws_count, upload_flags, &task);
     for (unsigned int i = 0; i < fws_count; i++)
-        tyb_firmware_unref(fws[i]);
+        ty_firmware_unref(fws[i]);
     if (r < 0)
         goto cleanup;
 
@@ -110,6 +110,6 @@ int upload(int argc, char *argv[])
 
 cleanup:
     ty_task_unref(task);
-    tyb_board_unref(board);
+    ty_board_unref(board);
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }

@@ -41,10 +41,10 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_PROPERTY(bool clearOnReset READ clearOnReset WRITE setClearOnReset)
     Q_PROPERTY(unsigned int scrollBackLimit READ scrollBackLimit WRITE setScrollBackLimit)
 
-    tyb_board *board_;
+    ty_board *board_;
 
     bool serial_attach_ = true;
-    tyb_board_interface *serial_iface_ = nullptr;
+    ty_board_interface *serial_iface_ = nullptr;
     DescriptorNotifier serial_notifier_;
     QMutex serial_lock_;
     char serial_buf_[262144];
@@ -64,17 +64,17 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     std::function<void(bool success, std::shared_ptr<void> result)> task_finish_;
 
 public:
-    static std::shared_ptr<Board> createBoard(tyb_board *board);
+    static std::shared_ptr<Board> createBoard(ty_board *board);
     virtual ~Board();
 
-    tyb_board *board() const;
+    ty_board *board() const;
 
     bool matchesTag(const QString &id);
 
-    tyb_board_state state() const;
+    ty_board_state state() const;
     uint16_t capabilities() const;
 
-    const tyb_board_model *model() const;
+    const ty_board_model *model() const;
     QString modelName() const;
 
     QString id() const;
@@ -94,7 +94,7 @@ public:
     QString firmwareName() const;
 
     void setTag(const QString &tag);
-    QString tag() const { return tyb_board_get_tag(board_); }
+    QString tag() const { return ty_board_get_tag(board_); }
 
     void setFirmware(const QString &firmware);
     QString firmware() const { return firmware_; }
@@ -146,7 +146,7 @@ private slots:
     void notifyProgress(const QString &action, unsigned int value, unsigned int max);
 
 private:
-    Board(tyb_board *board, QObject *parent = nullptr);
+    Board(ty_board *board, QObject *parent = nullptr);
 
     void refreshBoard();
     bool openSerialInterface();

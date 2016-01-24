@@ -11,7 +11,7 @@
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
-#include "ty/device.h"
+#include "hs/serial.h"
 #include "ty/system.h"
 #include "main.h"
 
@@ -198,24 +198,24 @@ static void stop_stdin_thread(void)
 
 #endif
 
-static int fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
+static int fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
 {
     ty_descriptor_set_clear(set);
 
-    tyb_monitor_get_descriptors(tyb_board_get_monitor(board), set, 1);
+    ty_monitor_get_descriptors(ty_board_get_monitor(board), set, 1);
     if (directions & DIRECTION_INPUT) {
-        tyb_board_interface *iface;
+        ty_board_interface *iface;
         int r;
 
-        r = tyb_board_open_interface(board, TYB_BOARD_CAPABILITY_SERIAL, &iface);
+        r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_SERIAL, &iface);
         if (r < 0)
             return r;
 
-        tyb_board_interface_get_descriptors(iface, set, 2);
+        ty_board_interface_get_descriptors(iface, set, 2);
 
-        /* tyb_board_interface_unref() keeps iface->open_count > 0 so the interface
+        /* ty_board_interface_unref() keeps iface->open_count > 0 so the interface
            does not get closed, and we can monitor the handle. */
-        tyb_board_interface_unref(iface);
+        ty_board_interface_unref(iface);
     }
 #ifdef _WIN32
     if (directions & DIRECTION_OUTPUT) {
@@ -233,7 +233,7 @@ static int fill_descriptor_set(ty_descriptor_set *set, tyb_board *board)
     return 0;
 }
 
-static int loop(tyb_board *board, int outfd)
+static int loop(ty_board *board, int outfd)
 {
     ty_descriptor_set set = {0};
     int timeout;
@@ -241,7 +241,7 @@ static int loop(tyb_board *board, int outfd)
     ssize_t r;
 
 restart:
-    r = tyb_board_serial_set_attributes(board, device_rate, device_flags);
+    r = ty_board_serial_set_attributes(board, device_rate, device_flags);
     if (r < 0)
         return (int)r;
 
@@ -250,7 +250,7 @@ restart:
         return (int)r;
     timeout = -1;
 
-    printf("Monitoring '%s'\n", tyb_board_get_tag(board));
+    printf("Monitoring '%s'\n", ty_board_get_tag(board));
 
     while (true) {
         if (!set.count)
@@ -265,16 +265,16 @@ restart:
             return 0;
 
         case 1:
-            r = tyb_monitor_refresh(tyb_board_get_monitor(board));
+            r = ty_monitor_refresh(ty_board_get_monitor(board));
             if (r < 0)
                 return (int)r;
 
-            if (!tyb_board_has_capability(board, TYB_BOARD_CAPABILITY_SERIAL)) {
+            if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL)) {
                 if (!reconnect)
                     return 0;
 
                 printf("Waiting for device...\n");
-                r = tyb_board_wait_for(board, TYB_BOARD_CAPABILITY_SERIAL, -1);
+                r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, -1);
                 if (r < 0)
                     return (int)r;
 
@@ -284,7 +284,7 @@ restart:
             break;
 
         case 2:
-            r = tyb_board_serial_read(board, buf, sizeof(buf), 0);
+            r = ty_board_serial_read(board, buf, sizeof(buf), 0);
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
                     timeout = ERROR_IO_TIMEOUT;
@@ -351,7 +351,7 @@ restart:
             }
 #endif
 
-            r = tyb_board_serial_write(board, buf, (size_t)r);
+            r = ty_board_serial_write(board, buf, (size_t)r);
             if (r < 0) {
                 if (r == TY_ERROR_IO && reconnect) {
                     timeout = ERROR_IO_TIMEOUT;
@@ -369,7 +369,7 @@ restart:
 
 int monitor(int argc, char *argv[])
 {
-    tyb_board *board = NULL;
+    ty_board *board = NULL;
     int outfd = -1;
     int r;
 
@@ -409,24 +409,24 @@ int monitor(int argc, char *argv[])
             }
             break;
         case 'd':
-           device_flags &= ~TYD_SERIAL_CSIZE_MASK;
+           device_flags &= ~HS_SERIAL_MASK_CSIZE;
             if (strcmp(optarg, "5") == 0) {
-                device_flags |= TYD_SERIAL_5BITS_CSIZE;
+                device_flags |= HS_SERIAL_CSIZE_5BITS;
             } else if (strcmp(optarg, "6") == 0) {
-                device_flags |= TYD_SERIAL_6BITS_CSIZE;
+                device_flags |= HS_SERIAL_CSIZE_6BITS;
             } else if (strcmp(optarg, "7") == 0) {
-                device_flags |= TYD_SERIAL_7BITS_CSIZE;
+                device_flags |= HS_SERIAL_CSIZE_7BITS;
             } else if (strcmp(optarg, "8") != 0) {
                 ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
         case 'f':
-            device_flags &= ~TYD_SERIAL_FLOW_MASK;
+            device_flags &= ~HS_SERIAL_MASK_FLOW;
             if (strcmp(optarg, "x") == 0 || strcmp(optarg, "xonxoff") == 0) {
-                device_flags |= TYD_SERIAL_XONXOFF_FLOW;
+                device_flags |= HS_SERIAL_FLOW_XONXOFF;
             } else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "rtscts") == 0) {
-                device_flags |= TYD_SERIAL_RTSCTS_FLOW;
+                device_flags |= HS_SERIAL_FLOW_RTSCTS;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") == 0) {
                 ty_log(TY_LOG_ERROR, "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
                 print_monitor_usage(stderr);
@@ -434,14 +434,14 @@ int monitor(int argc, char *argv[])
             }
             break;
         case MONITOR_OPTION_NORESET:
-            device_flags |= TYD_SERIAL_NOHUP_CLOSE;
+            device_flags |= HS_SERIAL_CLOSE_NOHUP;
             break;
         case 'p':
-            device_flags &= ~TYD_SERIAL_PARITY_MASK;
+            device_flags &= ~HS_SERIAL_MASK_PARITY;
             if (strcmp(optarg, "o") == 0 || strcmp(optarg, "odd") == 0) {
-                device_flags |= TYD_SERIAL_ODD_PARITY;
+                device_flags |= HS_SERIAL_PARITY_ODD;
             } else if (strcmp(optarg, "e") == 0 || strcmp(optarg, "even") == 0) {
-                device_flags |= TYD_SERIAL_EVEN_PARITY;
+                device_flags |= HS_SERIAL_PARITY_EVEN;
             } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") != 0) {
                 ty_log(TY_LOG_ERROR, "--parity must be one off o (odd), e (even) or n (none)");
                 print_monitor_usage(stderr);
@@ -518,6 +518,6 @@ cleanup:
 #ifdef _WIN32
     stop_stdin_thread();
 #endif
-    tyb_board_unref(board);
+    ty_board_unref(board);
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }

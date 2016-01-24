@@ -1,0 +1,11 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/Koromix/libhs.git
+	branch = master
+	commit = bcc70f3e4cc4d862515de72b918230a9b6c72dc2
+	parent = a61c86dd13a698cf361d07f64e9325bcda3b5173
+	cmdver = 0.2.3

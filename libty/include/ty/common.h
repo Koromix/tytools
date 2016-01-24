@@ -167,6 +167,8 @@ TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int 
 
 void _ty_message(struct ty_task *task, ty_message_type type, const void *data);
 
+int _ty_libhs_translate_error(int err);
+
 TY_C_END
 
 #endif

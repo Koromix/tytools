@@ -15,7 +15,7 @@
 #include "ty/firmware.h"
 
 class Firmware : public std::enable_shared_from_this<Firmware> {
-    tyb_firmware *fw_ = nullptr;
+    ty_firmware *fw_ = nullptr;
 
 public:
     ~Firmware();
@@ -27,14 +27,14 @@ public:
 
     static std::shared_ptr<Firmware> load(const QString &filename);
 
-    QString filename() const { return tyb_firmware_get_filename(fw_); }
-    QString name() const { return tyb_firmware_get_name(fw_); }
-    size_t size() const { return tyb_firmware_get_size(fw_); }
+    QString filename() const { return ty_firmware_get_filename(fw_); }
+    QString name() const { return ty_firmware_get_name(fw_); }
+    size_t size() const { return ty_firmware_get_size(fw_); }
 
-    tyb_firmware *firmware() const { return fw_; }
+    ty_firmware *firmware() const { return fw_; }
 
 private:
-    Firmware(tyb_firmware *fw)
+    Firmware(ty_firmware *fw)
         : fw_(fw) {}
 };
 
