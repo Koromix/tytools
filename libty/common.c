@@ -166,6 +166,7 @@ void ty_log(ty_log_level level, const char *fmt, ...)
     va_end(ap);
 
     msg.level = level;
+    msg.err = 0;
     msg.msg = buf;
 
     _ty_message(NULL, TY_MESSAGE_LOG, &msg);
@@ -263,6 +264,7 @@ int ty_error(ty_err err, const char *fmt, ...)
         return err;
 
     msg.level = TY_LOG_ERROR;
+    msg.err = err;
     msg.msg = last_error_msg;
 
     _ty_message(NULL, TY_MESSAGE_LOG, &msg);

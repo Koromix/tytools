@@ -132,6 +132,7 @@ typedef enum ty_log_level {
 
 typedef struct ty_log_message {
     ty_log_level level;
+    int err;
     const char *msg;
 } ty_log_message;
 
