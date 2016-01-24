@@ -153,34 +153,22 @@ void ty_message_redirect(ty_message_func *f, void *udata)
     handler_udata = udata;
 }
 
-TY_PRINTF_FORMAT(2, 0)
-static void logv(ty_log_level level, const char *fmt, va_list ap)
-{
-    char buf[256];
-    ty_log_message msg;
-
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-
-    if (level >= TY_LOG_ERROR) {
-        strncpy(last_error_msg, buf, sizeof(last_error_msg));
-        last_error_msg[sizeof(last_error_msg) - 1] = 0;
-    }
-
-    msg.level = level;
-    msg.msg = buf;
-
-    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
-}
-
 void ty_log(ty_log_level level, const char *fmt, ...)
 {
     assert(fmt);
 
     va_list ap;
+    char buf[256];
+    ty_log_message msg;
 
     va_start(ap, fmt);
-    logv(level, fmt, ap);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
+
+    msg.level = level;
+    msg.msg = buf;
+
+    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
 }
 
 static const char *generic_error(int err)
@@ -260,16 +248,24 @@ const char *ty_error_last_message(void)
 int ty_error(ty_err err, const char *fmt, ...)
 {
     va_list ap;
+    ty_log_message msg;
+
+    if (fmt) {
+        va_start(ap, fmt);
+        vsnprintf(last_error_msg, sizeof(last_error_msg), fmt, ap);
+        va_end(ap);
+    } else {
+        strncpy(last_error_msg, generic_error(err), sizeof(last_error_msg));
+        last_error_msg[sizeof(last_error_msg) - 1] = 0;
+    }
 
     if (ty_error_is_masked(err))
         return err;
 
-    if (!fmt)
-        fmt = generic_error(err);
+    msg.level = TY_LOG_ERROR;
+    msg.msg = last_error_msg;
 
-    va_start(ap, fmt);
-    logv(TY_LOG_ERROR, fmt, ap);
-    va_end(ap);
+    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
 
     return err;
 }
