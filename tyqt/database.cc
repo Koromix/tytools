@@ -34,3 +34,11 @@ QVariant SettingsDatabase::get(const QString &key, const QVariant &default_value
 
     return settings_->value(key, default_value);
 }
+
+void SettingsDatabase::clear()
+{
+    if (!settings_)
+        return;
+
+    settings_->clear();
+}

@@ -20,6 +20,8 @@ public:
     virtual void put(const QString &key, const QVariant &value) = 0;
     virtual void remove(const QString &key) = 0;
     virtual QVariant get(const QString &key, const QVariant &default_value = QVariant()) const = 0;
+
+    virtual void clear() = 0;
 };
 
 class SettingsDatabase : public Database {
@@ -35,6 +37,8 @@ public:
     void put(const QString &key, const QVariant &value) override;
     void remove(const QString &key) override;
     QVariant get(const QString &key, const QVariant &default_value) const override;
+
+    void clear() override;
 };
 
 #endif
