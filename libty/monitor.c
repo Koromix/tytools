@@ -17,21 +17,20 @@
 struct ty_monitor {
     int flags;
 
-    hs_monitor *monitor;
+    hs_monitor *device_monitor;
     ty_timer *timer;
 
     bool enumerated;
 
     ty_list_head callbacks;
-    int callback_id;
+    int current_callback_id;
 
     ty_mutex refresh_mutex;
     ty_cond refresh_cond;
-    int callback_ret;
+    int refresh_callback_ret;
 
     ty_list_head boards;
     ty_list_head missing_boards;
-
     ty_htable interfaces;
 
     void *udata;
@@ -42,7 +41,7 @@ struct ty_board_model {
 };
 
 struct callback {
-    ty_list_head list;
+    ty_list_head monitor_node;
     int id;
 
     ty_monitor_callback_func *f;
@@ -53,14 +52,14 @@ struct callback {
 
 static void drop_callback(struct callback *callback)
 {
-    ty_list_remove(&callback->list);
+    ty_list_remove(&callback->monitor_node);
     free(callback);
 }
 
 static int trigger_callbacks(ty_board *board, ty_monitor_event event)
 {
     ty_list_foreach(cur, &board->monitor->callbacks) {
-        struct callback *callback = ty_container_of(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, monitor_node);
         int r;
 
         r = (*callback->f)(board, event, callback->udata);
@@ -381,12 +380,12 @@ static int device_callback(hs_device *dev, void *udata)
 
     switch (hs_device_get_status(dev)) {
     case HS_DEVICE_STATUS_ONLINE:
-        monitor->callback_ret = add_interface(monitor, dev);
-        return !!monitor->callback_ret;
+        monitor->refresh_callback_ret = add_interface(monitor, dev);
+        return !!monitor->refresh_callback_ret;
 
     case HS_DEVICE_STATUS_DISCONNECTED:
-        monitor->callback_ret = remove_interface(monitor, dev);
-        return !!monitor->callback_ret;
+        monitor->refresh_callback_ret = remove_interface(monitor, dev);
+        return !!monitor->refresh_callback_ret;
     }
 
     assert(false);
@@ -409,13 +408,13 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
 
     monitor->flags = flags;
 
-    r = hs_monitor_new(NULL, 0, &monitor->monitor);
+    r = hs_monitor_new(NULL, 0, &monitor->device_monitor);
     if (r < 0) {
         r = _ty_libhs_translate_error(r);
         goto error;
     }
 
-    r = hs_monitor_start(monitor->monitor);
+    r = hs_monitor_start(monitor->device_monitor);
     if (r < 0) {
         r = _ty_libhs_translate_error(r);
         goto error;
@@ -456,11 +455,11 @@ void ty_monitor_free(ty_monitor *monitor)
         ty_cond_release(&monitor->refresh_cond);
         ty_mutex_release(&monitor->refresh_mutex);
 
-        hs_monitor_free(monitor->monitor);
+        hs_monitor_free(monitor->device_monitor);
         ty_timer_free(monitor->timer);
 
         ty_list_foreach(cur, &monitor->callbacks) {
-            struct callback *callback = ty_container_of(cur, struct callback, list);
+            struct callback *callback = ty_container_of(cur, struct callback, monitor_node);
             free(callback);
         }
 
@@ -492,7 +491,7 @@ void ty_monitor_get_descriptors(const ty_monitor *monitor, ty_descriptor_set *se
     assert(monitor);
     assert(set);
 
-    ty_descriptor_set_add(set, hs_monitor_get_descriptor(monitor->monitor), id);
+    ty_descriptor_set_add(set, hs_monitor_get_descriptor(monitor->device_monitor), id);
     ty_timer_get_descriptors(monitor->timer, set, id);
 }
 
@@ -505,11 +504,11 @@ int ty_monitor_register_callback(ty_monitor *monitor, ty_monitor_callback_func *
     if (!callback)
         return ty_error(TY_ERROR_MEMORY, NULL);
 
-    callback->id = monitor->callback_id++;
+    callback->id = monitor->current_callback_id++;
     callback->f = f;
     callback->udata = udata;
 
-    ty_list_add_tail(&monitor->callbacks, &callback->list);
+    ty_list_add_tail(&monitor->callbacks, &callback->monitor_node);
 
     return callback->id;
 }
@@ -520,7 +519,7 @@ void ty_monitor_deregister_callback(ty_monitor *monitor, int id)
     assert(id >= 0);
 
     ty_list_foreach(cur, &monitor->callbacks) {
-        struct callback *callback = ty_container_of(cur, struct callback, list);
+        struct callback *callback = ty_container_of(cur, struct callback, monitor_node);
         if (callback->id == id) {
             drop_callback(callback);
             break;
@@ -556,20 +555,20 @@ int ty_monitor_refresh(ty_monitor *monitor)
         monitor->enumerated = true;
 
         // FIXME: never listed devices if error on enumeration (unlink the real refresh)
-        r = hs_monitor_list(monitor->monitor, device_callback, monitor);
+        r = hs_monitor_list(monitor->device_monitor, device_callback, monitor);
         if (r < 0)
             return r;
 
         return 0;
     }
 
-    r = hs_monitor_refresh(monitor->monitor, device_callback, monitor);
+    r = hs_monitor_refresh(monitor->device_monitor, device_callback, monitor);
     if (r < 0) {
         /* The callback is in libty, and we need a way to get the error code without it
            being converted from a libhs error code. */
-        if (monitor->callback_ret) {
-            r = monitor->callback_ret;
-            monitor->callback_ret = 0;
+        if (monitor->refresh_callback_ret) {
+            r = monitor->refresh_callback_ret;
+            monitor->refresh_callback_ret = 0;
             return r;
         }
 
@@ -596,7 +595,8 @@ int ty_monitor_wait(ty_monitor *monitor, ty_monitor_wait_func *f, void *udata, i
     if (monitor->flags & TY_MONITOR_PARALLEL_WAIT) {
         ty_mutex_lock(&monitor->refresh_mutex);
         while (!(r = (*f)(monitor, udata))) {
-            r = ty_cond_wait(&monitor->refresh_cond, &monitor->refresh_mutex, ty_adjust_timeout(timeout, start));
+            r = ty_cond_wait(&monitor->refresh_cond, &monitor->refresh_mutex,
+                             ty_adjust_timeout(timeout, start));
             if (!r)
                 break;
         }
