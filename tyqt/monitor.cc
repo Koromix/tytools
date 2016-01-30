@@ -18,13 +18,7 @@ using namespace std;
 
 Monitor::~Monitor()
 {
-    serial_thread_.quit();
-    serial_thread_.wait();
-
-    // Just making sure nothing depends on the monitor when it's destroyed
-    monitor_notifier_.clear();
-    boards_.clear();
-
+    stop();
     ty_monitor_free(monitor_);
 }
 
@@ -60,9 +54,27 @@ bool Monitor::start()
     r = ty_monitor_start(monitor_);
     if (r < 0)
         return false;
+    monitor_notifier_.setEnabled(true);
 
     started_ = true;
     return true;
+}
+
+void Monitor::stop()
+{
+    serial_thread_.quit();
+    serial_thread_.wait();
+
+    if (!boards_.empty()) {
+        beginRemoveRows(QModelIndex(), 0, boards_.size());
+        boards_.clear();
+        endRemoveRows();
+    }
+
+    monitor_notifier_.setEnabled(false);
+    ty_monitor_stop(monitor_);
+
+    started_ = false;
 }
 
 vector<shared_ptr<Board>> Monitor::boards()

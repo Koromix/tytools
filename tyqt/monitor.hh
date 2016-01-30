@@ -46,6 +46,7 @@ public:
     Database *database() const { return db_; }
 
     bool start();
+    void stop();
 
     ty_monitor *monitor() const { return monitor_; }
 
