@@ -11,14 +11,13 @@
 
 struct parser_context {
     ty_firmware *fw;
-
-    uint32_t base_offset;
-
     unsigned int line;
 
     const char *ptr;
     uint8_t sum;
     bool error;
+
+    uint32_t base_offset;
 };
 
 static uint8_t parse_hex_byte(struct parser_context *ctx, bool checksum)
@@ -47,6 +46,12 @@ static uint16_t parse_hex_short(struct parser_context *ctx)
     return (uint16_t)((parse_hex_byte(ctx, true) << 8) | parse_hex_byte(ctx, true));
 }
 
+static int parse_error(struct parser_context *ctx)
+{
+    return ty_error(TY_ERROR_PARSE, "IHEX parse error on line %u in '%s'", ctx->line,
+                    ctx->fw->filename);
+}
+
 static int parse_line(struct parser_context *ctx, const char *line)
 {
     unsigned int length, type;
@@ -62,14 +67,14 @@ static int parse_line(struct parser_context *ctx, const char *line)
     if (*ctx->ptr++ != ':')
         return 0;
     if (strlen(ctx->ptr) < 11)
-        goto parse_error;
+        return parse_error(ctx);
 
     length = parse_hex_byte(ctx, true);
     address = parse_hex_short(ctx);
     type = parse_hex_byte(ctx, true);
 
     if (ctx->error)
-        goto parse_error;
+        return parse_error(ctx);
 
     switch (type) {
     case 0: // data record
@@ -83,12 +88,12 @@ static int parse_line(struct parser_context *ctx, const char *line)
 
     case 1: // EOF record
         if (length > 0)
-            goto parse_error;
-        return 1;
+            return parse_error(ctx);
+        break;
 
     case 2: // extended segment address record
         if (length != 2)
-            goto parse_error;
+            return parse_error(ctx);
         ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 4;
         break;
     case 3: // start segment address record
@@ -96,30 +101,28 @@ static int parse_line(struct parser_context *ctx, const char *line)
 
     case 4: // extended linear address record
         if (length != 2)
-            goto parse_error;
+            return parse_error(ctx);
         ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 16;
         break;
     case 5: // start linear address record
         break;
 
     default:
-        goto parse_error;
+        return parse_error(ctx);
     }
 
     // Don't checksum the checksum :)
     checksum = parse_hex_byte(ctx, false);
 
     if (ctx->error)
-        goto parse_error;
+        return parse_error(ctx);
+    if (*ctx->ptr != '\r' && *ctx->ptr != '\n' && *ctx->ptr)
+        return parse_error(ctx);
     if (((ctx->sum & 0xFF) + (checksum & 0xFF)) & 0xFF)
-        goto parse_error;
+        return parse_error(ctx);
 
-    // 0 to continue, 1 to stop (EOF record) and negative for errors
-    return 0;
-
-parse_error:
-    return ty_error(TY_ERROR_PARSE, "Parse error (Intel HEX) on line %u in '%s'\n", ctx->line,
-                    ctx->fw->filename);
+    // Return 1 for EOF records, to end the parsing
+    return type == 1;
 }
 
 int _ty_firmware_load_ihex(ty_firmware *fw)
@@ -158,20 +161,23 @@ int _ty_firmware_load_ihex(ty_firmware *fw)
         goto cleanup;
     }
 
-    while (!feof(fp)) {
-        if (!fgets(buf, sizeof(buf), fp))
-            break;
+    do {
+        fgets(buf, sizeof(buf), fp);
+        if (ferror(fp)) {
+            r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", fw->filename);
+            goto cleanup;
+        }
+        if (feof(fp)) {
+            r = parse_error(&ctx);
+            goto cleanup;
+        }
         ctx.line++;
 
+        // Returns 1 when EOF record is detected
         r = parse_line(&ctx, buf);
         if (r < 0)
             goto cleanup;
-
-        /* Either EOF record or real EOF will do, albeit the first is probably better (guarantees
-           the file is complete). */
-        if (r || feof(fp))
-            break;
-    }
+    } while (!r);
 
     r = 0;
 cleanup:
