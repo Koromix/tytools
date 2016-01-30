@@ -125,7 +125,9 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         firmwarePath->setText(current_board_->firmware());
         resetAfterUpload->setChecked(current_board_->resetAfter());
         clearOnReset->setChecked(current_board_->clearOnReset());
+        scrollBackLimitSpin->blockSignals(true);
         scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
+        scrollBackLimitSpin->blockSignals(false);
 
         infoTab->setEnabled(true);
         monitorTab->setEnabled(true);
@@ -219,7 +221,9 @@ void MainWindow::updateSettingField(const QString &name, const QVariant &value)
     } else if (name == "clearOnReset") {
         clearOnReset->setChecked(value.toBool());
     } else if (name == "scrollBackLimit") {
+        scrollBackLimitSpin->blockSignals(true);
         scrollBackLimitSpin->setValue(value.toInt());
+        scrollBackLimitSpin->blockSignals(false);
     }
 }
 
@@ -288,7 +292,7 @@ void MainWindow::on_firmwarePath_editingFinished()
     }
 }
 
-void MainWindow::on_resetAfterUpload_toggled(bool checked)
+void MainWindow::on_resetAfterUpload_clicked(bool checked)
 {
     if (!current_board_)
         return;
@@ -395,7 +399,7 @@ void MainWindow::on_sendButton_clicked()
     emit monitorEdit->returnPressed();
 }
 
-void MainWindow::on_clearOnReset_toggled(bool checked)
+void MainWindow::on_clearOnReset_clicked(bool checked)
 {
     if (!current_board_)
         return;

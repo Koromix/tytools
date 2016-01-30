@@ -51,7 +51,7 @@ private slots:
     void clearMonitor();
 
     void on_firmwarePath_editingFinished();
-    void on_resetAfterUpload_toggled(bool checked);
+    void on_resetAfterUpload_clicked(bool checked);
 
     void on_actionNewWindow_triggered();
 
@@ -62,7 +62,7 @@ private slots:
 
     void on_monitorEdit_returnPressed();
     void on_sendButton_clicked();
-    void on_clearOnReset_toggled(bool checked);
+    void on_clearOnReset_clicked(bool checked);
     void on_scrollBackLimitSpin_valueChanged(int value);
     void on_actionAttachMonitor_triggered(bool checked);
     void on_actionClearMonitor_triggered();
