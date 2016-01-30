@@ -166,8 +166,7 @@ void ty_board_unref(ty_board *board)
         ty_list_foreach(cur, &board->interfaces) {
             ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
 
-            if (iface->monitor_hnode.next)
-                ty_htable_remove(&iface->monitor_hnode);
+            ty_list_remove(&iface->board_node);
             ty_board_interface_unref(iface);
         }
     }

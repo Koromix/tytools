@@ -304,13 +304,14 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
 
         event = TY_MONITOR_EVENT_ADDED;
     }
-
     iface->board = board;
+
+    ty_htable_add(&monitor->interfaces, ty_htable_hash_ptr(iface->dev), &iface->monitor_hnode);
 
     ty_mutex_lock(&board->interfaces_lock);
 
+    ty_board_interface_ref(iface);
     ty_list_add_tail(&board->interfaces, &iface->board_node);
-    ty_htable_add(&monitor->interfaces, ty_htable_hash_ptr(iface->dev), &iface->monitor_hnode);
 
     for (int i = 0; i < (int)TY_COUNTOF(board->cap2iface); i++) {
         if (iface->capabilities & (1 << i))
@@ -340,13 +341,15 @@ static int remove_interface(ty_monitor *monitor, hs_device *dev)
     iface = find_interface(monitor, dev);
     if (!iface)
         return 0;
-
     board = iface->board;
+
+    ty_htable_remove(&iface->monitor_hnode);
+    ty_board_interface_unref(iface);
 
     ty_mutex_lock(&board->interfaces_lock);
 
-    ty_htable_remove(&iface->monitor_hnode);
     ty_list_remove(&iface->board_node);
+    ty_board_interface_unref(iface);
 
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
     board->capabilities = 0;
@@ -369,8 +372,6 @@ static int remove_interface(ty_monitor *monitor, hs_device *dev)
     } else {
         r = trigger_callbacks(board, TY_MONITOR_EVENT_CHANGED);
     }
-
-    ty_board_interface_unref(iface);
 
     return r;
 }
@@ -471,6 +472,12 @@ void ty_monitor_free(ty_monitor *monitor)
             ty_board_unref(board);
         }
 
+        ty_htable_foreach(cur, &monitor->interfaces) {
+            ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
+
+            ty_htable_remove(&iface->monitor_hnode);
+            ty_board_interface_unref(iface);
+        }
         ty_htable_release(&monitor->interfaces);
     }
 
