@@ -36,10 +36,7 @@ bool Monitor::start()
     int r = ty_monitor_new(TY_MONITOR_PARALLEL_WAIT, &monitor_);
     if (r < 0)
         return false;
-    r = ty_monitor_register_callback(monitor_, [](ty_board *board, ty_monitor_event event, void *udata) {
-        Monitor *model = static_cast<Monitor *>(udata);
-        return model->handleEvent(board, event);
-    }, this);
+    r = ty_monitor_register_callback(monitor_, handleEvent, this);
     if (r < 0) {
         ty_monitor_free(monitor_);
         monitor_ = nullptr;
@@ -176,17 +173,19 @@ void Monitor::refresh(ty_descriptor desc)
     ty_monitor_refresh(monitor_);
 }
 
-int Monitor::handleEvent(ty_board *board, ty_monitor_event event)
+int Monitor::handleEvent(ty_board *board, ty_monitor_event event, void *udata)
 {
+    auto self = static_cast<Monitor *>(udata);
+
     switch (event) {
     case TY_MONITOR_EVENT_ADDED:
-        handleAddedEvent(board);
+        self->handleAddedEvent(board);
         break;
 
     case TY_MONITOR_EVENT_CHANGED:
     case TY_MONITOR_EVENT_DISAPPEARED:
     case TY_MONITOR_EVENT_DROPPED:
-        handleChangedEvent(board);
+        self->handleChangedEvent(board);
         break;
     }
 
