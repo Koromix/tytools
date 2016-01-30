@@ -26,6 +26,7 @@ class Monitor : public QAbstractListModel {
 
     Database *db_ = nullptr;
 
+    bool started_ = false;
     ty_monitor *monitor_ = nullptr;
     DescriptorNotifier monitor_notifier_;
 

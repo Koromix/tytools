@@ -33,6 +33,9 @@ typedef int ty_monitor_wait_func(ty_monitor *monitor, void *udata);
 TY_PUBLIC int ty_monitor_new(int flags, ty_monitor **rmonitor);
 TY_PUBLIC void ty_monitor_free(ty_monitor *monitor);
 
+TY_PUBLIC int ty_monitor_start(ty_monitor *monitor);
+TY_PUBLIC void ty_monitor_stop(ty_monitor *monitor);
+
 TY_PUBLIC void ty_monitor_set_udata(ty_monitor *monitor, void *udata);
 TY_PUBLIC void *ty_monitor_get_udata(const ty_monitor *monitor);
 

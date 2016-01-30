@@ -120,7 +120,7 @@ static int init_monitor()
     if (r < 0)
         goto error;
 
-    r = ty_monitor_refresh(monitor);
+    r = ty_monitor_start(monitor);
     if (r < 0)
         goto error;
 

@@ -17,10 +17,9 @@
 struct ty_monitor {
     int flags;
 
+    bool started;
     hs_monitor *device_monitor;
     ty_timer *timer;
-
-    bool enumerated;
 
     ty_list_head callbacks;
     int current_callback_id;
@@ -416,12 +415,6 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
         goto error;
     }
 
-    r = hs_monitor_start(monitor->device_monitor);
-    if (r < 0) {
-        r = _ty_libhs_translate_error(r);
-        goto error;
-    }
-
     r = ty_timer_new(&monitor->timer);
     if (r < 0)
         goto error;
@@ -454,6 +447,8 @@ error:
 void ty_monitor_free(ty_monitor *monitor)
 {
     if (monitor) {
+        ty_monitor_stop(monitor);
+
         ty_cond_release(&monitor->refresh_cond);
         ty_mutex_release(&monitor->refresh_mutex);
 
@@ -465,23 +460,67 @@ void ty_monitor_free(ty_monitor *monitor)
             free(callback);
         }
 
-        ty_list_foreach(cur, &monitor->boards) {
-            ty_board *board = ty_container_of(cur, ty_board, monitor_node);
-
-            board->monitor = NULL;
-            ty_board_unref(board);
-        }
-
-        ty_htable_foreach(cur, &monitor->interfaces) {
-            ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
-
-            ty_htable_remove(&iface->monitor_hnode);
-            ty_board_interface_unref(iface);
-        }
         ty_htable_release(&monitor->interfaces);
     }
 
     free(monitor);
+}
+
+int ty_monitor_start(ty_monitor *monitor)
+{
+    assert(monitor);
+
+    int r;
+
+    if (monitor->started)
+        return 0;
+
+    r = hs_monitor_start(monitor->device_monitor);
+    if (r < 0) {
+        r = _ty_libhs_translate_error(r);
+        goto error;
+    }
+    monitor->started = true;
+
+    r = hs_monitor_list(monitor->device_monitor, device_callback, monitor);
+    if (r < 0)
+        goto error;
+
+    return 0;
+
+error:
+    ty_monitor_stop(monitor);
+    return r;
+}
+
+void ty_monitor_stop(ty_monitor *monitor)
+{
+    assert(monitor);
+
+    if (!monitor->started)
+        return;
+
+    hs_monitor_stop(monitor->device_monitor);
+    ty_timer_set(monitor->timer, -1, 0);
+
+    ty_list_foreach(cur, &monitor->boards) {
+        ty_board *board = ty_container_of(cur, ty_board, monitor_node);
+
+        board->monitor = NULL;
+        ty_list_remove(&board->monitor_node);
+        ty_board_unref(board);
+    }
+    ty_list_init(&monitor->boards);
+
+    ty_htable_foreach(cur, &monitor->interfaces) {
+        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
+
+        ty_htable_remove(&iface->monitor_hnode);
+        ty_board_interface_unref(iface);
+    }
+    ty_htable_clear(&monitor->interfaces);
+
+    monitor->started = false;
 }
 
 void ty_monitor_set_udata(ty_monitor *monitor, void *udata)
@@ -559,17 +598,6 @@ int ty_monitor_refresh(ty_monitor *monitor)
             drop_board(board);
             ty_board_unref(board);
         }
-    }
-
-    if (!monitor->enumerated) {
-        monitor->enumerated = true;
-
-        // FIXME: never listed devices if error on enumeration (unlink the real refresh)
-        r = hs_monitor_list(monitor->device_monitor, device_callback, monitor);
-        if (r < 0)
-            return r;
-
-        return 0;
     }
 
     r = hs_monitor_refresh(monitor->device_monitor, device_callback, monitor);
