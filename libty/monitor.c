@@ -170,6 +170,7 @@ static void drop_board(ty_board *board)
     board->state = TY_BOARD_STATE_DROPPED;
     trigger_callbacks(board, TY_MONITOR_EVENT_DROPPED);
 
+    board->monitor = NULL;
     ty_list_remove(&board->monitor_node);
 }
 
@@ -465,6 +466,8 @@ void ty_monitor_free(ty_monitor *monitor)
 
         ty_list_foreach(cur, &monitor->boards) {
             ty_board *board = ty_container_of(cur, ty_board, monitor_node);
+
+            board->monitor = NULL;
             ty_board_unref(board);
         }
 

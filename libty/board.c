@@ -385,6 +385,7 @@ static int wait_for_callback(ty_monitor *monitor, void *udata)
     return ty_board_has_capability(ctx->board, ctx->capability);
 }
 
+// FIXME: this function probably belongs to the monitor API
 int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeout)
 {
     assert(board);
@@ -394,6 +395,8 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
 
     if (board->state == TY_BOARD_STATE_DROPPED)
         return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
+    if (!monitor)
+        return ty_error(TY_ERROR_NOT_FOUND, "Cannot wait on unmonitored board");
 
     ctx.board = board;
     ctx.capability = capability;
