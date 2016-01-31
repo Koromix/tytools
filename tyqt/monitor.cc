@@ -109,7 +109,7 @@ QVariant Monitor::headerData(int section, Qt::Orientation orientation, int role)
         case 0:
             return tr("Board");
         case 1:
-            return tr("Model");
+            return tr("Status");
         }
     }
 
@@ -143,7 +143,7 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
            make a proxy later if there's a problem. */
         switch (role) {
         case Qt::DisplayRole:
-            return board->modelName();
+            return board->statusText();
         case Qt::ForegroundRole:
             return QBrush(Qt::darkGray);
         case Qt::TextAlignmentRole:

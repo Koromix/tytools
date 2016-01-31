@@ -56,14 +56,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setIcon(QPixmap(board->statusIconFileName()));
     widget_.setModel(board->modelName());
     widget_.setTag(board->tag());
-
-    if (board->isRunning()) {
-        widget_.setStatus(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"));
-    } else if (board->isUploadAvailable()) {
-        widget_.setStatus(tr("(bootloader)"));
-    } else {
-        widget_.setStatus(tr("(missing)"));
-    }
+    widget_.setStatus(board->statusText());
 
     auto task = board->runningTask();
     if (task.status() == TY_TASK_STATUS_RUNNING) {

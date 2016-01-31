@@ -92,6 +92,7 @@ public:
 
     QString statusIconFileName() const;
     QString firmwareName() const;
+    QString statusText() const;
 
     void setTag(const QString &tag);
     QString tag() const { return ty_board_get_tag(board_); }

@@ -175,6 +175,15 @@ QString Board::firmwareName() const
     return firmware_name_;
 }
 
+QString Board::statusText() const
+{
+    if (isRunning())
+        return firmware_name_.isEmpty() ? tr("(running)") : firmware_name_;
+    if (isUploadAvailable())
+        return tr("(bootloader)");
+    return tr("(missing)");
+}
+
 void Board::setTag(const QString &tag)
 {
     int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
