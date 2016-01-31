@@ -18,45 +18,63 @@ using namespace std;
 
 Monitor::~Monitor()
 {
-    serial_thread_.quit();
-    serial_thread_.wait();
-
-    // Just making sure nothing depends on the monitor when it's destroyed
-    monitor_notifier_.clear();
-    boards_.clear();
-
+    stop();
     ty_monitor_free(monitor_);
 }
 
 bool Monitor::start()
 {
-    if (monitor_)
+    if (started_)
         return true;
 
-    int r = ty_monitor_new(TY_MONITOR_PARALLEL_WAIT, &monitor_);
-    if (r < 0)
-        return false;
-    r = ty_monitor_register_callback(monitor_, [](ty_board *board, ty_monitor_event event, void *udata) {
-        Monitor *model = static_cast<Monitor *>(udata);
-        return model->handleEvent(board, event);
-    }, this);
-    if (r < 0) {
-        ty_monitor_free(monitor_);
-        monitor_ = nullptr;
+    int r;
 
-        return false;
+    if (!monitor_) {
+        ty_monitor *monitor;
+
+        r = ty_monitor_new(TY_MONITOR_PARALLEL_WAIT, &monitor);
+        if (r < 0)
+            return false;
+        unique_ptr<ty_monitor, decltype(&ty_monitor_free)> monitor_ptr(monitor, ty_monitor_free);
+
+        r = ty_monitor_register_callback(monitor, handleEvent, this);
+        if (r < 0)
+            return false;
+
+        ty_descriptor_set set = {};
+        ty_monitor_get_descriptors(monitor, &set, 1);
+        monitor_notifier_.setDescriptorSet(&set);
+        connect(&monitor_notifier_, &DescriptorNotifier::activated, this, &Monitor::refresh);
+
+        monitor_ = monitor_ptr.release();
     }
-
-    ty_descriptor_set set = {};
-    ty_monitor_get_descriptors(monitor_, &set, 1);
-    monitor_notifier_.setDescriptorSet(&set);
-    connect(&monitor_notifier_, &DescriptorNotifier::activated, this, &Monitor::refresh);
 
     serial_thread_.start();
 
-    ty_monitor_refresh(monitor_);
+    r = ty_monitor_start(monitor_);
+    if (r < 0)
+        return false;
+    monitor_notifier_.setEnabled(true);
 
+    started_ = true;
     return true;
+}
+
+void Monitor::stop()
+{
+    serial_thread_.quit();
+    serial_thread_.wait();
+
+    if (!boards_.empty()) {
+        beginRemoveRows(QModelIndex(), 0, boards_.size());
+        boards_.clear();
+        endRemoveRows();
+    }
+
+    monitor_notifier_.setEnabled(false);
+    ty_monitor_stop(monitor_);
+
+    started_ = false;
 }
 
 vector<shared_ptr<Board>> Monitor::boards()
@@ -176,17 +194,19 @@ void Monitor::refresh(ty_descriptor desc)
     ty_monitor_refresh(monitor_);
 }
 
-int Monitor::handleEvent(ty_board *board, ty_monitor_event event)
+int Monitor::handleEvent(ty_board *board, ty_monitor_event event, void *udata)
 {
+    auto self = static_cast<Monitor *>(udata);
+
     switch (event) {
     case TY_MONITOR_EVENT_ADDED:
-        handleAddedEvent(board);
+        self->handleAddedEvent(board);
         break;
 
     case TY_MONITOR_EVENT_CHANGED:
     case TY_MONITOR_EVENT_DISAPPEARED:
     case TY_MONITOR_EVENT_DROPPED:
-        handleChangedEvent(board);
+        self->handleChangedEvent(board);
         break;
     }
 

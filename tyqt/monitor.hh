@@ -26,6 +26,7 @@ class Monitor : public QAbstractListModel {
 
     Database *db_ = nullptr;
 
+    bool started_ = false;
     ty_monitor *monitor_ = nullptr;
     DescriptorNotifier monitor_notifier_;
 
@@ -45,6 +46,7 @@ public:
     Database *database() const { return db_; }
 
     bool start();
+    void stop();
 
     ty_monitor *monitor() const { return monitor_; }
 
@@ -76,7 +78,7 @@ private slots:
 private:
     iterator findBoardIterator(ty_board *board);
 
-    int handleEvent(ty_board *board, ty_monitor_event event);
+    static int handleEvent(ty_board *board, ty_monitor_event event, void *udata);
     void handleAddedEvent(ty_board *board);
     void handleChangedEvent(ty_board *board);
 

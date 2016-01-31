@@ -531,6 +531,17 @@ int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
     return executeRemoteCommand(fake_argc, const_cast<char **>(fake_argv));
 }
 
+void TyQt::resetMonitor()
+{
+    monitor_.stop();
+    monitor_.start();
+}
+
+void TyQt::clearConfig()
+{
+    monitor_db_.clear();
+}
+
 void TyQt::loadSettings(const QString &name, SettingsDatabase &db)
 {
     auto settings = new QSettings(QSettings::IniFormat, QSettings::UserScope,

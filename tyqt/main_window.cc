@@ -473,6 +473,17 @@ void MainWindow::on_logText_customContextMenuRequested(const QPoint &pos)
     menu->exec(logText->viewport()->mapToGlobal(pos));
 }
 
+void MainWindow::on_actionResetApp_triggered()
+{
+    tyQt->resetMonitor();
+}
+
+void MainWindow::on_actionResetSettingsApp_triggered()
+{
+    tyQt->clearConfig();
+    tyQt->resetMonitor();
+}
+
 void MainWindow::on_actionWebsite_triggered()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/"));

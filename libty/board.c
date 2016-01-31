@@ -164,10 +164,9 @@ void ty_board_unref(ty_board *board)
         ty_mutex_release(&board->interfaces_lock);
 
         ty_list_foreach(cur, &board->interfaces) {
-            ty_board_interface *iface = ty_container_of(cur, ty_board_interface, list);
+            ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
 
-            if (iface->hnode.next)
-                ty_htable_remove(&iface->hnode);
+            ty_list_remove(&iface->board_node);
             ty_board_interface_unref(iface);
         }
     }
@@ -328,7 +327,7 @@ int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, 
 
     r = 0;
     ty_list_foreach(cur, &board->interfaces) {
-        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, list);
+        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
 
         r = (*f)(iface, udata);
         if (r)
@@ -385,6 +384,7 @@ static int wait_for_callback(ty_monitor *monitor, void *udata)
     return ty_board_has_capability(ctx->board, ctx->capability);
 }
 
+// FIXME: this function probably belongs to the monitor API
 int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeout)
 {
     assert(board);
@@ -394,6 +394,8 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
 
     if (board->state == TY_BOARD_STATE_DROPPED)
         return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
+    if (!monitor)
+        return ty_error(TY_ERROR_NOT_FOUND, "Cannot wait on unmonitored board");
 
     ctx.board = board;
     ctx.capability = capability;

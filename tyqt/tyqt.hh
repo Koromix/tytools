@@ -74,6 +74,9 @@ public:
     int integrateArduino(int argc, char *argv[]);
     int fakeAvrdudeUpload(int argc, char *argv[]);
 
+    void resetMonitor();
+    void clearConfig();
+
 public slots:
     void openMainWindow();
     void activateMainWindow(MainWindow *win = nullptr);

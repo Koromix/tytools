@@ -74,6 +74,9 @@ private slots:
     void on_monitorText_customContextMenuRequested(const QPoint &pos);
     void on_logText_customContextMenuRequested(const QPoint &pos);
 
+    void on_actionResetApp_triggered();
+    void on_actionResetSettingsApp_triggered();
+
     void on_actionWebsite_triggered();
     void on_actionReportBug_triggered();
     void on_actionIntegrateToArduino_triggered();

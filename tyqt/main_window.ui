@@ -479,8 +479,16 @@
     <addaction name="actionClearMonitor"/>
     <addaction name="actionAttachMonitor"/>
    </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="actionResetApp"/>
+    <addaction name="actionResetSettingsApp"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
+   <addaction name="menuTools"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
@@ -674,6 +682,19 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="actionResetApp">
+   <property name="text">
+    <string>Reset TyQt</string>
+   </property>
+  </action>
+  <action name="actionResetSettingsApp">
+   <property name="text">
+    <string>Reset Settings &amp;&amp; TyQt</string>
+   </property>
+   <property name="toolTip">
+    <string>Reset Settings &amp; TyQt</string>
    </property>
   </action>
  </widget>

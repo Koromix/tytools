@@ -29,40 +29,38 @@ struct _ty_board_interface_vtable {
 };
 
 struct ty_board_interface {
-    ty_htable_head hnode;
-
-    ty_board *board;
-    ty_list_head list;
-
+    const struct _ty_board_interface_vtable *vtable;
     unsigned int refcount;
 
-    ty_mutex open_lock;
-    unsigned int open_count;
-
-    const struct _ty_board_interface_vtable *vtable;
+    ty_htable_head monitor_hnode;
+    ty_board *board;
+    ty_list_head board_node;
 
     const char *name;
+    int capabilities;
+
+    hs_device *dev;
+    ty_mutex open_lock;
+    unsigned int open_count;
+    hs_handle *h;
 
     const ty_board_model *model;
     uint64_t serial;
-
-    hs_device *dev;
-    hs_handle *h;
-
-    int capabilities;
 };
 
 struct ty_board {
-    struct ty_monitor *monitor;
-    ty_list_head list;
-
     unsigned int refcount;
 
-    ty_board_state state;
+    struct ty_monitor *monitor;
+    ty_list_head monitor_node;
 
+    ty_board_state state;
+    ty_list_head missing_node;
+    uint64_t missing_since;
+
+    const ty_board_model *model;
     char *id;
     char *tag;
-
     uint16_t vid;
     uint16_t pid;
     uint64_t serial;
@@ -72,11 +70,6 @@ struct ty_board {
     ty_list_head interfaces;
     int capabilities;
     ty_board_interface *cap2iface[16];
-
-    ty_list_head missing;
-    uint64_t missing_since;
-
-    const ty_board_model *model;
 
     ty_task *current_task;
 
