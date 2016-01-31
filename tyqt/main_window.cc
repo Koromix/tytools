@@ -215,11 +215,15 @@ void MainWindow::setCompactMode(bool enable)
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
         boardComboAction->setVisible(true);
         boardList->setVisible(false);
+
+        setContextMenuPolicy(Qt::ActionsContextMenu);
     } else {
         menubar->setVisible(true);
         toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
         boardComboAction->setVisible(false);
         boardList->setVisible(true);
+
+        setContextMenuPolicy(Qt::NoContextMenu);
     }
 }
 
