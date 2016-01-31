@@ -465,8 +465,6 @@
     <addaction name="actionWebsite"/>
     <addaction name="actionReportBug"/>
     <addaction name="separator"/>
-    <addaction name="actionIntegrateToArduino"/>
-    <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -483,6 +481,8 @@
     <property name="title">
      <string>&amp;Tools</string>
     </property>
+    <addaction name="actionIntegrateToArduino"/>
+    <addaction name="separator"/>
     <addaction name="actionResetApp"/>
     <addaction name="actionResetSettingsApp"/>
    </widget>

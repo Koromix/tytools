@@ -473,6 +473,11 @@ void MainWindow::on_logText_customContextMenuRequested(const QPoint &pos)
     menu->exec(logText->viewport()->mapToGlobal(pos));
 }
 
+void MainWindow::on_actionIntegrateToArduino_triggered()
+{
+    ArduinoDialog(this).exec();
+}
+
 void MainWindow::on_actionResetApp_triggered()
 {
     tyQt->resetMonitor();
@@ -492,11 +497,6 @@ void MainWindow::on_actionWebsite_triggered()
 void MainWindow::on_actionReportBug_triggered()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/issues"));
-}
-
-void MainWindow::on_actionIntegrateToArduino_triggered()
-{
-    ArduinoDialog(this).exec();
 }
 
 void MainWindow::on_actionAbout_triggered()
