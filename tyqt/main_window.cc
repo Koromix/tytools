@@ -47,6 +47,9 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     splitter->setStretchFactor(1, 1);
     splitter->setSizes({1, 1});
 
+    // We want all action shortcuts to remain available when the menu bar is hidden
+    addActions(menubar->actions());
+
     // Actions menu
     connect(actionUpload, &QAction::triggered, this, &MainWindow::uploadToSelection);
     connect(actionUploadNew, &QAction::triggered, this, &MainWindow::uploadNewToSelection);
