@@ -36,56 +36,54 @@ public:
 
     bool event(QEvent *ev) override;
 
+    std::shared_ptr<Board> currentBoard() const { return current_board_; }
+    std::vector<std::shared_ptr<Board>> selectedBoards() const { return selected_boards_; }
+
+    bool compactMode() const { return !boardList->isVisible(); }
+
 public slots:
     void showErrorMessage(const QString &msg);
 
-private:
-    static QString makeFirmwareFilter();
+    void uploadToSelection();
+    void uploadNewToSelection();
+    void resetSelection();
+    void rebootSelection();
 
-    void updateWindowTitle();
+    void setCompactMode(bool enable);
+
+    void openArduinoTool();
+    void resetAppSettingsWithConfirmation();
+    void openAboutDialog();
+
+    void sendMonitorInput();
+    void clearMonitor();
+
+    static QString fileDialogFirmwareFilter();
+
+private:
     void selectFirstBoard();
+
+    void enableBoardWidgets();
+    void disableBoardWidgets();
+    void updateWindowTitle();
 
 private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
-    void refreshBoardsInfo();
-    void updateSettingField(const QString &name, const QVariant &value);
+    void refreshActions();
+    void refreshBoardInfo();
+    void refreshSettingField(const QString &name, const QVariant &value);
 
     void cacheMonitorScrollValues(const QRect &rect, int dy);
     void updateMonitorScroll();
+    void openMonitorContextMenu(const QPoint &pos);
 
-    void clearMonitor();
+    void validateAndSetFirmwarePath();
+    void browseForFirmware();
 
-    void on_firmwarePath_editingFinished();
-    void on_resetAfterUpload_clicked(bool checked);
-
-    void on_actionNewWindow_triggered();
-
-    void on_actionUpload_triggered();
-    void on_actionUploadNew_triggered();
-    void on_actionReset_triggered();
-    void on_actionReboot_triggered();
-
-    void on_monitorEdit_returnPressed();
-    void on_sendButton_clicked();
-    void on_clearOnReset_clicked(bool checked);
-    void on_scrollBackLimitSpin_valueChanged(int value);
-    void on_actionAttachMonitor_triggered(bool checked);
-    void on_actionClearMonitor_triggered();
-
-    void on_actionMinimalInterface_toggled(bool checked);
-
-    void on_firmwareBrowseButton_clicked();
-
-    void on_monitorText_customContextMenuRequested(const QPoint &pos);
-
-    void on_actionIntegrateToArduino_triggered();
-    void on_actionResetApp_triggered();
-    void on_actionResetSettingsApp_triggered();
-
-    void on_actionWebsite_triggered();
-    void on_actionReportBug_triggered();
-    void on_actionAbout_triggered();
-    void on_actionShowLog_triggered();
+    void setResetAfterForSelection(bool reset_after);
+    void setClearOnResetForSelection(bool clear_on_reset);
+    void setScrollBackLimitForSelection(int limit);
+    void setAttachMonitorForSelection(bool attach_monitor);
 };
 
 #endif

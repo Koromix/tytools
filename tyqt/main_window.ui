@@ -271,7 +271,7 @@
              </layout>
             </item>
             <item>
-             <widget class="QCheckBox" name="resetAfterUpload">
+             <widget class="QCheckBox" name="resetAfterCheck">
               <property name="text">
                <string>Reset device after successful upload</string>
               </property>
@@ -292,7 +292,7 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_2">
               <item>
-               <widget class="QCheckBox" name="clearOnReset">
+               <widget class="QCheckBox" name="clearOnResetCheck">
                 <property name="text">
                  <string>Clear on reset</string>
                 </property>
@@ -342,7 +342,7 @@
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_4">
               <item>
-               <widget class="QCheckBox" name="echo">
+               <widget class="QCheckBox" name="echoCheck">
                 <property name="text">
                  <string>Echo</string>
                 </property>
@@ -461,12 +461,12 @@
     <property name="title">
      <string>&amp;Tools</string>
     </property>
-    <addaction name="actionIntegrateToArduino"/>
+    <addaction name="actionArduinoTool"/>
     <addaction name="separator"/>
     <addaction name="actionResetApp"/>
     <addaction name="actionResetSettingsApp"/>
     <addaction name="separator"/>
-    <addaction name="actionShowLog"/>
+    <addaction name="actionOpenLog"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -643,7 +643,7 @@
     <string>Ctrl+Alt+X</string>
    </property>
   </action>
-  <action name="actionIntegrateToArduino">
+  <action name="actionArduinoTool">
    <property name="text">
     <string>&amp;Integrate to Arduino</string>
    </property>
@@ -679,9 +679,9 @@
     <string>Reset Settings &amp; TyQt</string>
    </property>
   </action>
-  <action name="actionShowLog">
+  <action name="actionOpenLog">
    <property name="text">
-    <string>Show &amp;Log</string>
+    <string>Open &amp;Log</string>
    </property>
   </action>
  </widget>
@@ -699,10 +699,10 @@
   <tabstop>sendButton</tabstop>
   <tabstop>firmwarePath</tabstop>
   <tabstop>firmwareBrowseButton</tabstop>
-  <tabstop>resetAfterUpload</tabstop>
-  <tabstop>clearOnReset</tabstop>
+  <tabstop>resetAfterCheck</tabstop>
+  <tabstop>clearOnResetCheck</tabstop>
   <tabstop>scrollBackLimitSpin</tabstop>
-  <tabstop>echo</tabstop>
+  <tabstop>echoCheck</tabstop>
   <tabstop>newlineComboBox</tabstop>
  </tabstops>
  <resources>
