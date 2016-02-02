@@ -62,6 +62,9 @@ bool Monitor::start()
 
 void Monitor::stop()
 {
+    if (!started_)
+        return;
+
     serial_thread_.quit();
     serial_thread_.wait();
 
