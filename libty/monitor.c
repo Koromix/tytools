@@ -245,17 +245,6 @@ static ty_board_interface *find_interface(ty_monitor *monitor, hs_device *dev)
     return NULL;
 }
 
-static bool iface_is_compatible(ty_board_interface *iface, ty_board *board)
-{
-    if (ty_board_model_is_real(iface->model) && ty_board_model_is_real(board->model)
-            && iface->model != board->model)
-        return false;
-    if (iface->serial && board->serial && iface->serial != board->serial)
-        return false;
-
-    return true;
-}
-
 static int add_interface(ty_monitor *monitor, hs_device *dev)
 {
     ty_board_interface *iface = NULL;
@@ -269,38 +258,41 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
 
     board = find_board(monitor, hs_device_get_location(dev));
 
-    /* Maybe the device notifications came in the wrong order, or somehow the device
-       removal notifications were dropped somewhere and we never got them, so use
-       heuristics to improve board change detection. */
-    if (board && !iface_is_compatible(iface, board)) {
-        if (board->state == TY_BOARD_STATE_ONLINE)
-            close_board(board);
-        drop_board(board);
-
-        ty_board_unref(board);
-        board = NULL;
-    }
-
     if (board) {
-        if (board->vid != hs_device_get_vid(dev) || board->pid != hs_device_get_pid(dev)) {
+        r = (*iface->model->family->update_board)(iface, board);
+        if (r < 0)
+            goto error;
+
+        /* The family function update_board() returns 1 if the interface is compatible with
+           this board, or 0 if not. In the latter case, the old board is dropped and a new
+           one is used. */
+        if (r) {
+            if (board->vid != hs_device_get_vid(dev) || board->pid != hs_device_get_pid(dev)) {
+                /* Theoretically, this should not happen unless device removal notifications
+                   where dropped somewhere. */
+                if (board->state == TY_BOARD_STATE_ONLINE)
+                    close_board(board);
+
+                board->vid = hs_device_get_vid(dev);
+                board->pid = hs_device_get_pid(dev);
+            }
+
+            event = TY_MONITOR_EVENT_CHANGED;
+        } else {
             if (board->state == TY_BOARD_STATE_ONLINE)
                 close_board(board);
+            drop_board(board);
+            ty_board_unref(board);
 
-            board->vid = hs_device_get_vid(dev);
-            board->pid = hs_device_get_pid(dev);
+            r = add_board(monitor, iface, &board);
+            if (r < 0)
+                goto error;
+            event = TY_MONITOR_EVENT_ADDED;
         }
-
-        if (ty_board_model_is_real(iface->model))
-            board->model = iface->model;
-        if (iface->serial)
-            board->serial = iface->serial;
-
-        event = TY_MONITOR_EVENT_CHANGED;
     } else {
         r = add_board(monitor, iface, &board);
         if (r < 0)
             goto error;
-
         event = TY_MONITOR_EVENT_ADDED;
     }
     iface->board = board;

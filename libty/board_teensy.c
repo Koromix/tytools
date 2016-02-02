@@ -284,6 +284,21 @@ cleanup:
     return r;
 }
 
+static int teensy_update_board(ty_board_interface *iface, ty_board *board)
+{
+    if (iface->model->code_size) {
+        if (board->model->code_size && iface->model != board->model)
+            return 0;
+
+        board->model = iface->model;
+    }
+
+    if (iface->serial && board->serial && iface->serial != board->serial)
+        return 0;
+
+    return 1;
+}
+
 // FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
 static unsigned int teensy_guess_models(const ty_firmware *fw,
                                         const ty_board_model **rguesses, unsigned int max)
@@ -548,6 +563,8 @@ const ty_board_family _ty_teensy_family = {
     .models = teensy_models,
 
     .open_interface = teensy_open_interface,
+    .update_board = teensy_update_board,
+
     .guess_models = teensy_guess_models
 };
 
