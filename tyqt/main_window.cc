@@ -7,6 +7,7 @@
 
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QScrollBar>
 #include <QToolButton>
 #include <QUrl>
@@ -485,6 +486,19 @@ void MainWindow::on_actionResetApp_triggered()
 
 void MainWindow::on_actionResetSettingsApp_triggered()
 {
+    QMessageBox msgbox;
+
+    msgbox.setIcon(QMessageBox::Warning);
+    msgbox.setWindowTitle(tr("Reset Settings & TyQt"));
+    msgbox.setText(tr("Reset will erase all your TyQt settings."));
+    auto reset = msgbox.addButton(tr("Reset"), QMessageBox::AcceptRole);
+    msgbox.addButton(QMessageBox::Cancel);
+    msgbox.setDefaultButton(QMessageBox::Cancel);
+
+    msgbox.exec();
+    if (msgbox.clickedButton() != reset)
+        return;
+
     tyQt->clearConfig();
     tyQt->resetMonitor();
 }
