@@ -95,7 +95,11 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     auto spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     toolBar->addWidget(spacer);
+#ifdef __APPLE__
+    boardComboAction = nullptr;
+#else
     boardComboAction = toolBar->addWidget(boardComboBox);
+#endif
     connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated),
             this, [=](int index) { boardList->setCurrentIndex(monitor_->index(index)); });
 
@@ -213,14 +217,24 @@ void MainWindow::setCompactMode(bool enable)
     if (enable) {
         menubar->setVisible(false);
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
-        boardComboAction->setVisible(true);
+        if (boardComboAction) {
+            boardComboAction->setVisible(true);
+        } else {
+            tabWidget->setCornerWidget(boardComboBox, Qt::TopRightCorner);
+            boardComboBox->setVisible(true);
+        }
         boardList->setVisible(false);
 
         setContextMenuPolicy(Qt::ActionsContextMenu);
     } else {
         menubar->setVisible(true);
         toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-        boardComboAction->setVisible(false);
+        if (boardComboAction) {
+            boardComboAction->setVisible(false);
+        } else {
+            boardComboBox->setVisible(false);
+            tabWidget->setCornerWidget(nullptr, Qt::TopRightCorner);
+        }
         boardList->setVisible(true);
 
         setContextMenuPolicy(Qt::NoContextMenu);
