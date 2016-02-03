@@ -485,6 +485,8 @@
     <addaction name="separator"/>
     <addaction name="actionResetApp"/>
     <addaction name="actionResetSettingsApp"/>
+    <addaction name="separator"/>
+    <addaction name="actionShowLog"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -695,6 +697,11 @@
    </property>
    <property name="toolTip">
     <string>Reset Settings &amp; TyQt</string>
+   </property>
+  </action>
+  <action name="actionShowLog">
+   <property name="text">
+    <string>Show &amp;Log</string>
    </property>
   </action>
  </widget>

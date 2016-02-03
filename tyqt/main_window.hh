@@ -81,6 +81,7 @@ private slots:
     void on_actionWebsite_triggered();
     void on_actionReportBug_triggered();
     void on_actionAbout_triggered();
+    void on_actionShowLog_triggered();
 };
 
 #endif

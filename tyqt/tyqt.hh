@@ -13,10 +13,13 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 
+#include <memory>
+
 #include "database.hh"
 #include "monitor.hh"
 #include "session_channel.hh"
 
+class LogWindow;
 class MainWindow;
 class SelectorDialog;
 
@@ -47,6 +50,8 @@ class TyQt : public QApplication {
 #else
     bool client_console_ = true;
 #endif
+
+    std::unique_ptr<LogWindow> log_window_;
 
 public:
     TyQt(int &argc, char *argv[]);
@@ -80,6 +85,7 @@ public:
 public slots:
     void openMainWindow();
     void activateMainWindow(MainWindow *win = nullptr);
+    void openLogWindow();
 
     void reportError(const QString &msg);
 

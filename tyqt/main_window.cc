@@ -517,3 +517,8 @@ void MainWindow::on_actionAbout_triggered()
 {
     AboutDialog(this).exec();
 }
+
+void MainWindow::on_actionShowLog_triggered()
+{
+    tyQt->openLogWindow();
+}
