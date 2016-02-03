@@ -19,6 +19,7 @@ set(TYQT_SOURCES about_dialog.cc
                  database.cc
                  descriptor_notifier.cc
                  firmware.cc
+                 log_window.cc
                  monitor.cc
                  selector_dialog.cc
                  session_channel.cc
@@ -26,6 +27,7 @@ set(TYQT_SOURCES about_dialog.cc
                  tyqt.cc)
 set(TYQT_FORMS about_dialog.ui
                arduino_dialog.ui
+               log_window.ui
                main_window.ui
                board_widget.ui
                selector_dialog.ui)

@@ -408,26 +408,6 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="logTab">
-        <attribute name="title">
-         <string>&amp;Log</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <widget class="QPlainTextEdit" name="logText">
-           <property name="contextMenuPolicy">
-            <enum>Qt::CustomContextMenu</enum>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-           <property name="maximumBlockCount">
-            <number>1000</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
       </widget>
      </widget>
     </item>
@@ -485,6 +465,8 @@
     <addaction name="separator"/>
     <addaction name="actionResetApp"/>
     <addaction name="actionResetSettingsApp"/>
+    <addaction name="separator"/>
+    <addaction name="actionShowLog"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -697,6 +679,11 @@
     <string>Reset Settings &amp; TyQt</string>
    </property>
   </action>
+  <action name="actionShowLog">
+   <property name="text">
+    <string>Show &amp;Log</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>boardList</tabstop>
@@ -717,7 +704,6 @@
   <tabstop>scrollBackLimitSpin</tabstop>
   <tabstop>echo</tabstop>
   <tabstop>newlineComboBox</tabstop>
-  <tabstop>logText</tabstop>
  </tabstops>
  <resources>
   <include location="tyqt.qrc"/>

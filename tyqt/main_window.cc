@@ -61,8 +61,6 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
     connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
 
-    logText->setMaximumBlockCount(1000);
-
     selectFirstBoard();
 }
 
@@ -271,7 +269,6 @@ void MainWindow::clearMonitor()
 void MainWindow::showErrorMessage(const QString &msg)
 {
     statusBar()->showMessage(msg, SHOW_ERROR_TIMEOUT);
-    logText->appendPlainText(msg);
 }
 
 void MainWindow::on_firmwarePath_editingFinished()
@@ -466,14 +463,6 @@ void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
     menu->exec(monitorText->viewport()->mapToGlobal(pos));
 }
 
-void MainWindow::on_logText_customContextMenuRequested(const QPoint &pos)
-{
-    QMenu *menu = logText->createStandardContextMenu();
-
-    menu->addAction(tr("Clear"), logText, SLOT(clear()));
-    menu->exec(logText->viewport()->mapToGlobal(pos));
-}
-
 void MainWindow::on_actionIntegrateToArduino_triggered()
 {
     ArduinoDialog(this).exec();
@@ -516,4 +505,9 @@ void MainWindow::on_actionReportBug_triggered()
 void MainWindow::on_actionAbout_triggered()
 {
     AboutDialog(this).exec();
+}
+
+void MainWindow::on_actionShowLog_triggered()
+{
+    tyQt->openLogWindow();
 }
