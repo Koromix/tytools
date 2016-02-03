@@ -72,7 +72,6 @@ private slots:
     void on_firmwareBrowseButton_clicked();
 
     void on_monitorText_customContextMenuRequested(const QPoint &pos);
-    void on_logText_customContextMenuRequested(const QPoint &pos);
 
     void on_actionIntegrateToArduino_triggered();
     void on_actionResetApp_triggered();
