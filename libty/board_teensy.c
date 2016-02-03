@@ -284,6 +284,30 @@ cleanup:
     return r;
 }
 
+static int teensy_update_board(ty_board_interface *iface, ty_board *board)
+{
+    if (iface->model->code_size) {
+        if (board->model->code_size && iface->model != board->model)
+            return 0;
+
+        board->model = iface->model;
+    }
+
+    if (iface->serial && board->serial && iface->serial != board->serial) {
+        /* Let boards using an old Teensyduino (before 1.19) firmware pass with a warning because
+           there is no way to interpret the serial number correctly, and the board will show as
+           a different board if it is first plugged in bootloader mode. The only way to fix this
+           is to use Teensyduino >= 1.19. */
+        if (!iface->model->code_size && iface->serial != board->serial * 10)
+            return 0;
+
+        ty_log(TY_LOG_WARNING, "Upgrade board '%s' to use a recent Teensyduino version",
+               board->tag);
+    }
+
+    return 1;
+}
+
 // FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
 static unsigned int teensy_guess_models(const ty_firmware *fw,
                                         const ty_board_model **rguesses, unsigned int max)
@@ -548,6 +572,8 @@ const ty_board_family _ty_teensy_family = {
     .models = teensy_models,
 
     .open_interface = teensy_open_interface,
+    .update_board = teensy_update_board,
+
     .guess_models = teensy_guess_models
 };
 
