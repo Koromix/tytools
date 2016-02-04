@@ -250,7 +250,7 @@ restart:
         return (int)r;
     timeout = -1;
 
-    printf("Monitoring '%s'\n", ty_board_get_tag(board));
+    ty_log(TY_LOG_INFO, "Monitoring '%s'", ty_board_get_tag(board));
 
     while (true) {
         if (!set.count)
@@ -273,7 +273,7 @@ restart:
                 if (!reconnect)
                     return 0;
 
-                printf("Waiting for device...\n");
+                ty_log(TY_LOG_INFO, "Waiting for '%s'...", ty_board_get_tag(board));
                 r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, -1);
                 if (r < 0)
                     return (int)r;
