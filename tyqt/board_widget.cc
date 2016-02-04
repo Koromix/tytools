@@ -90,17 +90,6 @@ QSize BoardItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QMod
     return QSize(widget_.minimumWidth(), widget_.height());
 }
 
-void BoardItemDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
-{
-    if (index.row() >= static_cast<int>(model_->boardCount()))
-        return;
-    auto board = model_->board(index.row());
-
-    auto text = qobject_cast<QLineEdit *>(editor);
-    if (text)
-        text->setText(board->tag());
-}
-
 void BoardItemDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     Q_UNUSED(index);

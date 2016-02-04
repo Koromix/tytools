@@ -146,6 +146,7 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
     if (index.column() == 0) {
         switch (role) {
         case Qt::DisplayRole:
+        case Qt::EditRole:
             return board->tag();
         case Qt::DecorationRole:
             return QIcon(board->statusIconFileName());
