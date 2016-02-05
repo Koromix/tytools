@@ -23,7 +23,7 @@ private:
     void keyPressEvent(QKeyEvent *e);
 
 private slots:
-    void on_logText_customContextMenuRequested(const QPoint &pos);
+    void showLogContextMenu(const QPoint &pos);
 };
 
 #endif

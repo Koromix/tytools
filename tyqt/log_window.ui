@@ -70,38 +70,5 @@
  <resources>
   <include location="tyqt.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>closeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>LogWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>363</x>
-     <y>148</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>207</x>
-     <y>148</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>clearButton</sender>
-   <signal>clicked()</signal>
-   <receiver>logText</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>156</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>229</x>
-     <y>72</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
