@@ -19,9 +19,9 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     versionLabel->setText(QString("TyQt ") + TY_VERSION);
 }
 
-void AboutDialog::on_websiteButton_clicked()
+void AboutDialog::on_bugButton_clicked()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/"));
+    QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/issues"));
 }
 
 void AboutDialog::on_licenseButton_clicked()

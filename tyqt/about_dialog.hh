@@ -17,7 +17,7 @@ public:
     AboutDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
 
 private slots:
-    void on_websiteButton_clicked();
+    void on_bugButton_clicked();
     void on_licenseButton_clicked();
     void on_descriptionText_linkActivated(const QString &link);
 };
