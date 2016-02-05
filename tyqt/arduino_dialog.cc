@@ -23,6 +23,13 @@ ArduinoDialog::ArduinoDialog(QWidget *parent, Qt::WindowFlags f)
 {
     setupUi(this);
 
+    connect(closeButton, &QPushButton::clicked, this, &ArduinoDialog::close);
+    connect(arduinoPath, &QLineEdit::editingFinished, this,
+            [=]() { install_.setPath(arduinoPath->text()); });
+    connect(browseButton, &QPushButton::clicked, this, &ArduinoDialog::browseForArduino);
+    connect(integrateButton, &QPushButton::clicked, this, &ArduinoDialog::integrate);
+    connect(restoreButton, &QPushButton::clicked, this, &ArduinoDialog::restore);
+
     connect(&install_, &ArduinoInstallation::changed, this, &ArduinoDialog::refresh);
     connect(&install_, &ArduinoInstallation::log, this, &ArduinoDialog::addLog);
     connect(&install_, &ArduinoInstallation::error, this, &ArduinoDialog::addError);
@@ -90,12 +97,7 @@ void ArduinoDialog::addError(const QString &msg)
     appendMessage(msg, fmt);
 }
 
-void ArduinoDialog::on_arduinoPath_editingFinished()
-{
-    install_.setPath(arduinoPath->text());
-}
-
-void ArduinoDialog::on_browseButton_clicked()
+void ArduinoDialog::browseForArduino()
 {
 #ifdef __APPLE__
     auto path = QFileDialog::getOpenFileName(this, tr("Select Arduino application"), "",
@@ -111,7 +113,7 @@ void ArduinoDialog::on_browseButton_clicked()
     install_.setPath(path);
 }
 
-void ArduinoDialog::on_integrateButton_clicked()
+void ArduinoDialog::integrate()
 {
     if (background_process_)
         return;
@@ -122,7 +124,7 @@ void ArduinoDialog::on_integrateButton_clicked()
         executeAsRoot("integrate");
 }
 
-void ArduinoDialog::on_restoreButton_clicked()
+void ArduinoDialog::restore()
 {
     if (background_process_)
         return;

@@ -26,11 +26,8 @@ class ArduinoInstallation: public QObject {
 public:
     ArduinoInstallation(const QString &path = QString());
 
-    void setPath(const QString &path);
     QString path() const { return dir_.path(); }
     QString absolutePath() const { return dir_.absolutePath(); }
-
-    void update();
 
     bool isValid() const { return valid_; }
     bool isIntegrated() const { return integrated_; }
@@ -38,6 +35,10 @@ public:
     QString arduinoVersion() const { return arduino_version_; }
     bool isArduinoLegacy() const { return arduino_legacy_; }
     QString teensyduinoVersion() const { return teensyduino_version_; }
+
+public slots:
+    void setPath(const QString &path);
+    void update();
 
     bool integrate();
     bool restore();
