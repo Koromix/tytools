@@ -16,20 +16,30 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
 {
     setupUi(this);
 
+    connect(closeButton, &QPushButton::clicked, this, &AboutDialog::close);
+    connect(reportBugButton, &QPushButton::clicked, &AboutDialog::openBugReports);
+    connect(licenseButton, &QPushButton::clicked, &AboutDialog::openLicense);
+    connect(descriptionText, &QLabel::linkActivated, this, &AboutDialog::openLink);
+
     versionLabel->setText(QString("TyQt ") + TY_VERSION);
 }
 
-void AboutDialog::on_bugButton_clicked()
+void AboutDialog::openWebsite()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty"));
+}
+
+void AboutDialog::openBugReports()
 {
     QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/issues"));
 }
 
-void AboutDialog::on_licenseButton_clicked()
+void AboutDialog::openLicense()
 {
     QDesktopServices::openUrl(QUrl("https://opensource.org/licenses/MIT"));
 }
 
-void AboutDialog::on_descriptionText_linkActivated(const QString &link)
+void AboutDialog::openLink(const QString &link)
 {
     QDesktopServices::openUrl(QUrl(link));
 }
