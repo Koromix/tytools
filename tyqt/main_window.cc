@@ -58,8 +58,9 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
 
     monitorText->setWordWrapMode(QTextOption::NoWrap);
-    connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::monitorTextChanged);
-    connect(monitorText, &QPlainTextEdit::updateRequest, this, &MainWindow::monitorTextScrolled);
+    connect(monitorText, &QPlainTextEdit::updateRequest, this,
+            &MainWindow::cacheMonitorScrollValues);
+    connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::updateMonitorScroll);
 
     selectFirstBoard();
 }
@@ -226,14 +227,36 @@ void MainWindow::updateSettingField(const QString &name, const QVariant &value)
     }
 }
 
-void MainWindow::monitorTextChanged()
+/* Memorize the scroll value whenever the user scrolls the widget (QPlainTextEdit::updateRequest)
+   and enable autoscroll when he scrolls to the end. */
+void MainWindow::cacheMonitorScrollValues(const QRect &rect, int dy)
 {
+    Q_UNUSED(rect);
+
+    if (!dy)
+        return;
+
+    auto vbar = monitorText->verticalScrollBar();
+    /* Disable autoscroll when the user scrolls in the document, unless he scrolls to
+       end of the document. */
+    monitor_autoscroll_ = vbar->value() >= vbar->maximum() - 1;
+    monitor_cursor_ = monitorText->cursorForPosition(QPoint(0, 0));
+}
+
+/* Fix the scrollbar position whenever the text changes (QPlainTextEdit::textChanged),
+   depending on whether autoscroll is enabled or not. */
+void MainWindow::updateMonitorScroll()
+{
+    auto hbar = monitorText->horizontalScrollBar();
     auto vbar = monitorText->verticalScrollBar();
 
+    // Look at monitorTextScrolled() for the rules regarding monitor_autoscroll_
     if (monitor_autoscroll_) {
         vbar->setValue(vbar->maximum());
     } else {
-        auto hbar = monitorText->horizontalScrollBar();
+        /* QPlainTextEdit does a good job of keeping the text steady when we append to the
+           end... until maximumBlockCount kicks in. We use our own cursor monitor_cursor_,
+           updated in cacheMonitorScrollValues() to fix that behavior. */
         QTextCursor old_cursor = monitorText->textCursor();
         int hpos = hbar->value();
 
@@ -247,22 +270,8 @@ void MainWindow::monitorTextChanged()
     }
 }
 
-void MainWindow::monitorTextScrolled(const QRect &rect, int dy)
-{
-    Q_UNUSED(rect);
-
-    if (!dy)
-        return;
-
-    QScrollBar *vbar = monitorText->verticalScrollBar();
-
-    monitor_autoscroll_ = vbar->value() >= vbar->maximum() - 1;
-    monitor_cursor_ = monitorText->cursorForPosition(QPoint(0, 0));
-}
-
 void MainWindow::clearMonitor()
 {
-    monitor_cursor_ = QTextCursor();
     monitorText->clear();
 }
 

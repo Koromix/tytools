@@ -50,8 +50,8 @@ private slots:
     void refreshBoardsInfo();
     void updateSettingField(const QString &name, const QVariant &value);
 
-    void monitorTextChanged();
-    void monitorTextScrolled(const QRect &rect, int dy);
+    void cacheMonitorScrollValues(const QRect &rect, int dy);
+    void updateMonitorScroll();
 
     void clearMonitor();
 
