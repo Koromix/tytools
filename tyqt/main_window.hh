@@ -13,6 +13,7 @@
 
 #include "ui_main_window.h"
 
+class AboutDialog;
 class ArduinoDialog;
 class Board;
 class Monitor;
@@ -28,6 +29,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QTextCursor monitor_cursor_;
 
     ArduinoDialog *arduino_dialog_ = nullptr;
+    AboutDialog *about_dialog_ = nullptr;
 
 public:
     MainWindow(Monitor *monitor, QWidget *parent = nullptr);

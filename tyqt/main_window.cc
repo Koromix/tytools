@@ -513,7 +513,17 @@ void MainWindow::on_actionReportBug_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-    AboutDialog(this).exec();
+    if (!about_dialog_) {
+        about_dialog_ = new AboutDialog(this);
+
+        // WA_DeleteOnClose is not enough, see openArduinoTool() for details
+        connect(about_dialog_, &QDialog::finished, this, [=]() {
+            about_dialog_->deleteLater();
+            about_dialog_ = nullptr;
+        });
+    }
+
+    about_dialog_->show();
 }
 
 void MainWindow::on_actionShowLog_triggered()
