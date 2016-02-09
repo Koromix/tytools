@@ -311,14 +311,12 @@ bool Board::attachMonitor()
 {
     if (isSerialAvailable()) {
         serial_attach_ = openSerialInterface();
-        if (!serial_attach_)
-            return false;
     } else {
         serial_attach_ = true;
     }
 
     emit boardChanged();
-    return true;
+    return serial_attach_;
 }
 
 void Board::detachMonitor()

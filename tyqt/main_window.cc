@@ -423,9 +423,6 @@ void MainWindow::on_actionAttachMonitor_triggered(bool checked)
     } else {
         current_board_->detachMonitor();
     }
-    /* Show the correct state if something failed, setChecked() does not trigger
-       this signal. */
-    actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
 }
 
 void MainWindow::on_actionClearMonitor_triggered()
