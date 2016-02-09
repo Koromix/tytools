@@ -24,15 +24,13 @@ public:
 
 private slots:
     void refresh();
-
     void addLog(const QString &msg);
     void addError(const QString &msg);
 
-    void on_arduinoPath_editingFinished();
-    void on_browseButton_clicked();
+    void browseForArduino();
 
-    void on_integrateButton_clicked();
-    void on_restoreButton_clicked();
+    void integrate();
+    void restore();
 
 private:
     void appendMessage(const QString &msg, const QTextCharFormat &fmt = QTextCharFormat());

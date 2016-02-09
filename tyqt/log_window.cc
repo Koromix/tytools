@@ -13,6 +13,11 @@ LogWindow::LogWindow(QWidget *parent, Qt::WindowFlags f)
     : QWidget(parent, f)
 {
     setupUi(this);
+
+    connect(closeButton, &QPushButton::clicked, this, &LogWindow::close);
+    connect(clearButton, &QPushButton::clicked, logText, &QPlainTextEdit::clear);
+    connect(logText, &QPlainTextEdit::customContextMenuRequested, this,
+            &LogWindow::showLogContextMenu);
 }
 
 void LogWindow::appendLog(const QString &log)
@@ -26,7 +31,7 @@ void LogWindow::keyPressEvent(QKeyEvent *e)
         close();
 }
 
-void LogWindow::on_logText_customContextMenuRequested(const QPoint &pos)
+void LogWindow::showLogContextMenu(const QPoint &pos)
 {
     auto menu = logText->createStandardContextMenu();
 

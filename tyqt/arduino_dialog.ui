@@ -105,22 +105,5 @@
   <tabstop>closeButton</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>closeButton</sender>
-   <signal>clicked()</signal>
-   <receiver>ArduinoDialog</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>441</x>
-     <y>237</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>246</x>
-     <y>130</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

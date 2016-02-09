@@ -16,10 +16,13 @@ class AboutDialog: public QDialog, private Ui::AboutDialog {
 public:
     AboutDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
 
+public slots:
+    static void openWebsite();
+    static void openBugReports();
+    static void openLicense();
+
 private slots:
-    void on_bugButton_clicked();
-    void on_licenseButton_clicked();
-    void on_descriptionText_linkActivated(const QString &link);
+    void openLink(const QString &link);
 };
 
 #endif

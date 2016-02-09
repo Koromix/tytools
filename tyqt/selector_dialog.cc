@@ -18,10 +18,13 @@ SelectorDialog::SelectorDialog(Monitor *monitor, QWidget *parent)
 {
     setupUi(this);
 
-    tree->setModel(monitor);
-    connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &SelectorDialog::selectionChanged);
+    connect(buttonBox, &QDialogButtonBox::accepted, this, &SelectorDialog::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, this, &SelectorDialog::reject);
     connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::doubleClicked);
 
+    tree->setModel(monitor);
+    connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            &SelectorDialog::selectionChanged);
     tree->header()->setStretchLastSection(false);
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
