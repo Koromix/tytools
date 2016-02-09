@@ -462,7 +462,19 @@ void MainWindow::on_monitorText_customContextMenuRequested(const QPoint &pos)
 
 void MainWindow::on_actionIntegrateToArduino_triggered()
 {
-    ArduinoDialog(this).exec();
+    if (!arduino_dialog_) {
+        arduino_dialog_ = new ArduinoDialog(this);
+
+        /* We don't want to open multiple dialogs (for each main window anyway), hence why
+           we need to keep the pointer around. Unfortunately QPointer is broken with forward
+           declarations, so we can't use that + WA_DeleteOnClose. */
+        connect(arduino_dialog_, &QDialog::finished, this, [=]() {
+            arduino_dialog_->deleteLater();
+            arduino_dialog_ = nullptr;
+        });
+    }
+
+    arduino_dialog_->show();
 }
 
 void MainWindow::on_actionResetApp_triggered()
@@ -501,7 +513,17 @@ void MainWindow::on_actionReportBug_triggered()
 
 void MainWindow::on_actionAbout_triggered()
 {
-    AboutDialog(this).exec();
+    if (!about_dialog_) {
+        about_dialog_ = new AboutDialog(this);
+
+        // WA_DeleteOnClose is not enough, see openArduinoTool() for details
+        connect(about_dialog_, &QDialog::finished, this, [=]() {
+            about_dialog_->deleteLater();
+            about_dialog_ = nullptr;
+        });
+    }
+
+    about_dialog_->show();
 }
 
 void MainWindow::on_actionShowLog_triggered()
