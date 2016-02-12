@@ -105,6 +105,7 @@ public:
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
+    TaskInterface upload();
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws);
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface reset();

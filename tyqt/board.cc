@@ -215,6 +215,18 @@ QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
     }
 }
 
+TaskInterface Board::upload()
+{
+    if (firmware_.isEmpty())
+        return watchTask(make_task<FailedTask>(tr("No firmware set for board '%1'").arg(tag())));
+
+    auto fw = Firmware::load(firmware_);
+    if (!fw)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+
+    return upload({fw});
+}
+
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws)
 {
     return upload(fws, reset_after_);
