@@ -350,6 +350,41 @@ void Board::setScrollBackLimit(unsigned int limit)
     emit settingChanged("scrollBackLimit", limit);
 }
 
+TaskInterface Board::startUpload()
+{
+    auto task = upload();
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws)
+{
+    auto task = upload(fws);
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
+{
+    auto task = upload(fws, reset_after);
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startReset()
+{
+    auto task = reset();
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startReboot()
+{
+    auto task = reboot();
+    task.start();
+    return task;
+}
+
 void Board::notifyLog(ty_log_level level, const QString &msg)
 {
     Q_UNUSED(msg);

@@ -123,14 +123,7 @@ void MainWindow::uploadToSelection()
     for (auto &board: selected_boards_) {
         if (!board->firmware().isEmpty()) {
             fws_count++;
-
-            auto fw = Firmware::load(board->firmware());
-            if (!fw) {
-                board->notifyLog(TY_LOG_ERROR, ty_error_last_message());
-                continue;
-            }
-
-            board->upload({fw}).start();
+            board->startUpload();
         }
     }
     if (!fws_count)
@@ -157,19 +150,19 @@ void MainWindow::uploadNewToSelection()
         return;
 
     for (auto &board: selected_boards_)
-        board->upload(fws).start();
+        board->startUpload(fws);
 }
 
 void MainWindow::resetSelection()
 {
     for (auto &board: selected_boards_)
-        board->reset().start();
+        board->startReset();
 }
 
 void MainWindow::rebootSelection()
 {
     for (auto &board: selected_boards_)
-        board->reboot().start();
+        board->startReboot();
 }
 
 void MainWindow::setCompactMode(bool enable)

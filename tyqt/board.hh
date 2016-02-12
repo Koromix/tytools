@@ -126,6 +126,12 @@ public slots:
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
 
+    TaskInterface startUpload();
+    TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);
+    TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
+    TaskInterface startReset();
+    TaskInterface startReboot();
+
     void notifyLog(ty_log_level level, const QString &msg);
 
 signals:
