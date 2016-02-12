@@ -376,9 +376,9 @@ void MainWindow::refreshActions()
 {
     bool upload = false, reset = false, reboot = false;
     for (auto &board: selected_boards_) {
-        upload |= board->isUploadAvailable();
-        reset |= board->isResetAvailable();
-        reboot |= board->isRebootAvailable();
+        upload |= board->uploadAvailable();
+        reset |= board->resetAvailable();
+        reboot |= board->rebootAvailable();
     }
 
     actionUpload->setEnabled(upload);
@@ -414,7 +414,7 @@ void MainWindow::refreshBoardInfo()
         interfaceTree->addTopLevelItem(item);
     }
 
-    monitorEdit->setEnabled(current_board_->isMonitorAttached());
+    monitorEdit->setEnabled(current_board_->serialOpen());
     actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
 }
 

@@ -136,22 +136,22 @@ bool Board::isRunning() const
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RUN);
 }
 
-bool Board::isUploadAvailable() const
+bool Board::uploadAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || rebootAvailable();
 }
 
-bool Board::isResetAvailable() const
+bool Board::resetAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || isRebootAvailable();
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || rebootAvailable();
 }
 
-bool Board::isRebootAvailable() const
+bool Board::rebootAvailable() const
 {
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_REBOOT);
 }
 
-bool Board::isSerialAvailable() const
+bool Board::serialAvailable() const
 {
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
 }
@@ -168,8 +168,8 @@ QString Board::statusIconFileName() const
     if (running_task_.status() == TY_TASK_STATUS_RUNNING)
         return ":/board_working";
     if (isRunning())
-        return isMonitorAttached() ? ":/board_attached" : ":/board_detached";
-    if (isUploadAvailable())
+        return serialOpen() ? ":/board_attached" : ":/board_detached";
+    if (uploadAvailable())
         return ":/board_bootloader";
 
     return ":/board_missing";
@@ -184,7 +184,7 @@ QString Board::statusText() const
 {
     if (isRunning())
         return firmware_name_.isEmpty() ? tr("(running)") : firmware_name_;
-    if (isUploadAvailable())
+    if (uploadAvailable())
         return tr("(bootloader)");
     return tr("(missing)");
 }
@@ -277,7 +277,7 @@ TaskInterface Board::reboot()
 
 bool Board::attachMonitor()
 {
-    if (isSerialAvailable()) {
+    if (serialAvailable()) {
         serial_attach_ = openSerialInterface();
     } else {
         serial_attach_ = true;

@@ -85,10 +85,11 @@ public:
     std::vector<BoardInterfaceInfo> interfaces() const;
 
     bool isRunning() const;
-    bool isUploadAvailable() const;
-    bool isResetAvailable() const;
-    bool isRebootAvailable() const;
-    bool isSerialAvailable() const;
+    bool uploadAvailable() const;
+    bool resetAvailable() const;
+    bool rebootAvailable() const;
+    bool serialAvailable() const;
+    bool serialOpen() const { return serial_iface_; }
     bool errorOccured() const;
 
     QString statusIconFileName() const;
@@ -113,7 +114,6 @@ public:
 
     bool attachMonitor();
     void detachMonitor();
-    bool isMonitorAttached() const { return serial_iface_; }
     bool autoAttachMonitor() const { return serial_attach_; }
 
     bool sendSerial(const QByteArray &buf);
