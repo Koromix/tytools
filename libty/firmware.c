@@ -50,6 +50,10 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
         }
     } else {
         const char *ext = strrchr(filename, '.');
+        if (!ext) {
+            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
+            goto error;
+        }
 
         for (format = ty_firmware_formats; format->name; format++) {
             if (strcmp(format->ext, ext) == 0)
