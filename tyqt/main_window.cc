@@ -123,14 +123,7 @@ void MainWindow::uploadToSelection()
     for (auto &board: selected_boards_) {
         if (!board->firmware().isEmpty()) {
             fws_count++;
-
-            auto fw = Firmware::load(board->firmware());
-            if (!fw) {
-                board->notifyLog(TY_LOG_ERROR, ty_error_last_message());
-                continue;
-            }
-
-            board->upload({fw}).start();
+            board->startUpload();
         }
     }
     if (!fws_count)
@@ -157,19 +150,19 @@ void MainWindow::uploadNewToSelection()
         return;
 
     for (auto &board: selected_boards_)
-        board->upload(fws).start();
+        board->startUpload(fws);
 }
 
 void MainWindow::resetSelection()
 {
     for (auto &board: selected_boards_)
-        board->reset().start();
+        board->startReset();
 }
 
 void MainWindow::rebootSelection()
 {
     for (auto &board: selected_boards_)
-        board->reboot().start();
+        board->startReboot();
 }
 
 void MainWindow::setCompactMode(bool enable)
@@ -376,9 +369,9 @@ void MainWindow::refreshActions()
 {
     bool upload = false, reset = false, reboot = false;
     for (auto &board: selected_boards_) {
-        upload |= board->isUploadAvailable();
-        reset |= board->isResetAvailable();
-        reboot |= board->isRebootAvailable();
+        upload |= board->uploadAvailable();
+        reset |= board->resetAvailable();
+        reboot |= board->rebootAvailable();
     }
 
     actionUpload->setEnabled(upload);
@@ -414,7 +407,7 @@ void MainWindow::refreshBoardInfo()
         interfaceTree->addTopLevelItem(item);
     }
 
-    monitorEdit->setEnabled(current_board_->isMonitorAttached());
+    monitorEdit->setEnabled(current_board_->serialOpen());
     actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
 }
 

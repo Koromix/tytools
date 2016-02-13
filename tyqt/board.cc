@@ -31,11 +31,6 @@ Board::Board(ty_board *board, QObject *parent)
     error_timer_.setSingleShot(true);
     connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
 
-    connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
-    connect(&task_watcher_, &TaskWatcher::started, this, &Board::taskChanged);
-    connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
-    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
-
     refreshBoard();
 }
 
@@ -90,6 +85,11 @@ QString Board::modelName() const
     return ty_board_model_get_name(model);
 }
 
+QString Board::tag() const
+{
+    return ty_board_get_tag(board_);
+}
+
 QString Board::id() const
 {
     return ty_board_get_id(board_);
@@ -131,22 +131,22 @@ bool Board::isRunning() const
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RUN);
 }
 
-bool Board::isUploadAvailable() const
+bool Board::uploadAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || isRebootAvailable();
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || rebootAvailable();
 }
 
-bool Board::isResetAvailable() const
+bool Board::resetAvailable() const
 {
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || isRebootAvailable();
+    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || rebootAvailable();
 }
 
-bool Board::isRebootAvailable() const
+bool Board::rebootAvailable() const
 {
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_REBOOT);
 }
 
-bool Board::isSerialAvailable() const
+bool Board::serialAvailable() const
 {
     return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
 }
@@ -163,8 +163,8 @@ QString Board::statusIconFileName() const
     if (running_task_.status() == TY_TASK_STATUS_RUNNING)
         return ":/board_working";
     if (isRunning())
-        return isMonitorAttached() ? ":/board_attached" : ":/board_detached";
-    if (isUploadAvailable())
+        return serialOpen() ? ":/board_attached" : ":/board_detached";
+    if (uploadAvailable())
         return ":/board_bootloader";
 
     return ":/board_missing";
@@ -179,9 +179,143 @@ QString Board::statusText() const
 {
     if (isRunning())
         return firmware_name_.isEmpty() ? tr("(running)") : firmware_name_;
-    if (isUploadAvailable())
+    if (uploadAvailable())
         return tr("(bootloader)");
     return tr("(missing)");
+}
+
+void Board::appendToSerialDocument(const QString &s)
+{
+    QTextCursor cursor(&serial_document_);
+    cursor.movePosition(QTextCursor::End);
+
+    cursor.insertText(s);
+}
+
+QStringList Board::makeCapabilityList(uint16_t capabilities)
+{
+    QStringList list;
+
+    for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
+        if (capabilities & (1 << i))
+            list.append(ty_board_capability_get_name(static_cast<ty_board_capability>(i)));
+    }
+
+    return list;
+}
+
+QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
+{
+    QStringList list = makeCapabilityList(capabilities);
+
+    if (list.isEmpty()) {
+        return empty_str;
+    } else {
+        return list.join(", ");
+    }
+}
+
+TaskInterface Board::upload()
+{
+    if (firmware_.isEmpty())
+        return watchTask(make_task<FailedTask>(tr("No firmware set for board '%1'").arg(tag())));
+
+    auto fw = Firmware::load(firmware_);
+    if (!fw)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+
+    return upload({fw});
+}
+
+TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws)
+{
+    return upload(fws, reset_after_);
+}
+
+TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
+{
+    vector<ty_firmware *> fws2;
+    ty_task *task;
+    int r;
+
+    fws2.reserve(fws.size());
+    for (auto &fw: fws)
+        fws2.push_back(fw->firmware());
+
+    r = ty_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TY_UPLOAD_NORESET, &task);
+    if (r < 0)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+
+    auto task2 = make_task<TyTask>(task);
+    watchTask(task2);
+    connect(&task_watcher_, &TaskWatcher::finished,
+            this, [=](bool success, shared_ptr<void> result) {
+        if (!success)
+            return;
+
+        auto fw = static_cast<ty_firmware *>(result.get());
+        setFirmware(ty_firmware_get_filename(fw));
+        firmware_name_ = ty_firmware_get_name(fw);
+
+        emit boardChanged();
+    });
+
+    return task2;
+}
+
+TaskInterface Board::reset()
+{
+    ty_task *task;
+    int r;
+
+    r = ty_reset(board_, &task);
+    if (r < 0)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+
+    return watchTask(make_task<TyTask>(task));
+}
+
+TaskInterface Board::reboot()
+{
+    ty_task *task;
+    int r;
+
+    r = ty_reboot(board_, &task);
+    if (r < 0)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+
+    return watchTask(make_task<TyTask>(task));
+}
+
+bool Board::attachMonitor()
+{
+    if (serialAvailable()) {
+        serial_attach_ = openSerialInterface();
+    } else {
+        serial_attach_ = true;
+    }
+
+    emit boardChanged();
+    return serial_attach_;
+}
+
+void Board::detachMonitor()
+{
+    closeSerialInterface();
+    serial_attach_ = false;
+
+    emit boardChanged();
+}
+
+bool Board::sendSerial(const QByteArray &buf)
+{
+    ssize_t r = ty_board_serial_write(board_, buf.data(), buf.size());
+    if (r < 0) {
+        emit notifyLog(TY_LOG_ERROR, ty_error_last_message());
+        return false;
+    }
+
+    return true;
 }
 
 void Board::setTag(const QString &tag)
@@ -216,132 +350,39 @@ void Board::setScrollBackLimit(unsigned int limit)
     emit settingChanged("scrollBackLimit", limit);
 }
 
-QTextDocument &Board::serialDocument()
+TaskInterface Board::startUpload()
 {
-    return serial_document_;
+    auto task = upload();
+    task.start();
+    return task;
 }
 
-void Board::appendToSerialDocument(const QString &s)
+TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws)
 {
-    QTextCursor cursor(&serial_document_);
-    cursor.movePosition(QTextCursor::End);
-
-    cursor.insertText(s);
+    auto task = upload(fws);
+    task.start();
+    return task;
 }
 
-QStringList Board::makeCapabilityList(uint16_t capabilities)
+TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
 {
-    QStringList list;
-
-    for (unsigned int i = 0; i < TY_BOARD_CAPABILITY_COUNT; i++) {
-        if (capabilities & (1 << i))
-            list.append(ty_board_capability_get_name(static_cast<ty_board_capability>(i)));
-    }
-
-    return list;
+    auto task = upload(fws, reset_after);
+    task.start();
+    return task;
 }
 
-QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
+TaskInterface Board::startReset()
 {
-    QStringList list = makeCapabilityList(capabilities);
-
-    if (list.isEmpty()) {
-        return empty_str;
-    } else {
-        return list.join(", ");
-    }
+    auto task = reset();
+    task.start();
+    return task;
 }
 
-TaskInterface Board::upload(const std::vector<std::shared_ptr<Firmware>> &fws)
+TaskInterface Board::startReboot()
 {
-    return upload(fws, resetAfter());
-}
-
-TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
-{
-    vector<ty_firmware *> fws2;
-    ty_task *task;
-    int r;
-
-    fws2.reserve(fws.size());
-    for (auto &fw: fws)
-        fws2.push_back(fw->firmware());
-
-    r = ty_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TY_UPLOAD_NORESET, &task);
-    if (r < 0)
-        return make_task<FailedTask>(ty_error_last_message());
-
-    return wrapBoardTask(task, [this](bool success, shared_ptr<void> result) {
-        if (!success)
-            return;
-
-        auto fw = static_cast<ty_firmware *>(result.get());
-        setFirmware(ty_firmware_get_filename(fw));
-        firmware_name_ = ty_firmware_get_name(fw);
-
-        emit boardChanged();
-    });
-}
-
-TaskInterface Board::reset()
-{
-    ty_task *task;
-    int r;
-
-    r = ty_reset(board_, &task);
-    if (r < 0)
-        return make_task<FailedTask>(ty_error_last_message());
-
-    return wrapBoardTask(task);
-}
-
-TaskInterface Board::reboot()
-{
-    ty_task *task;
-    int r;
-
-    r = ty_reboot(board_, &task);
-    if (r < 0)
-        return make_task<FailedTask>(ty_error_last_message());
-
-    return wrapBoardTask(task);
-}
-
-bool Board::attachMonitor()
-{
-    if (isSerialAvailable()) {
-        serial_attach_ = openSerialInterface();
-    } else {
-        serial_attach_ = true;
-    }
-
-    emit boardChanged();
-    return serial_attach_;
-}
-
-void Board::detachMonitor()
-{
-    closeSerialInterface();
-    serial_attach_ = false;
-
-    emit boardChanged();
-}
-
-bool Board::sendSerial(const QByteArray &buf)
-{
-    ssize_t r = ty_board_serial_write(board_, buf.data(), buf.size());
-    if (r < 0) {
-        emit notifyLog(TY_LOG_ERROR, ty_error_last_message());
-        return false;
-    }
-
-    return true;
-
-}
-
-TaskInterface Board::runningTask() const
-{
-    return running_task_;
+    auto task = reboot();
+    task.start();
+    return task;
 }
 
 void Board::notifyLog(ty_log_level level, const QString &msg)
@@ -403,14 +444,11 @@ void Board::updateSerialDocument()
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 {
     Q_UNUSED(success);
-
-    if (task_finish_) {
-        task_finish_(success, result);
-        task_finish_ = nullptr;
-    }
+    Q_UNUSED(result);
 
     running_task_ = TaskInterface();
     task_watcher_.setTask(nullptr);
+
     emit taskChanged();
 }
 
@@ -470,11 +508,18 @@ void Board::closeSerialInterface()
     serial_iface_ = nullptr;
 }
 
-TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, shared_ptr<void> result)> finish)
+TaskInterface Board::watchTask(TaskInterface task)
 {
-    task_finish_ = finish;
+    running_task_ = task;
 
-    running_task_ = make_task<TyTask>(task);
+    /* There may be task-specific slots, such as the firmware one from upload(),
+       disconnect everyone and restore sane connections. */
+    task_watcher_.disconnect();
+    connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
+    connect(&task_watcher_, &TaskWatcher::started, this, &Board::taskChanged);
+    connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
+    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
+
     task_watcher_.setTask(&running_task_);
 
     return running_task_;

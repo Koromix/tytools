@@ -13,7 +13,6 @@
 #include <QThread>
 #include <QTimer>
 
-#include <functional>
 #include <memory>
 #include <vector>
 
@@ -61,7 +60,6 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     TaskInterface running_task_;
     TaskWatcher task_watcher_;
-    std::function<void(bool success, std::shared_ptr<void> result)> task_finish_;
 
 public:
     static std::shared_ptr<Board> createBoard(ty_board *board);
@@ -77,6 +75,7 @@ public:
     const ty_board_model *model() const;
     QString modelName() const;
 
+    QString tag() const;
     QString id() const;
     QString location() const;
     uint64_t serialNumber() const;
@@ -84,37 +83,29 @@ public:
     std::vector<BoardInterfaceInfo> interfaces() const;
 
     bool isRunning() const;
-    bool isUploadAvailable() const;
-    bool isResetAvailable() const;
-    bool isRebootAvailable() const;
-    bool isSerialAvailable() const;
+    bool uploadAvailable() const;
+    bool resetAvailable() const;
+    bool rebootAvailable() const;
+    bool serialAvailable() const;
+    bool serialOpen() const { return serial_iface_; }
     bool errorOccured() const;
 
     QString statusIconFileName() const;
     QString firmwareName() const;
     QString statusText() const;
 
-    void setTag(const QString &tag);
-    QString tag() const { return ty_board_get_tag(board_); }
-
-    void setFirmware(const QString &firmware);
     QString firmware() const { return firmware_; }
-
-    void setResetAfter(bool reset_after);
     bool resetAfter() const { return reset_after_; }
-
-    void setClearOnReset(bool clear_on_reset);
     bool clearOnReset() const { return clear_on_reset_; }
-
-    void setScrollBackLimit(unsigned int limit);
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
 
-    QTextDocument &serialDocument();
+    QTextDocument &serialDocument() { return serial_document_; }
     void appendToSerialDocument(const QString& s);
 
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
+    TaskInterface upload();
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws);
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface reset();
@@ -122,12 +113,26 @@ public:
 
     bool attachMonitor();
     void detachMonitor();
-    bool isMonitorAttached() const { return serial_iface_; }
     bool autoAttachMonitor() const { return serial_attach_; }
 
     bool sendSerial(const QByteArray &buf);
 
-    TaskInterface runningTask() const;
+    TaskInterface runningTask() const { return running_task_; }
+
+public slots:
+    void setTag(const QString &tag);
+    void setFirmware(const QString &firmware);
+    void setResetAfter(bool reset_after);
+    void setClearOnReset(bool clear_on_reset);
+    void setScrollBackLimit(unsigned int limit);
+
+    TaskInterface startUpload();
+    TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);
+    TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
+    TaskInterface startReset();
+    TaskInterface startReboot();
+
+    void notifyLog(ty_log_level level, const QString &msg);
 
 signals:
     void boardChanged();
@@ -135,9 +140,6 @@ signals:
     void taskChanged();
 
     void settingChanged(const QString &name, const QVariant &value);
-
-public slots:
-    void notifyLog(ty_log_level level, const QString &msg);
 
 private slots:
     void serialReceived(ty_descriptor desc);
@@ -153,8 +155,7 @@ private:
     bool openSerialInterface();
     void closeSerialInterface();
 
-    TaskInterface wrapBoardTask(ty_task *task,
-                                std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
+    TaskInterface watchTask(TaskInterface task);
 
     friend class Monitor;
 };
