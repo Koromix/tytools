@@ -184,38 +184,6 @@ QString Board::statusText() const
     return tr("(missing)");
 }
 
-void Board::setTag(const QString &tag)
-{
-    int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
-    if (r < 0)
-        throw bad_alloc();
-    emit settingChanged("tag", tag);
-}
-
-void Board::setFirmware(const QString &firmware)
-{
-    firmware_ = firmware;
-    emit settingChanged("firmware", firmware);
-}
-
-void Board::setResetAfter(bool reset_after)
-{
-    reset_after_ = reset_after;
-    emit settingChanged("resetAfter", reset_after);
-}
-
-void Board::setClearOnReset(bool clear_on_reset)
-{
-    clear_on_reset_ = clear_on_reset;
-    emit settingChanged("clearOnReset", clear_on_reset);
-}
-
-void Board::setScrollBackLimit(unsigned int limit)
-{
-    serial_document_.setMaximumBlockCount(limit);
-    emit settingChanged("scrollBackLimit", limit);
-}
-
 QTextDocument &Board::serialDocument()
 {
     return serial_document_;
@@ -342,6 +310,38 @@ bool Board::sendSerial(const QByteArray &buf)
 TaskInterface Board::runningTask() const
 {
     return running_task_;
+}
+
+void Board::setTag(const QString &tag)
+{
+    int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
+    if (r < 0)
+        throw bad_alloc();
+    emit settingChanged("tag", tag);
+}
+
+void Board::setFirmware(const QString &firmware)
+{
+    firmware_ = firmware;
+    emit settingChanged("firmware", firmware);
+}
+
+void Board::setResetAfter(bool reset_after)
+{
+    reset_after_ = reset_after;
+    emit settingChanged("resetAfter", reset_after);
+}
+
+void Board::setClearOnReset(bool clear_on_reset)
+{
+    clear_on_reset_ = clear_on_reset;
+    emit settingChanged("clearOnReset", clear_on_reset);
+}
+
+void Board::setScrollBackLimit(unsigned int limit)
+{
+    serial_document_.setMaximumBlockCount(limit);
+    emit settingChanged("scrollBackLimit", limit);
 }
 
 void Board::notifyLog(ty_log_level level, const QString &msg)

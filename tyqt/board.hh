@@ -94,19 +94,10 @@ public:
     QString firmwareName() const;
     QString statusText() const;
 
-    void setTag(const QString &tag);
     QString tag() const { return ty_board_get_tag(board_); }
-
-    void setFirmware(const QString &firmware);
     QString firmware() const { return firmware_; }
-
-    void setResetAfter(bool reset_after);
     bool resetAfter() const { return reset_after_; }
-
-    void setClearOnReset(bool clear_on_reset);
     bool clearOnReset() const { return clear_on_reset_; }
-
-    void setScrollBackLimit(unsigned int limit);
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
 
     QTextDocument &serialDocument();
@@ -129,15 +120,21 @@ public:
 
     TaskInterface runningTask() const;
 
+public slots:
+    void setTag(const QString &tag);
+    void setFirmware(const QString &firmware);
+    void setResetAfter(bool reset_after);
+    void setClearOnReset(bool clear_on_reset);
+    void setScrollBackLimit(unsigned int limit);
+
+    void notifyLog(ty_log_level level, const QString &msg);
+
 signals:
     void boardChanged();
     void boardDropped();
     void taskChanged();
 
     void settingChanged(const QString &name, const QVariant &value);
-
-public slots:
-    void notifyLog(ty_log_level level, const QString &msg);
 
 private slots:
     void serialReceived(ty_descriptor desc);
