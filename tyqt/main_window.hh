@@ -24,6 +24,9 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QMenu *menuUpload;
     QMenu *menuBrowseFirmware;
 
+    // We need to keep this around to show/hide the board QComboBox
+    QAction *boardComboAction;
+
     Monitor *monitor_;
     std::vector<std::shared_ptr<Board>> selected_boards_;
     Board *current_board_ = nullptr;
