@@ -197,9 +197,15 @@ void MainWindow::rebootSelection()
 
 void MainWindow::setCompactMode(bool enable)
 {
-    toolBar->setVisible(!enable);
-    boardList->setVisible(!enable);
-    statusbar->setVisible(!enable);
+    if (enable) {
+        menubar->setVisible(false);
+        toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        boardList->setVisible(false);
+    } else {
+        menubar->setVisible(true);
+        toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        boardList->setVisible(true);
+    }
 }
 
 void MainWindow::openArduinoTool()
