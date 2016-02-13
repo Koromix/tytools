@@ -162,13 +162,12 @@ int _ty_firmware_load_ihex(ty_firmware *fw)
     }
 
     do {
-        fgets(buf, sizeof(buf), fp);
-        if (ferror(fp)) {
-            r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", fw->filename);
-            goto cleanup;
-        }
-        if (feof(fp)) {
-            r = parse_error(&ctx);
+        if (!fgets(buf, sizeof(buf), fp)) {
+            if (feof(fp)) {
+                r = parse_error(&ctx);
+            } else {
+                r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", fw->filename);
+            }
             goto cleanup;
         }
         ctx.line++;
