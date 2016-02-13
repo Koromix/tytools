@@ -30,8 +30,6 @@ Board::Board(ty_board *board, QObject *parent)
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
     connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
-
-    refreshBoard();
 }
 
 shared_ptr<Board> Board::createBoard(ty_board *board)
@@ -287,26 +285,6 @@ TaskInterface Board::reboot()
     return watchTask(make_task<TyTask>(task));
 }
 
-bool Board::attachMonitor()
-{
-    if (serialAvailable()) {
-        serial_attach_ = openSerialInterface();
-    } else {
-        serial_attach_ = true;
-    }
-
-    emit boardChanged();
-    return serial_attach_;
-}
-
-void Board::detachMonitor()
-{
-    closeSerialInterface();
-    serial_attach_ = false;
-
-    emit boardChanged();
-}
-
 bool Board::sendSerial(const QByteArray &buf)
 {
     ssize_t r = ty_board_serial_write(board_, buf.data(), buf.size());
@@ -348,6 +326,18 @@ void Board::setScrollBackLimit(unsigned int limit)
 {
     serial_document_.setMaximumBlockCount(limit);
     emit settingChanged("scrollBackLimit", limit);
+}
+
+void Board::setAttachMonitor(bool attach_monitor)
+{
+    if (attach_monitor && serialAvailable()) {
+        attach_monitor = openSerialInterface();
+    } else {
+        closeSerialInterface();
+    }
+
+    serial_attach_ = attach_monitor;
+    emit settingChanged("attachMonitor", attach_monitor);
 }
 
 TaskInterface Board::startUpload()
@@ -489,6 +479,8 @@ bool Board::openSerialInterface()
         notifyLog(TY_LOG_ERROR, ty_error_last_message());
         return false;
     }
+    if (!r)
+        return false;
     ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
 

@@ -39,6 +39,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_PROPERTY(bool resetAfter READ resetAfter WRITE setResetAfter)
     Q_PROPERTY(bool clearOnReset READ clearOnReset WRITE setClearOnReset)
     Q_PROPERTY(unsigned int scrollBackLimit READ scrollBackLimit WRITE setScrollBackLimit)
+    Q_PROPERTY(bool attachMonitor READ attachMonitor WRITE setAttachMonitor)
 
     ty_board *board_;
 
@@ -98,6 +99,7 @@ public:
     bool resetAfter() const { return reset_after_; }
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
+    bool attachMonitor() const { return serial_attach_; }
 
     QTextDocument &serialDocument() { return serial_document_; }
     void appendToSerialDocument(const QString& s);
@@ -111,10 +113,6 @@ public:
     TaskInterface reset();
     TaskInterface reboot();
 
-    bool attachMonitor();
-    void detachMonitor();
-    bool autoAttachMonitor() const { return serial_attach_; }
-
     bool sendSerial(const QByteArray &buf);
 
     TaskInterface runningTask() const { return running_task_; }
@@ -125,6 +123,7 @@ public slots:
     void setResetAfter(bool reset_after);
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
+    void setAttachMonitor(bool attach_monitor);
 
     TaskInterface startUpload();
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);

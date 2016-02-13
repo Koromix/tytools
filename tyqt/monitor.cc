@@ -228,6 +228,7 @@ void Monitor::handleAddedEvent(ty_board *board)
 
     restoreBoardSettings(*ptr);
     ptr->serial_notifier_.moveToThread(&serial_thread_);
+    ptr->refreshBoard();
 
     connect(ptr.get(), &Board::boardChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));

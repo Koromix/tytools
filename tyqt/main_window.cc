@@ -408,7 +408,7 @@ void MainWindow::refreshBoardInfo()
     }
 
     monitorEdit->setEnabled(current_board_->serialOpen());
-    actionAttachMonitor->setChecked(current_board_->autoAttachMonitor());
+    actionAttachMonitor->setChecked(current_board_->attachMonitor());
 }
 
 void MainWindow::refreshSettingField(const QString &name, const QVariant &value)
@@ -425,6 +425,8 @@ void MainWindow::refreshSettingField(const QString &name, const QVariant &value)
         scrollBackLimitSpin->blockSignals(true);
         scrollBackLimitSpin->setValue(value.toInt());
         scrollBackLimitSpin->blockSignals(false);
+    } else if (name == "attachMonitor") {
+        actionAttachMonitor->setChecked(value.toBool());
     }
 }
 
@@ -532,11 +534,6 @@ void MainWindow::setScrollBackLimitForSelection(int limit)
 
 void MainWindow::setAttachMonitorForSelection(bool attach_monitor)
 {
-    if (attach_monitor) {
-        for (auto &board: selected_boards_)
-            board->attachMonitor();
-    } else {
-        for (auto &board: selected_boards_)
-            board->detachMonitor();
-    }
+    for (auto &board: selected_boards_)
+        board->setAttachMonitor(attach_monitor);
 }
