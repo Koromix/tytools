@@ -31,11 +31,6 @@ Board::Board(ty_board *board, QObject *parent)
     error_timer_.setSingleShot(true);
     connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
 
-    connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
-    connect(&task_watcher_, &TaskWatcher::started, this, &Board::taskChanged);
-    connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
-    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
-
     refreshBoard();
 }
 
@@ -220,9 +215,9 @@ QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
     }
 }
 
-TaskInterface Board::upload(const std::vector<std::shared_ptr<Firmware>> &fws)
+TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws)
 {
-    return upload(fws, resetAfter());
+    return upload(fws, reset_after_);
 }
 
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
@@ -237,9 +232,12 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
 
     r = ty_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TY_UPLOAD_NORESET, &task);
     if (r < 0)
-        return make_task<FailedTask>(ty_error_last_message());
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
 
-    return wrapBoardTask(task, [this](bool success, shared_ptr<void> result) {
+    auto task2 = make_task<TyTask>(task);
+    watchTask(task2);
+    connect(&task_watcher_, &TaskWatcher::finished,
+            this, [=](bool success, shared_ptr<void> result) {
         if (!success)
             return;
 
@@ -249,6 +247,8 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
 
         emit boardChanged();
     });
+
+    return task2;
 }
 
 TaskInterface Board::reset()
@@ -258,9 +258,9 @@ TaskInterface Board::reset()
 
     r = ty_reset(board_, &task);
     if (r < 0)
-        return make_task<FailedTask>(ty_error_last_message());
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
 
-    return wrapBoardTask(task);
+    return watchTask(make_task<TyTask>(task));
 }
 
 TaskInterface Board::reboot()
@@ -270,9 +270,9 @@ TaskInterface Board::reboot()
 
     r = ty_reboot(board_, &task);
     if (r < 0)
-        return make_task<FailedTask>(ty_error_last_message());
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
 
-    return wrapBoardTask(task);
+    return watchTask(make_task<TyTask>(task));
 }
 
 bool Board::attachMonitor()
@@ -397,14 +397,11 @@ void Board::updateSerialDocument()
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 {
     Q_UNUSED(success);
-
-    if (task_finish_) {
-        task_finish_(success, result);
-        task_finish_ = nullptr;
-    }
+    Q_UNUSED(result);
 
     running_task_ = TaskInterface();
     task_watcher_.setTask(nullptr);
+
     emit taskChanged();
 }
 
@@ -464,11 +461,18 @@ void Board::closeSerialInterface()
     serial_iface_ = nullptr;
 }
 
-TaskInterface Board::wrapBoardTask(ty_task *task, function<void(bool success, shared_ptr<void> result)> finish)
+TaskInterface Board::watchTask(TaskInterface task)
 {
-    task_finish_ = finish;
+    running_task_ = task;
 
-    running_task_ = make_task<TyTask>(task);
+    /* There may be task-specific slots, such as the firmware one from upload(),
+       disconnect everyone and restore sane connections. */
+    task_watcher_.disconnect();
+    connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
+    connect(&task_watcher_, &TaskWatcher::started, this, &Board::taskChanged);
+    connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
+    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
+
     task_watcher_.setTask(&running_task_);
 
     return running_task_;

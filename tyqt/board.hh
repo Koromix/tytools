@@ -13,7 +13,6 @@
 #include <QThread>
 #include <QTimer>
 
-#include <functional>
 #include <memory>
 #include <vector>
 
@@ -61,7 +60,6 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     TaskInterface running_task_;
     TaskWatcher task_watcher_;
-    std::function<void(bool success, std::shared_ptr<void> result)> task_finish_;
 
 public:
     static std::shared_ptr<Board> createBoard(ty_board *board);
@@ -150,8 +148,7 @@ private:
     bool openSerialInterface();
     void closeSerialInterface();
 
-    TaskInterface wrapBoardTask(ty_task *task,
-                                std::function<void(bool success, std::shared_ptr<void> result)> finish = nullptr);
+    TaskInterface watchTask(TaskInterface task);
 
     friend class Monitor;
 };
