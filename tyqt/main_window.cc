@@ -279,6 +279,7 @@ void MainWindow::enableBoardWidgets()
     scrollBackLimitSpin->blockSignals(true);
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
     scrollBackLimitSpin->blockSignals(false);
+    actionAttachMonitor->setChecked(current_board_->attachMonitor());
 
     infoTab->setEnabled(true);
     monitorTab->setEnabled(true);
@@ -408,7 +409,6 @@ void MainWindow::refreshBoardInfo()
     }
 
     monitorEdit->setEnabled(current_board_->serialOpen());
-    actionAttachMonitor->setChecked(current_board_->attachMonitor());
 }
 
 void MainWindow::refreshSettingField(const QString &name, const QVariant &value)
@@ -427,6 +427,8 @@ void MainWindow::refreshSettingField(const QString &name, const QVariant &value)
         scrollBackLimitSpin->blockSignals(false);
     } else if (name == "attachMonitor") {
         actionAttachMonitor->setChecked(value.toBool());
+        if (current_board_)
+            monitorEdit->setEnabled(current_board_->serialOpen());
     }
 }
 
