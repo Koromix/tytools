@@ -90,6 +90,11 @@ QString Board::modelName() const
     return ty_board_model_get_name(model);
 }
 
+QString Board::tag() const
+{
+    return ty_board_get_tag(board_);
+}
+
 QString Board::id() const
 {
     return ty_board_get_id(board_);
@@ -182,11 +187,6 @@ QString Board::statusText() const
     if (isUploadAvailable())
         return tr("(bootloader)");
     return tr("(missing)");
-}
-
-QTextDocument &Board::serialDocument()
-{
-    return serial_document_;
 }
 
 void Board::appendToSerialDocument(const QString &s)
@@ -304,12 +304,6 @@ bool Board::sendSerial(const QByteArray &buf)
     }
 
     return true;
-
-}
-
-TaskInterface Board::runningTask() const
-{
-    return running_task_;
 }
 
 void Board::setTag(const QString &tag)

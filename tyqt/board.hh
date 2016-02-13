@@ -77,6 +77,7 @@ public:
     const ty_board_model *model() const;
     QString modelName() const;
 
+    QString tag() const;
     QString id() const;
     QString location() const;
     uint64_t serialNumber() const;
@@ -94,13 +95,12 @@ public:
     QString firmwareName() const;
     QString statusText() const;
 
-    QString tag() const { return ty_board_get_tag(board_); }
     QString firmware() const { return firmware_; }
     bool resetAfter() const { return reset_after_; }
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
 
-    QTextDocument &serialDocument();
+    QTextDocument &serialDocument() { return serial_document_; }
     void appendToSerialDocument(const QString& s);
 
     static QStringList makeCapabilityList(uint16_t capabilities);
@@ -118,7 +118,7 @@ public:
 
     bool sendSerial(const QByteArray &buf);
 
-    TaskInterface runningTask() const;
+    TaskInterface runningTask() const { return running_task_; }
 
 public slots:
     void setTag(const QString &tag);
