@@ -13,32 +13,58 @@ using namespace std;
 
 void SettingsDatabase::put(const QString &key, const QVariant &value)
 {
-    if (!settings_)
-        return;
-
     settings_->setValue(key, value);
 }
 
 void SettingsDatabase::remove(const QString &key)
 {
-    if (!settings_)
-        return;
-
     settings_->remove(key);
 }
 
 QVariant SettingsDatabase::get(const QString &key, const QVariant &default_value) const
 {
-    if (!settings_)
-        return default_value;
-
     return settings_->value(key, default_value);
 }
 
 void SettingsDatabase::clear()
 {
-    if (!settings_)
-        return;
-
     settings_->clear();
+}
+
+void DatabaseInterface::setGroup(const QString &group)
+{
+    group_ = group;
+    if (!group_.endsWith("/"))
+        group_ += "/";
+}
+
+void DatabaseInterface::put(const QString &key, const QVariant &value)
+{
+    if (db_)
+        db_->put(compositeKey(key), value);
+}
+
+void DatabaseInterface::remove(const QString &key)
+{
+    if (db_)
+        db_->remove(compositeKey(key));
+}
+
+QVariant DatabaseInterface::get(const QString &key, const QVariant &default_value) const
+{
+    if (db_)
+        return db_->get(compositeKey(key), default_value);
+    return default_value;
+}
+
+DatabaseInterface DatabaseInterface::subDatabase(const QString &prefix) const
+{
+    DatabaseInterface intf(*this);
+    intf.setGroup(group_ + prefix);
+    return intf;
+}
+
+QString DatabaseInterface::compositeKey(const QString &key) const
+{
+    return group_ + key;
 }

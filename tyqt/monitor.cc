@@ -7,7 +7,6 @@
 
 #include <QBrush>
 #include <QIcon>
-#include <QMetaProperty>
 
 #include "board.hh"
 #include "database.hh"
@@ -226,9 +225,10 @@ void Monitor::handleAddedEvent(ty_board *board)
 {
     auto ptr = Board::createBoard(board);
 
-    restoreBoardSettings(*ptr);
+    ptr->setDatabase(db_.subDatabase(ptr->id()));
+    ptr->loadSettings();
+
     ptr->serial_notifier_.moveToThread(&serial_thread_);
-    ptr->refreshBoard();
 
     connect(ptr.get(), &Board::boardChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
@@ -239,10 +239,8 @@ void Monitor::handleAddedEvent(ty_board *board)
     connect(ptr.get(), &Board::taskChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::settingChanged, this, [=](const QString &key, const QVariant &value) {
-        auto it = findBoardIterator(board);
-        refreshBoardItem(it);
-        saveBoardSetting(**it, key, value);
+    connect(ptr.get(), &Board::settingChanged, this, [=]() {
+        refreshBoardItem(findBoardIterator(board));
     });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
@@ -273,31 +271,5 @@ void Monitor::refreshBoardItem(iterator it)
     } else {
         auto index = createIndex(it - boards_.begin(), 0);
         dataChanged(index, index);
-    }
-}
-
-void Monitor::saveBoardSetting(const Board &board, const QString &key, const QVariant &value)
-{
-    if (!db_)
-        return;
-
-    db_->put(QString("%1/%2").arg(board.id(), key), value);
-}
-
-void Monitor::restoreBoardSettings(Board &board)
-{
-    if (!db_)
-        return;
-
-    auto meta = board.metaObject();
-    auto count = meta->propertyCount();
-    for (int i = meta->propertyOffset(); i < count; i++) {
-        auto prop = meta->property(i);
-        if (!prop.isStored())
-            continue;
-
-        auto value = db_->get(QString("%1/%2").arg(board.id(), prop.name()));
-        if (value.isValid())
-            prop.write(&board, value);
     }
 }
