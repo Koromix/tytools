@@ -173,15 +173,10 @@ QString Board::statusIconFileName() const
     return ":/board_missing";
 }
 
-QString Board::firmwareName() const
-{
-    return firmware_name_;
-}
-
 QString Board::statusText() const
 {
     if (isRunning())
-        return firmware_name_.isEmpty() ? tr("(running)") : firmware_name_;
+        return status_firmware_.isEmpty() ? tr("(running)") : status_firmware_;
     if (uploadAvailable())
         return tr("(bootloader)");
     return tr("(missing)");
@@ -258,7 +253,7 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
 
         auto fw = static_cast<ty_firmware *>(result.get());
         setFirmware(ty_firmware_get_filename(fw));
-        firmware_name_ = ty_firmware_get_name(fw);
+        status_firmware_ = ty_firmware_get_name(fw);
 
         emit boardChanged();
     });

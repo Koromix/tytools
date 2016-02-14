@@ -150,11 +150,11 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
         case Qt::DecorationRole:
             return QIcon(board->statusIconFileName());
         case Qt::ToolTipRole:
-            return tr("%1\n+ Location: %2\n+ Serial Number: %3\n+ Firmware: %4\n+ Capabilities: %5")
+            return tr("%1\n+ Location: %2\n+ Serial Number: %3\n+ Status: %4\n+ Capabilities: %5")
                    .arg(board->modelName())
                    .arg(board->location())
-                   .arg(QString::number(board->serialNumber()))
-                   .arg(!board->firmwareName().isEmpty() ? board->firmwareName() : tr("(running)"))
+                   .arg(board->serialNumber())
+                   .arg(board->statusText())
                    .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
         case Qt::SizeHintRole:
             return QSize(0, 24);

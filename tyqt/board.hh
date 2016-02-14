@@ -53,7 +53,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool reset_after_;
     bool clear_on_reset_;
 
-    QString firmware_name_;
+    QString status_firmware_;
 
     TaskInterface running_task_;
     TaskWatcher task_watcher_;
@@ -92,7 +92,6 @@ public:
     bool errorOccured() const;
 
     QString statusIconFileName() const;
-    QString firmwareName() const;
     QString statusText() const;
 
     QString firmware() const { return firmware_; }

@@ -302,7 +302,7 @@ void MainWindow::disableBoardWidgets()
 
     infoTab->setEnabled(false);
     idText->clear();
-    firmwareText->clear();
+    statusText->clear();
     modelText->clear();
     locationText->clear();
     serialText->clear();
@@ -386,7 +386,7 @@ void MainWindow::refreshBoardInfo()
     updateWindowTitle();
 
     idText->setText(current_board_->id());
-    firmwareText->setText(current_board_->firmwareName());
+    statusText->setText(current_board_->statusText());
     modelText->setText(current_board_->modelName());
     locationText->setText(current_board_->location());
     serialText->setText(QString::number(current_board_->serialNumber()));

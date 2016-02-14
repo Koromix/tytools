@@ -59,7 +59,7 @@
          <item>
           <layout class="QGridLayout" name="gridLayout">
            <item row="1" column="1">
-            <widget class="QLineEdit" name="firmwareText">
+            <widget class="QLineEdit" name="statusText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
@@ -68,7 +68,7 @@
            <item row="0" column="1">
             <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>Firmware:</string>
+              <string>Status:</string>
              </property>
             </widget>
            </item>
@@ -689,7 +689,7 @@
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>idText</tabstop>
-  <tabstop>firmwareText</tabstop>
+  <tabstop>statusText</tabstop>
   <tabstop>modelText</tabstop>
   <tabstop>serialText</tabstop>
   <tabstop>locationText</tabstop>
