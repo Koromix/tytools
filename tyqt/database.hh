@@ -41,4 +41,28 @@ public:
     void clear() override;
 };
 
+class DatabaseInterface {
+    Database *db_;
+    QString group_;
+
+public:
+    DatabaseInterface(Database *db = nullptr)
+        : db_(db) {}
+
+    void setDatabase(Database *db) { db_ = db; }
+    Database *database() const { return db_; }
+
+    void setGroup(const QString &group);
+    QString group() const { return group_; }
+
+    void put(const QString &key, const QVariant &value);
+    void remove(const QString &key);
+    QVariant get(const QString &key, const QVariant &default_value = QVariant()) const;
+
+    DatabaseInterface subDatabase(const QString &prefix) const;
+
+private:
+    QString compositeKey(const QString &key) const;
+};
+
 #endif
