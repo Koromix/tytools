@@ -58,14 +58,15 @@ public slots:
     void sendMonitorInput();
     void clearMonitor();
 
-    static QString fileDialogFirmwareFilter();
-
 private:
     void selectFirstBoard();
 
     void enableBoardWidgets();
     void disableBoardWidgets();
     void updateWindowTitle();
+
+    QString browseFirmwareDirectory();
+    QString browseFirmwareFilter();
 
 private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);

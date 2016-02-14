@@ -114,6 +114,9 @@ void MainWindow::showErrorMessage(const QString &msg)
 
 void MainWindow::uploadToSelection()
 {
+    if (selected_boards_.empty())
+        return;
+
     if (current_board_ && current_board_->firmware().isEmpty()) {
         uploadNewToSelection();
         return;
@@ -132,8 +135,12 @@ void MainWindow::uploadToSelection()
 
 void MainWindow::uploadNewToSelection()
 {
-    auto filenames = QFileDialog::getOpenFileNames(this, tr("Open Firmwares"), "",
-                                                   fileDialogFirmwareFilter());
+    if (selected_boards_.empty())
+        return;
+
+    auto filenames = QFileDialog::getOpenFileNames(this, tr("Open Firmwares"),
+                                                   browseFirmwareDirectory(),
+                                                   browseFirmwareFilter());
     if (filenames.isEmpty())
         return;
 
@@ -255,16 +262,6 @@ void MainWindow::clearMonitor()
     monitorText->clear();
 }
 
-QString MainWindow::fileDialogFirmwareFilter()
-{
-    QString exts;
-    for (auto format = ty_firmware_formats; format->name; format++)
-        exts += QString("*%1 ").arg(format->ext);
-    exts.chop(1);
-
-    return tr("Binary Files (%1);;All Files (*)").arg(exts);
-}
-
 void MainWindow::selectFirstBoard()
 {
     if (!boardList->currentIndex().isValid() && monitor_->boardCount())
@@ -317,6 +314,30 @@ void MainWindow::updateWindowTitle()
     } else {
         setWindowTitle(QCoreApplication::applicationName());
     }
+}
+
+QString MainWindow::browseFirmwareDirectory()
+{
+    if (selected_boards_.empty())
+        return "";
+
+    /* If only one board is selected, point to its current firmware by default. Otherwise, just
+       show the directory of the first board's firmware without pre-selecting any file. */
+    if (current_board_) {
+        return current_board_->firmware();
+    } else {
+        return QFileInfo(selected_boards_[0]->firmware()).path();
+    }
+}
+
+QString MainWindow::browseFirmwareFilter()
+{
+    QString exts;
+    for (auto format = ty_firmware_formats; format->name; format++)
+        exts += QString("*%1 ").arg(format->ext);
+    exts.chop(1);
+
+    return tr("Binary Files (%1);;All Files (*)").arg(exts);
 }
 
 void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelection &previous)
@@ -500,8 +521,9 @@ void MainWindow::browseForFirmware()
     if (selected_boards_.empty())
         return;
 
-    auto filename = QFileDialog::getOpenFileName(this, tr("Open Firmware"), "",
-                                                 fileDialogFirmwareFilter());
+    auto filename = QFileDialog::getOpenFileName(this, tr("Open Firmware"),
+                                                 browseFirmwareDirectory(),
+                                                 browseFirmwareFilter());
     if (filename.isEmpty())
         return;
     filename = QDir::toNativeSeparators(filename);
