@@ -88,7 +88,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     // Settings tab
     connect(firmwarePath, &QLineEdit::editingFinished, this, &MainWindow::validateAndSetFirmwarePath);
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
-    connect(actionAttachMonitor, &QAction::toggled, this,
+    connect(actionAttachMonitor, &QAction::triggered, this,
             &MainWindow::setAttachMonitorForSelection);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
