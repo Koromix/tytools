@@ -21,7 +21,6 @@ Board::Board(ty_board *board, QObject *parent)
 {
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setUndoRedoEnabled(false);
-    setScrollBackLimit(200000);
 
     // The monitor will move the serial notifier to a dedicated thread
     connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived,
@@ -30,6 +29,8 @@ Board::Board(ty_board *board, QObject *parent)
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
     connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
+
+    loadSettings();
 }
 
 shared_ptr<Board> Board::createBoard(ty_board *board)
@@ -47,6 +48,15 @@ Board::~Board()
 {
     ty_board_interface_close(serial_iface_);
     ty_board_unref(board_);
+}
+
+void Board::loadSettings()
+{
+    setTag(db_.get("tag", "").toString());
+    setResetAfter(db_.get("resetAfter", true).toBool());
+    setClearOnReset(db_.get("clearOnReset", false).toBool());
+    setScrollBackLimit(db_.get("scrollBackLimit", 200000).toUInt());
+    setAttachMonitor(db_.get("attachMonitor", true).toBool());
 }
 
 ty_board *Board::board() const
@@ -298,38 +308,67 @@ bool Board::sendSerial(const QByteArray &buf)
 
 void Board::setTag(const QString &tag)
 {
+    if (tag.isEmpty() && ty_board_get_tag(board_) == ty_board_get_id(board_))
+        return;
+    if (tag == ty_board_get_tag(board_))
+        return;
+
     int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
     if (r < 0)
         throw bad_alloc();
+
+    db_.put("tag", tag);
     emit settingChanged("tag", tag);
 }
 
 void Board::setFirmware(const QString &firmware)
 {
+    if (firmware == firmware_)
+        return;
+
     firmware_ = firmware;
+
     emit settingChanged("firmware", firmware);
 }
 
 void Board::setResetAfter(bool reset_after)
 {
+    if (reset_after == reset_after_)
+        return;
+
     reset_after_ = reset_after;
+
+    db_.put("resetAfter", reset_after);
     emit settingChanged("resetAfter", reset_after);
 }
 
 void Board::setClearOnReset(bool clear_on_reset)
 {
+    if (clear_on_reset == clear_on_reset_)
+        return;
+
     clear_on_reset_ = clear_on_reset;
+
+    db_.put("clearOnReset", clear_on_reset);
     emit settingChanged("clearOnReset", clear_on_reset);
 }
 
 void Board::setScrollBackLimit(unsigned int limit)
 {
-    serial_document_.setMaximumBlockCount(limit);
+    if (static_cast<int>(limit) == serial_document_.maximumBlockCount())
+        return;
+
+    serial_document_.setMaximumBlockCount(static_cast<int>(limit));
+
+    db_.put("scrollBackLimit", limit);
     emit settingChanged("scrollBackLimit", limit);
 }
 
 void Board::setAttachMonitor(bool attach_monitor)
 {
+    if (attach_monitor == serial_attach_)
+        return;
+
     if (attach_monitor && serialAvailable()) {
         attach_monitor = openSerialInterface();
     } else {
@@ -337,6 +376,8 @@ void Board::setAttachMonitor(bool attach_monitor)
     }
 
     serial_attach_ = attach_monitor;
+
+    db_.put("attachMonitor", attach_monitor);
     emit settingChanged("attachMonitor", attach_monitor);
 }
 

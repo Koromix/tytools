@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "ty/board.h"
+#include "database.hh"
 #include "descriptor_notifier.hh"
 #include "firmware.hh"
 #include "ty/monitor.h"
@@ -34,16 +35,11 @@ struct BoardInterfaceInfo {
 class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_OBJECT
 
-    Q_PROPERTY(QString tag READ tag WRITE setTag)
-    Q_PROPERTY(QString firmware READ firmware WRITE setFirmware STORED false)
-    Q_PROPERTY(bool resetAfter READ resetAfter WRITE setResetAfter)
-    Q_PROPERTY(bool clearOnReset READ clearOnReset WRITE setClearOnReset)
-    Q_PROPERTY(unsigned int scrollBackLimit READ scrollBackLimit WRITE setScrollBackLimit)
-    Q_PROPERTY(bool attachMonitor READ attachMonitor WRITE setAttachMonitor)
+    DatabaseInterface db_;
 
     ty_board *board_;
 
-    bool serial_attach_ = true;
+    bool serial_attach_ = false;
     ty_board_interface *serial_iface_ = nullptr;
     DescriptorNotifier serial_notifier_;
     QMutex serial_lock_;
@@ -54,8 +50,8 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QTimer error_timer_;
 
     QString firmware_;
-    bool reset_after_ = true;
-    bool clear_on_reset_ = false;
+    bool reset_after_;
+    bool clear_on_reset_;
 
     QString firmware_name_;
 
@@ -65,6 +61,10 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 public:
     static std::shared_ptr<Board> createBoard(ty_board *board);
     virtual ~Board();
+
+    void setDatabase(DatabaseInterface db) { db_ = db; }
+    DatabaseInterface database() const { return db_; }
+    void loadSettings();
 
     ty_board *board() const;
 

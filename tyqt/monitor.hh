@@ -14,17 +14,17 @@
 #include <memory>
 #include <vector>
 
+#include "database.hh"
 #include "descriptor_notifier.hh"
 #include "ty/monitor.h"
 
 class Board;
-class Database;
 struct ty_board;
 
 class Monitor : public QAbstractListModel {
     Q_OBJECT
 
-    Database *db_ = nullptr;
+    DatabaseInterface db_;
 
     bool started_ = false;
     ty_monitor *monitor_ = nullptr;
@@ -42,8 +42,8 @@ public:
         : QAbstractListModel(parent) {}
     virtual ~Monitor();
 
-    void setDatabase(Database *db) { db_ = db; }
-    Database *database() const { return db_; }
+    void setDatabase(DatabaseInterface db) { db_ = db; }
+    DatabaseInterface database() const { return db_; }
 
     bool start();
     void stop();
@@ -83,9 +83,6 @@ private:
     void handleChangedEvent(ty_board *board);
 
     void refreshBoardItem(iterator it);
-
-    void saveBoardSetting(const Board &board, const QString &key, const QVariant &value);
-    void restoreBoardSettings(Board &board);
 };
 
 #endif
