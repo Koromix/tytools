@@ -28,7 +28,7 @@ Board::Board(ty_board *board, QObject *parent)
 
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
-    connect(&error_timer_, &QTimer::timeout, this, &Board::taskChanged);
+    connect(&error_timer_, &QTimer::timeout, this, &Board::statusChanged);
 
     loadSettings();
 }
@@ -254,8 +254,6 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
         auto fw = static_cast<ty_firmware *>(result.get());
         setFirmware(ty_firmware_get_filename(fw));
         status_firmware_ = ty_firmware_get_name(fw);
-
-        emit boardChanged();
     });
 
     return task2;
@@ -308,7 +306,7 @@ void Board::setTag(const QString &tag)
         throw bad_alloc();
 
     db_.put("tag", tag);
-    emit settingChanged("tag", tag);
+    emit infoChanged();
 }
 
 void Board::setFirmware(const QString &firmware)
@@ -318,7 +316,7 @@ void Board::setFirmware(const QString &firmware)
 
     firmware_ = firmware;
 
-    emit settingChanged("firmware", firmware);
+    emit settingsChanged();
 }
 
 void Board::setResetAfter(bool reset_after)
@@ -329,7 +327,7 @@ void Board::setResetAfter(bool reset_after)
     reset_after_ = reset_after;
 
     db_.put("resetAfter", reset_after);
-    emit settingChanged("resetAfter", reset_after);
+    emit settingsChanged();
 }
 
 void Board::setClearOnReset(bool clear_on_reset)
@@ -340,7 +338,7 @@ void Board::setClearOnReset(bool clear_on_reset)
     clear_on_reset_ = clear_on_reset;
 
     db_.put("clearOnReset", clear_on_reset);
-    emit settingChanged("clearOnReset", clear_on_reset);
+    emit settingsChanged();
 }
 
 void Board::setScrollBackLimit(unsigned int limit)
@@ -351,7 +349,7 @@ void Board::setScrollBackLimit(unsigned int limit)
     serial_document_.setMaximumBlockCount(static_cast<int>(limit));
 
     db_.put("scrollBackLimit", limit);
-    emit settingChanged("scrollBackLimit", limit);
+    emit settingsChanged();
 }
 
 void Board::setAttachMonitor(bool attach_monitor)
@@ -368,7 +366,9 @@ void Board::setAttachMonitor(bool attach_monitor)
     serial_attach_ = attach_monitor;
 
     db_.put("attachMonitor", attach_monitor);
-    emit settingChanged("attachMonitor", attach_monitor);
+    emit settingsChanged();
+    if (serialAvailable())
+        emit interfacesChanged();
 }
 
 TaskInterface Board::startUpload()
@@ -412,7 +412,7 @@ void Board::notifyLog(ty_log_level level, const QString &msg)
 
     if (level == TY_LOG_ERROR) {
         error_timer_.start();
-        emit taskChanged();
+        emit statusChanged();
     }
 }
 
@@ -470,7 +470,7 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
     running_task_ = TaskInterface();
     task_watcher_.setTask(nullptr);
 
-    emit taskChanged();
+    emit statusChanged();
 }
 
 void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
@@ -479,7 +479,7 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
     Q_UNUSED(value);
     Q_UNUSED(max);
 
-    emit taskChanged();
+    emit statusChanged();
 }
 
 void Board::refreshBoard()
@@ -491,10 +491,12 @@ void Board::refreshBoard()
     }
 
     if (state() == TY_BOARD_STATE_DROPPED) {
-        emit boardDropped();
-    } else {
-        emit boardChanged();
+        emit dropped();
+        return;
     }
+
+    emit infoChanged();
+    emit interfacesChanged();
 }
 
 bool Board::openSerialInterface()
@@ -539,7 +541,7 @@ TaskInterface Board::watchTask(TaskInterface task)
        disconnect everyone and restore sane connections. */
     task_watcher_.disconnect();
     connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
-    connect(&task_watcher_, &TaskWatcher::started, this, &Board::taskChanged);
+    connect(&task_watcher_, &TaskWatcher::started, this, &Board::statusChanged);
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
     connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
 

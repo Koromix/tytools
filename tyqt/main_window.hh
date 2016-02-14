@@ -69,9 +69,12 @@ private:
 
 private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
+
     void refreshActions();
-    void refreshBoardInfo();
-    void refreshSettingField(const QString &name, const QVariant &value);
+    void refreshInfo();
+    void refreshSettings();
+    void refreshInterfaces();
+    void refreshStatus();
 
     void cacheMonitorScrollValues(const QRect &rect, int dy);
     void updateMonitorScroll();

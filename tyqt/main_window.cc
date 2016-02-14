@@ -273,14 +273,6 @@ void MainWindow::selectFirstBoard()
 
 void MainWindow::enableBoardWidgets()
 {
-    firmwarePath->setText(current_board_->firmware());
-    resetAfterCheck->setChecked(current_board_->resetAfter());
-    clearOnResetCheck->setChecked(current_board_->clearOnReset());
-    scrollBackLimitSpin->blockSignals(true);
-    scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
-    scrollBackLimitSpin->blockSignals(false);
-    actionAttachMonitor->setChecked(current_board_->attachMonitor());
-
     infoTab->setEnabled(true);
     monitorTab->setEnabled(true);
     actionClearMonitor->setEnabled(true);
@@ -312,8 +304,6 @@ void MainWindow::disableBoardWidgets()
     actionClearMonitor->setEnabled(false);
     uploadTab->setEnabled(false);
     actionAttachMonitor->setEnabled(false);
-
-    monitorText->setDocument(nullptr);
 }
 
 void MainWindow::updateWindowTitle()
@@ -349,16 +339,21 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         current_board_ = selected_boards_.front();
 
         auto board = current_board_.get();
-        connect(board, &Board::boardChanged, this, &MainWindow::refreshActions);
-        connect(board, &Board::boardChanged, this, &MainWindow::refreshBoardInfo);
-        connect(board, &Board::settingChanged, this, &MainWindow::refreshSettingField);
+        connect(board, &Board::interfacesChanged, this, &MainWindow::refreshActions);
+        connect(board, &Board::infoChanged, this, &MainWindow::refreshInfo);
+        connect(board, &Board::settingsChanged, this, &MainWindow::refreshSettings);
+        connect(board, &Board::interfacesChanged, this, &MainWindow::refreshInterfaces);
+        connect(board, &Board::statusChanged, this, &MainWindow::refreshStatus);
 
         enableBoardWidgets();
         refreshActions();
-        refreshBoardInfo();
+        refreshInfo();
+        refreshSettings();
+        refreshInterfaces();
+        refreshStatus();
     } else {
         for (auto &board: selected_boards_)
-            connect(board.get(), &Board::boardChanged, this, &MainWindow::refreshActions);
+            connect(board.get(), &Board::interfacesChanged, this, &MainWindow::refreshActions);
 
         disableBoardWidgets();
         refreshActions();
@@ -381,16 +376,31 @@ void MainWindow::refreshActions()
     actionReboot->setEnabled(reboot);
 }
 
-void MainWindow::refreshBoardInfo()
+void MainWindow::refreshInfo()
 {
     updateWindowTitle();
 
     idText->setText(current_board_->id());
-    statusText->setText(current_board_->statusText());
     modelText->setText(current_board_->modelName());
     locationText->setText(current_board_->location());
     serialText->setText(QString::number(current_board_->serialNumber()));
+}
 
+void MainWindow::refreshSettings()
+{
+    actionAttachMonitor->setChecked(current_board_->attachMonitor());
+    monitorEdit->setEnabled(current_board_->serialOpen());
+
+    firmwarePath->setText(current_board_->firmware());
+    resetAfterCheck->setChecked(current_board_->resetAfter());
+    clearOnResetCheck->setChecked(current_board_->clearOnReset());
+    scrollBackLimitSpin->blockSignals(true);
+    scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
+    scrollBackLimitSpin->blockSignals(false);
+}
+
+void MainWindow::refreshInterfaces()
+{
     interfaceTree->clear();
     for (auto &iface: current_board_->interfaces()) {
         auto title = tr("%1 %2").arg(iface.name, iface.open ? tr("(open)") : "");
@@ -411,25 +421,9 @@ void MainWindow::refreshBoardInfo()
     monitorEdit->setEnabled(current_board_->serialOpen());
 }
 
-void MainWindow::refreshSettingField(const QString &name, const QVariant &value)
+void MainWindow::refreshStatus()
 {
-    updateWindowTitle();
-
-    if (name == "firmware") {
-        firmwarePath->setText(value.toString());
-    } else if (name == "resetAfter") {
-        resetAfterCheck->setChecked(value.toBool());
-    } else if (name == "clearOnReset") {
-        clearOnResetCheck->setChecked(value.toBool());
-    } else if (name == "scrollBackLimit") {
-        scrollBackLimitSpin->blockSignals(true);
-        scrollBackLimitSpin->setValue(value.toInt());
-        scrollBackLimitSpin->blockSignals(false);
-    } else if (name == "attachMonitor") {
-        actionAttachMonitor->setChecked(value.toBool());
-        if (current_board_)
-            monitorEdit->setEnabled(current_board_->serialOpen());
-    }
+    statusText->setText(current_board_->statusText());
 }
 
 /* Memorize the scroll value whenever the user scrolls the widget (QPlainTextEdit::updateRequest)

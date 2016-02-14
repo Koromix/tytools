@@ -133,11 +133,12 @@ public slots:
     void notifyLog(ty_log_level level, const QString &msg);
 
 signals:
-    void boardChanged();
-    void boardDropped();
-    void taskChanged();
+    void infoChanged();
+    void settingsChanged();
+    void interfacesChanged();
+    void statusChanged();
 
-    void settingChanged(const QString &name, const QVariant &value);
+    void dropped();
 
 private slots:
     void serialReceived(ty_descriptor desc);

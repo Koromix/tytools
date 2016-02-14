@@ -218,7 +218,8 @@ int Monitor::handleEvent(ty_board *board, ty_monitor_event event, void *udata)
 
 Monitor::iterator Monitor::findBoardIterator(ty_board *board)
 {
-    return find_if(boards_.begin(), boards_.end(), [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
+    return find_if(boards_.begin(), boards_.end(),
+                   [=](std::shared_ptr<Board> &ptr) { return ptr->board() == board; });
 }
 
 void Monitor::handleAddedEvent(ty_board *board)
@@ -230,17 +231,17 @@ void Monitor::handleAddedEvent(ty_board *board)
 
     ptr->serial_notifier_.moveToThread(&serial_thread_);
 
-    connect(ptr.get(), &Board::boardChanged, this, [=]() {
+    connect(ptr.get(), &Board::infoChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::boardDropped, this, [=]() {
+    connect(ptr.get(), &Board::interfacesChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::taskChanged, this, [=]() {
+    connect(ptr.get(), &Board::statusChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::settingChanged, this, [=]() {
-        refreshBoardItem(findBoardIterator(board));
+    connect(ptr.get(), &Board::dropped, this, [=]() {
+        removeBoardItem(findBoardIterator(board));
     });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
@@ -262,14 +263,13 @@ void Monitor::handleChangedEvent(ty_board *board)
 
 void Monitor::refreshBoardItem(iterator it)
 {
-    auto ptr = *it;
+    auto index = createIndex(it - boards_.begin(), 0);
+    dataChanged(index, index);
+}
 
-    if (ty_board_get_state(ptr->board_) == TY_BOARD_STATE_DROPPED) {
-        beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
-        boards_.erase(it);
-        endRemoveRows();
-    } else {
-        auto index = createIndex(it - boards_.begin(), 0);
-        dataChanged(index, index);
-    }
+void Monitor::removeBoardItem(iterator it)
+{
+    beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
+    boards_.erase(it);
+    endRemoveRows();
 }

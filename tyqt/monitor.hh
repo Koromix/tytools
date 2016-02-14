@@ -83,6 +83,7 @@ private:
     void handleChangedEvent(ty_board *board);
 
     void refreshBoardItem(iterator it);
+    void removeBoardItem(iterator it);
 };
 
 #endif
