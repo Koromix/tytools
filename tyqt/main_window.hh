@@ -22,8 +22,8 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 
     Monitor *monitor_;
-    std::shared_ptr<Board> current_board_;
     std::vector<std::shared_ptr<Board>> selected_boards_;
+    Board *current_board_ = nullptr;
 
     bool monitor_autoscroll_ = true;
     QTextCursor monitor_cursor_;
@@ -36,8 +36,8 @@ public:
 
     bool event(QEvent *ev) override;
 
-    std::shared_ptr<Board> currentBoard() const { return current_board_; }
     std::vector<std::shared_ptr<Board>> selectedBoards() const { return selected_boards_; }
+    Board *currentBoard() const { return current_board_; }
 
     bool compactMode() const { return !boardList->isVisible(); }
 

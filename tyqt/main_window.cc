@@ -350,8 +350,8 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     for (auto &board: selected_boards_)
         board->disconnect(this);
     monitorText->setDocument(nullptr);
-    current_board_ = nullptr;
     selected_boards_.clear();
+    current_board_ = nullptr;
 
     for (auto &idx: boardList->selectionModel()->selectedIndexes()) {
         if (idx.column() == 0)
@@ -359,14 +359,13 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     }
 
     if (selected_boards_.size() == 1) {
-        current_board_ = selected_boards_.front();
+        current_board_ = selected_boards_.front().get();
 
-        auto board = current_board_.get();
-        connect(board, &Board::interfacesChanged, this, &MainWindow::refreshActions);
-        connect(board, &Board::infoChanged, this, &MainWindow::refreshInfo);
-        connect(board, &Board::settingsChanged, this, &MainWindow::refreshSettings);
-        connect(board, &Board::interfacesChanged, this, &MainWindow::refreshInterfaces);
-        connect(board, &Board::statusChanged, this, &MainWindow::refreshStatus);
+        connect(current_board_, &Board::interfacesChanged, this, &MainWindow::refreshActions);
+        connect(current_board_, &Board::infoChanged, this, &MainWindow::refreshInfo);
+        connect(current_board_, &Board::settingsChanged, this, &MainWindow::refreshSettings);
+        connect(current_board_, &Board::interfacesChanged, this, &MainWindow::refreshInterfaces);
+        connect(current_board_, &Board::statusChanged, this, &MainWindow::refreshStatus);
 
         enableBoardWidgets();
         refreshActions();
