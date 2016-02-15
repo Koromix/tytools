@@ -28,11 +28,15 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
 {
     setupUi(this);
 
+    menuUpload = new QMenu(this);
+    menuUpload->addAction(actionUploadNew);
+    menuUpload->addMenu(menuRecentFirmwares);
+
+    menuBrowseFirmware = new QMenu(this);
+
     auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
     if (uploadButton) {
-        auto uploadMenu = new QMenu(this);
-        uploadMenu->addAction(actionUploadNew);
-        uploadButton->setMenu(uploadMenu);
+        uploadButton->setMenu(menuUpload);
         uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
     }
 
@@ -92,6 +96,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     // Settings tab
     connect(firmwarePath, &QLineEdit::editingFinished, this, &MainWindow::validateAndSetFirmwarePath);
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
+    firmwareBrowseButton->setMenu(menuBrowseFirmware);
     connect(actionAttachMonitor, &QAction::triggered, this,
             &MainWindow::setAttachMonitorForSelection);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
@@ -104,6 +109,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     } else {
         disableBoardWidgets();
         refreshActions();
+        updateFirmwareMenus();
     }
 }
 
@@ -318,6 +324,44 @@ void MainWindow::updateWindowTitle()
     }
 }
 
+void MainWindow::updateFirmwareMenus()
+{
+    // Start by restoring sane menus
+    menuRecentFirmwares->clear();
+    menuBrowseFirmware->clear();
+
+    if (current_board_) {
+        auto firmware = current_board_->firmware();
+
+        for (auto &firmware: current_board_->recentFirmwares()) {
+            QAction *action;
+
+            action = menuRecentFirmwares->addAction(tr("Upload '%1'").arg(QFileInfo(firmware).fileName()));
+            connect(action, &QAction::triggered, current_board_,
+                    [=]() { current_board_->startUpload(firmware); });
+            action = menuBrowseFirmware->addAction(tr("Set to '%1'").arg(firmware));
+            connect(action, &QAction::triggered, current_board_,
+                    [=]() { current_board_->setFirmware(firmware); });
+        }
+    }
+
+    if (!menuRecentFirmwares->isEmpty()) {
+        menuRecentFirmwares->setEnabled(true);
+        menuBrowseFirmware->setEnabled(true);
+
+        auto action = new QAction(tr("&Clear recent firmwares"), this);
+        connect(action, &QAction::triggered, current_board_, &Board::clearRecentFirmwares);
+
+        menuRecentFirmwares->addSeparator();
+        menuRecentFirmwares->addAction(action);
+        menuBrowseFirmware->addSeparator();
+        menuBrowseFirmware->addAction(action);
+    } else {
+        menuRecentFirmwares->setEnabled(false);
+        menuBrowseFirmware->setEnabled(false);
+    }
+}
+
 QString MainWindow::browseFirmwareDirectory()
 {
     if (selected_boards_.empty())
@@ -380,6 +424,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         disableBoardWidgets();
         refreshActions();
         updateWindowTitle();
+        updateFirmwareMenus();
     }
 }
 
@@ -419,6 +464,8 @@ void MainWindow::refreshSettings()
     scrollBackLimitSpin->blockSignals(true);
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
     scrollBackLimitSpin->blockSignals(false);
+
+    updateFirmwareMenus();
 }
 
 void MainWindow::refreshInterfaces()

@@ -21,6 +21,9 @@ class Monitor;
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
 
+    QMenu *menuUpload;
+    QMenu *menuBrowseFirmware;
+
     Monitor *monitor_;
     std::vector<std::shared_ptr<Board>> selected_boards_;
     Board *current_board_ = nullptr;
@@ -62,6 +65,7 @@ private:
     void enableBoardWidgets();
     void disableBoardWidgets();
     void updateWindowTitle();
+    void updateFirmwareMenus();
 
     QString browseFirmwareDirectory();
     QString browseFirmwareFilter();

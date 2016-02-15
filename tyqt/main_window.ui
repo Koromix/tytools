@@ -266,6 +266,9 @@
                 <property name="text">
                  <string>Browse...</string>
                 </property>
+                <property name="popupMode">
+                 <enum>QToolButton::MenuButtonPopup</enum>
+                </property>
                </widget>
               </item>
              </layout>
@@ -429,9 +432,15 @@
     <property name="title">
      <string>&amp;Actions</string>
     </property>
+    <widget class="QMenu" name="menuRecentFirmwares">
+     <property name="title">
+      <string>Upload recent &amp;firmware</string>
+     </property>
+    </widget>
     <addaction name="separator"/>
     <addaction name="actionUpload"/>
     <addaction name="actionUploadNew"/>
+    <addaction name="menuRecentFirmwares"/>
     <addaction name="separator"/>
     <addaction name="actionReset"/>
     <addaction name="actionReboot"/>
