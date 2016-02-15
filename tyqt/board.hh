@@ -9,6 +9,7 @@
 #define BOARD_HH
 
 #include <QMutex>
+#include <QStringList>
 #include <QTextDocument>
 #include <QThread>
 #include <QTimer>
@@ -54,6 +55,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool clear_on_reset_;
 
     QString status_firmware_;
+    QStringList recent_firmwares_;
 
     TaskInterface running_task_;
     TaskWatcher task_watcher_;
@@ -95,6 +97,7 @@ public:
     QString statusText() const;
 
     QString firmware() const { return firmware_; }
+    QStringList recentFirmwares() const { return recent_firmwares_; }
     bool resetAfter() const { return reset_after_; }
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
@@ -118,7 +121,9 @@ public:
 
 public slots:
     void setTag(const QString &tag);
+
     void setFirmware(const QString &firmware);
+    void clearRecentFirmwares();
     void setResetAfter(bool reset_after);
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
@@ -153,6 +158,8 @@ private:
     void refreshBoard();
     bool openSerialInterface();
     void closeSerialInterface();
+
+    void addUploadedFirmware(ty_firmware *fw);
 
     TaskInterface watchTask(TaskInterface task);
 

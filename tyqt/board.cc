@@ -17,6 +17,8 @@
 
 using namespace std;
 
+#define MAX_RECENT_FIRMWARES 4
+
 Board::Board(ty_board *board, QObject *parent)
     : QObject(parent), board_(ty_board_ref(board))
 {
@@ -61,6 +63,13 @@ void Board::loadSettings()
     firmware_ = db_.get("firmware", "").toString();
     if (firmware_.isEmpty() || !QFileInfo::exists(firmware_))
         firmware_ = "";
+    recent_firmwares_ = db_.get("recentFirmwares", QStringList()).toStringList();
+    recent_firmwares_.erase(remove_if(recent_firmwares_.begin(), recent_firmwares_.end(),
+                                      [](const QString &filename) { return filename.isEmpty() || !QFileInfo::exists(filename); }),
+                            recent_firmwares_.end());
+    if (recent_firmwares_.count() > MAX_RECENT_FIRMWARES)
+        recent_firmwares_.erase(recent_firmwares_.begin() + MAX_RECENT_FIRMWARES,
+                                recent_firmwares_.end());
     reset_after_ = db_.get("resetAfter", true).toBool();
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
@@ -267,14 +276,10 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
 
     auto task2 = make_task<TyTask>(task);
     watchTask(task2);
-    connect(&task_watcher_, &TaskWatcher::finished,
-            this, [=](bool success, shared_ptr<void> result) {
-        if (!success)
-            return;
-
-        auto fw = static_cast<ty_firmware *>(result.get());
-        setFirmware(ty_firmware_get_filename(fw));
-        status_firmware_ = ty_firmware_get_name(fw);
+    connect(&task_watcher_, &TaskWatcher::finished, this,
+            [=](bool success, shared_ptr<void> result) {
+        if (success)
+            addUploadedFirmware(static_cast<ty_firmware *>(result.get()));
     });
 
     return task2;
@@ -338,6 +343,17 @@ void Board::setFirmware(const QString &firmware)
     firmware_ = firmware;
 
     db_.put("firmware", firmware);
+    emit settingsChanged();
+}
+
+void Board::clearRecentFirmwares()
+{
+    if (recent_firmwares_.isEmpty())
+        return;
+
+    recent_firmwares_.clear();
+
+    db_.remove("recentFirmwares");
     emit settingsChanged();
 }
 
@@ -571,4 +587,24 @@ TaskInterface Board::watchTask(TaskInterface task)
     task_watcher_.setTask(&running_task_);
 
     return running_task_;
+}
+
+void Board::addUploadedFirmware(ty_firmware *fw)
+{
+    status_firmware_ = ty_firmware_get_name(fw);
+
+    auto filename = ty_firmware_get_filename(fw);
+    recent_firmwares_.removeAll(filename);
+    recent_firmwares_.prepend(filename);
+    if (recent_firmwares_.count() > MAX_RECENT_FIRMWARES)
+        recent_firmwares_.erase(recent_firmwares_.begin() + MAX_RECENT_FIRMWARES,
+                                recent_firmwares_.end());
+    db_.put("recentFirmwares", recent_firmwares_);
+
+    blockSignals(true);
+    setFirmware(filename);
+    blockSignals(false);
+
+    emit statusChanged();
+    emit settingsChanged();
 }
