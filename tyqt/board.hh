@@ -106,7 +106,7 @@ public:
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
 
-    TaskInterface upload();
+    TaskInterface upload(const QString &filename = QString());
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws);
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface reset();
@@ -124,7 +124,7 @@ public slots:
     void setScrollBackLimit(unsigned int limit);
     void setAttachMonitor(bool attach_monitor);
 
-    TaskInterface startUpload();
+    TaskInterface startUpload(const QString &filename = QString());
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface startReset();

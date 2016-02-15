@@ -226,12 +226,16 @@ QString Board::makeCapabilityString(uint16_t capabilities, QString empty_str)
     }
 }
 
-TaskInterface Board::upload()
+TaskInterface Board::upload(const QString &filename)
 {
-    if (firmware_.isEmpty())
-        return watchTask(make_task<FailedTask>(tr("No firmware set for board '%1'").arg(tag())));
-
-    auto fw = Firmware::load(firmware_);
+    shared_ptr<Firmware> fw;
+    if (!filename.isEmpty()) {
+        fw = Firmware::load(filename);
+    } else {
+        if (firmware_.isEmpty())
+            return watchTask(make_task<FailedTask>(tr("No firmware set for board '%1'").arg(tag())));
+        fw = Firmware::load(firmware_);
+    }
     if (!fw)
         return watchTask(make_task<FailedTask>(ty_error_last_message()));
 
@@ -382,9 +386,9 @@ void Board::setAttachMonitor(bool attach_monitor)
     emit settingsChanged();
 }
 
-TaskInterface Board::startUpload()
+TaskInterface Board::startUpload(const QString &filename)
 {
-    auto task = upload();
+    auto task = upload(filename);
     task.start();
     return task;
 }
