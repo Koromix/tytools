@@ -52,11 +52,24 @@ Board::~Board()
 
 void Board::loadSettings()
 {
-    setTag(db_.get("tag", "").toString());
-    setResetAfter(db_.get("resetAfter", true).toBool());
-    setClearOnReset(db_.get("clearOnReset", false).toBool());
-    setScrollBackLimit(db_.get("scrollBackLimit", 200000).toUInt());
-    setAttachMonitor(db_.get("attachMonitor", true).toBool());
+    auto tag = db_.get("tag", "").toString();
+    int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
+    if (r < 0)
+        throw bad_alloc();
+
+    reset_after_ = db_.get("resetAfter", true).toBool();
+    clear_on_reset_ = db_.get("clearOnReset", false).toBool();
+    serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
+    serial_attach_ = db_.get("attachMonitor", true).toBool();
+
+    if (serial_attach_ && serialAvailable()) {
+        serial_attach_ = openSerialInterface();
+    } else {
+        closeSerialInterface();
+    }
+
+    emit infoChanged();
+    emit settingsChanged();
 }
 
 bool Board::matchesTag(const QString &id)
@@ -367,8 +380,6 @@ void Board::setAttachMonitor(bool attach_monitor)
 
     db_.put("attachMonitor", attach_monitor);
     emit settingsChanged();
-    if (serialAvailable())
-        emit interfacesChanged();
 }
 
 TaskInterface Board::startUpload()
@@ -520,6 +531,7 @@ bool Board::openSerialInterface()
     if (clear_on_reset_)
         serial_document_.clear();
 
+    emit interfacesChanged();
     return true;
 }
 
@@ -531,6 +543,8 @@ void Board::closeSerialInterface()
     serial_notifier_.clear();
     ty_board_interface_close(serial_iface_);
     serial_iface_ = nullptr;
+
+    emit interfacesChanged();
 }
 
 TaskInterface Board::watchTask(TaskInterface task)
