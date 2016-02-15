@@ -99,9 +99,12 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setScrollBackLimitForSelection);
 
-    refreshActions();
-    if (monitor_->boardCount())
+    if (monitor_->boardCount()) {
         boardList->setCurrentIndex(monitor_->index(0, 0));
+    } else {
+        disableBoardWidgets();
+        refreshActions();
+    }
 }
 
 bool MainWindow::event(QEvent *ev)
