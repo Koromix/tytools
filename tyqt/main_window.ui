@@ -440,6 +440,7 @@
     <addaction name="separator"/>
     <addaction name="actionUpload"/>
     <addaction name="actionUploadNew"/>
+    <addaction name="actionDropFirmware"/>
     <addaction name="menuRecentFirmwares"/>
     <addaction name="separator"/>
     <addaction name="actionReset"/>
@@ -691,6 +692,11 @@
   <action name="actionOpenLog">
    <property name="text">
     <string>Open &amp;Log</string>
+   </property>
+  </action>
+  <action name="actionDropFirmware">
+   <property name="text">
+    <string>&amp;Drop firmware association</string>
    </property>
   </action>
  </widget>

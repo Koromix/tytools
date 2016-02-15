@@ -30,6 +30,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
 
     menuUpload = new QMenu(this);
     menuUpload->addAction(actionUploadNew);
+    menuUpload->addAction(actionDropFirmware);
     menuUpload->addMenu(menuRecentFirmwares);
 
     menuBrowseFirmware = new QMenu(this);
@@ -49,6 +50,8 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     // Actions menu
     connect(actionUpload, &QAction::triggered, this, &MainWindow::uploadToSelection);
     connect(actionUploadNew, &QAction::triggered, this, &MainWindow::uploadNewToSelection);
+    connect(actionDropFirmware, &QAction::triggered, this,
+            &MainWindow::dropAssociationForSelection);
     connect(actionReset, &QAction::triggered, this, &MainWindow::resetSelection);
     connect(actionReboot, &QAction::triggered, this, &MainWindow::rebootSelection);
     connect(actionQuit, &QAction::triggered, tyQt, &TyQt::quit);
@@ -172,6 +175,12 @@ void MainWindow::uploadNewToSelection()
 
     for (auto &board: selected_boards_)
         board->startUpload(fws);
+}
+
+void MainWindow::dropAssociationForSelection()
+{
+    for (auto &board: selected_boards_)
+        board->setFirmware("");
 }
 
 void MainWindow::resetSelection()
@@ -329,9 +338,17 @@ void MainWindow::updateFirmwareMenus()
     // Start by restoring sane menus
     menuRecentFirmwares->clear();
     menuBrowseFirmware->clear();
+    actionDropFirmware->setText(tr("&Drop firmware association"));
+    actionDropFirmware->setEnabled(!selected_boards_.empty());
 
     if (current_board_) {
         auto firmware = current_board_->firmware();
+        if (!firmware.isEmpty()) {
+            actionDropFirmware->setText(tr("&Drop association to '%1'")
+                                        .arg(QFileInfo(firmware).fileName()));
+        } else {
+            actionDropFirmware->setEnabled(false);
+        }
 
         for (auto &firmware: current_board_->recentFirmwares()) {
             QAction *action;

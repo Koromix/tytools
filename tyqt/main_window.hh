@@ -49,6 +49,7 @@ public slots:
 
     void uploadToSelection();
     void uploadNewToSelection();
+    void dropAssociationForSelection();
     void resetSelection();
     void rebootSelection();
 
