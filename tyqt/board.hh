@@ -66,7 +66,7 @@ public:
     DatabaseInterface database() const { return db_; }
     void loadSettings();
 
-    ty_board *board() const;
+    ty_board *board() const { return board_; }
 
     bool matchesTag(const QString &id);
 

@@ -59,11 +59,6 @@ void Board::loadSettings()
     setAttachMonitor(db_.get("attachMonitor", true).toBool());
 }
 
-ty_board *Board::board() const
-{
-    return board_;
-}
-
 bool Board::matchesTag(const QString &id)
 {
     return ty_board_matches_tag(board_, id.toLocal8Bit().constData());
