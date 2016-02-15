@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
+#include <QFileInfo>
 #include <QMutexLocker>
 #include <QPlainTextDocumentLayout>
 #include <QTextBlock>
@@ -57,6 +58,9 @@ void Board::loadSettings()
     if (r < 0)
         throw bad_alloc();
 
+    firmware_ = db_.get("firmware", "").toString();
+    if (firmware_.isEmpty() || !QFileInfo::exists(firmware_))
+        firmware_ = "";
     reset_after_ = db_.get("resetAfter", true).toBool();
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
@@ -333,6 +337,7 @@ void Board::setFirmware(const QString &firmware)
 
     firmware_ = firmware;
 
+    db_.put("firmware", firmware);
     emit settingsChanged();
 }
 
