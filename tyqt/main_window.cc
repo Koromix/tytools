@@ -71,7 +71,11 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     boardList->setItemDelegate(new BoardItemDelegate(monitor));
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             &MainWindow::selectionChanged);
-    connect(monitor, &Monitor::boardAdded, this, &MainWindow::selectFirstBoard);
+    connect(monitor, &Monitor::boardAdded, this, [=]() {
+        // Select this board if there were none available before
+        if (monitor_->boardCount() == 1)
+            boardList->setCurrentIndex(monitor_->index(0, 0));
+    });
     // The blue selection frame displayed on OSX looks awful
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
 
@@ -96,7 +100,8 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
             this, &MainWindow::setScrollBackLimitForSelection);
 
     refreshActions();
-    selectFirstBoard();
+    if (monitor_->boardCount())
+        boardList->setCurrentIndex(monitor_->index(0, 0));
 }
 
 bool MainWindow::event(QEvent *ev)
@@ -260,12 +265,6 @@ void MainWindow::sendMonitorInput()
 void MainWindow::clearMonitor()
 {
     monitorText->clear();
-}
-
-void MainWindow::selectFirstBoard()
-{
-    if (!boardList->currentIndex().isValid() && monitor_->boardCount())
-        boardList->setCurrentIndex(monitor_->index(0, 0));
 }
 
 void MainWindow::enableBoardWidgets()

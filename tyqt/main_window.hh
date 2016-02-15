@@ -59,8 +59,6 @@ public slots:
     void clearMonitor();
 
 private:
-    void selectFirstBoard();
-
     void enableBoardWidgets();
     void disableBoardWidgets();
     void updateWindowTitle();
