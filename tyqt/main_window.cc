@@ -47,6 +47,9 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     splitter->setStretchFactor(1, 1);
     splitter->setSizes({1, 1});
 
+    // We want all action shortcuts to remain available when the menu bar is hidden
+    addActions(menubar->actions());
+
     // Actions menu
     connect(actionUpload, &QAction::triggered, this, &MainWindow::uploadToSelection);
     connect(actionUploadNew, &QAction::triggered, this, &MainWindow::uploadNewToSelection);
@@ -85,6 +88,20 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     });
     // The blue selection frame displayed on OSX looks awful
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
+
+    // Board dropdown (compact mode)
+    boardComboBox->setModel(monitor);
+    boardComboBox->setVisible(false);
+    auto spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    toolBar->addWidget(spacer);
+#ifdef __APPLE__
+    boardComboAction = nullptr;
+#else
+    boardComboAction = toolBar->addWidget(boardComboBox);
+#endif
+    connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated),
+            this, [=](int index) { boardList->setCurrentIndex(monitor_->index(index)); });
 
     // Monitor tab
     monitorText->setWordWrapMode(QTextOption::NoWrap);
@@ -197,9 +214,31 @@ void MainWindow::rebootSelection()
 
 void MainWindow::setCompactMode(bool enable)
 {
-    toolBar->setVisible(!enable);
-    boardList->setVisible(!enable);
-    statusbar->setVisible(!enable);
+    if (enable) {
+        menubar->setVisible(false);
+        toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+        if (boardComboAction) {
+            boardComboAction->setVisible(true);
+        } else {
+            tabWidget->setCornerWidget(boardComboBox, Qt::TopRightCorner);
+            boardComboBox->setVisible(true);
+        }
+        boardList->setVisible(false);
+
+        setContextMenuPolicy(Qt::ActionsContextMenu);
+    } else {
+        menubar->setVisible(true);
+        toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+        if (boardComboAction) {
+            boardComboAction->setVisible(false);
+        } else {
+            boardComboBox->setVisible(false);
+            tabWidget->setCornerWidget(nullptr, Qt::TopRightCorner);
+        }
+        boardList->setVisible(true);
+
+        setContextMenuPolicy(Qt::NoContextMenu);
+    }
 }
 
 void MainWindow::openArduinoTool()
@@ -414,13 +453,15 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     selected_boards_.clear();
     current_board_ = nullptr;
 
-    for (auto &idx: boardList->selectionModel()->selectedIndexes()) {
+    auto indexes = boardList->selectionModel()->selectedIndexes();
+    for (auto &idx: indexes) {
         if (idx.column() == 0)
             selected_boards_.push_back(monitor_->board(idx.row()));
     }
 
     if (selected_boards_.size() == 1) {
         current_board_ = selected_boards_.front().get();
+        boardComboBox->setCurrentIndex(indexes.first().row());
 
         connect(current_board_, &Board::interfacesChanged, this, &MainWindow::refreshActions);
         connect(current_board_, &Board::infoChanged, this, &MainWindow::refreshInfo);
@@ -435,6 +476,8 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         refreshInterfaces();
         refreshStatus();
     } else {
+        boardComboBox->setCurrentIndex(-1);
+
         for (auto &board: selected_boards_)
             connect(board.get(), &Board::interfacesChanged, this, &MainWindow::refreshActions);
 
