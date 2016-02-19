@@ -10,9 +10,9 @@
 
 #include "common.h"
 
-struct ty_descriptor_set;
-
 TY_C_BEGIN
+
+struct ty_descriptor_set;
 
 typedef struct ty_timer ty_timer;
 

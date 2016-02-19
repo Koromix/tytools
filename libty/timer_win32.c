@@ -13,10 +13,9 @@
 #include "ty/system.h"
 
 struct ty_timer {
-    HANDLE h;
-
     CRITICAL_SECTION mutex;
     HANDLE event;
+    HANDLE h;
 
     bool enabled;
     bool oneshot;
@@ -59,7 +58,6 @@ void ty_timer_free(ty_timer *timer)
         // INVALID_HANDLE_VALUE = wait for any running callback to complete (NULL does not wait)
         if (timer->h)
             DeleteTimerQueueTimer(NULL, timer->h, INVALID_HANDLE_VALUE);
-
         if (timer->event)
             CloseHandle(timer->event);
         DeleteCriticalSection(&timer->mutex);
@@ -122,7 +120,6 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
             period = due;
             timer->oneshot = false;
         }
-
         timer->enabled = true;
 
         if (!timer->h) {
@@ -148,7 +145,6 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
 
         due = 0xFFFFFFFE;
         period = 0xFFFFFFFE;
-
         timer->enabled = false;
     }
 
@@ -173,7 +169,6 @@ uint64_t ty_timer_rearm(ty_timer *timer)
     EnterCriticalSection(&timer->mutex);
 
     ticks = timer->ticks;
-
     timer->ticks = 0;
     ResetEvent(timer->event);
 
