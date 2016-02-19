@@ -77,29 +77,29 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    if (h->len < 0) {
+    if (h->status < 0) {
         // Could be a transient error, try to restart it
-        h->len = _hs_win32_start_async_read(h);
-        if (h->len < 0)
-            return h->len;
+        _hs_win32_start_async_read(h);
+        if (h->status < 0)
+            return h->status;
     }
 
-    h->len = _hs_win32_finalize_async_read(h, timeout);
-    if (h->len <= 0)
-        return h->len;
+    _hs_win32_finalize_async_read(h, timeout);
+    if (h->status <= 0)
+        return h->status;
 
     /* HID communication is message-based. So if the caller does not provide a big enough
        buffer, we can just discard the extra data, unlike for serial communication. */
     if (h->len) {
-        if (size > (size_t)h->len)
-            size = (size_t)h->len;
+        if (size > h->len)
+            size = h->len;
         memcpy(buf, h->buf, size);
     } else {
         size = 0;
     }
 
     hs_error_mask(HS_ERROR_IO);
-    h->len = _hs_win32_start_async_read(h);
+    _hs_win32_start_async_read(h);
     hs_error_unmask();
 
     return (ssize_t)size;

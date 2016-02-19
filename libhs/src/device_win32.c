@@ -112,6 +112,10 @@ static int open_win32_device(hs_device *dev, hs_handle **rh)
         EscapeCommFunction(h->handle, SETDTR);
 
     _hs_win32_start_async_read(h);
+    if (h->status < 0) {
+        r = h->status;
+        goto error;
+    }
 
     *rh = h;
     return 0;
@@ -193,21 +197,24 @@ const struct _hs_device_vtable _hs_win32_device_vtable = {
     .get_descriptor = get_win32_descriptor
 };
 
-int _hs_win32_start_async_read(hs_handle *h)
+// Call only when h->status != 0, otherwise you will leak kernel memory
+void _hs_win32_start_async_read(hs_handle *h)
 {
     DWORD ret;
 
     ret = (DWORD)ReadFile(h->handle, h->buf, READ_BUFFER_SIZE, NULL, h->ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(h->handle);
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+
+        h->status = hs_error(HS_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        return;
     }
 
     h->pending_thread = GetCurrentThreadId();
-    return 0;
+    h->status = 0;
 }
 
-ssize_t _hs_win32_finalize_async_read(hs_handle *h, int timeout)
+void _hs_win32_finalize_async_read(hs_handle *h, int timeout)
 {
     DWORD len, ret;
 
@@ -216,13 +223,19 @@ ssize_t _hs_win32_finalize_async_read(hs_handle *h, int timeout)
 
     ret = (DWORD)GetOverlappedResult(h->handle, h->ov, &len, timeout < 0);
     if (!ret) {
-        if (GetLastError() == ERROR_IO_INCOMPLETE)
-            return 0;
+        if (GetLastError() == ERROR_IO_INCOMPLETE) {
+            h->status = 0;
+            return;
+        }
 
         h->pending_thread = 0;
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        h->status = hs_error(HS_ERROR_IO, "I/O error while reading from '%s'", h->dev->path);
+        return;
     }
-    h->pending_thread = 0;
 
-    return (ssize_t)len;
+    h->len = (size_t)len;
+    h->ptr = h->buf;
+
+    h->pending_thread = 0;
+    h->status = 1;
 }

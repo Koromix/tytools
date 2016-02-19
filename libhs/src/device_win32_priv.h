@@ -34,15 +34,17 @@ struct hs_handle {
     void *handle; // HANDLE
     struct _OVERLAPPED *ov;
     uint8_t *buf;
+
+    int status;
     unsigned long pending_thread; // DWORD
 
     uint8_t *ptr;
-    ssize_t len;
+    size_t len;
 };
 
 #ifdef _WIN32
-int _hs_win32_start_async_read(hs_handle *h);
-ssize_t _hs_win32_finalize_async_read(hs_handle *h, int timeout);
+void _hs_win32_start_async_read(hs_handle *h);
+void _hs_win32_finalize_async_read(hs_handle *h, int timeout);
 #endif
 
 #endif
