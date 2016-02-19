@@ -790,6 +790,7 @@ void hs_monitor_stop(hs_monitor *monitor)
         clear_iterator(monitor->iterators[i]);
         IOObjectRelease(monitor->iterators[i]);
     }
+    monitor->iterator_count = 0;
 
     monitor->started = false;
 }
