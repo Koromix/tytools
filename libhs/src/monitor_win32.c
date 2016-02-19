@@ -625,7 +625,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
 
     h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
     if (!h) {
-        hs_log(HS_LOG_WARNING, "Cannot open parent hub device at '%s', ignoring device properties for '%s'",
+        hs_log(HS_LOG_DEBUG, "Cannot open parent hub device at '%s', ignoring device properties for '%s'",
                path, dev->key);
         r = 1;
         goto cleanup;
@@ -642,7 +642,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
     success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, node, len,
                               node, len, &len, NULL);
     if (!success) {
-        hs_log(HS_LOG_WARNING, "Failed to interrogate hub device at '%s' for device '%s'", path,
+        hs_log(HS_LOG_DEBUG, "Failed to interrogate hub device at '%s' for device '%s'", path,
                dev->key);
         r = 1;
         goto cleanup;
