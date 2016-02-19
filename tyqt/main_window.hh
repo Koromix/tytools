@@ -23,6 +23,10 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 
     QMenu *menuUpload;
     QMenu *menuBrowseFirmware;
+#ifdef __APPLE__
+    // See MainWindow::MainWindow() in main_window.cc for more information about that
+    QMenu *menuRecentFirmwares2;
+#endif
 
     // We need to keep this around to show/hide the board QComboBox
     QAction *boardComboAction;

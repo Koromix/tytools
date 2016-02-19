@@ -31,7 +31,15 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     menuUpload = new QMenu(this);
     menuUpload->addAction(actionUploadNew);
     menuUpload->addAction(actionDropFirmware);
+#ifdef __APPLE__
+    /* Workaround for Qt OSX bug https://bugreports.qt.io/browse/QTBUG-34160
+       The actions in menuRecentFirmwares are copied to menuRecentFirmwares2
+       in updateFirmwareMenus(). */
+    menuRecentFirmwares2 = new QMenu(menuRecentFirmwares->title(), this);
+    menuUpload->addMenu(menuRecentFirmwares2);
+#else
     menuUpload->addMenu(menuRecentFirmwares);
+#endif
 
     menuBrowseFirmware = new QMenu(this);
 
@@ -416,6 +424,12 @@ void MainWindow::updateFirmwareMenus()
         menuRecentFirmwares->setEnabled(false);
         menuBrowseFirmware->setEnabled(false);
     }
+
+#ifdef __APPLE__
+    menuRecentFirmwares2->clear();
+    menuRecentFirmwares2->addActions(menuRecentFirmwares->actions());
+    menuRecentFirmwares2->setEnabled(menuRecentFirmwares->isEnabled());
+#endif
 }
 
 QString MainWindow::browseFirmwareDirectory()
