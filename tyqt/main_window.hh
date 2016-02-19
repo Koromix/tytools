@@ -35,9 +35,6 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     std::vector<std::shared_ptr<Board>> selected_boards_;
     Board *current_board_ = nullptr;
 
-    bool monitor_autoscroll_ = true;
-    QTextCursor monitor_cursor_;
-
     ArduinoDialog *arduino_dialog_ = nullptr;
     AboutDialog *about_dialog_ = nullptr;
 
@@ -87,8 +84,6 @@ private slots:
     void refreshInterfaces();
     void refreshStatus();
 
-    void cacheMonitorScrollValues(const QRect &rect, int dy);
-    void updateMonitorScroll();
     void openMonitorContextMenu(const QPoint &pos);
 
     void validateAndSetFirmwarePath();

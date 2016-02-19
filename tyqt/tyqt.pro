@@ -25,6 +25,7 @@ HEADERS += about_dialog.hh \
     commands.hh \
     database.hh \
     descriptor_notifier.hh \
+    enhanced_plain_text.hh \
     firmware.hh \
     log_window.hh \
     main_window.hh \
@@ -42,6 +43,7 @@ SOURCES += about_dialog.cc \
     commands.cc \
     database.cc \
     descriptor_notifier.cc \
+    enhanced_plain_text.cc \
     firmware.cc \
     log_window.cc \
     main.cc \

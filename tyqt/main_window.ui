@@ -194,7 +194,7 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QPlainTextEdit" name="monitorText">
+          <widget class="EnhancedPlainText" name="monitorText">
            <property name="minimumSize">
             <size>
              <width>240</width>
@@ -710,6 +710,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>EnhancedPlainText</class>
+   <extends>QPlainTextEdit</extends>
+   <header>enhanced_plain_text.hh</header>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>

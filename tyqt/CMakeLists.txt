@@ -18,6 +18,7 @@ set(TYQT_SOURCES about_dialog.cc
                  commands.cc
                  database.cc
                  descriptor_notifier.cc
+                 enhanced_plain_text.cc
                  firmware.cc
                  log_window.cc
                  monitor.cc

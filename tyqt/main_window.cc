@@ -113,9 +113,6 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
 
     // Monitor tab
     monitorText->setWordWrapMode(QTextOption::NoWrap);
-    connect(monitorText, &QPlainTextEdit::updateRequest, this,
-            &MainWindow::cacheMonitorScrollValues);
-    connect(monitorText, &QPlainTextEdit::textChanged, this, &MainWindow::updateMonitorScroll);
     connect(monitorText, &QPlainTextEdit::customContextMenuRequested, this,
             &MainWindow::openMonitorContextMenu);
     connect(monitorEdit, &QLineEdit::returnPressed, this, &MainWindow::sendMonitorInput);
@@ -340,8 +337,6 @@ void MainWindow::enableBoardWidgets()
     uploadTab->setEnabled(true);
     actionAttachMonitor->setEnabled(true);
 
-    monitor_autoscroll_ = true;
-    monitor_cursor_ = QTextCursor();
     monitorText->setDocument(&current_board_->serialDocument());
     monitorText->moveCursor(QTextCursor::End);
     monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
@@ -567,49 +562,6 @@ void MainWindow::refreshInterfaces()
 void MainWindow::refreshStatus()
 {
     statusText->setText(current_board_->statusText());
-}
-
-/* Memorize the scroll value whenever the user scrolls the widget (QPlainTextEdit::updateRequest)
-   and enable autoscroll when he scrolls to the end. */
-void MainWindow::cacheMonitorScrollValues(const QRect &rect, int dy)
-{
-    Q_UNUSED(rect);
-
-    if (!dy)
-        return;
-
-    auto vbar = monitorText->verticalScrollBar();
-    /* Disable autoscroll when the user scrolls in the document, unless he scrolls to
-       end of the document. */
-    monitor_autoscroll_ = vbar->value() >= vbar->maximum() - 1;
-    monitor_cursor_ = monitorText->cursorForPosition(QPoint(0, 0));
-}
-
-/* Fix the scrollbar position whenever the text changes (QPlainTextEdit::textChanged),
-   depending on whether autoscroll is enabled or not. */
-void MainWindow::updateMonitorScroll()
-{
-    auto hbar = monitorText->horizontalScrollBar();
-    auto vbar = monitorText->verticalScrollBar();
-
-    // Look at monitorTextScrolled() for the rules regarding monitor_autoscroll_
-    if (monitor_autoscroll_) {
-        vbar->setValue(vbar->maximum());
-    } else {
-        /* QPlainTextEdit does a good job of keeping the text steady when we append to the
-           end... until maximumBlockCount kicks in. We use our own cursor monitor_cursor_,
-           updated in cacheMonitorScrollValues() to fix that behavior. */
-        QTextCursor old_cursor = monitorText->textCursor();
-        int hpos = hbar->value();
-
-        monitorText->setTextCursor(monitor_cursor_);
-        monitorText->ensureCursorVisible();
-        int vpos = vbar->value();
-
-        monitorText->setTextCursor(old_cursor);
-        hbar->setValue(hpos);
-        vbar->setValue(vpos);
-    }
 }
 
 void MainWindow::openMonitorContextMenu(const QPoint &pos)
