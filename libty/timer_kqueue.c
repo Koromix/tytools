@@ -71,17 +71,17 @@ int ty_timer_set(ty_timer *timer, int value, int flags)
     int r;
 
     if (value > 0) {
-        EV_SET(&kev[kev_count++], 0, EVFILT_TIMER, EV_ADD, 0, value, NULL);
+        EV_SET(&kev[kev_count++], 0, EVFILT_TIMER, EV_ADD | EV_ENABLE, 0, value, NULL);
         if (flags & TY_TIMER_ONESHOT)
             kev[0].flags |= EV_ONESHOT;
     } else {
-        EV_SET(&kev[kev_count++], 0, EVFILT_TIMER, EV_DELETE, 0, 0, NULL);
+        EV_SET(&kev[kev_count++], 0, EVFILT_TIMER, EV_DISABLE, 0, 0, NULL);
         if (!value)
             EV_SET(&kev[kev_count++], 1, EVFILT_USER, EV_ADD | EV_ONESHOT, NOTE_TRIGGER | NOTE_FFNOP, 0, NULL);
     }
 
     r = kevent(timer->fd, kev, kev_count, NULL, 0, &ts);
-    if (r < 0)
+    if (r < 0 && errno != ENOENT)
         return ty_error(TY_ERROR_SYSTEM, "kevent() failed: %s", strerror(errno));
 
     return 0;
