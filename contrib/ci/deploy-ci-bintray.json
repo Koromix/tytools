@@ -1,0 +1,14 @@
+{
+    "package": {
+        "name": "ty",
+        "repo": "ty",
+        "subject": "koromix"
+    },
+    "version": {
+        "name": "ci"
+    },
+    "files": [
+        {"includePattern": "\./(TyQt\-[a-z0-9\.\-]*\\.dmg)", "excludePattern": "_CPack_Packages", "uploadPattern": "$1"}
+    ],
+    "publish": true
+}
