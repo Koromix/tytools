@@ -4,19 +4,19 @@ git:
 
 language: cpp
 
+env:
+  global:
+    - CMAKE_BUILD_TYPE=RelWithDebInfo
+    - QT_VERSION=5.5.1
+
 matrix:
   include:
     - os: linux
       compiler: gcc
       sudo: required
       dist: trusty
-      env:
-        - CMAKE_BUILD_TYPE=RelWithDebInfo
     - os: osx
       compiler: clang
-      env:
-        - QT_VERSION=5.5.1
-        - CMAKE_BUILD_TYPE=RelWithDebInfo
 
 install:
   - contrib/ci/install-$TRAVIS_OS_NAME.sh
