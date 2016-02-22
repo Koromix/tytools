@@ -6,6 +6,7 @@ language: cpp
 
 env:
   global:
+    - INSTALLER=$TRAVIS_OS_NAME
     - CMAKE_BUILD_TYPE=RelWithDebInfo
     - QT_VERSION=5.5.1
 
@@ -15,19 +16,33 @@ matrix:
       compiler: gcc
       sudo: required
       dist: trusty
+    - os: linux
+      compiler: gcc
+      sudo: required
+      dist: trusty
+      env:
+        - INSTALLER=win32
+        - CMAKE_TOOLCHAIN_FILE=../contrib/cmake/i686-w64-mingw32.cmake
+    - os: linux
+      compiler: gcc
+      sudo: required
+      dist: trusty
+      env:
+        - INSTALLER=win64
+        - CMAKE_TOOLCHAIN_FILE=../contrib/cmake/x86_64-w64-mingw32.cmake
     - os: osx
       compiler: clang
 
 install:
-  - contrib/ci/install-$TRAVIS_OS_NAME.sh
+  - contrib/ci/install-$INSTALLER.sh
 
 before_script:
   - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE ..
+  - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE ..
 
 script:
   - make
-  - if [[ "$TRAVIS_OS_NAME" != "linux" ]]; then cpack; fi
+  - if [[ "$INSTALLER" != "linux" ]]; then cpack; fi
 
 deploy:
   provider: bintray

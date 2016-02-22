@@ -8,7 +8,7 @@
         "name": "ci"
     },
     "files": [
-        {"includePattern": "\./(TyQt\-[a-z0-9\.\-]*\\.dmg)", "excludePattern": "_CPack_Packages", "uploadPattern": "$1"}
+        {"includePattern": "\./(TyQt\-[a-z0-9\.\-]*\\.(zip|dmg))", "excludePattern": "_CPack_Packages", "uploadPattern": "$1"}
     ],
     "publish": true
 }
