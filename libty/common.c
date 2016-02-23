@@ -5,8 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "ty/common.h"
-#include "compat.h"
+#include "util.h"
 #include <stdarg.h>
 #include "hs/common.h"
 #include "ty/system.h"

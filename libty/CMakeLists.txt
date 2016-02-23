@@ -27,7 +27,8 @@ set(TY_SOURCES include/ty.h
                monitor.c
                system.c
                task.c
-               task_priv.h)
+               task_priv.h
+               util.h)
 if(LINUX)
     list(APPEND TY_SOURCES system_posix.c
                            thread_pthread.c
@@ -57,23 +58,9 @@ else()
 endif()
 
 include(CheckSymbolExists)
-check_symbol_exists(stpcpy string.h HAVE_STPCPY)
-check_symbol_exists(stpncpy string.h HAVE_STPNCPY)
-check_symbol_exists(strndup string.h HAVE_STRNDUP)
-check_symbol_exists(memrchr string.h HAVE_MEMRCHR)
 check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
-check_symbol_exists(getdelim stdio.h HAVE_GETDELIM)
-check_symbol_exists(getline stdio.h HAVE_GETLINE)
-check_symbol_exists(fstatat sys/stat.h HAVE_FSTATAT)
-check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
 if(NOT WIN32)
     check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
-
-    include(CheckStructHasMember)
-    check_struct_has_member("struct stat" st_mtim sys/stat.h HAVE_STAT_MTIM)
-    if(NOT HAVE_STAT_MTIM)
-        check_struct_has_member("struct stat" st_mtimespec sys/stat.h HAVE_STAT_MTIMESPEC)
-    endif()
 endif()
 configure_file(config.h.in config.h)
 add_definitions(-DHAVE_CONFIG_H)

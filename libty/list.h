@@ -8,7 +8,7 @@
 #ifndef TY_LIST_H
 #define TY_LIST_H
 
-#include "ty/common.h"
+#include "util.h"
 
 TY_C_BEGIN
 

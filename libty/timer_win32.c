@@ -5,8 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "ty/common.h"
-#include "compat.h"
+#include "util.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "ty/timer.h"

@@ -5,8 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "ty/common.h"
-#include "compat.h"
+#include "util.h"
 #include <sys/timerfd.h>
 #include <unistd.h>
 #include "ty/timer.h"

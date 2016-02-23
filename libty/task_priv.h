@@ -8,7 +8,7 @@
 #ifndef TY_TASK_PRIV_H
 #define TY_TASK_PRIV_H
 
-#include "ty/common.h"
+#include "util.h"
 #include "list.h"
 #include "ty/task.h"
 #include "ty/thread.h"

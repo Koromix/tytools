@@ -24,7 +24,8 @@ HEADERS += include/ty.h \
     firmware_priv.h \
     htable.h \
     list.h \
-    task_priv.h
+    task_priv.h \
+    util.h
 
 SOURCES += board.c \
     board_teensy.c \

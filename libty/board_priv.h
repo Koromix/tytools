@@ -8,7 +8,7 @@
 #ifndef TY_BOARD_PRIV_H
 #define TY_BOARD_PRIV_H
 
-#include "ty/common.h"
+#include "util.h"
 #include "ty/board.h"
 #include "hs/device.h"
 #include "htable.h"

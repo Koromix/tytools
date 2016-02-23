@@ -5,16 +5,5 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#cmakedefine HAVE_STPCPY
-#cmakedefine HAVE_STPNCPY
-#cmakedefine HAVE_STRNDUP
-#cmakedefine HAVE_MEMRCHR
 #cmakedefine HAVE_ASPRINTF
-#cmakedefine HAVE_GETDELIM
-#cmakedefine HAVE_GETLINE
-#cmakedefine HAVE_FSTATAT
-#cmakedefine HAVE_PIPE2
 #cmakedefine HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
-
-#cmakedefine HAVE_STAT_MTIM
-#cmakedefine HAVE_STAT_MTIMESPEC

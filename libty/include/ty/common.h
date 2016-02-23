@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #ifdef __cplusplus
     #define TY_C_BEGIN extern "C" {
@@ -34,10 +33,16 @@
     #define TY_C_END
 #endif
 
-#ifdef __GNUC__
+TY_C_BEGIN
+
+#if defined(__GNUC__)
     #define TY_PUBLIC __attribute__((__visibility__("default")))
-    #define TY_NORETURN __attribute__((__noreturn__))
     #define TY_POSSIBLY_UNUSED __attribute__((__unused__))
+    #ifdef __MINGW_PRINTF_FORMAT
+        #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
+    #else
+        #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
+    #endif
 
     #ifdef __APPLE__
         #define TY_INIT() \
@@ -62,18 +67,6 @@
                 = &TY_UNIQUE_ID(release_); \
             static void TY_UNIQUE_ID(release_)(void)
     #endif
-
-    #define TY_WARNING_DISABLE_SIGN_CONVERSION \
-        _Pragma("GCC diagnostic push"); \
-        _Pragma("GCC diagnostic ignored \"-Wsign-conversion\"");
-    #define TY_WARNING_RESTORE \
-        _Pragma("GCC diagnostic pop");
-
-    #ifdef __MINGW_PRINTF_FORMAT
-        #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
-    #else
-        #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
-    #endif
 #else
     #error "This compiler is not supported"
 #endif
@@ -94,8 +87,6 @@
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
 #define ty_member_sizeof(type, member) sizeof(((type *)0)->member)
-
-TY_C_BEGIN
 
 struct ty_task;
 
