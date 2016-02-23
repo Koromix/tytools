@@ -5,7 +5,7 @@
         "subject": "koromix"
     },
     "version": {
-        "name": "ci"
+        "name": "__VERSION__"
     },
     "files": [
         {"includePattern": "\./(TyQt\-[a-z0-9\.\-]*\\.(zip|dmg))", "excludePattern": "_CPack_Packages", "uploadPattern": "$1"}
