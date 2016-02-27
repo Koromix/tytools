@@ -163,7 +163,9 @@ if(WIN32)
 
     install(FILES "${CMAKE_BINARY_DIR}/README_crlf.md" DESTINATION . RENAME README.txt)
     install(FILES "${CMAKE_BINARY_DIR}/LICENSE_crlf.txt" DESTINATION . RENAME LICENSE.txt)
-    install(DIRECTORY contrib/win32/ DESTINATION . FILES_MATCHING PATTERN *.txt)
+    if(MINGW)
+        install(DIRECTORY contrib/mingw/ DESTINATION . FILES_MATCHING PATTERN *.txt)
+    endif()
 
     include(CPack)
 elseif(APPLE)
