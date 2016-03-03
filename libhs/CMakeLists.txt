@@ -37,8 +37,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     endforeach()
 
     if(MINGW)
+        add_definitions(-D__USE_MINGW_ANSI_STDIO=1)
         set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc")
     endif()
+elseif(MSVC)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 if(WIN32)
