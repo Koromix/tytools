@@ -79,11 +79,11 @@ set_target_properties(ty_static PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON
 target_link_libraries(ty_static ${TY_LINK_LIBRARIES})
 
 if(WIN32)
-    if(NOT STATIC_BINARIES)
+    if(TY_SHARED_LIBTY)
         install(TARGETS ty_shared RUNTIME DESTINATION .)
     endif()
 elseif(APPLE)
-    if(NOT STATIC_BINARIES)
+    if(TY_SHARED_LIBTY)
         # Kind of a hack, but it works (the Bundle generator wants to put everything in Resources)
         install(TARGETS ty_shared DESTINATION ../Frameworks)
     endif()
