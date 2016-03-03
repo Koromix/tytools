@@ -26,30 +26,25 @@ project(libhs C)
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     set(CMAKE_COMPILER_IS_CLANG 1)
 endif()
-
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(LINUX 1)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -fvisibility=hidden -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Wextra -Wno-missing-field-initializers -Wshadow -Wconversion -Wformat=2")
-
-    foreach(lang C CXX)
-        foreach(mode RELEASE RELWITHDEBINFO MINSIZEREL)
-            set(CMAKE_${lang}_FLAGS_${mode} "${CMAKE_${lang}_FLAGS_${mode}} -D_FORTIFY_SOURCE=2")
-        endforeach()
+    foreach(mode RELEASE RELWITHDEBINFO MINSIZEREL)
+        set(CMAKE_${lang}_FLAGS_${mode} "${CMAKE_${lang}_FLAGS_${mode}} -D_FORTIFY_SOURCE=2")
     endforeach()
+
+    if(MINGW)
+        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc")
+    endif()
 endif()
 
-if(LINUX)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBUDEV REQUIRED libudev)
-
-    include_directories(${LIBUDEV_INCLUDE_DIRS})
-    list(APPEND HS_LINK_LIBRARIES ${LIBUDEV_LIBRARIES})
-endif()
-
-if(APPLE)
+if(WIN32)
+    add_definitions(-DWINVER=0x0602 -D_WIN32_WINNT=0x0602)
+    list(APPEND HS_LINK_LIBRARIES setupapi hid)
+elseif(APPLE)
     find_library(COREFOUNDATION_LIBRARIES CoreFoundation)
     find_library(IOKIT_LIBRARIES IOKit)
     list(APPEND HS_LINK_LIBRARIES ${COREFOUNDATION_LIBRARIES} ${IOKIT_LIBRARIES})
@@ -64,16 +59,12 @@ if(APPLE)
     # Makes it easier for cross-compilation and testing. In my case, compile on Linux
     # and test on OSX using sshfs
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-endif()
+elseif(LINUX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBUDEV REQUIRED libudev)
 
-if(WIN32)
-    add_definitions(-DWINVER=0x0602 -D_WIN32_WINNT=0x0602)
-    list(APPEND HS_LINK_LIBRARIES setupapi hid)
-
-    if(MINGW)
-        set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -static-libgcc")
-        set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -static-libgcc")
-    endif()
+    include_directories(${LIBUDEV_INCLUDE_DIRS})
+    list(APPEND HS_LINK_LIBRARIES ${LIBUDEV_LIBRARIES})
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
