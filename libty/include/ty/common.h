@@ -8,9 +8,6 @@
 #ifndef TY_COMMON_H
 #define TY_COMMON_H
 
-// Avoid msvcrt's limited versions of printf/scanf functions
-#define __USE_MINGW_ANSI_STDIO 1
-
 #ifdef _WIN32
     #include <malloc.h>
 #else

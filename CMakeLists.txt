@@ -43,6 +43,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     endforeach()
 
     if(MINGW)
+        add_definitions(-D__USE_MINGW_ANSI_STDIO=1)
         # Latest approach to force MinGW to statically link libwinpthread, until a new
         # version breaks this one too.
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic")
