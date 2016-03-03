@@ -42,6 +42,13 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     endif()
 elseif(MSVC)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
+
+    set(HS_STATIC_MSVCRT OFF CACHE BOOL "Build with static version of MS CRT (/MT)")
+    if(HS_STATIC_MSVCRT)
+        foreach(mode DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+            string(REPLACE "/MD" "/MT" CMAKE_C_FLAGS_${mode} "${CMAKE_C_FLAGS_${mode}}")
+        endforeach()
+    endif()
 endif()
 
 if(WIN32)
