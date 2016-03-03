@@ -13,11 +13,14 @@
 
 TY_C_BEGIN
 
-char *strrpbrk(const char *s, const char *accept);
+char *_ty_strrpbrk(const char *s, const char *accept);
+#define strrpbrk _ty_strrpbrk
 
 #ifndef HAVE_ASPRINTF
-int asprintf(char **strp, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
-int vasprintf(char **strp, const char *fmt, va_list ap);
+int _ty_asprintf(char **strp, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
+#define asprintf _ty_asprintf
+int _ty_vasprintf(char **strp, const char *fmt, va_list ap);
+#define vasprintf _ty_vasprintf
 #endif
 
 TY_C_END
