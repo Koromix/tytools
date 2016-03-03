@@ -21,20 +21,12 @@
 #ifdef _WIN32
 typedef BOOL WINAPI ProcessIdToSessionId_func(DWORD dwProcessId, DWORD *pSessionId);
 
-static ProcessIdToSessionId_func *ProcessIdToSessionId_;
+static ProcessIdToSessionId_func *ProcessIdToSessionId_ =
+    reinterpret_cast<ProcessIdToSessionId_func *>(GetProcAddress(GetModuleHandle("kernel32.dll"),
+                                                                 "ProcessIdToSessionId"));
 #endif
 
 using namespace std;
-
-#ifdef _WIN32
-
-TY_INIT()
-{
-    ProcessIdToSessionId_ = reinterpret_cast<ProcessIdToSessionId_func *>(GetProcAddress(GetModuleHandle("kernel32.dll"), "ProcessIdToSessionId"));
-    return 0;
-}
-
-#endif
 
 SessionChannel::SessionChannel(const QString &id, QObject *parent)
     : QObject(parent)
