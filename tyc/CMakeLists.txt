@@ -8,6 +8,9 @@ set(TYC_SOURCES list.c
                 monitor.c
                 reset.c
                 upload.c)
+if(MSVC)
+    list(APPEND TYC_SOURCES "${CMAKE_SOURCE_DIR}/contrib/msvc/getopt.c")
+endif()
 
 add_executable(tyc ${TYC_SOURCES})
 target_link_libraries(tyc ${TY_LIBRARIES})
