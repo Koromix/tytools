@@ -41,6 +41,8 @@ TY_C_BEGIN
         #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
     #endif
 
+    #define TY_THREAD_LOCAL __thread
+
     #ifdef __APPLE__
         #define TY_INIT() \
             static int TY_UNIQUE_ID(init_)(void); \

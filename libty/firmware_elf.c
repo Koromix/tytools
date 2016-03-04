@@ -85,7 +85,11 @@ static int read_chunk(struct loader_context *ctx, off_t offset, size_t size, voi
 {
     ssize_t r;
 
+#ifdef _WIN32
+    r = _fseeki64(ctx->fp, offset, SEEK_SET);
+#else
     r = fseeko(ctx->fp, offset, SEEK_SET);
+#endif
     if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "fseeko() failed: %s", strerror(errno));
 

@@ -39,7 +39,7 @@ struct ty_task {
 };
 
 static ty_pool *default_pool;
-static __thread ty_task *current_task;
+static TY_THREAD_LOCAL ty_task *current_task;
 
 int ty_pool_new(ty_pool **rpool)
 {

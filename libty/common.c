@@ -34,10 +34,10 @@ bool ty_config_experimental = false;
 static ty_message_func *handler = ty_message_default_handler;
 static void *handler_udata = NULL;
 
-static __thread ty_err mask[16];
-static __thread unsigned int mask_count;
+static TY_THREAD_LOCAL ty_err mask[16];
+static TY_THREAD_LOCAL unsigned int mask_count;
 
-static __thread char last_error_msg[256];
+static TY_THREAD_LOCAL char last_error_msg[256];
 
 static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 TY_INIT()
@@ -282,7 +282,7 @@ void ty_progress(const char *action, unsigned int value, unsigned int max)
 
     ty_progress_message msg;
 
-    msg.action = action ?: "Processing";
+    msg.action = action ? action : "Processing";
     msg.value = value;
     msg.max = max;
 
