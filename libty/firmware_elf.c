@@ -6,6 +6,7 @@
  */
 
 #include "util.h"
+#include <sys/types.h>
 #include "firmware_priv.h"
 
 #define EI_NIDENT 16

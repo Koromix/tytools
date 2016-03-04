@@ -6,9 +6,6 @@
  */
 
 #include "util.h"
-#include <dirent.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include "ty/system.h"
 
 int ty_adjust_timeout(int timeout, uint64_t start)
