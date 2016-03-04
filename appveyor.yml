@@ -1,0 +1,50 @@
+version: '{build}'
+
+os: Visual Studio 2015
+
+init:
+  # We need CMake's cpack command, not chocolatey's command
+  - cmake -E remove c:\programdata\chocolatey\bin\cpack.exe
+
+environment:
+  BUILD_TYPE: "RelWithDebInfo"
+
+  matrix:
+    - CMAKE_FLAGS: '-G "Visual Studio 14 2015" -T "v140_xp" -DTY_STATIC_MSVCRT=1'
+      QT_PACKAGE: qtbase-5.5.1-i686-win32-msvc2015-static-mt.7z
+    - CMAKE_FLAGS: '-G "Visual Studio 14 2015 Win64" -DTY_STATIC_MSVCRT=1'
+      QT_PACKAGE: qtbase-5.5.1-x86_64-win32-msvc2015-static-mt.7z
+
+install:
+  - appveyor DownloadFile "https://bintray.com/artifact/download/koromix/ty/%QT_PACKAGE%"
+  - 7z x "%QT_PACKAGE%" >NUL
+
+before_build:
+  - cmake %CMAKE_FLAGS% .
+build_script:
+  - cmake --build . --config "%BUILD_TYPE%"
+after_build:
+  - cpack -C "%BUILD_TYPE%"
+
+test: off
+
+artifacts:
+  - path: TyQt-*.msi
+  - path: TyQt-*.zip
+
+deploy:
+  - provider: BinTray
+    username: Koromix
+    api_key:
+      secure: "SV8zwvJsQsGbojZy6Z8CHeRGmZse3AOoohPIiog2o5/6tH191ei3GakTEpHsfYe2"
+    subject: koromix
+    repo: ty
+    package: ty
+    version: $(APPVEYOR_REPO_BRANCH)
+    publish: true
+  - provider: GitHub
+    auth_token:
+      secure: "cLGLqvqDP4MpJ0+skssc+alB65DtwvIgpdgEkEAvuYTm8YX4ZXYIsZe115DDbR2f"
+    draft: true
+    on:
+      appveyor_repo_tag: true
