@@ -22,9 +22,13 @@ public:
 protected:
     void showEvent(QShowEvent *e) override;
     void scrollContentsBy(int dx, int dy) override;
+    void keyPressEvent(QKeyEvent *e) override;
 
 private slots:
     void fixScrollValue();
+
+private:
+    void updateScrollInfo();
 };
 
 #endif

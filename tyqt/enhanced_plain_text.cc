@@ -30,20 +30,15 @@ void EnhancedPlainText::showEvent(QShowEvent *e)
 void EnhancedPlainText::scrollContentsBy(int dx, int dy)
 {
     QPlainTextEdit::scrollContentsBy(dx, dy);
+    updateScrollInfo();
+}
 
-    auto vbar = verticalScrollBar();
-    auto cursor = cursorForPosition(QPoint(0, 0));
-
-    monitor_autoscroll_ = vbar->value() >= vbar->maximum() - 1;
-
-    /* Some functions, such as QTextDocument::clear(), really don't like when you delete
-       a cursor while they run because they keep a copy of the list of cursors which
-       is not updated by the cursor destructor. */
-    if (!monitor_cursor_.isNull() && monitor_cursor_.document() == document()) {
-        monitor_cursor_.setPosition(cursor.position());
-    } else {
-        monitor_cursor_ = cursor;
-    }
+void EnhancedPlainText::keyPressEvent(QKeyEvent *e)
+{
+    QPlainTextEdit::keyPressEvent(e);
+    /* For some reason, neither scrollContentsBy() nor the scrollbar signals are triggered
+       by keyboard navigation. Is that normal, or a Qt bug? */
+    updateScrollInfo();
 }
 
 void EnhancedPlainText::fixScrollValue()
@@ -57,5 +52,22 @@ void EnhancedPlainText::fixScrollValue()
            end... until maximumBlockCount kicks in. We use our own cursor monitor_cursor_,
            updated in scrollContentsBy to fix that. */
         vbar->setValue(monitor_cursor_.block().firstLineNumber());
+    }
+}
+
+void EnhancedPlainText::updateScrollInfo()
+{
+    auto vbar = verticalScrollBar();
+    auto cursor = cursorForPosition(QPoint(0, 0));
+
+    monitor_autoscroll_ = vbar->value() >= vbar->maximum() - 1;
+
+    /* Some functions, such as QTextDocument::clear(), really don't like when you delete
+       a cursor while they run because they keep a copy of the list of cursors which
+       is not updated by the cursor destructor. */
+    if (!monitor_cursor_.isNull() && monitor_cursor_.document() == document()) {
+        monitor_cursor_.setPosition(cursor.position());
+    } else {
+        monitor_cursor_ = cursor;
     }
 }
