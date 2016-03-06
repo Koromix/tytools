@@ -43,8 +43,6 @@ elseif(WIN32)
     list(APPEND TY_SOURCES system_win32.c
                            thread_win32.c
                            timer_win32.c)
-
-    list(APPEND TY_LINK_LIBRARIES setupapi hid)
 elseif(APPLE)
     list(APPEND TY_SOURCES system_posix.c
                            thread_pthread.c
