@@ -23,6 +23,8 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(libhs C)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     set(CMAKE_COMPILER_IS_CLANG 1)
 endif()
@@ -53,7 +55,36 @@ endif()
 
 if(WIN32)
     add_definitions(-DWINVER=0x0602 -D_WIN32_WINNT=0x0602)
-    list(APPEND HS_LINK_LIBRARIES setupapi hid)
+
+    if(MSVC AND CMAKE_VS_PLATFORM_TOOLSET MATCHES _xp)
+        # Some libraries/headers (such as hid.lib) are not available when an XP compatible
+        # toolset is requested (e.g. "cmake -T v140_xp"). I don't understand much about the
+        # SDK/WDK/DDK/toolset mess, so just ask WindowsSDK for everything ("COMPONENTS tools"),
+        # hopefully it is okay.
+        find_package(WindowsSDK COMPONENTS tools)
+        if(WINDOWSSDK_FOUND)
+            foreach(_dir ${WINDOWSSDK_DIRS})
+                get_windowssdk_include_dirs(${_dir} _include_dirs)
+                if(_include_dirs)
+                    list(APPEND _winsdk_include_dirs ${_include_dirs})
+                endif()
+                get_windowssdk_library_dirs(${_dir} _library_dirs)
+                if(_library_dirs)
+                    list(APPEND _winsdk_library_dirs ${_library_dirs})
+                endif()
+            endforeach()
+        endif()
+
+        find_path(HID_INCLUDE_DIR hidsdi.h usbuser.h HINTS ${_winsdk_include_dirs})
+        find_path(USBUSER_INCLUDE_DIR usbuser.h HINTS ${_winsdk_include_dirs})
+        include_directories(${HID_INCLUDE_DIR} ${USBUSER_INCLUDE_DIR})
+
+        find_library(HID_LIBRARY hid HINTS ${_winsdk_library_dirs})
+        find_library(SETUPAPI_LIBRARY setupapi HINTS ${_winsdk_library_dirs})
+        list(APPEND HS_LINK_LIBRARIES ${HID_LIBRARY} ${SETUPAPI_LIBRARY})
+    else()
+        list(APPEND HS_LINK_LIBRARIES hid setupapi)
+    endif()
 elseif(APPLE)
     find_library(COREFOUNDATION_LIBRARIES CoreFoundation)
     find_library(IOKIT_LIBRARIES IOKit)
