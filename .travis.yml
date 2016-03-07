@@ -40,7 +40,7 @@ before_script:
   - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE ..
 script:
   - make
-  - if [[ "$INSTALLER" != "linux" ]]; then cpack; fi
+  - if [[ "$INSTALLER" == "osx" ]]; then cpack; fi
 
 before_deploy:
   - sed -e "s/__VERSION__/$TRAVIS_BRANCH/" ../contrib/ci/deploy-bintray.json >deploy-bintray.json
