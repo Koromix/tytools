@@ -29,4 +29,8 @@
 #include "ty/common.h"
 #include "compat.h"
 
+void _ty_message(struct ty_task *task, ty_message_type type, const void *data);
+
+int _ty_libhs_translate_error(int err);
+
 #endif

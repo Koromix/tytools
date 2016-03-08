@@ -153,12 +153,7 @@ TY_PUBLIC const char *ty_error_last_message(void);
 
 TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
-
 TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
-
-void _ty_message(struct ty_task *task, ty_message_type type, const void *data);
-
-int _ty_libhs_translate_error(int err);
 
 TY_C_END
 
