@@ -166,16 +166,15 @@ ty_task *ty_task_ref(ty_task *task)
 {
     assert(task);
 
-    __atomic_fetch_add(&task->refcount, 1, __ATOMIC_RELAXED);
+    _ty_refcount_increase(&task->refcount);
     return task;
 }
 
 void ty_task_unref(ty_task *task)
 {
     if (task) {
-        if (__atomic_fetch_sub(&task->refcount, 1, __ATOMIC_RELEASE) > 1)
+        if (_ty_refcount_decrease(&task->refcount))
             return;
-        __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
         if (task->result_cleanup)
             (*task->result_cleanup)(task->result);

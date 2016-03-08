@@ -144,16 +144,15 @@ ty_board *ty_board_ref(ty_board *board)
 {
     assert(board);
 
-    __atomic_add_fetch(&board->refcount, 1, __ATOMIC_RELAXED);
+    _ty_refcount_increase(&board->refcount);
     return board;
 }
 
 void ty_board_unref(ty_board *board)
 {
     if (board) {
-        if (__atomic_fetch_sub(&board->refcount, 1, __ATOMIC_RELEASE) > 1)
+        if (_ty_refcount_decrease(&board->refcount))
             return;
-        __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
         if (board->tag != board->id)
             free(board->tag);
@@ -536,16 +535,15 @@ ty_board_interface *ty_board_interface_ref(ty_board_interface *iface)
 {
     assert(iface);
 
-    __atomic_add_fetch(&iface->refcount, 1, __ATOMIC_RELAXED);
+    _ty_refcount_increase(&iface->refcount);
     return iface;
 }
 
 void ty_board_interface_unref(ty_board_interface *iface)
 {
     if (iface) {
-        if (__atomic_fetch_sub(&iface->refcount, 1, __ATOMIC_RELEASE) > 1)
+        if (_ty_refcount_decrease(&iface->refcount))
             return;
-        __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
         hs_handle_close(iface->h);
         hs_device_unref(iface->dev);

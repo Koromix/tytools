@@ -347,3 +347,17 @@ static void libhs_log_handler(hs_log_level level, int err, const char *log, void
 
     _ty_message(NULL, TY_MESSAGE_LOG, &msg);
 }
+
+void _ty_refcount_increase(unsigned int *rrefcount)
+{
+    __atomic_add_fetch(rrefcount, 1, __ATOMIC_RELAXED);
+}
+
+unsigned int _ty_refcount_decrease(unsigned int *rrefcount)
+{
+    unsigned int refcount = __atomic_sub_fetch(rrefcount, 1, __ATOMIC_RELEASE);
+    if (refcount)
+        return refcount;
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    return 0;
+}
