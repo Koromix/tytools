@@ -8,7 +8,7 @@
 #include "util.h"
 #include <stdarg.h>
 
-char *strrpbrk(const char *s, const char *accept)
+char *_ty_strrpbrk(const char *s, const char *accept)
 {
     const char *start = s;
 
@@ -26,7 +26,7 @@ char *strrpbrk(const char *s, const char *accept)
 
 #ifndef HAVE_ASPRINTF
 
-int asprintf(char **strp, const char *fmt, ...)
+int _ty_asprintf(char **strp, const char *fmt, ...)
 {
     va_list ap;
     int r;
@@ -38,7 +38,7 @@ int asprintf(char **strp, const char *fmt, ...)
     return r;
 }
 
-int vasprintf(char **strp, const char *fmt, va_list ap)
+int _ty_vasprintf(char **strp, const char *fmt, va_list ap)
 {
     char *s;
     int r;

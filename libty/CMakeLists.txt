@@ -43,8 +43,6 @@ elseif(WIN32)
     list(APPEND TY_SOURCES system_win32.c
                            thread_win32.c
                            timer_win32.c)
-
-    list(APPEND TY_LINK_LIBRARIES setupapi hid)
 elseif(APPLE)
     list(APPEND TY_SOURCES system_posix.c
                            thread_pthread.c
@@ -69,13 +67,20 @@ list(APPEND TY_LINK_LIBRARIES ${HS_LIBRARIES})
 find_package(Threads)
 list(APPEND TY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
-add_library(ty OBJECT ${TY_SOURCES})
-set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)
-add_library(ty_shared SHARED $<TARGET_OBJECTS:ty>)
+if(MSVC)
+    add_library(ty_shared SHARED ${TY_SOURCES})
+    add_library(ty_static STATIC ${TY_SOURCES})
+    target_compile_definitions(ty_static PUBLIC TY_STATIC)
+else()
+    add_library(ty OBJECT ${TY_SOURCES})
+    set_target_properties(ty PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    add_library(ty_shared SHARED $<TARGET_OBJECTS:ty>)
+    add_library(ty_static STATIC $<TARGET_OBJECTS:ty>)
+    set_target_properties(ty_static PROPERTIES OUTPUT_NAME ty)
+endif()
 set_target_properties(ty_shared PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON)
 target_link_libraries(ty_shared ${TY_LINK_LIBRARIES})
-add_library(ty_static STATIC $<TARGET_OBJECTS:ty>)
-set_target_properties(ty_static PROPERTIES OUTPUT_NAME ty CLEAN_DIRECT_OUTPUT ON)
+set_target_properties(ty_static PROPERTIES CLEAN_DIRECT_OUTPUT ON)
 target_link_libraries(ty_static ${TY_LINK_LIBRARIES})
 
 if(WIN32)

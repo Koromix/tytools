@@ -120,10 +120,9 @@ static bool setup_pipes(void)
     return true;
 }
 
-static bool execute_tyqt(LPSTR cmdline, int show, DWORD *ret)
+static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *ret)
 {
     char path[MAX_PATH + 1], *ptr;
-    STARTUPINFO startup;
     PROCESS_INFORMATION proc;
     BOOL success;
 
@@ -135,12 +134,7 @@ static bool execute_tyqt(LPSTR cmdline, int show, DWORD *ret)
     strncpy(ptr, "\\tyqt.exe", (size_t)(path + sizeof(path) - ptr));
     path[MAX_PATH] = 0;
 
-    memset(&startup, 0, sizeof(startup));
-    startup.cb = sizeof(startup);
-    startup.wShowWindow = (WORD)(show & ~SW_SHOWDEFAULT);
-    startup.dwFlags |= STARTF_USESHOWWINDOW;
-
-    success = CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL, &startup, &proc);
+    success = CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL, (STARTUPINFO *)si, &proc);
     if (!success)
         return false;
     CloseHandle(proc.hThread);
@@ -156,17 +150,17 @@ static bool execute_tyqt(LPSTR cmdline, int show, DWORD *ret)
     return true;
 }
 
-int CALLBACK WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
+int main(void)
 {
-    UNUSED(inst);
-    UNUSED(prev);
-    UNUSED(cmdline);
-
+    STARTUPINFO si;
     DWORD ret;
+
+    si.cb = sizeof(si);
+    GetStartupInfo(&si);
 
     if (!setup_pipes())
         goto error;
-    if (!execute_tyqt(GetCommandLine(), show, &ret))
+    if (!execute_tyqt(GetCommandLine(), &si, &ret))
         goto error;
 
     return (int)ret;

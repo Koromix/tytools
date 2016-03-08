@@ -26,6 +26,9 @@ set(TYQT_SOURCES about_dialog.cc
                  session_channel.cc
                  task.cc
                  tyqt.cc)
+if(MSVC)
+    list(APPEND TYQT_SOURCES "${CMAKE_SOURCE_DIR}/contrib/msvc/getopt.c")
+endif()
 set(TYQT_FORMS about_dialog.ui
                arduino_dialog.ui
                log_window.ui

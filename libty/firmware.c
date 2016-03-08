@@ -97,16 +97,15 @@ ty_firmware *ty_firmware_ref(ty_firmware *fw)
 {
     assert(fw);
 
-    __atomic_fetch_add(&fw->refcount, 1, __ATOMIC_RELAXED);
+    _ty_refcount_increase(&fw->refcount);
     return fw;
 }
 
 void ty_firmware_unref(ty_firmware *fw)
 {
     if (fw) {
-        if (__atomic_fetch_sub(&fw->refcount, 1, __ATOMIC_RELEASE) > 1)
+        if (_ty_refcount_decrease(&fw->refcount))
             return;
-        __atomic_thread_fence(__ATOMIC_ACQUIRE);
 
         free(fw->image);
         free(fw->name);

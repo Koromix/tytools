@@ -50,15 +50,19 @@
     #endif
 #endif
 
-char *strrpbrk(const char *s, const char *accept);
+char *_hs_strrpbrk(const char *s, const char *accept);
+#define strrpbrk _hs_strrpbrk
 
 #ifndef HAVE_STPCPY
-char *stpcpy(char *dest, const char *src);
+char *_hs_stpcpy(char *dest, const char *src);
+    #define stpcpy _hs_stpcpy
 #endif
 
 #ifndef HAVE_ASPRINTF
-int asprintf(char **strp, const char *fmt, ...) HS_PRINTF_FORMAT(2, 3);
-int vasprintf(char **strp, const char *fmt, va_list ap);
+int _hs_asprintf(char **strp, const char *fmt, ...) HS_PRINTF_FORMAT(2, 3);
+    #define asprintf _hs_asprintf
+int _hs_vasprintf(char **strp, const char *fmt, va_list ap);
+    #define vasprintf _hs_vasprintf
 #endif
 
 #endif

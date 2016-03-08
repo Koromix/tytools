@@ -9,10 +9,11 @@
 #include <QDataStream>
 #include <QDir>
 
-#include <unistd.h>
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
+#else
+    #include <unistd.h>
 #endif
 
 #include "ty/common.h"

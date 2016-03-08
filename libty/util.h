@@ -13,8 +13,10 @@
 #else
     /* This file is used when building with qmake, otherwise CMake detects
        these features. */
-    #if defined(_WIN32)
+    #if defined(__MINGW32__)
         #define HAVE_ASPRINTF
+    #elif defined(_MSC_VER)
+        /* #undef HAVE_ASPRINTF */
     #elif defined(__APPLE__)
         #define HAVE_ASPRINTF
         #define HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
@@ -32,5 +34,8 @@
 void _ty_message(struct ty_task *task, ty_message_type type, const void *data);
 
 int _ty_libhs_translate_error(int err);
+
+void _ty_refcount_increase(unsigned int *rrefcount);
+unsigned int _ty_refcount_decrease(unsigned int *rrefcount);
 
 #endif

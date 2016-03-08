@@ -22,9 +22,6 @@
  * THE SOFTWARE.
  */
 
-#define _CRT_SECURE_NO_WARNINGS
-#define __USE_MINGW_ANSI_STDIO 1
-
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>

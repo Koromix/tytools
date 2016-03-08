@@ -25,13 +25,6 @@
 #ifndef _HS_UTIL_H
 #define _HS_UTIL_H
 
-// Disable MSVC's stupid deprecation warnings
-#define _CRT_SECURE_NO_WARNINGS
-#define _CRT_NONSTDC_NO_DEPRECATE
-
-// Avoid msvcrt's limited versions of printf/scanf functions
-#define __USE_MINGW_ANSI_STDIO 1
-
 #include "hs/common.h"
 #include "compat.h"
 #include <assert.h>

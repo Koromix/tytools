@@ -18,14 +18,23 @@ struct ty_task {
 typedef int init_func(void);
 typedef void release_func(void);
 
-#ifdef __APPLE__
-    extern init_func *start_TY_INIT __asm__("section$start$__DATA$TY_INIT");
-    extern init_func *stop_TY_INIT __asm__("section$end$__DATA$TY_INIT");
-    extern release_func *start_TY_RELEASE __asm__("section$start$__DATA$TY_RELEASE");
-    extern release_func *stop_TY_RELEASE __asm__("section$end$__DATA$TY_RELEASE");
+#if defined(_MSC_VER)
+__pragma(section(".TY_INIT$a", read))
+__pragma(section(".TY_INIT$z", read))
+__declspec(allocate(".TY_INIT$a")) init_func *start_TY_INIT = 0;
+__declspec(allocate(".TY_INIT$z")) init_func *stop_TY_INIT = 0;
+__pragma(section(".TY_RELEASE$a", read))
+__pragma(section(".TY_RELEASE$z", read))
+__declspec(allocate(".TY_RELEASE$a")) release_func *start_TY_RELEASE = 0;
+__declspec(allocate(".TY_RELEASE$z")) release_func *stop_TY_RELEASE   = 0;
+#elif defined(__APPLE__)
+extern init_func *start_TY_INIT __asm__("section$start$__DATA$TY_INIT");
+extern init_func *stop_TY_INIT __asm__("section$end$__DATA$TY_INIT");
+extern release_func *start_TY_RELEASE __asm__("section$start$__DATA$TY_RELEASE");
+extern release_func *stop_TY_RELEASE __asm__("section$end$__DATA$TY_RELEASE");
 #else
-    extern init_func *__start_TY_INIT[], *__stop_TY_INIT[];
-    extern release_func *__start_TY_RELEASE[], *__stop_TY_RELEASE[];
+extern init_func *__start_TY_INIT[], *__stop_TY_INIT[];
+extern release_func *__start_TY_RELEASE[], *__stop_TY_RELEASE[];
 #endif
 
 ty_log_level ty_config_quiet = TY_LOG_INFO;
@@ -34,10 +43,10 @@ bool ty_config_experimental = false;
 static ty_message_func *handler = ty_message_default_handler;
 static void *handler_udata = NULL;
 
-static __thread ty_err mask[16];
-static __thread unsigned int mask_count;
+static TY_THREAD_LOCAL ty_err mask[16];
+static TY_THREAD_LOCAL unsigned int mask_count;
 
-static __thread char last_error_msg[256];
+static TY_THREAD_LOCAL char last_error_msg[256];
 
 static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 TY_INIT()
@@ -64,14 +73,17 @@ TY_RELEASE()
 
 int ty_init(void)
 {
-#ifdef __APPLE__
+#if defined(_MSC_VER) || defined(__APPLE__)
     for (init_func **cur = &start_TY_INIT; cur < &stop_TY_INIT; cur++) {
 #else
     for (init_func **cur = __start_TY_INIT; cur < __stop_TY_INIT; cur++) {
 #endif
-        int r = (*cur)();
-        if (r < 0)
-            return r;
+        // There may be NULL padding around our function pointers (at least with MSVC)
+        if (*cur) {
+            int r = (*cur)();
+            if (r < 0)
+                return r;
+        }
     }
 
     return 0;
@@ -79,12 +91,13 @@ int ty_init(void)
 
 void ty_release(void)
 {
-#ifdef __APPLE__
+#if defined(_MSC_VER) || defined(__APPLE__)
     for (release_func **cur = &start_TY_RELEASE; cur < &stop_TY_RELEASE; cur++)
 #else
     for (release_func **cur = __start_TY_RELEASE; cur < __stop_TY_RELEASE; cur++)
 #endif
-        (*cur)();
+        if (*cur)
+            (*cur)();
 }
 
 static void print_log(const void *data)
@@ -282,7 +295,7 @@ void ty_progress(const char *action, unsigned int value, unsigned int max)
 
     ty_progress_message msg;
 
-    msg.action = action ?: "Processing";
+    msg.action = action ? action : "Processing";
     msg.value = value;
     msg.max = max;
 
@@ -346,4 +359,26 @@ static void libhs_log_handler(hs_log_level level, int err, const char *log, void
     msg.msg = log;
 
     _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+}
+
+void _ty_refcount_increase(unsigned int *rrefcount)
+{
+#ifdef _MSC_VER
+    InterlockedIncrement(rrefcount);
+#else
+    __atomic_add_fetch(rrefcount, 1, __ATOMIC_RELAXED);
+#endif
+}
+
+unsigned int _ty_refcount_decrease(unsigned int *rrefcount)
+{
+#ifdef _MSC_VER
+    return InterlockedDecrement(rrefcount);
+#else
+    unsigned int refcount = __atomic_sub_fetch(rrefcount, 1, __ATOMIC_RELEASE);
+    if (refcount)
+        return refcount;
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    return 0;
+#endif
 }

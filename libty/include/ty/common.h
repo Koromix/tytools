@@ -8,9 +8,6 @@
 #ifndef TY_COMMON_H
 #define TY_COMMON_H
 
-// Avoid msvcrt's limited versions of printf/scanf functions
-#define __USE_MINGW_ANSI_STDIO 1
-
 #ifdef _WIN32
     #include <malloc.h>
 #else
@@ -44,6 +41,8 @@ TY_C_BEGIN
         #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
     #endif
 
+    #define TY_THREAD_LOCAL __thread
+
     #ifdef __APPLE__
         #define TY_INIT() \
             static int TY_UNIQUE_ID(init_)(void); \
@@ -67,6 +66,42 @@ TY_C_BEGIN
                 = &TY_UNIQUE_ID(release_); \
             static void TY_UNIQUE_ID(release_)(void)
     #endif
+#elif _MSC_VER >= 1900
+    #if defined(TY_STATIC)
+        #define TY_PUBLIC
+    #elif defined(TY_UTIL_H)
+        #define TY_PUBLIC __declspec(dllexport)
+    #else
+        #define TY_PUBLIC __declspec(dllimport)
+    #endif
+    #define TY_POSSIBLY_UNUSED
+    #define TY_PRINTF_FORMAT(fmt, first)
+
+    #define TY_THREAD_LOCAL __declspec(thread)
+
+    #define TY_INIT() \
+        static int TY_UNIQUE_ID(init_)(void); \
+        __pragma(section(".TY_INIT$u", read)) \
+        __declspec(allocate(".TY_INIT$u")) int (*TY_UNIQUE_ID(init_ptr_))(void) = TY_UNIQUE_ID(init_); \
+        static int __cdecl TY_UNIQUE_ID(init_)(void)
+    #define TY_RELEASE() \
+        static void __cdecl TY_UNIQUE_ID(release_)(void); \
+        __pragma(section(".TY_RELEASE$u", read)) \
+        __declspec(allocate(".TY_RELEASE$u")) void (*TY_UNIQUE_ID(release_ptr_))(void) = TY_UNIQUE_ID(release_); \
+        static void __cdecl TY_UNIQUE_ID(release_)(void)
+
+    // HAVE_SSIZE_T is used this way by other projects
+    #ifndef HAVE_SSIZE_T
+        #define HAVE_SSIZE_T
+        #ifdef _WIN64
+typedef __int64 ssize_t;
+        #else
+typedef long ssize_t;
+        #endif
+    #endif
+
+    #define strcasecmp _stricmp
+    #define strncasecmp _strnicmp
 #else
     #error "This compiler is not supported"
 #endif
