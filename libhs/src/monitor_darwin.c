@@ -78,18 +78,6 @@ static struct device_class device_classes[] = {
     {NULL}
 };
 
-static pthread_mutex_t controllers_lock = PTHREAD_MUTEX_INITIALIZER;
-static _HS_LIST(controllers);
-
-_HS_EXIT()
-{
-    _hs_list_foreach(cur, &controllers) {
-        struct usb_controller *controller = _hs_container_of(cur, struct usb_controller, list);
-        free(controller);
-    }
-    pthread_mutex_destroy(&controllers_lock);
-}
-
 static bool uses_new_stack()
 {
     static bool init, new_stack;
@@ -136,28 +124,6 @@ static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, c
 
     *rs = s;
     r = 1;
-cleanup:
-    if (data)
-        CFRelease(data);
-    return r;
-}
-
-static ssize_t get_ioregistry_value_data(io_service_t service, CFStringRef prop, uint8_t *buf, size_t size)
-{
-    CFTypeRef data;
-    ssize_t r;
-
-    data = IORegistryEntryCreateCFProperty(service, prop, kCFAllocatorDefault, 0);
-    if (!data || CFGetTypeID(data) != CFDataGetTypeID()) {
-        r = 0;
-        goto cleanup;
-    }
-
-    r = (ssize_t)CFDataGetLength(data);
-    if (r > (ssize_t)size)
-        r = (ssize_t)size;
-    CFDataGetBytes(data, CFRangeMake(0, (CFIndex)r), buf);
-
 cleanup:
     if (data)
         CFRelease(data);
@@ -265,29 +231,6 @@ static int build_location_string(uint8_t ports[], unsigned int depth, char **rpa
     return 0;
 }
 
-static uint8_t find_controller(io_service_t service)
-{
-    io_string_t path;
-    kern_return_t kret;
-    uint8_t index;
-
-    kret = IORegistryEntryGetPath(service, correct_class(kIOServicePlane, kIOUSBPlane), path);
-    if (kret != kIOReturnSuccess)
-        return 0;
-
-    index = 0;
-    _hs_list_foreach(cur, &controllers) {
-        struct usb_controller *controller = _hs_container_of(cur, struct usb_controller, list);
-
-        if (strcmp(controller->path, path) == 0) {
-            index = controller->index;
-            break;
-        }
-    }
-
-    return index;
-}
-
 static io_service_t get_parent_and_release(io_service_t service, const io_name_t plane)
 {
     io_service_t parent;
@@ -303,58 +246,28 @@ static io_service_t get_parent_and_release(io_service_t service, const io_name_t
 
 static int resolve_device_location(io_service_t service, char **rlocation)
 {
+    uint32_t location_id;
     uint8_t ports[16];
     unsigned int depth = 0;
     int r;
 
-    IOObjectRetain(service);
-
-    do {
-        if (uses_new_stack()) {
-            depth += !!get_ioregistry_value_data(service, CFSTR("port"), &ports[depth], sizeof(ports[depth]));
-        } else {
-            depth += get_ioregistry_value_number(service, CFSTR("PortNum"), kCFNumberSInt8Type, &ports[depth]);
-        }
-
-        if (depth == _HS_COUNTOF(ports)) {
-            hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
-            r = 0;
-            goto cleanup;
-        }
-
-        service = get_parent_and_release(service, correct_class(kIOServicePlane, kIOUSBPlane));
-    } while (service && !IOObjectConformsTo(service, correct_class("AppleUSBHostController", "IOUSBRootHubDevice")));
-
-    if (!depth) {
-        hs_log(HS_LOG_WARNING, "Failed to build USB device location string, ignoring");
-        r = 0;
-        goto cleanup;
+    r = get_ioregistry_value_number(service, CFSTR("locationID"), kCFNumberSInt32Type, &location_id);
+    if (!r) {
+        hs_log(HS_LOG_WARNING, "Ignoring device without 'locationID' property");
+        return 0;
     }
 
-    ports[depth] = find_controller(service);
-    if (!ports[depth]) {
-        hs_log(HS_LOG_WARNING, "Cannot find matching USB Host controller, ignoring device");
-        r = 0;
-        goto cleanup;
-    }
-    depth++;
-
-    for (unsigned int i = 0; i < depth / 2; i++) {
-        uint8_t tmp = ports[i];
-
-        ports[i] = ports[depth - i - 1];
-        ports[depth - i - 1] = tmp;
+    for (depth = 0; depth <= 5; depth++) {
+        ports[depth] = (location_id >> (24 - depth * 4)) & 0xF;
+        if (!ports[depth])
+            break;
     }
 
     r = build_location_string(ports, depth, rlocation);
     if (r < 0)
-        goto cleanup;
+        return r;
 
-    r = 1;
-cleanup:
-    if (service)
-        IOObjectRelease(service);
-    return r;
+    return 1;
 }
 
 static io_service_t find_conforming_parent(io_service_t service, const char *cls)
@@ -510,75 +423,6 @@ static void darwin_devices_detached(void *udata, io_iterator_t it)
     }
 }
 
-static int add_controller(io_service_t service, uint8_t index)
-{
-    io_name_t path;
-    struct usb_controller *controller;
-    kern_return_t kret;
-
-    kret = IORegistryEntryGetPath(service, correct_class(kIOServicePlane, kIOUSBPlane), path);
-    if (kret != kIOReturnSuccess) {
-        hs_log(HS_LOG_WARNING, "IORegistryEntryGetPath() failed: %d", kret);
-        return 0;
-    }
-
-    controller = calloc(1, sizeof(*controller));
-    if (!controller)
-        return hs_error(HS_ERROR_MEMORY, NULL);
-
-    controller->index = index;
-    strcpy(controller->path, path);
-
-    _hs_list_add(&controllers, &controller->list);
-
-    return 1;
-}
-
-static int populate_controllers(void)
-{
-    io_iterator_t it = 0;
-    io_service_t service;
-    kern_return_t kret;
-    int r;
-
-    pthread_mutex_lock(&controllers_lock);
-
-    if (!_hs_list_is_empty(&controllers)) {
-        r = 0;
-        goto cleanup;
-    }
-
-    kret = IOServiceGetMatchingServices(kIOMasterPortDefault,
-                                        IOServiceMatching(correct_class("AppleUSBHostController", "IOUSBRootHubDevice")),
-                                        &it);
-    if (kret != kIOReturnSuccess) {
-        r = hs_error(HS_ERROR_SYSTEM, "IOServiceGetMatchingServices() failed");
-        goto cleanup;
-    }
-
-    uint8_t index = 0;
-    while ((service = IOIteratorNext(it))) {
-        if (index == UINT8_MAX) {
-            hs_log(HS_LOG_WARNING, "Reached maximum controller ID %d, ignoring", UINT8_MAX);
-            break;
-        }
-
-        r = add_controller(service, ++index);
-        IOObjectRelease(service);
-        if (r < 0)
-            goto cleanup;
-    }
-
-    r = 0;
-cleanup:
-    pthread_mutex_unlock(&controllers_lock);
-    if (it) {
-        clear_iterator(it);
-        IOObjectRelease(it);
-    }
-    return r;
-}
-
 int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata)
 {
     assert(f);
@@ -589,10 +433,6 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
     int r;
 
     r = _hs_filter_init(&filter, matches, count);
-    if (r < 0)
-        goto cleanup;
-
-    r = populate_controllers();
     if (r < 0)
         goto cleanup;
 
@@ -652,10 +492,6 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     const struct timespec ts = {0};
     kern_return_t kret;
     int r;
-
-    r = populate_controllers();
-    if (r < 0)
-        goto error;
 
     monitor = calloc(1, sizeof(*monitor));
     if (!monitor) {
