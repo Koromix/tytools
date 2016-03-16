@@ -248,7 +248,7 @@ static int resolve_device_location(io_service_t service, char **rlocation)
 {
     uint32_t location_id;
     uint8_t ports[16];
-    unsigned int depth = 0;
+    unsigned int depth;
     int r;
 
     r = get_ioregistry_value_number(service, CFSTR("locationID"), kCFNumberSInt32Type, &location_id);
@@ -257,11 +257,9 @@ static int resolve_device_location(io_service_t service, char **rlocation)
         return 0;
     }
 
-    for (depth = 0; depth <= 5; depth++) {
-        ports[depth] = (location_id >> (24 - depth * 4)) & 0xF;
-        if (!ports[depth])
-            break;
-    }
+    ports[0] = location_id >> 24;
+    for (depth = 0; depth <= 5 && ports[depth]; depth++)
+        ports[depth + 1] = (location_id >> (20 - depth * 4)) & 0xF;
 
     r = build_location_string(ports, depth, rlocation);
     if (r < 0)
