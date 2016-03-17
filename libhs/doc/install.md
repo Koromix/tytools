@@ -105,7 +105,7 @@ You can then use the appropriate toolchain file provided in the cmake directory.
 directory in a console and execute:
 ~~~~~~~~~~~~~~~~~~{.sh}
 mkdir -p build/win32 && cd build/win32
-cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/i686-w64-mingw32.cmake ../..
+cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/i686-w64-mingw32.cmake ../..
 make
 ~~~~~~~~~~~~~~~~~~
 
@@ -117,12 +117,12 @@ Open a terminal and load the OSX environment (using osxcross-env). Go to the pro
 and execute:
 ~~~~~~~~~~~~~~~~~~{.sh}
 mkdir -p build/darwin && cd build/darwin
-cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/x86_64-darwin-clang.cmake ../..
+cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake ../..
 make
 ~~~~~~~~~~~~~~~~~~
 
 You can also make universal binaries under Linux. To build one with i386 and x86_64
 binaries, use:
 ~~~~~~~~~~~~~~~~~~{.sh}
-cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/x86_64-darwin-clang.cmake -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ../..
+cmake -DCMAKE_TOOLCHAIN_FILE=../../contrib/cmake/x86_64-darwin-clang.cmake -DCMAKE_OSX_ARCHITECTURES="i386;x86_64" ../..
 ~~~~~~~~~~~~~~~~~~

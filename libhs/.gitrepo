@@ -6,6 +6,6 @@
 [subrepo]
 	remote = https://github.com/Koromix/libhs.git
 	branch = master
-	commit = bcc70f3e4cc4d862515de72b918230a9b6c72dc2
-	parent = a61c86dd13a698cf361d07f64e9325bcda3b5173
-	cmdver = 0.2.3
+	commit = bc2f23cf434c6d7e54ccdc8cc9a6217fc19b2653
+	parent = a2b81f51f6225e197f772817a2d53602348b9190
+	cmdver = 0.3.0

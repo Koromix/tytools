@@ -23,7 +23,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(libhs C)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/contrib/cmake")
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     set(CMAKE_COMPILER_IS_CLANG 1)
