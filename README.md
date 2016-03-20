@@ -1,7 +1,8 @@
 ![TyQt Logo](/tyqt/images/banner.png)
 
 TyQt can help you track and monitor your Teensy devices. It runs on Linux, Windows and Mac OS X.
-You can download binaries in the [release section](https://github.com/Koromix/ty/releases).
+
+Download the [latest release from GitHub](https://github.com/Koromix/ty/releases). You can find development [builds on BinTray](https://bintray.com/koromix/ty/ty/view#files).
 
 There is also a command-line version called `tyc` which does not depend on Qt and provides similar
 features. It is packaged with TyQt in the release files.
