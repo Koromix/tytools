@@ -141,7 +141,7 @@ void TyQt::openMainWindow()
     auto win = new MainWindow(&monitor_);
     win->setAttribute(Qt::WA_DeleteOnClose);
 
-    connect(this, &TyQt::errorMessage, win, &MainWindow::showErrorMessage);
+    connect(this, &TyQt::globalError, win, &MainWindow::showErrorMessage);
 
     win->show();
 }
@@ -166,7 +166,12 @@ void TyQt::openLogWindow()
 
 void TyQt::reportError(const QString &msg)
 {
-    emit errorMessage(msg);
+    emit globalError(msg);
+}
+
+void TyQt::reportDebug(const QString &msg)
+{
+    emit globalDebug(msg);
 }
 
 void TyQt::setVisible(bool visible)
@@ -358,8 +363,11 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
         if (type == TY_MESSAGE_LOG) {
             auto print = static_cast<const ty_log_message *>(data);
-            if (print->level >= TY_LOG_WARNING)
+            if (print->level >= TY_LOG_WARNING) {
                 tyQt->reportError(print->msg);
+            } else {
+                tyQt->reportDebug(print->msg);
+            }
         }
     }, nullptr);
 
@@ -368,7 +376,8 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
     log_window_ = unique_ptr<LogWindow>(new LogWindow());
     log_window_->setAttribute(Qt::WA_QuitOnClose, false);
-    connect(this, &TyQt::errorMessage, log_window_.get(), &LogWindow::appendLog);
+    connect(this, &TyQt::globalError, log_window_.get(), &LogWindow::appendError);
+    connect(this, &TyQt::globalDebug, log_window_.get(), &LogWindow::appendDebug);
 
     tray_icon_.show();
     openMainWindow();

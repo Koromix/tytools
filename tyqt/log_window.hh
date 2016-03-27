@@ -17,7 +17,9 @@ public:
     LogWindow(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
 
 public slots:
-    void appendLog(const QString &log);
+    void appendError(const QString &msg);
+    void appendDebug(const QString &msg);
+    void clearAll();
 
 private:
     void keyPressEvent(QKeyEvent *e);

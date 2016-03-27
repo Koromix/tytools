@@ -88,11 +88,13 @@ public slots:
     void openLogWindow();
 
     void reportError(const QString &msg);
+    void reportDebug(const QString &msg);
 
     void setVisible(bool visible);
 
 signals:
-    void errorMessage(const QString &msg);
+    void globalError(const QString &msg);
+    void globalDebug(const QString &msg);
 
 private:
     void loadSettings(const QString &name, SettingsDatabase &db);

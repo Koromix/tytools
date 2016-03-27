@@ -15,14 +15,28 @@ LogWindow::LogWindow(QWidget *parent, Qt::WindowFlags f)
     setupUi(this);
 
     connect(closeButton, &QPushButton::clicked, this, &LogWindow::close);
-    connect(clearButton, &QPushButton::clicked, logText, &QPlainTextEdit::clear);
-    connect(logText, &QPlainTextEdit::customContextMenuRequested, this,
+    connect(clearButton, &QPushButton::clicked, this, &LogWindow::clearAll);
+    connect(errorLogText, &QPlainTextEdit::customContextMenuRequested, this,
+            &LogWindow::showLogContextMenu);
+    connect(fullLogText, &QPlainTextEdit::customContextMenuRequested, this,
             &LogWindow::showLogContextMenu);
 }
 
-void LogWindow::appendLog(const QString &log)
+void LogWindow::appendError(const QString &msg)
 {
-    logText->appendPlainText(log);
+    errorLogText->appendPlainText(msg);
+    fullLogText->appendPlainText(msg);
+}
+
+void LogWindow::appendDebug(const QString &msg)
+{
+    fullLogText->appendPlainText(msg);
+}
+
+void LogWindow::clearAll()
+{
+    errorLogText->clear();
+    fullLogText->clear();
 }
 
 void LogWindow::keyPressEvent(QKeyEvent *e)
@@ -33,8 +47,10 @@ void LogWindow::keyPressEvent(QKeyEvent *e)
 
 void LogWindow::showLogContextMenu(const QPoint &pos)
 {
-    auto menu = logText->createStandardContextMenu();
-
-    menu->addAction(tr("Clear"), logText, SLOT(clear()));
-    menu->exec(logText->viewport()->mapToGlobal(pos));
+    auto edit = qobject_cast<QPlainTextEdit *>(sender());
+    auto menu = edit->createStandardContextMenu();
+    if (menu) {
+        menu->addAction(tr("Clear"), edit, SLOT(clear()));
+        menu->exec(edit->viewport()->mapToGlobal(pos));
+    }
 }
