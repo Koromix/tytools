@@ -485,11 +485,12 @@
      <string>&amp;Tools</string>
     </property>
     <addaction name="actionArduinoTool"/>
+    <addaction name="actionOpenLog"/>
     <addaction name="separator"/>
     <addaction name="actionResetApp"/>
     <addaction name="actionResetSettingsApp"/>
     <addaction name="separator"/>
-    <addaction name="actionOpenLog"/>
+    <addaction name="actionPreferences"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -707,6 +708,14 @@
   <action name="actionDropFirmware">
    <property name="text">
     <string>&amp;Drop firmware association</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>&amp;Preferences</string>
+   </property>
+   <property name="toolTip">
+    <string>Preferences</string>
    </property>
   </action>
  </widget>

@@ -61,6 +61,7 @@ public slots:
 
     void openArduinoTool();
     void resetAppSettingsWithConfirmation();
+    void openPreferences();
     void openAboutDialog();
 
     void sendMonitorInput();

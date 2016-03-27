@@ -57,6 +57,8 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QString status_firmware_;
     QStringList recent_firmwares_;
 
+    ty_pool *pool_ = nullptr;
+
     TaskInterface running_task_;
     TaskWatcher task_watcher_;
 
@@ -154,6 +156,8 @@ private slots:
 
 private:
     Board(ty_board *board, QObject *parent = nullptr);
+
+    void setThreadPool(ty_pool *pool) { pool_ = pool; }
 
     void refreshBoard();
     bool openSerialInterface();

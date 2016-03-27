@@ -12,13 +12,44 @@
 #include "database.hh"
 #include "descriptor_notifier.hh"
 #include "monitor.hh"
+#include "ty/task.h"
 
 using namespace std;
+
+Monitor::Monitor(QObject *parent)
+    : QAbstractListModel(parent)
+{
+    int r = ty_pool_new(&pool_);
+    if (r < 0)
+        throw bad_alloc();
+
+    loadSettings();
+}
 
 Monitor::~Monitor()
 {
     stop();
+
+    ty_pool_free(pool_);
     ty_monitor_free(monitor_);
+}
+
+void Monitor::loadSettings()
+{
+    ty_pool_set_max_threads(pool_, db_.get("maxTasks", 8).toUInt());
+}
+
+void Monitor::setMaxTasks(unsigned int max_tasks)
+{
+    ty_pool_set_max_threads(pool_, max_tasks);
+
+    db_.put("maxTasks", max_tasks);
+    emit settingsChanged();
+}
+
+unsigned int Monitor::maxTasks() const
+{
+    return ty_pool_get_max_threads(pool_);
 }
 
 bool Monitor::start()
@@ -229,6 +260,7 @@ void Monitor::handleAddedEvent(ty_board *board)
     ptr->setDatabase(db_.subDatabase(ptr->id()));
     ptr->loadSettings();
 
+    ptr->setThreadPool(pool_);
     ptr->serial_notifier_.moveToThread(&serial_thread_);
 
     connect(ptr.get(), &Board::infoChanged, this, [=]() {

@@ -32,6 +32,11 @@ typedef void ty_task_cleanup_func(void *ptr);
 TY_PUBLIC int ty_pool_new(ty_pool **rpool);
 TY_PUBLIC void ty_pool_free(ty_pool *pool);
 
+TY_PUBLIC int ty_pool_set_max_threads(ty_pool *pool, unsigned int max);
+TY_PUBLIC unsigned int ty_pool_get_max_threads(ty_pool *pool);
+TY_PUBLIC void ty_pool_set_idle_timeout(ty_pool *pool, int timeout);
+TY_PUBLIC int ty_pool_get_idle_timeout(ty_pool *pool);
+
 TY_PUBLIC int ty_pool_get_default(ty_pool **rpool);
 
 TY_PUBLIC ty_task *ty_task_ref(ty_task *task);

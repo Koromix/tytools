@@ -19,6 +19,7 @@
 #include "commands.hh"
 #include "main_window.hh"
 #include "monitor.hh"
+#include "preferences_dialog.hh"
 #include "tyqt.hh"
 
 using namespace std;
@@ -74,10 +75,11 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
 
     // Tools menu
     connect(actionArduinoTool, &QAction::triggered, this, &MainWindow::openArduinoTool);
+    connect(actionOpenLog, &QAction::triggered, tyQt, &TyQt::openLogWindow);
     connect(actionResetApp, &QAction::triggered, tyQt, &TyQt::resetMonitor);
     connect(actionResetSettingsApp, &QAction::triggered, this,
             &MainWindow::resetAppSettingsWithConfirmation);
-    connect(actionOpenLog, &QAction::triggered, tyQt, &TyQt::openLogWindow);
+    connect(actionPreferences, &QAction::triggered, this, &MainWindow::openPreferences);
 
     // About menu
     connect(actionWebsite, &QAction::triggered, &AboutDialog::openWebsite);
@@ -280,6 +282,11 @@ void MainWindow::resetAppSettingsWithConfirmation()
 
     tyQt->clearConfig();
     tyQt->resetMonitor();
+}
+
+void MainWindow::openPreferences()
+{
+    PreferencesDialog(this).exec();
 }
 
 void MainWindow::openAboutDialog()

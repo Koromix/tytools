@@ -273,6 +273,7 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
     r = ty_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TY_UPLOAD_NORESET, &task);
     if (r < 0)
         return watchTask(make_task<FailedTask>(ty_error_last_message()));
+    ty_task_set_pool(task, pool_);
 
     auto task2 = make_task<TyTask>(task);
     watchTask(task2);
@@ -293,6 +294,7 @@ TaskInterface Board::reset()
     r = ty_reset(board_, &task);
     if (r < 0)
         return watchTask(make_task<FailedTask>(ty_error_last_message()));
+    ty_task_set_pool(task, pool_);
 
     return watchTask(make_task<TyTask>(task));
 }
@@ -305,6 +307,7 @@ TaskInterface Board::reboot()
     r = ty_reboot(board_, &task);
     if (r < 0)
         return watchTask(make_task<FailedTask>(ty_error_last_message()));
+    ty_task_set_pool(task, pool_);
 
     return watchTask(make_task<TyTask>(task));
 }

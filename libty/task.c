@@ -89,7 +89,7 @@ void ty_pool_free(ty_pool *pool)
                 ty_task_unref(task);
             }
             ty_list_init(&pool->pending_tasks);
-            pool->unused_timeout = 0;
+            pool->max_threads = 0;
             ty_cond_broadcast(&pool->pending_cond);
 
             /* This is a signal for worker threads to stop detaching themselves and
@@ -111,6 +111,60 @@ void ty_pool_free(ty_pool *pool)
     }
 
     free(pool);
+}
+
+static int start_thread(ty_pool *pool);
+int ty_pool_set_max_threads(ty_pool *pool, unsigned int max)
+{
+    assert(pool);
+
+    int r;
+
+    ty_mutex_lock(&pool->mutex);
+
+    if (max > pool->max_threads) {
+        ty_list_foreach(cur, &pool->pending_tasks) {
+            if (pool->started >= max)
+                break;
+
+            r = start_thread(pool);
+            if (r < 0) {
+                if (pool->started)
+                    r = 0;
+                goto cleanup;
+            }
+        }
+    } else {
+        ty_cond_broadcast(&pool->pending_cond);
+    }
+    pool->max_threads = max;
+
+    r = 0;
+cleanup:
+    ty_mutex_unlock(&pool->mutex);
+    return r;
+}
+
+unsigned int ty_pool_get_max_threads(ty_pool *pool)
+{
+    assert(pool);
+    return pool->max_threads;
+}
+
+void ty_pool_set_idle_timeout(ty_pool *pool, int timeout)
+{
+    assert(pool);
+
+    ty_mutex_lock(&pool->mutex);
+    pool->unused_timeout = timeout;
+    ty_cond_broadcast(&pool->pending_cond);
+    ty_mutex_unlock(&pool->mutex);
+}
+
+int ty_pool_get_idle_timeout(ty_pool *pool)
+{
+    assert(pool);
+    return pool->unused_timeout;
 }
 
 static void cleanup_default_pool(void)
@@ -264,6 +318,8 @@ static int task_thread(void *udata)
         run = true;
         start = ty_millis();
         while (true) {
+            if (pool->started > pool->max_threads)
+                goto timeout;
             task = ty_list_get_first(&pool->pending_tasks, ty_task, list);
             if (task) {
                 ty_list_remove(&task->list);
