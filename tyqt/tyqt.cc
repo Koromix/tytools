@@ -373,6 +373,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
     loadSettings("boards", monitor_db_);
     monitor_.setDatabase(&monitor_db_);
+    monitor_.loadSettings();
 
     log_window_ = unique_ptr<LogWindow>(new LogWindow());
     log_window_->setAttribute(Qt::WA_QuitOnClose, false);

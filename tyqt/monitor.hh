@@ -20,6 +20,7 @@
 
 class Board;
 struct ty_board;
+struct ty_pool;
 
 class Monitor : public QAbstractListModel {
     Q_OBJECT
@@ -30,6 +31,7 @@ class Monitor : public QAbstractListModel {
     ty_monitor *monitor_ = nullptr;
     DescriptorNotifier monitor_notifier_;
 
+    ty_pool *pool_;
     QThread serial_thread_;
 
     std::vector<std::shared_ptr<Board>> boards_;
@@ -38,12 +40,15 @@ public:
     typedef decltype(boards_)::iterator iterator;
     typedef decltype(boards_)::const_iterator const_iterator;
 
-    Monitor(QObject *parent = nullptr)
-        : QAbstractListModel(parent) {}
+    Monitor(QObject *parent = nullptr);
     virtual ~Monitor();
 
     void setDatabase(DatabaseInterface db) { db_ = db; }
     DatabaseInterface database() const { return db_; }
+    void loadSettings();
+
+    void setMaxTasks(unsigned int max_tasks);
+    unsigned int maxTasks() const;
 
     bool start();
     void stop();
@@ -70,6 +75,8 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
 signals:
+    void settingsChanged();
+
     void boardAdded(Board *board);
 
 private slots:
