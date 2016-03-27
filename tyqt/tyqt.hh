@@ -94,7 +94,7 @@ public:
     int fakeAvrdudeUpload(int argc, char *argv[]);
 
     void resetMonitor();
-    void clearConfig();
+    void clearSettingsAndReset();
 
 public slots:
     void openMainWindow(bool show = true);

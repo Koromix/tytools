@@ -594,9 +594,15 @@ void TyQt::resetMonitor()
     monitor_.start();
 }
 
-void TyQt::clearConfig()
+void TyQt::clearSettingsAndReset()
 {
+    tyqt_db_.clear();
+    loadSettings();
+
     monitor_db_.clear();
+    monitor_.loadSettings();
+    monitor_.stop();
+    monitor_.start();
 }
 
 void TyQt::initDatabase(const QString &name, SettingsDatabase &db)

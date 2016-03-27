@@ -280,8 +280,7 @@ void MainWindow::resetAppSettingsWithConfirmation()
     if (msgbox.clickedButton() != reset)
         return;
 
-    tyQt->clearConfig();
-    tyQt->resetMonitor();
+    tyQt->clearSettingsAndReset();
 }
 
 void MainWindow::openPreferences()
