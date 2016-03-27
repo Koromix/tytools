@@ -7,7 +7,6 @@
 
 #include <QDesktopServices>
 #include <QFileDialog>
-#include <QMessageBox>
 #include <QScrollBar>
 #include <QToolButton>
 #include <QUrl>
@@ -78,7 +77,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(actionOpenLog, &QAction::triggered, tyQt, &TyQt::openLogWindow);
     connect(actionResetApp, &QAction::triggered, tyQt, &TyQt::resetMonitor);
     connect(actionResetSettingsApp, &QAction::triggered, this,
-            &MainWindow::resetAppSettingsWithConfirmation);
+            [=]() { tyQt->clearSettingsAndResetWithConfirmation(this); });
     connect(actionPreferences, &QAction::triggered, this, &MainWindow::openPreferences);
 
     // About menu
@@ -263,24 +262,6 @@ void MainWindow::openArduinoTool()
     }
 
     arduino_dialog_->show();
-}
-
-void MainWindow::resetAppSettingsWithConfirmation()
-{
-    QMessageBox msgbox;
-
-    msgbox.setIcon(QMessageBox::Warning);
-    msgbox.setWindowTitle(tr("Reset Settings & TyQt"));
-    msgbox.setText(tr("Reset will erase all your TyQt settings."));
-    auto reset = msgbox.addButton(tr("Reset"), QMessageBox::AcceptRole);
-    msgbox.addButton(QMessageBox::Cancel);
-    msgbox.setDefaultButton(QMessageBox::Cancel);
-
-    msgbox.exec();
-    if (msgbox.clickedButton() != reset)
-        return;
-
-    tyQt->clearSettingsAndReset();
 }
 
 void MainWindow::openPreferences()

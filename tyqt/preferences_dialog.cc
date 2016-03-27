@@ -22,18 +22,10 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     connect(buttonBox, &QDialogButtonBox::rejected, this, &PreferencesDialog::reject);
     connect(buttonBox->button(QDialogButtonBox::Apply), &QAbstractButton::clicked, this,
             &PreferencesDialog::apply);
+    connect(buttonBox->button(QDialogButtonBox::Reset), &QAbstractButton::clicked,
+            this, &PreferencesDialog::reset);
 
-    showTrayIconCheck->setEnabled(QSystemTrayIcon::isSystemTrayAvailable());
-    showTrayIconCheck->setChecked(tyQt->showTrayIcon());
-#ifndef __APPLE__
-    if (!showTrayIconCheck->isChecked())
-        hideOnStartupCheck->setEnabled(false);
-    connect(showTrayIconCheck, &QCheckBox::toggled, hideOnStartupCheck, &QCheckBox::setEnabled);
-#endif
-    hideOnStartupCheck->setChecked(tyQt->hideOnStartup());
-
-    auto monitor = tyQt->monitor();
-    maxTasksSpin->setValue(monitor->maxTasks());
+    refresh();
 }
 
 void PreferencesDialog::done(int result)
@@ -50,4 +42,25 @@ void PreferencesDialog::apply()
 
     auto monitor = tyQt->monitor();
     monitor->setMaxTasks(maxTasksSpin->value());
+}
+
+void PreferencesDialog::reset()
+{
+    tyQt->clearSettingsAndResetWithConfirmation(this);
+    refresh();
+}
+
+void PreferencesDialog::refresh()
+{
+    showTrayIconCheck->setEnabled(QSystemTrayIcon::isSystemTrayAvailable());
+    showTrayIconCheck->setChecked(tyQt->showTrayIcon());
+#ifndef __APPLE__
+    if (!showTrayIconCheck->isChecked())
+        hideOnStartupCheck->setEnabled(false);
+    connect(showTrayIconCheck, &QCheckBox::toggled, hideOnStartupCheck, &QCheckBox::setEnabled);
+#endif
+    hideOnStartupCheck->setChecked(tyQt->hideOnStartup());
+
+    auto monitor = tyQt->monitor();
+    maxTasksSpin->setValue(monitor->maxTasks());
 }

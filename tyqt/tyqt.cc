@@ -605,6 +605,24 @@ void TyQt::clearSettingsAndReset()
     monitor_.start();
 }
 
+void TyQt::clearSettingsAndResetWithConfirmation(QWidget *parent)
+{
+    QMessageBox msgbox(parent);
+
+    msgbox.setIcon(QMessageBox::Warning);
+    msgbox.setWindowTitle(tr("Reset Settings & TyQt"));
+    msgbox.setText(tr("Reset will erase all your TyQt settings, including individual board settings and tags."));
+    auto reset = msgbox.addButton(tr("Reset"), QMessageBox::AcceptRole);
+    msgbox.addButton(QMessageBox::Cancel);
+    msgbox.setDefaultButton(QMessageBox::Cancel);
+
+    msgbox.exec();
+    if (msgbox.clickedButton() != reset)
+        return;
+
+    tyQt->clearSettingsAndReset();
+}
+
 void TyQt::initDatabase(const QString &name, SettingsDatabase &db)
 {
     auto settings = new QSettings(QSettings::IniFormat, QSettings::UserScope,

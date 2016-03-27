@@ -95,6 +95,7 @@ public:
 
     void resetMonitor();
     void clearSettingsAndReset();
+    void clearSettingsAndResetWithConfirmation(QWidget *parent = nullptr);
 
 public slots:
     void openMainWindow(bool show = true);

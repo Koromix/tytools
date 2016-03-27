@@ -60,7 +60,6 @@ public slots:
     void setCompactMode(bool enable);
 
     void openArduinoTool();
-    void resetAppSettingsWithConfirmation();
     void openPreferences();
     void openAboutDialog();
 

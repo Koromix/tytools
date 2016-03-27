@@ -17,6 +17,10 @@ public:
 public slots:
     void done(int result) override;
     void apply();
+    void reset();
+
+private:
+    void refresh();
 };
 
 #endif
