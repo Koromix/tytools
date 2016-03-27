@@ -22,6 +22,7 @@ set(TYQT_SOURCES about_dialog.cc
                  firmware.cc
                  log_window.cc
                  monitor.cc
+                 preferences_dialog.cc
                  selector_dialog.cc
                  session_channel.cc
                  task.cc
@@ -34,6 +35,7 @@ set(TYQT_FORMS about_dialog.ui
                log_window.ui
                main_window.ui
                board_widget.ui
+               preferences_dialog.ui
                selector_dialog.ui)
 set(TYQT_RESOURCES tyqt.qrc)
 if(WIN32)

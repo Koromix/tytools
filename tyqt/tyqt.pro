@@ -15,6 +15,7 @@ FORMS += about_dialog.ui \
     board_widget.ui \
     log_window.ui \
     main_window.ui \
+    preferences_dialog.ui \
     selector_dialog.ui
 
 HEADERS += about_dialog.hh \
@@ -30,6 +31,7 @@ HEADERS += about_dialog.hh \
     log_window.hh \
     main_window.hh \
     monitor.hh \
+    preferences_dialog.hh \
     selector_dialog.hh \
     session_channel.hh \
     task.hh \
@@ -49,6 +51,7 @@ SOURCES += about_dialog.cc \
     main.cc \
     main_window.cc \
     monitor.cc \
+    preferences_dialog.cc \
     selector_dialog.cc \
     session_channel.cc \
     task.cc \
