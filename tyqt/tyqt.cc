@@ -73,6 +73,10 @@ TyQt::TyQt(int &argc, char *argv[])
     setApplicationName("TyQt");
     setApplicationVersion(TY_VERSION);
 
+    initDatabase("tyqt", tyqt_db_);
+    setDatabase(&tyqt_db_);
+    loadSettings();
+
     action_visible_ = new QAction(tr("&Visible"), this);
     action_visible_->setCheckable(true);
     action_visible_->setChecked(true);
@@ -96,6 +100,19 @@ TyQt::TyQt(int &argc, char *argv[])
 TyQt::~TyQt()
 {
     ty_message_redirect(ty_message_default_handler, nullptr);
+}
+
+void TyQt::loadSettings()
+{
+    /* FIXME: Fix (most likely) broken behavior of hideOnStartup with
+       Cmd+H on OSX when my MacBook is repaired. */
+#ifdef __APPLE__
+    show_tray_icon_ = db_.get("UI/showTrayIcon", false).toBool();
+    hide_on_startup_ = db_.get("UI/hideOnStartup", false).toBool();
+#else
+    show_tray_icon_ = db_.get("UI/showTrayIcon", true).toBool();
+    hide_on_startup_ = show_tray_icon_ && db_.get("UI/hideOnStartup", false).toBool();
+#endif
 }
 
 int TyQt::exec()
@@ -136,14 +153,15 @@ MainWindow *TyQt::getMainWindow() const
     return nullptr;
 }
 
-void TyQt::openMainWindow()
+void TyQt::openMainWindow(bool show)
 {
     auto win = new MainWindow(&monitor_);
     win->setAttribute(Qt::WA_DeleteOnClose);
 
     connect(this, &TyQt::globalError, win, &MainWindow::showErrorMessage);
 
-    win->show();
+    if (show)
+        win->show();
 }
 
 void TyQt::activateMainWindow(MainWindow *win)
@@ -282,6 +300,23 @@ error:
     exit(1);
 }
 
+void TyQt::setShowTrayIcon(bool show_tray_icon)
+{
+    show_tray_icon_ = show_tray_icon;
+    tray_icon_.setVisible(show_tray_icon);
+
+    db_.put("UI/showTrayIcon", show_tray_icon);
+    emit settingsChanged();
+}
+
+void TyQt::setHideOnStartup(bool hide_on_startup)
+{
+    hide_on_startup_ = hide_on_startup;
+
+    db_.put("UI/hideOnStartup", hide_on_startup);
+    emit settingsChanged();
+}
+
 int TyQt::run(int argc, char *argv[])
 {
     if (argc >= 2) {
@@ -371,7 +406,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
         }
     }, nullptr);
 
-    loadSettings("boards", monitor_db_);
+    initDatabase("boards", monitor_db_);
     monitor_.setDatabase(&monitor_db_);
     monitor_.loadSettings();
 
@@ -380,8 +415,10 @@ int TyQt::runMainInstance(int argc, char *argv[])
     connect(this, &TyQt::globalError, log_window_.get(), &LogWindow::appendError);
     connect(this, &TyQt::globalDebug, log_window_.get(), &LogWindow::appendDebug);
 
-    tray_icon_.show();
-    openMainWindow();
+    if (show_tray_icon_)
+        tray_icon_.show();
+    action_visible_->setChecked(!hide_on_startup_);
+    openMainWindow(!hide_on_startup_);
 
     /* Some environments (such as KDE Plasma) keep the application running when a tray
        icon/status notifier exists, and we don't want that. Not sure I get why that
@@ -562,7 +599,7 @@ void TyQt::clearConfig()
     monitor_db_.clear();
 }
 
-void TyQt::loadSettings(const QString &name, SettingsDatabase &db)
+void TyQt::initDatabase(const QString &name, SettingsDatabase &db)
 {
     auto settings = new QSettings(QSettings::IniFormat, QSettings::UserScope,
                                   organizationName(), name, this);

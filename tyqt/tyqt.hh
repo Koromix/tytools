@@ -38,7 +38,11 @@ class TyQt : public QApplication {
     SessionChannel channel_;
 
     Monitor monitor_;
+
+    SettingsDatabase tyqt_db_;
     SettingsDatabase monitor_db_;
+
+    DatabaseInterface db_;
 
     QAction *action_visible_;
     QAction *action_quit_;
@@ -51,11 +55,18 @@ class TyQt : public QApplication {
     bool client_console_ = true;
 #endif
 
+    bool show_tray_icon_;
+    bool hide_on_startup_;
+
     std::unique_ptr<LogWindow> log_window_;
 
 public:
     TyQt(int &argc, char *argv[]);
     virtual ~TyQt();
+
+    void setDatabase(DatabaseInterface db) { db_ = db; }
+    DatabaseInterface database() const { return db_; }
+    void loadSettings();
 
     static int exec();
 
@@ -73,6 +84,9 @@ public:
     void setClientConsole(bool console) { client_console_ = console; }
     bool clientConsole() const { return client_console_; }
 
+    bool showTrayIcon() const { return show_tray_icon_; }
+    bool hideOnStartup() const { return hide_on_startup_; }
+
     int run(int argc, char *argv[]);
     int runMainInstance(int argc, char *argv[]);
     int executeRemoteCommand(int argc, char *argv[]);
@@ -83,21 +97,26 @@ public:
     void clearConfig();
 
 public slots:
-    void openMainWindow();
+    void openMainWindow(bool show = true);
     void activateMainWindow(MainWindow *win = nullptr);
     void openLogWindow();
 
     void reportError(const QString &msg);
     void reportDebug(const QString &msg);
 
+    void setShowTrayIcon(bool show_tray_icon);
+    void setHideOnStartup(bool hide_on_startup);
+
     void setVisible(bool visible);
 
 signals:
+    void settingsChanged();
+
     void globalError(const QString &msg);
     void globalDebug(const QString &msg);
 
 private:
-    void loadSettings(const QString &name, SettingsDatabase &db);
+    void initDatabase(const QString &name, SettingsDatabase &db);
 
     QString helpText();
     void showClientMessage(const QString &msg);
