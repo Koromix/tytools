@@ -335,11 +335,6 @@ int TyQt::run(int argc, char *argv[])
         }
     }
 
-    int r = ty_init();
-    if (r < 0)
-        return EXIT_FAILURE;
-    struct Releaser { ~Releaser() { ty_release(); } } releaser;
-
 #ifdef _WIN32
     // tyqtc should not launch TyQt, it's only a console interface
     if (command_.isEmpty() && client_console_) {
