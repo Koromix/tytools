@@ -98,7 +98,7 @@ public:
     void clearSettingsAndResetWithConfirmation(QWidget *parent = nullptr);
 
 public slots:
-    void openMainWindow(bool show = true);
+    void openMainWindow();
     void activateMainWindow(MainWindow *win = nullptr);
     void openLogWindow();
 

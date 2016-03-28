@@ -155,15 +155,11 @@ MainWindow *TyQt::getMainWindow() const
     return nullptr;
 }
 
-void TyQt::openMainWindow(bool show)
+void TyQt::openMainWindow()
 {
     auto win = new MainWindow(&monitor_);
     win->setAttribute(Qt::WA_DeleteOnClose);
-
-    connect(this, &TyQt::globalError, win, &MainWindow::showErrorMessage);
-
-    if (show)
-        win->show();
+    win->show();
 }
 
 void TyQt::activateMainWindow(MainWindow *win)
@@ -420,7 +416,10 @@ int TyQt::runMainInstance(int argc, char *argv[])
     if (show_tray_icon_)
         tray_icon_.show();
     action_visible_->setChecked(!hide_on_startup_);
-    openMainWindow(!hide_on_startup_);
+    auto win = new MainWindow(&monitor_);
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    if (!hide_on_startup_)
+        win->show();
 
     /* Some environments (such as KDE Plasma) keep the application running when a tray
        icon/status notifier exists, and we don't want that. Not sure I get why that

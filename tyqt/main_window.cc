@@ -130,6 +130,9 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setScrollBackLimitForSelection);
 
+    // TyQt errors
+    connect(tyQt, &TyQt::globalError, this, &MainWindow::showErrorMessage);
+
     if (monitor_->boardCount()) {
         boardList->setCurrentIndex(monitor_->index(0, 0));
     } else {
