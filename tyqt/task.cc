@@ -19,6 +19,15 @@ void Task::reportLog(ty_log_level level, const QString &msg)
         l->notifyLog(level, msg);
 }
 
+void Task::reportPending()
+{
+    status_ = TY_TASK_STATUS_PENDING;
+
+    QMutexLocker locker(&listeners_lock_);
+    for (auto &l: listeners_)
+        l->notifyPending();
+}
+
 void Task::reportStarted()
 {
     status_ = TY_TASK_STATUS_RUNNING;
@@ -130,6 +139,9 @@ void TyTask::notifyStatus(const void *data)
     auto msg = static_cast<const ty_status_message *>(data);
 
     switch (msg->status) {
+    case TY_TASK_STATUS_PENDING:
+        reportPending();
+        break;
     case TY_TASK_STATUS_RUNNING:
         reportStarted();
         break;
@@ -242,6 +254,10 @@ void TaskListener::notifyLog(ty_log_level level, const QString &msg)
     Q_UNUSED(msg);
 }
 
+void TaskListener::notifyPending()
+{
+}
+
 void TaskListener::notifyStarted()
 {
 }
@@ -262,6 +278,11 @@ void TaskListener::notifyProgress(const QString &action, unsigned int value, uns
 void TaskWatcher::notifyLog(ty_log_level level, const QString &msg)
 {
     emit log(level, msg);
+}
+
+void TaskWatcher::notifyPending()
+{
+    emit pending();
 }
 
 void TaskWatcher::notifyStarted()

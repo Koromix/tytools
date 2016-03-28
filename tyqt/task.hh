@@ -49,6 +49,7 @@ public:
     QFuture<bool> future() const { return intf_.future(); }
 
     void reportLog(ty_log_level level, const QString &msg);
+    void reportPending();
     void reportStarted();
     void reportFinished(bool success, std::shared_ptr<void> result);
     void reportProgress(const QString &action, unsigned int value, unsigned int max);
@@ -132,6 +133,7 @@ public:
 
 protected:
     virtual void notifyLog(ty_log_level level, const QString &msg);
+    virtual void notifyPending();
     virtual void notifyStarted();
     virtual void notifyFinished(bool success, std::shared_ptr<void> result);
     virtual void notifyProgress(const QString &action, unsigned int value, unsigned int max);
@@ -148,12 +150,14 @@ public:
 
 signals:
     void log(ty_log_level level, const QString &msg);
+    void pending();
     void started();
     void finished(bool success, std::shared_ptr<void> result);
     void progress(const QString &action, unsigned int value, unsigned int max);
 
 protected:
     void notifyLog(ty_log_level level, const QString &msg) override;
+    void notifyPending() override;
     void notifyStarted() override;
     void notifyFinished(bool success, std::shared_ptr<void> result) override;
     void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;

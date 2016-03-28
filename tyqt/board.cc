@@ -189,8 +189,14 @@ QString Board::statusIconFileName() const
 {
     if (errorOccured())
         return ":/board_error";
-    if (running_task_.status() == TY_TASK_STATUS_RUNNING)
+    switch (running_task_.status()) {
+    case TY_TASK_STATUS_PENDING:
+        return ":/board_pending";
+    case TY_TASK_STATUS_RUNNING:
         return ":/board_working";
+    default:
+        break;
+    }
     if (isRunning())
         return serialOpen() ? ":/board_attached" : ":/board_detached";
     if (uploadAvailable())
@@ -583,6 +589,7 @@ TaskInterface Board::watchTask(TaskInterface task)
        disconnect everyone and restore sane connections. */
     task_watcher_.disconnect();
     connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
+    connect(&task_watcher_, &TaskWatcher::pending, this, &Board::statusChanged);
     connect(&task_watcher_, &TaskWatcher::started, this, &Board::statusChanged);
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
     connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);

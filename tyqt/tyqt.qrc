@@ -4,6 +4,7 @@
         <file alias="board_detached">images/board_detached.png</file>
         <file alias="board_bootloader">images/board_bootloader.png</file>
         <file alias="board_missing">images/board_missing.png</file>
+        <file alias="board_pending">images/board_pending.png</file>
         <file alias="board_working">images/board_working.png</file>
         <file alias="board_error">images/board_error.png</file>
         <file alias="reset">images/reset.png</file>
