@@ -37,6 +37,8 @@ Monitor::~Monitor()
 void Monitor::loadSettings()
 {
     ty_pool_set_max_threads(pool_, db_.get("maxTasks", 8).toUInt());
+
+    emit settingsChanged();
 }
 
 void Monitor::setMaxTasks(unsigned int max_tasks)

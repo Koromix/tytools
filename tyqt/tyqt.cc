@@ -113,6 +113,8 @@ void TyQt::loadSettings()
     show_tray_icon_ = db_.get("UI/showTrayIcon", true).toBool();
     hide_on_startup_ = show_tray_icon_ && db_.get("UI/hideOnStartup", false).toBool();
 #endif
+
+    emit settingsChanged();
 }
 
 int TyQt::exec()
