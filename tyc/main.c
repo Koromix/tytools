@@ -169,7 +169,7 @@ bool parse_common_option(int argc, char *argv[], int c)
         board_tag = optarg;
         break;
     case 'q':
-        ty_config_quiet++;
+        ty_config_verbosity--;
         break;
 
     case ':':

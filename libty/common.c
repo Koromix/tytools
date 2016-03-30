@@ -37,7 +37,7 @@ extern init_func *__start_TY_INIT[], *__stop_TY_INIT[];
 extern release_func *__start_TY_RELEASE[], *__stop_TY_RELEASE[];
 #endif
 
-ty_log_level ty_config_quiet = TY_LOG_INFO;
+ty_log_level ty_config_verbosity = TY_LOG_INFO;
 bool ty_config_experimental = false;
 
 static ty_message_func *handler = ty_message_default_handler;
@@ -52,10 +52,6 @@ static void libhs_log_handler(hs_log_level level, int err, const char *log, void
 TY_INIT()
 {
     const char *value;
-
-    value = getenv("TY_QUIET");
-    if (value)
-        ty_config_quiet = (ty_log_level)strtol(value, NULL, 10);
 
     value = getenv("TY_EXPERIMENTAL");
     if (value && strcmp(value, "0") != 0 && strcmp(value, "") != 0)
@@ -100,11 +96,23 @@ void ty_release(void)
             (*cur)();
 }
 
+static bool log_level_is_enabled(ty_log_level level)
+{
+    static bool init, debug;
+
+    if (!init) {
+        debug = getenv("TY_DEBUG");
+        init = true;
+    }
+
+    return ty_config_verbosity >= level || debug;
+}
+
 static void print_log(const void *data)
 {
     const ty_log_message *msg = data;
 
-    if (msg->level < ty_config_quiet)
+    if (!log_level_is_enabled(msg->level))
         return;
 
     if (msg->level == TY_LOG_INFO) {
@@ -120,7 +128,7 @@ static void print_progress(const void *data)
     static bool init = false, show_progress;
     const ty_progress_message *msg = data;
 
-    if (TY_LOG_INFO < ty_config_quiet)
+    if (!log_level_is_enabled(TY_LOG_INFO))
         return;
 
     if (!init) {

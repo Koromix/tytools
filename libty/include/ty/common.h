@@ -171,7 +171,7 @@ typedef struct ty_progress_message {
 
 typedef void ty_message_func(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 
-TY_PUBLIC extern ty_log_level ty_config_quiet;
+TY_PUBLIC extern ty_log_level ty_config_verbosity;
 TY_PUBLIC extern bool ty_config_experimental;
 
 TY_PUBLIC int ty_init(void);
