@@ -120,12 +120,12 @@ typedef int hs_descriptor;
  * @brief libhs message log levels.
  */
 typedef enum hs_log_level {
-    /** Internal debug information. */
-    HS_LOG_DEBUG = -1,
+    /** Fatal errors. */
+    HS_LOG_ERROR,
     /** Non-fatal problem. */
     HS_LOG_WARNING,
-    /** Fatal errors. */
-    HS_LOG_ERROR
+    /** Internal debug information. */
+    HS_LOG_DEBUG
 } hs_log_level;
 
 /**
