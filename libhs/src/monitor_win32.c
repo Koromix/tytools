@@ -341,7 +341,7 @@ static int find_device_port_xp(const char *hub_id, const char *child_key)
     success = DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, NULL, 0, &node, sizeof(node),
                               &len, NULL);
     if (!success) {
-        hs_log(HS_LOG_WARNING, "DeviceIoControl(IOCTL_USB_GET_NODE_INFORMATION) failed");
+        hs_log(HS_LOG_DEBUG, "DeviceIoControl(IOCTL_USB_GET_NODE_INFORMATION) failed");
         r = 0;
         goto cleanup;
     }
