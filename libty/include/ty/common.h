@@ -43,30 +43,6 @@ TY_C_BEGIN
     #endif
 
     #define TY_THREAD_LOCAL __thread
-
-    #ifdef __APPLE__
-        #define TY_INIT() \
-            static int TY_UNIQUE_ID(init_)(void); \
-            static int (*TY_UNIQUE_ID(init_ptr_))(void) __attribute((__section__("__DATA,TY_INIT"),__used__)) \
-                = &TY_UNIQUE_ID(init_); \
-            static int TY_UNIQUE_ID(init_)(void)
-        #define TY_RELEASE() \
-            static void TY_UNIQUE_ID(release_)(void); \
-            static void (*TY_UNIQUE_ID(release_ptr_))(void) __attribute((__section__("__DATA,TY_RELEASE"),__used__)) \
-                = &TY_UNIQUE_ID(release_); \
-            static void TY_UNIQUE_ID(release_)(void)
-    #else
-        #define TY_INIT() \
-            static int TY_UNIQUE_ID(init_)(void); \
-            static int (*TY_UNIQUE_ID(init_ptr_))(void) __attribute((__section__("TY_INIT"),__used__)) \
-                = &TY_UNIQUE_ID(init_); \
-            static int TY_UNIQUE_ID(init_)(void)
-        #define TY_RELEASE() \
-            static void TY_UNIQUE_ID(release_)(void); \
-            static void (*TY_UNIQUE_ID(release_ptr_))(void) __attribute((__section__("TY_RELEASE"),__used__)) \
-                = &TY_UNIQUE_ID(release_); \
-            static void TY_UNIQUE_ID(release_)(void)
-    #endif
 #elif _MSC_VER >= 1900
     #if defined(TY_STATIC)
         #define TY_PUBLIC
@@ -79,17 +55,6 @@ TY_C_BEGIN
     #define TY_PRINTF_FORMAT(fmt, first)
 
     #define TY_THREAD_LOCAL __declspec(thread)
-
-    #define TY_INIT() \
-        static int TY_UNIQUE_ID(init_)(void); \
-        __pragma(section(".TY_INIT$u", read)) \
-        __declspec(allocate(".TY_INIT$u")) int (*TY_UNIQUE_ID(init_ptr_))(void) = TY_UNIQUE_ID(init_); \
-        static int __cdecl TY_UNIQUE_ID(init_)(void)
-    #define TY_RELEASE() \
-        static void __cdecl TY_UNIQUE_ID(release_)(void); \
-        __pragma(section(".TY_RELEASE$u", read)) \
-        __declspec(allocate(".TY_RELEASE$u")) void (*TY_UNIQUE_ID(release_ptr_))(void) = TY_UNIQUE_ID(release_); \
-        static void __cdecl TY_UNIQUE_ID(release_)(void)
 
     // HAVE_SSIZE_T is used this way by other projects
     #ifndef HAVE_SSIZE_T
@@ -173,9 +138,6 @@ typedef struct ty_progress_message {
 typedef void ty_message_func(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 
 TY_PUBLIC extern ty_log_level ty_config_verbosity;
-
-TY_PUBLIC int ty_init(void);
-TY_PUBLIC void ty_release(void);
 
 TY_PUBLIC void ty_message_default_handler(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);

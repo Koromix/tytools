@@ -15,28 +15,6 @@ struct ty_task {
     TY_TASK
 };
 
-typedef int init_func(void);
-typedef void release_func(void);
-
-#if defined(_MSC_VER)
-__pragma(section(".TY_INIT$a", read))
-__pragma(section(".TY_INIT$z", read))
-__declspec(allocate(".TY_INIT$a")) init_func *start_TY_INIT = 0;
-__declspec(allocate(".TY_INIT$z")) init_func *stop_TY_INIT = 0;
-__pragma(section(".TY_RELEASE$a", read))
-__pragma(section(".TY_RELEASE$z", read))
-__declspec(allocate(".TY_RELEASE$a")) release_func *start_TY_RELEASE = 0;
-__declspec(allocate(".TY_RELEASE$z")) release_func *stop_TY_RELEASE   = 0;
-#elif defined(__APPLE__)
-extern init_func *start_TY_INIT __asm__("section$start$__DATA$TY_INIT");
-extern init_func *stop_TY_INIT __asm__("section$end$__DATA$TY_INIT");
-extern release_func *start_TY_RELEASE __asm__("section$start$__DATA$TY_RELEASE");
-extern release_func *stop_TY_RELEASE __asm__("section$end$__DATA$TY_RELEASE");
-#else
-extern init_func *__start_TY_INIT[], *__stop_TY_INIT[];
-extern release_func *__start_TY_RELEASE[], *__stop_TY_RELEASE[];
-#endif
-
 ty_log_level ty_config_verbosity = TY_LOG_INFO;
 
 static ty_message_func *handler = ty_message_default_handler;
@@ -46,46 +24,6 @@ static TY_THREAD_LOCAL ty_err mask[16];
 static TY_THREAD_LOCAL unsigned int mask_count;
 
 static TY_THREAD_LOCAL char last_error_msg[256];
-
-TY_INIT()
-{
-    // Keep this, to make sure section TY_INIT exists.
-    return 0;
-}
-
-TY_RELEASE()
-{
-    // Keep this, to make sure section TY_RELEASE exists.
-}
-
-int ty_init(void)
-{
-#if defined(_MSC_VER) || defined(__APPLE__)
-    for (init_func **cur = &start_TY_INIT; cur < &stop_TY_INIT; cur++) {
-#else
-    for (init_func **cur = __start_TY_INIT; cur < __stop_TY_INIT; cur++) {
-#endif
-        // There may be NULL padding around our function pointers (at least with MSVC)
-        if (*cur) {
-            int r = (*cur)();
-            if (r < 0)
-                return r;
-        }
-    }
-
-    return 0;
-}
-
-void ty_release(void)
-{
-#if defined(_MSC_VER) || defined(__APPLE__)
-    for (release_func **cur = &start_TY_RELEASE; cur < &stop_TY_RELEASE; cur++)
-#else
-    for (release_func **cur = __start_TY_RELEASE; cur < __stop_TY_RELEASE; cur++)
-#endif
-        if (*cur)
-            (*cur)();
-}
 
 static bool log_level_is_enabled(ty_log_level level)
 {
