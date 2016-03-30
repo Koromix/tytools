@@ -52,6 +52,7 @@ deploy:
     file: deploy-bintray.json
     on:
       repo: Koromix/ty
+      all_branches: true
   - provider: releases
     api_key:
       secure: rf2xKEN/HM5sV+QGswfSPQiXXGSRkhz4hx9szt4zBH//PcsQmrKiaphOE+whMOz5crKWjruaFbWBXkxqYGKdVlQ4xZVyAHE1CcQGjBN7ZXZh3bcjtkD4iyqlpJJ/wQBIuNn71whFp73LEQrggzigUuWs5j+cZBd3U73ZiETZ9RKaShw2DkX7FkDj7++nyDy3RFamO5SLGhr65RtCdX7tr83lqU6q6Cv6IwYK9aBVWSMcgtH0lucO/5s3l6WHCiWUJInrovvrSebh2x/0gscS5/XfZC9HvBrsqyZA3W9fA8ioAVUZUYEx7zQDCMqKquN1bhGKd0sz9EmSsE3+08gfY2ghZ6Q6fwuslxxqctTnweWlqwxGK6D2PQHznRZmYaomvkUwSK/tlCRZdzfM133pPrYdsG6A/fgY55jIhjrkBpr/wGyl1ZQImVpH/nrKIDbkiQzAqZmev3/r3UlpNkSuAFk9TbSQF2C1mHDhUqu1gDlhp4GPDGNnUndzXgkZ0DKZOe1AZDWAkmvqDEulRh2ydYJx6yWa6FTrcxRdnHe031MJNMOk2gef6DTuK+31kc3FuBh49h40TBVjsQDL+r0RS/XduMNnWy+M2dCy8Hb8+SC1WU9ViyuHJD5zYPaStfSGfBma1aGR8kd2cwgpBX6qCC2Cedh7eWt/bp7A946rwAM=
