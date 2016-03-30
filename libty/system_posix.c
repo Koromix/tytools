@@ -107,6 +107,11 @@ unsigned int ty_descriptor_get_modes(ty_descriptor desc)
     return 0;
 }
 
+ty_descriptor ty_standard_get_descriptor(ty_standard_stream std)
+{
+    return std;
+}
+
 #ifdef __APPLE__
 
 int ty_poll(const ty_descriptor_set *set, int timeout)

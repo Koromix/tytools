@@ -242,7 +242,7 @@ static int teensy_open_interface(ty_board_interface *iface)
     case HS_DEVICE_TYPE_HID:
         r = hs_hid_parse_descriptor(iface->h, &desc);
         if (r < 0) {
-            r = _ty_libhs_translate_error(r);
+            r = ty_libhs_translate_error(r);
             goto cleanup;
         }
 
@@ -347,7 +347,7 @@ static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate
 
     r = hs_serial_set_attributes(iface->h, rate, flags);
     if (r < 0)
-        return _ty_libhs_translate_error(r);
+        return ty_libhs_translate_error(r);
 
     return 0;
 }
@@ -361,13 +361,13 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
     case HS_DEVICE_TYPE_SERIAL:
         r = hs_serial_read(iface->h, (uint8_t *)buf, size, timeout);
         if (r < 0)
-            return _ty_libhs_translate_error((int)r);
+            return ty_libhs_translate_error((int)r);
         return r;
 
     case HS_DEVICE_TYPE_HID:
         r = hs_hid_read(iface->h, hid_buf, sizeof(hid_buf), timeout);
         if (r < 0)
-            return _ty_libhs_translate_error((int)r);
+            return ty_libhs_translate_error((int)r);
         if (r < 2)
             return 0;
 
@@ -390,7 +390,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
     case HS_DEVICE_TYPE_SERIAL:
         r = hs_serial_write(iface->h, (uint8_t *)buf, (ssize_t)size);
         if (r < 0)
-            return _ty_libhs_translate_error((int)r);
+            return ty_libhs_translate_error((int)r);
         return r;
 
     case HS_DEVICE_TYPE_HID:
@@ -402,7 +402,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
 
             r = hs_hid_write(iface->h, report, sizeof(report));
             if (r < 0)
-                return _ty_libhs_translate_error((int)r);
+                return ty_libhs_translate_error((int)r);
             if (!r)
                 break;
 
@@ -474,21 +474,31 @@ restart:
     if (r < 0) {
         if (r == HS_ERROR_IO)
             return ty_error(TY_ERROR_IO, "%s", ty_error_last_message());
-        return _ty_libhs_translate_error((int)r);
+        return ty_libhs_translate_error((int)r);
     }
+
+    return 0;
+}
+
+static int test_bootloader_support(const ty_board_model *model)
+{
+    if (model->experimental && !getenv("TY_EXPERIMENTAL_BOARDS"))
+        return ty_error(TY_ERROR_UNSUPPORTED, "Support for %s boards is experimental, set "
+                                              "environment variable TY_EXPERIMENTAL_BOARDS to any "
+                                              "value to enable support for them", model->name);
 
     return 0;
 }
 
 static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_upload_progress_func *pf, void *udata)
 {
-    if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, enable experimental mode",
-                        iface->model->name);
-
     const uint8_t *image;
     size_t size;
     int r;
+
+    r = test_bootloader_support(iface->model);
+    if (r < 0)
+        return r;
 
     image = ty_firmware_get_image(fw);
     size = ty_firmware_get_size(fw);
@@ -523,9 +533,9 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_up
 
 static int teensy_reset(ty_board_interface *iface)
 {
-    if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, enable experimental mode",
-                        iface->model->name);
+    int r = test_bootloader_support(iface->model);
+    if (r < 0)
+        return r;
 
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }
@@ -542,7 +552,7 @@ static int teensy_reboot(ty_board_interface *iface)
         r = hs_serial_set_attributes(iface->h, 134, 0);
         // FIXME: LIBHS ugly construct
         if (r < 0) {
-            r = _ty_libhs_translate_error(r);
+            r = ty_libhs_translate_error(r);
         } else {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
                the device will keep rebooting when opened. */
@@ -555,7 +565,7 @@ static int teensy_reboot(ty_board_interface *iface)
     case HS_DEVICE_TYPE_HID:
         r = (int)hs_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
         if (r < 0) {
-            r = _ty_libhs_translate_error(r);
+            r = ty_libhs_translate_error(r);
         } else {
             assert(r == sizeof(seremu_magic));
             r = 0;

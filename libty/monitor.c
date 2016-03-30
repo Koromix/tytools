@@ -402,7 +402,7 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
 
     r = hs_monitor_new(NULL, 0, &monitor->device_monitor);
     if (r < 0) {
-        r = _ty_libhs_translate_error(r);
+        r = ty_libhs_translate_error(r);
         goto error;
     }
 
@@ -468,7 +468,7 @@ int ty_monitor_start(ty_monitor *monitor)
 
     r = hs_monitor_start(monitor->device_monitor);
     if (r < 0) {
-        r = _ty_libhs_translate_error(r);
+        r = ty_libhs_translate_error(r);
         goto error;
     }
     monitor->started = true;
@@ -601,7 +601,7 @@ int ty_monitor_refresh(ty_monitor *monitor)
             return r;
         }
 
-        return _ty_libhs_translate_error(r);
+        return ty_libhs_translate_error(r);
     }
 
     ty_mutex_lock(&monitor->refresh_mutex);

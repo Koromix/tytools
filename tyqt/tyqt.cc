@@ -373,7 +373,8 @@ int TyQt::runMainInstance(int argc, char *argv[])
             showClientMessage(helpText());
             return EXIT_SUCCESS;
         case 'q':
-            ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
+            ty_config_verbosity =
+                static_cast<ty_log_level>(static_cast<int>(ty_config_verbosity) - 1);
             break;
         }
     }
@@ -391,7 +392,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
         if (type == TY_MESSAGE_LOG) {
             auto print = static_cast<const ty_log_message *>(data);
-            if (print->level >= TY_LOG_WARNING) {
+            if (print->level <= TY_LOG_WARNING) {
                 tyQt->reportError(print->msg);
             } else {
                 tyQt->reportDebug(print->msg);
@@ -445,7 +446,8 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
             showClientMessage(helpText());
             return EXIT_SUCCESS;
         case 'q':
-            ty_config_quiet = static_cast<ty_log_level>(static_cast<int>(ty_config_quiet) + 1);
+            ty_config_verbosity =
+                static_cast<ty_log_level>(static_cast<int>(ty_config_verbosity) - 1);
             break;
 
         case OPTION_AUTOSTART:

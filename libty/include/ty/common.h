@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hs/common.h"
 
 #ifdef __cplusplus
     #define TY_C_BEGIN extern "C" {
@@ -42,30 +43,6 @@ TY_C_BEGIN
     #endif
 
     #define TY_THREAD_LOCAL __thread
-
-    #ifdef __APPLE__
-        #define TY_INIT() \
-            static int TY_UNIQUE_ID(init_)(void); \
-            static int (*TY_UNIQUE_ID(init_ptr_))(void) __attribute((__section__("__DATA,TY_INIT"),__used__)) \
-                = &TY_UNIQUE_ID(init_); \
-            static int TY_UNIQUE_ID(init_)(void)
-        #define TY_RELEASE() \
-            static void TY_UNIQUE_ID(release_)(void); \
-            static void (*TY_UNIQUE_ID(release_ptr_))(void) __attribute((__section__("__DATA,TY_RELEASE"),__used__)) \
-                = &TY_UNIQUE_ID(release_); \
-            static void TY_UNIQUE_ID(release_)(void)
-    #else
-        #define TY_INIT() \
-            static int TY_UNIQUE_ID(init_)(void); \
-            static int (*TY_UNIQUE_ID(init_ptr_))(void) __attribute((__section__("TY_INIT"),__used__)) \
-                = &TY_UNIQUE_ID(init_); \
-            static int TY_UNIQUE_ID(init_)(void)
-        #define TY_RELEASE() \
-            static void TY_UNIQUE_ID(release_)(void); \
-            static void (*TY_UNIQUE_ID(release_ptr_))(void) __attribute((__section__("TY_RELEASE"),__used__)) \
-                = &TY_UNIQUE_ID(release_); \
-            static void TY_UNIQUE_ID(release_)(void)
-    #endif
 #elif _MSC_VER >= 1900
     #if defined(TY_STATIC)
         #define TY_PUBLIC
@@ -78,17 +55,6 @@ TY_C_BEGIN
     #define TY_PRINTF_FORMAT(fmt, first)
 
     #define TY_THREAD_LOCAL __declspec(thread)
-
-    #define TY_INIT() \
-        static int TY_UNIQUE_ID(init_)(void); \
-        __pragma(section(".TY_INIT$u", read)) \
-        __declspec(allocate(".TY_INIT$u")) int (*TY_UNIQUE_ID(init_ptr_))(void) = TY_UNIQUE_ID(init_); \
-        static int __cdecl TY_UNIQUE_ID(init_)(void)
-    #define TY_RELEASE() \
-        static void __cdecl TY_UNIQUE_ID(release_)(void); \
-        __pragma(section(".TY_RELEASE$u", read)) \
-        __declspec(allocate(".TY_RELEASE$u")) void (*TY_UNIQUE_ID(release_ptr_))(void) = TY_UNIQUE_ID(release_); \
-        static void __cdecl TY_UNIQUE_ID(release_)(void)
 
     // HAVE_SSIZE_T is used this way by other projects
     #ifndef HAVE_SSIZE_T
@@ -150,10 +116,10 @@ typedef enum ty_message_type {
 } ty_message_type;
 
 typedef enum ty_log_level {
-    TY_LOG_DEBUG = -1,
-    TY_LOG_INFO,
-    TY_LOG_WARNING,
     TY_LOG_ERROR,
+    TY_LOG_WARNING,
+    TY_LOG_INFO,
+    TY_LOG_DEBUG
 } ty_log_level;
 
 typedef struct ty_log_message {
@@ -171,11 +137,7 @@ typedef struct ty_progress_message {
 
 typedef void ty_message_func(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 
-TY_PUBLIC extern ty_log_level ty_config_quiet;
-TY_PUBLIC extern bool ty_config_experimental;
-
-TY_PUBLIC int ty_init(void);
-TY_PUBLIC void ty_release(void);
+TY_PUBLIC extern ty_log_level ty_config_verbosity;
 
 TY_PUBLIC void ty_message_default_handler(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
@@ -189,6 +151,9 @@ TY_PUBLIC const char *ty_error_last_message(void);
 TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
+
+TY_PUBLIC int ty_libhs_translate_error(int err);
+TY_PUBLIC void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 
 TY_C_END
 
