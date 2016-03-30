@@ -15,21 +15,17 @@
 
 typedef ULONGLONG WINAPI GetTickCount64_func(void);
 
-static ULONGLONG WINAPI GetTickCount64_fallback(void);
+static ULONGLONG WINAPI GetTickCount64_resolve(void);
 
 HANDLE _ty_win32_descriptors[3];
 
-static GetTickCount64_func *GetTickCount64_;
+static GetTickCount64_func *GetTickCount64_ = GetTickCount64_resolve;
 
 static DWORD orig_console_mode;
 static bool saved_console_mode;
 
 TY_INIT()
 {
-    GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(GetModuleHandle("kernel32.dll"), "GetTickCount64");
-    if (!GetTickCount64_)
-        GetTickCount64_ = GetTickCount64_fallback;
-
     _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
     _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
     _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
@@ -76,6 +72,15 @@ static ULONGLONG WINAPI GetTickCount64_fallback(void)
     assert(!success);
 
     return (ULONGLONG)now.QuadPart * 1000 / (ULONGLONG)freq.QuadPart;
+}
+
+static ULONGLONG WINAPI GetTickCount64_resolve(void)
+{
+    GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(GetModuleHandle("kernel32.dll"), "GetTickCount64");
+    if (!GetTickCount64_)
+        GetTickCount64_ = GetTickCount64_fallback;
+
+    return GetTickCount64_();
 }
 
 uint64_t ty_millis(void)
