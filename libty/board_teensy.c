@@ -480,15 +480,25 @@ restart:
     return 0;
 }
 
+static int test_bootloader_support(const ty_board_model *model)
+{
+    if (model->experimental && !getenv("TY_EXPERIMENTAL_BOARDS"))
+        return ty_error(TY_ERROR_UNSUPPORTED, "Support for %s boards is experimental, set "
+                                              "environment variable TY_EXPERIMENTAL_BOARDS to any "
+                                              "value to enable support for them", model->name);
+
+    return 0;
+}
+
 static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_upload_progress_func *pf, void *udata)
 {
-    if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Upload to %s is disabled, enable experimental mode",
-                        iface->model->name);
-
     const uint8_t *image;
     size_t size;
     int r;
+
+    r = test_bootloader_support(iface->model);
+    if (r < 0)
+        return r;
 
     image = ty_firmware_get_image(fw);
     size = ty_firmware_get_size(fw);
@@ -523,9 +533,9 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_up
 
 static int teensy_reset(ty_board_interface *iface)
 {
-    if (iface->model->experimental && !ty_config_experimental)
-        return ty_error(TY_ERROR_UNSUPPORTED, "Reset of %s is disabled, enable experimental mode",
-                        iface->model->name);
+    int r = test_bootloader_support(iface->model);
+    if (r < 0)
+        return r;
 
     return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
 }

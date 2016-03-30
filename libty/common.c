@@ -38,7 +38,6 @@ extern release_func *__start_TY_RELEASE[], *__stop_TY_RELEASE[];
 #endif
 
 ty_log_level ty_config_verbosity = TY_LOG_INFO;
-bool ty_config_experimental = false;
 
 static ty_message_func *handler = ty_message_default_handler;
 static void *handler_udata = NULL;
@@ -51,12 +50,6 @@ static TY_THREAD_LOCAL char last_error_msg[256];
 static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 TY_INIT()
 {
-    const char *value;
-
-    value = getenv("TY_EXPERIMENTAL");
-    if (value && strcmp(value, "0") != 0 && strcmp(value, "") != 0)
-        ty_config_experimental = true;
-
     hs_log_set_handler(libhs_log_handler, NULL);
 
     return 0;
