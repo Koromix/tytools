@@ -22,7 +22,7 @@ install:
 before_build:
   - cmake %CMAKE_FLAGS% .
 build_script:
-  - cmake --build . --config "%BUILD_TYPE%"
+  - cmake --build . --config "%BUILD_TYPE%" -- /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 after_build:
   - cpack -C "%BUILD_TYPE%"
 
