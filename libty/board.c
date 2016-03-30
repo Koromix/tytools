@@ -565,7 +565,7 @@ int ty_board_interface_open(ty_board_interface *iface)
     if (!iface->h) {
         r = hs_device_open(iface->dev, &iface->h);
         if (r < 0) {
-            r = _ty_libhs_translate_error(r);
+            r = ty_libhs_translate_error(r);
             goto cleanup;
         }
     }

@@ -311,7 +311,7 @@ void _ty_message(ty_task *task, ty_message_type type, const void *data)
         (*task->callback)(task, type, data, task->callback_udata);
 }
 
-int _ty_libhs_translate_error(int err)
+int ty_libhs_translate_error(int err)
 {
     if (err >= 0)
         return err;
@@ -339,7 +339,7 @@ void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *ud
 
     ty_log_message msg;
 
-    err = _ty_libhs_translate_error(err);
+    err = ty_libhs_translate_error(err);
     if (ty_error_is_masked(err))
         return;
 

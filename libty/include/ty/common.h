@@ -190,6 +190,7 @@ TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
 
+TY_PUBLIC int ty_libhs_translate_error(int err);
 TY_PUBLIC void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 
 TY_C_END
