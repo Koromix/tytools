@@ -150,10 +150,10 @@ typedef enum ty_message_type {
 } ty_message_type;
 
 typedef enum ty_log_level {
-    TY_LOG_DEBUG = -1,
-    TY_LOG_INFO,
-    TY_LOG_WARNING,
     TY_LOG_ERROR,
+    TY_LOG_WARNING,
+    TY_LOG_INFO,
+    TY_LOG_DEBUG
 } ty_log_level;
 
 typedef struct ty_log_message {

@@ -391,7 +391,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
         if (type == TY_MESSAGE_LOG) {
             auto print = static_cast<const ty_log_message *>(data);
-            if (print->level >= TY_LOG_WARNING) {
+            if (print->level <= TY_LOG_WARNING) {
                 tyQt->reportError(print->msg);
             } else {
                 tyQt->reportDebug(print->msg);
