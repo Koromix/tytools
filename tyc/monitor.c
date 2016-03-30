@@ -473,12 +473,12 @@ int monitor(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if (ty_descriptor_get_modes(TY_DESCRIPTOR_STDIN) & TY_DESCRIPTOR_MODE_TERMINAL) {
+    if (ty_standard_get_modes(TY_STANDARD_INPUT) & TY_DESCRIPTOR_MODE_TERMINAL) {
 #ifdef _WIN32
         if (terminal_flags & TY_TERMINAL_RAW && !(terminal_flags & TY_TERMINAL_SILENT)) {
             terminal_flags |= TY_TERMINAL_SILENT;
 
-            if (ty_descriptor_get_modes(TY_DESCRIPTOR_STDOUT) & TY_DESCRIPTOR_MODE_TERMINAL)
+            if (ty_standard_get_modes(TY_STANDARD_OUTPUT) & TY_DESCRIPTOR_MODE_TERMINAL)
                 fake_echo = true;
         }
 

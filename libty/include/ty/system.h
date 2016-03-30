@@ -25,15 +25,11 @@ typedef void *ty_descriptor; // HANDLE
 typedef int ty_descriptor;
 #endif
 
-#ifdef _WIN32
-    #define TY_DESCRIPTOR_STDIN (_ty_win32_descriptors[0])
-    #define TY_DESCRIPTOR_STDOUT (_ty_win32_descriptors[1])
-    #define TY_DESCRIPTOR_STDERR (_ty_win32_descriptors[2])
-#else
-    #define TY_DESCRIPTOR_STDIN 0
-    #define TY_DESCRIPTOR_STDOUT 1
-    #define TY_DESCRIPTOR_STDERR 2
-#endif
+typedef enum ty_standard_stream {
+    TY_STANDARD_INPUT = 0,
+    TY_STANDARD_OUTPUT = 1,
+    TY_STANDARD_ERROR = 2
+} ty_standard_stream;
 
 enum {
     TY_DESCRIPTOR_MODE_FIFO = 1,
@@ -54,10 +50,6 @@ enum {
 };
 
 #ifdef _WIN32
-TY_PUBLIC extern void *_ty_win32_descriptors[3]; // HANDLE
-#endif
-
-#ifdef _WIN32
 TY_PUBLIC char *ty_win32_strerror(unsigned long err);
 #endif
 
@@ -71,6 +63,12 @@ TY_PUBLIC void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc,
 TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
 TY_PUBLIC unsigned int ty_descriptor_get_modes(ty_descriptor desc);
+
+TY_PUBLIC ty_descriptor ty_standard_get_descriptor(ty_standard_stream std);
+static inline unsigned int ty_standard_get_modes(ty_standard_stream std)
+{
+    return ty_descriptor_get_modes(ty_standard_get_descriptor(std));
+}
 
 TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
 

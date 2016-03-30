@@ -17,21 +17,10 @@ typedef ULONGLONG WINAPI GetTickCount64_func(void);
 
 static ULONGLONG WINAPI GetTickCount64_resolve(void);
 
-HANDLE _ty_win32_descriptors[3];
-
 static GetTickCount64_func *GetTickCount64_ = GetTickCount64_resolve;
 
 static DWORD orig_console_mode;
 static bool saved_console_mode;
-
-TY_INIT()
-{
-    _ty_win32_descriptors[0] = GetStdHandle(STD_INPUT_HANDLE);
-    _ty_win32_descriptors[1] = GetStdHandle(STD_OUTPUT_HANDLE);
-    _ty_win32_descriptors[2] = GetStdHandle(STD_ERROR_HANDLE);
-
-    return 0;
-}
 
 char *ty_win32_strerror(DWORD err)
 {
@@ -125,6 +114,21 @@ unsigned int ty_descriptor_get_modes(ty_descriptor desc)
     }
 
     return 0;
+}
+
+ty_descriptor ty_standard_get_descriptor(ty_standard_stream std)
+{
+    switch (std) {
+    case TY_STANDARD_INPUT:
+        return GetStdHandle(STD_INPUT_HANDLE);
+    case TY_STANDARD_OUTPUT:
+        return GetStdHandle(STD_OUTPUT_HANDLE);
+    case TY_STANDARD_ERROR:
+        return GetStdHandle(STD_ERROR_HANDLE);
+    }
+
+    assert(false);
+    return NULL;
 }
 
 int ty_poll(const ty_descriptor_set *set, int timeout)

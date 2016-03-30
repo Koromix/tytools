@@ -125,7 +125,7 @@ static void print_progress(const void *data)
         return;
 
     if (!init) {
-        show_progress = ty_descriptor_get_modes(TY_DESCRIPTOR_STDOUT) & TY_DESCRIPTOR_MODE_TERMINAL;
+        show_progress = ty_standard_get_modes(TY_STANDARD_OUTPUT) & TY_DESCRIPTOR_MODE_TERMINAL;
         init = true;
     }
 
