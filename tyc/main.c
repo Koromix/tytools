@@ -10,6 +10,7 @@
     #include <signal.h>
     #include <sys/wait.h>
 #endif
+#include "hs/common.h"
 #include "ty/version.h"
 #include "main.h"
 
@@ -188,6 +189,8 @@ int main(int argc, char *argv[])
     const struct command *cmd;
     int r;
 
+    hs_log_set_handler(ty_libhs_log_handler, NULL);
+
     if (argc < 2) {
         print_main_usage(stderr);
         return EXIT_SUCCESS;
@@ -216,10 +219,6 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    r = ty_init();
-    if (r < 0)
-        return EXIT_FAILURE;
-
     // We'll print our own, for consistency
     opterr = 0;
 
@@ -227,7 +226,6 @@ int main(int argc, char *argv[])
 
     ty_board_unref(main_board);
     ty_monitor_free(board_monitor);
-    ty_release();
 
     return r;
 }

@@ -14,6 +14,7 @@
     #include <stdlib.h>
 #endif
 
+#include "hs/common.h"
 #include "tyqt.hh"
 
 #ifdef QT_STATIC
@@ -58,15 +59,11 @@ static bool open_tyqtc_bridge()
 
 int main(int argc, char *argv[])
 {
+    hs_log_set_handler(ty_libhs_log_handler, NULL);
+
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
-
-    // Some classes / constructors need libty right away, this must be done first
-    int r = ty_init();
-    if (r < 0)
-        return EXIT_FAILURE;
-    struct Releaser { ~Releaser() { ty_release(); } } releaser;
 
     TyQt app(argc, argv);
 #ifdef _WIN32

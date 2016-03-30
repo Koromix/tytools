@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hs/common.h"
 
 #ifdef __cplusplus
     #define TY_C_BEGIN extern "C" {
@@ -188,6 +189,8 @@ TY_PUBLIC const char *ty_error_last_message(void);
 TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
+
+TY_PUBLIC void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 
 TY_C_END
 

@@ -47,11 +47,9 @@ static TY_THREAD_LOCAL unsigned int mask_count;
 
 static TY_THREAD_LOCAL char last_error_msg[256];
 
-static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 TY_INIT()
 {
-    hs_log_set_handler(libhs_log_handler, NULL);
-
+    // Keep this, to make sure section TY_INIT exists.
     return 0;
 }
 
@@ -335,7 +333,7 @@ int _ty_libhs_translate_error(int err)
     return TY_ERROR_OTHER;
 }
 
-static void libhs_log_handler(hs_log_level level, int err, const char *log, void *udata)
+void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata)
 {
     TY_UNUSED(udata);
 
