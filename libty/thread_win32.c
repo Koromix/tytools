@@ -15,25 +15,9 @@ typedef BOOL WINAPI SleepConditionVariableCS_func(CONDITION_VARIABLE *cv, CRITIC
 typedef VOID WINAPI WakeConditionVariable_func(CONDITION_VARIABLE *cv);
 typedef VOID WINAPI WakeAllConditionVariable_func(CONDITION_VARIABLE *cv);
 
-static InitializeConditionVariable_func *InitializeConditionVariable_;
-static SleepConditionVariableCS_func *SleepConditionVariableCS_;
 static WakeConditionVariable_func *WakeConditionVariable_;
 static WakeAllConditionVariable_func *WakeAllConditionVariable_;
-
-TY_INIT()
-{
-    HANDLE kernel32 = GetModuleHandle("kernel32.dll");
-
-    // Condition Variables appeared on Vista, emulate them on Windows XP
-    InitializeConditionVariable_ = (InitializeConditionVariable_func *)GetProcAddress(kernel32, "InitializeConditionVariable");
-    if (InitializeConditionVariable_) {
-        SleepConditionVariableCS_ = (SleepConditionVariableCS_func *)GetProcAddress(kernel32, "SleepConditionVariableCS");
-        WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(kernel32, "WakeConditionVariable");
-        WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(kernel32, "WakeAllConditionVariable");
-    }
-
-    return 0;
-}
+static SleepConditionVariableCS_func *SleepConditionVariableCS_;
 
 struct thread_context {
     ty_thread *thread;
@@ -141,17 +125,119 @@ void ty_mutex_unlock(ty_mutex *mutex)
     LeaveCriticalSection(&mutex->mutex);
 }
 
+static void WINAPI WakeConditionVariable_fallback(CONDITION_VARIABLE *cv)
+{
+    ty_cond *cond = (ty_cond *)cv;
+
+    EnterCriticalSection(&cond->xp.mutex);
+
+    if (cond->xp.wakeup < cond->xp.waiting)
+        cond->xp.wakeup++;
+    SetEvent(cond->xp.ev);
+
+    LeaveCriticalSection(&cond->xp.mutex);
+}
+
+static void WINAPI WakeAllConditionVariable_fallback(CONDITION_VARIABLE *cv)
+{
+    ty_cond *cond = (ty_cond *)cv;
+
+    EnterCriticalSection(&cond->xp.mutex);
+
+    cond->xp.wakeup = cond->xp.waiting;
+    SetEvent(cond->xp.ev);
+
+    LeaveCriticalSection(&cond->xp.mutex);
+}
+
+static DWORD adjust_timeout_win32(DWORD timeout, uint64_t start)
+{
+    if (timeout == INFINITE)
+        return INFINITE;
+
+    uint64_t now = ty_millis();
+
+    if (now > start + timeout)
+        return 0;
+    return (DWORD)(start + timeout - now);
+}
+
+// Not sure if the fallback code is correct or not, let's hope so for now
+static BOOL WINAPI SleepConditionVariableCS_fallback(CONDITION_VARIABLE *cv,
+                                                     CRITICAL_SECTION *mutex, DWORD timeout)
+{
+    ty_cond *cond = (ty_cond *)cv;
+    uint64_t start;
+    bool signaled;
+    DWORD wret;
+
+    while (true) {
+        EnterCriticalSection(&cond->xp.mutex);
+        if (!cond->xp.wakeup)
+            break;
+        LeaveCriticalSection(&cond->xp.mutex);
+    }
+
+    cond->xp.waiting++;
+
+    LeaveCriticalSection(&cond->xp.mutex);
+    LeaveCriticalSection(mutex);
+
+    start = ty_millis();
+restart:
+    wret = WaitForSingleObject(cond->xp.ev, adjust_timeout_win32(timeout, start));
+    assert(wret == WAIT_OBJECT_0 || wret == WAIT_TIMEOUT);
+
+    EnterCriticalSection(&cond->xp.mutex);
+
+    if (cond->xp.wakeup) {
+        if (!--cond->xp.wakeup)
+            ResetEvent(cond->xp.ev);
+        signaled = true;
+    } else if (wret == WAIT_TIMEOUT) {
+        signaled = false;
+    } else {
+        LeaveCriticalSection(&cond->xp.mutex);
+        goto restart;
+    }
+    cond->xp.waiting--;
+
+    LeaveCriticalSection(&cond->xp.mutex);
+
+    EnterCriticalSection(mutex);
+    return signaled;
+}
+
 int ty_cond_init(ty_cond *cond)
 {
+    static bool init;
+    static InitializeConditionVariable_func *InitializeConditionVariable_;
+
+    if (!init) {
+        HANDLE kernel32 = GetModuleHandle("kernel32.dll");
+
+        // Condition Variables appeared on Vista, emulate them on Windows XP
+        InitializeConditionVariable_ = (InitializeConditionVariable_func *)GetProcAddress(kernel32, "InitializeConditionVariable");
+        if (InitializeConditionVariable_) {
+            WakeConditionVariable_ = (WakeConditionVariable_func *)GetProcAddress(kernel32, "WakeConditionVariable");
+            WakeAllConditionVariable_ = (WakeAllConditionVariable_func *)GetProcAddress(kernel32, "WakeAllConditionVariable");
+            SleepConditionVariableCS_ = (SleepConditionVariableCS_func *)GetProcAddress(kernel32, "SleepConditionVariableCS");
+        } else {
+            WakeConditionVariable_ = WakeConditionVariable_fallback;
+            WakeAllConditionVariable_ = WakeAllConditionVariable_fallback;
+            SleepConditionVariableCS_ = SleepConditionVariableCS_fallback;
+        }
+
+        init = true;
+    }
+
     if (InitializeConditionVariable_) {
         InitializeConditionVariable_(&cond->cv);
     } else {
         memset(cond, 0, sizeof(*cond));
-
         cond->xp.ev = CreateEvent(NULL, TRUE, FALSE, NULL);
         if (!cond->xp.ev)
             return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
-
         InitializeCriticalSection(&cond->xp.mutex);
     }
     cond->init = true;
@@ -165,7 +251,7 @@ void ty_cond_release(ty_cond *cond)
         return;
 
     // Apparently, there is no need for a DeleteConditionVariable() on Windows >= Vista
-    if (!InitializeConditionVariable_) {
+    if (!WakeConditionVariable_) {
         DeleteCriticalSection(&cond->xp.mutex);
         CloseHandle(cond->xp.ev);
     }
@@ -174,77 +260,16 @@ void ty_cond_release(ty_cond *cond)
 
 void ty_cond_signal(ty_cond *cond)
 {
-    if (InitializeConditionVariable_) {
-        WakeConditionVariable_(&cond->cv);
-    } else {
-        EnterCriticalSection(&cond->xp.mutex);
-
-        if (cond->xp.wakeup < cond->xp.waiting)
-            cond->xp.wakeup++;
-        SetEvent(cond->xp.ev);
-
-        LeaveCriticalSection(&cond->xp.mutex);
-    }
+    WakeConditionVariable_(&cond->cv);
 }
 
 void ty_cond_broadcast(ty_cond *cond)
 {
-    if (InitializeConditionVariable_) {
-        WakeAllConditionVariable_(&cond->cv);
-    } else {
-        EnterCriticalSection(&cond->xp.mutex);
-
-        cond->xp.wakeup = cond->xp.waiting;
-        SetEvent(cond->xp.ev);
-
-        LeaveCriticalSection(&cond->xp.mutex);
-    }
+    WakeAllConditionVariable_(&cond->cv);
 }
 
-// Not sure if the fallback code is correct or not, let's hope so for now
 bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout)
 {
-    if (InitializeConditionVariable_) {
-        return SleepConditionVariableCS_(&cond->cv, &mutex->mutex, timeout >= 0 ? (DWORD)timeout : INFINITE);
-    } else {
-        uint64_t start;
-        bool signaled;
-        DWORD wret;
-
-        while (true) {
-            EnterCriticalSection(&cond->xp.mutex);
-            if (!cond->xp.wakeup)
-                break;
-            LeaveCriticalSection(&cond->xp.mutex);
-        }
-
-        cond->xp.waiting++;
-
-        LeaveCriticalSection(&cond->xp.mutex);
-        LeaveCriticalSection(&mutex->mutex);
-
-        start = ty_millis();
-restart:
-        wret = WaitForSingleObject(cond->xp.ev, timeout >= 0 ? (DWORD)ty_adjust_timeout(timeout, start) : INFINITE);
-        assert(wret == WAIT_OBJECT_0 || wret == WAIT_TIMEOUT);
-
-        EnterCriticalSection(&cond->xp.mutex);
-
-        if (cond->xp.wakeup) {
-            if (!--cond->xp.wakeup)
-                ResetEvent(cond->xp.ev);
-            signaled = true;
-        } else if (wret == WAIT_TIMEOUT) {
-            signaled = false;
-        } else {
-            LeaveCriticalSection(&cond->xp.mutex);
-            goto restart;
-        }
-        cond->xp.waiting--;
-
-        LeaveCriticalSection(&cond->xp.mutex);
-
-        EnterCriticalSection(&mutex->mutex);
-        return signaled;
-    }
+    return SleepConditionVariableCS_(&cond->cv, &mutex->mutex,
+                                     timeout >= 0 ? (DWORD)timeout : INFINITE);
 }
