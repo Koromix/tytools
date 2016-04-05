@@ -48,7 +48,6 @@ _HS_INIT()
 static int open_win32_device(hs_device *dev, hs_handle **rh)
 {
     hs_handle *h = NULL;
-    COMMTIMEOUTS timeouts;
     int r;
 
     h = calloc(1, sizeof(*h));
@@ -100,16 +99,22 @@ static int open_win32_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
 
-    timeouts.ReadIntervalTimeout = 1;
-    timeouts.ReadTotalTimeoutMultiplier = 0;
-    timeouts.ReadTotalTimeoutConstant = 0;
-    timeouts.WriteTotalTimeoutMultiplier = 0;
-    timeouts.WriteTotalTimeoutConstant = 1000;
+    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
+        COMMTIMEOUTS timeouts;
 
-    SetCommTimeouts(h->handle, &timeouts);
+        /* See SERIAL_TIMEOUTS documentation on MSDN, this basically means "Terminate read request
+           when there is at least one byte available". You still need a total timeout in that mode
+           so use 0xFFFFFFFE (using 0xFFFFFFFF for all read timeouts is not allowed). Using
+           WaitCommEvent() instead would probably be a good idea, I'll look into that later. */
+        timeouts.ReadIntervalTimeout = ULONG_MAX;
+        timeouts.ReadTotalTimeoutMultiplier = ULONG_MAX;
+        timeouts.ReadTotalTimeoutConstant = ULONG_MAX - 1;
+        timeouts.WriteTotalTimeoutMultiplier = 0;
+        timeouts.WriteTotalTimeoutConstant = 5000;
+        SetCommTimeouts(h->handle, &timeouts);
 
-    if (dev->type == HS_DEVICE_TYPE_SERIAL)
         EscapeCommFunction(h->handle, SETDTR);
+    }
 
     _hs_win32_start_async_read(h);
     if (h->status < 0) {
