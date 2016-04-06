@@ -17,7 +17,6 @@ namespace Commands {
     TaskInterface execute(const QString &cmd, const QStringList &parameters);
 
     TaskInterface openMainWindow();
-    TaskInterface activateMainWindow();
 
     TaskInterface reset(const QString &tag);
     TaskInterface reboot(const QString &tag);

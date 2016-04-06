@@ -42,7 +42,6 @@ enum {
 static const ClientCommand commands[] = {
     {"run",       &TyQt::runMainInstance,      NULL,                      NULL},
     {"open",      &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
-    {"activate",  &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Bring TyQt window to foreground")},
     {"reset",     &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
     {"reboot",    &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
     {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
@@ -144,34 +143,11 @@ SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
     return dialog;
 }
 
-MainWindow *TyQt::getMainWindow() const
-{
-    for (auto widget: topLevelWidgets()) {
-        if (widget->inherits("MainWindow"))
-            return qobject_cast<MainWindow *>(widget);
-    }
-
-    return nullptr;
-}
-
 void TyQt::openMainWindow()
 {
     auto win = new MainWindow(&monitor_);
     win->setAttribute(Qt::WA_DeleteOnClose);
     win->show();
-}
-
-void TyQt::activateMainWindow(MainWindow *win)
-{
-    if (!win) {
-        win = getMainWindow();
-        if (!win)
-            return;
-    }
-
-    win->setWindowState(win->windowState() & ~Qt::WindowMinimized);
-    win->raise();
-    win->activateWindow();
 }
 
 void TyQt::showLogWindow()

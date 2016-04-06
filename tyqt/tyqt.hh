@@ -77,8 +77,6 @@ public:
 
     SelectorDialog *openSelector(const QString &action = QString(), const QString &desc = QString());
 
-    MainWindow *getMainWindow() const;
-
     bool visible() const { return action_visible_->isChecked(); }
 
     void setClientConsole(bool console) { client_console_ = console; }
@@ -99,7 +97,6 @@ public:
 
 public slots:
     void openMainWindow();
-    void activateMainWindow(MainWindow *win = nullptr);
     void showLogWindow();
 
     void reportError(const QString &msg);

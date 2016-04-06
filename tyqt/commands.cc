@@ -100,8 +100,6 @@ TaskInterface Commands::execute(const QString &cmd, const QStringList &parameter
 
     if (cmd == "open") {
         return openMainWindow();
-    } else if (cmd == "activate") {
-        return activateMainWindow();
     } else if (cmd == "reset") {
         return reset(tag);
     } else if (cmd == "reboot") {
@@ -120,14 +118,6 @@ TaskInterface Commands::openMainWindow()
 {
     return make_task<ImmediateTask>([]() {
         tyQt->openMainWindow();
-        return true;
-    });
-}
-
-TaskInterface Commands::activateMainWindow()
-{
-    return make_task<ImmediateTask>([]() {
-        tyQt->activateMainWindow();
         return true;
     });
 }
