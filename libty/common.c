@@ -15,7 +15,7 @@ struct ty_task {
     TY_TASK
 };
 
-ty_log_level ty_config_verbosity = TY_LOG_INFO;
+int ty_config_verbosity = TY_LOG_INFO;
 
 static ty_message_func *handler = ty_message_default_handler;
 static void *handler_udata = NULL;
@@ -34,7 +34,7 @@ static bool log_level_is_enabled(ty_log_level level)
         init = true;
     }
 
-    return ty_config_verbosity >= level || debug;
+    return ty_config_verbosity >= (int)level || debug;
 }
 
 static void print_log(const void *data)

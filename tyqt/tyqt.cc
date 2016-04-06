@@ -373,8 +373,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
             showClientMessage(helpText());
             return EXIT_SUCCESS;
         case 'q':
-            ty_config_verbosity =
-                static_cast<ty_log_level>(static_cast<int>(ty_config_verbosity) - 1);
+            ty_config_verbosity--;
             break;
         }
     }
@@ -446,8 +445,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
             showClientMessage(helpText());
             return EXIT_SUCCESS;
         case 'q':
-            ty_config_verbosity =
-                static_cast<ty_log_level>(static_cast<int>(ty_config_verbosity) - 1);
+            ty_config_verbosity--;
             break;
 
         case OPTION_AUTOSTART:
