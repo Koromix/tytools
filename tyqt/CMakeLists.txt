@@ -20,7 +20,7 @@ set(TYQT_SOURCES about_dialog.cc
                  descriptor_notifier.cc
                  enhanced_plain_text.cc
                  firmware.cc
-                 log_window.cc
+                 log_dialog.cc
                  monitor.cc
                  preferences_dialog.cc
                  selector_dialog.cc
@@ -32,7 +32,7 @@ if(MSVC)
 endif()
 set(TYQT_FORMS about_dialog.ui
                arduino_dialog.ui
-               log_window.ui
+               log_dialog.ui
                main_window.ui
                board_widget.ui
                preferences_dialog.ui

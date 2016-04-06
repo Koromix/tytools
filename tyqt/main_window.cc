@@ -74,7 +74,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
 
     // Tools menu
     connect(actionArduinoTool, &QAction::triggered, this, &MainWindow::openArduinoTool);
-    connect(actionOpenLog, &QAction::triggered, tyQt, &TyQt::openLogWindow);
+    connect(actionOpenLog, &QAction::triggered, tyQt, &TyQt::showLogWindow);
     connect(actionResetApp, &QAction::triggered, tyQt, &TyQt::resetMonitor);
     connect(actionResetSettingsApp, &QAction::triggered, this,
             [=]() { tyQt->clearSettingsAndResetWithConfirmation(this); });

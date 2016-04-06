@@ -17,7 +17,7 @@
 
 #include "arduino_install.hh"
 #include "commands.hh"
-#include "log_window.hh"
+#include "log_dialog.hh"
 #include "main_window.hh"
 #include "selector_dialog.hh"
 #include "task.hh"
@@ -175,9 +175,9 @@ void TyQt::activateMainWindow(MainWindow *win)
     win->activateWindow();
 }
 
-void TyQt::openLogWindow()
+void TyQt::showLogWindow()
 {
-    log_window_->show();
+    log_dialog_->show();
 }
 
 void TyQt::reportError(const QString &msg)
@@ -403,10 +403,10 @@ int TyQt::runMainInstance(int argc, char *argv[])
     monitor_.setDatabase(&monitor_db_);
     monitor_.loadSettings();
 
-    log_window_ = unique_ptr<LogWindow>(new LogWindow());
-    log_window_->setAttribute(Qt::WA_QuitOnClose, false);
-    connect(this, &TyQt::globalError, log_window_.get(), &LogWindow::appendError);
-    connect(this, &TyQt::globalDebug, log_window_.get(), &LogWindow::appendDebug);
+    log_dialog_ = unique_ptr<LogDialog>(new LogDialog());
+    log_dialog_->setAttribute(Qt::WA_QuitOnClose, false);
+    connect(this, &TyQt::globalError, log_dialog_.get(), &LogDialog::appendError);
+    connect(this, &TyQt::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
 
     if (show_tray_icon_)
         tray_icon_.show();

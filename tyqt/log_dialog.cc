@@ -7,45 +7,45 @@
 
 #include <QMenu>
 
-#include "log_window.hh"
+#include "log_dialog.hh"
 
-LogWindow::LogWindow(QWidget *parent, Qt::WindowFlags f)
-    : QWidget(parent, f)
+LogDialog::LogDialog(QWidget *parent, Qt::WindowFlags f)
+    : QDialog(parent, f)
 {
     setupUi(this);
 
-    connect(closeButton, &QPushButton::clicked, this, &LogWindow::close);
-    connect(clearButton, &QPushButton::clicked, this, &LogWindow::clearAll);
+    connect(closeButton, &QPushButton::clicked, this, &LogDialog::close);
+    connect(clearButton, &QPushButton::clicked, this, &LogDialog::clearAll);
     connect(errorLogText, &QPlainTextEdit::customContextMenuRequested, this,
-            &LogWindow::showLogContextMenu);
+            &LogDialog::showLogContextMenu);
     connect(fullLogText, &QPlainTextEdit::customContextMenuRequested, this,
-            &LogWindow::showLogContextMenu);
+            &LogDialog::showLogContextMenu);
 }
 
-void LogWindow::appendError(const QString &msg)
+void LogDialog::appendError(const QString &msg)
 {
     errorLogText->appendPlainText(msg);
     fullLogText->appendPlainText(msg);
 }
 
-void LogWindow::appendDebug(const QString &msg)
+void LogDialog::appendDebug(const QString &msg)
 {
     fullLogText->appendPlainText(msg);
 }
 
-void LogWindow::clearAll()
+void LogDialog::clearAll()
 {
     errorLogText->clear();
     fullLogText->clear();
 }
 
-void LogWindow::keyPressEvent(QKeyEvent *e)
+void LogDialog::keyPressEvent(QKeyEvent *e)
 {
     if (!e->modifiers() && e->key() == Qt::Key_Escape)
         close();
 }
 
-void LogWindow::showLogContextMenu(const QPoint &pos)
+void LogDialog::showLogContextMenu(const QPoint &pos)
 {
     auto edit = qobject_cast<QPlainTextEdit *>(sender());
     auto menu = edit->createStandardContextMenu();

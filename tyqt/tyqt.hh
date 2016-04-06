@@ -19,7 +19,7 @@
 #include "monitor.hh"
 #include "session_channel.hh"
 
-class LogWindow;
+class LogDialog;
 class MainWindow;
 class SelectorDialog;
 
@@ -58,7 +58,7 @@ class TyQt : public QApplication {
     bool show_tray_icon_;
     bool hide_on_startup_;
 
-    std::unique_ptr<LogWindow> log_window_;
+    std::unique_ptr<LogDialog> log_dialog_;
 
 public:
     TyQt(int &argc, char *argv[]);
@@ -100,7 +100,7 @@ public:
 public slots:
     void openMainWindow();
     void activateMainWindow(MainWindow *win = nullptr);
-    void openLogWindow();
+    void showLogWindow();
 
     void reportError(const QString &msg);
     void reportDebug(const QString &msg);

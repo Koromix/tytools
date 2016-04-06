@@ -13,7 +13,7 @@ LIBS = -lty
 FORMS += about_dialog.ui \
     arduino_dialog.ui \
     board_widget.ui \
-    log_window.ui \
+    log_dialog.ui \
     main_window.ui \
     preferences_dialog.ui \
     selector_dialog.ui
@@ -28,7 +28,7 @@ HEADERS += about_dialog.hh \
     descriptor_notifier.hh \
     enhanced_plain_text.hh \
     firmware.hh \
-    log_window.hh \
+    log_dialog.hh \
     main_window.hh \
     monitor.hh \
     preferences_dialog.hh \
@@ -47,7 +47,7 @@ SOURCES += about_dialog.cc \
     descriptor_notifier.cc \
     enhanced_plain_text.cc \
     firmware.cc \
-    log_window.cc \
+    log_dialog.cc \
     main.cc \
     main_window.cc \
     monitor.cc \
