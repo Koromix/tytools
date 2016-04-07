@@ -160,7 +160,7 @@ void ArduinoDialog::executeAsRoot(const QString &command)
 
     appendMessage("");
     appendMessage(tr("Try to restart this command as root with :"));
-    appendMessage(tr("\"%1\" %2 \"%3\"").arg(QDir::toNativeSeparators(tyQt->clientFilePath()),
+    appendMessage(tr("\"%1\" %2 \"%3\"").arg(QDir::toNativeSeparators(TyQt::clientFilePath()),
                                              command, install_.absolutePath()), fmt);
 }
 
@@ -178,7 +178,7 @@ void ArduinoDialog::installWithUAC(const QString &command)
     info.lpFile = "cmd";
     info.nShow = SW_SHOW;
 
-    auto parameters = QString("/C \"\"%1\" %2 \"%3\" & pause\"").arg(QDir::toNativeSeparators(tyQt->clientFilePath()), command,
+    auto parameters = QString("/C \"\"%1\" %2 \"%3\" & pause\"").arg(QDir::toNativeSeparators(TyQt::clientFilePath()), command,
                                                                      QDir::toNativeSeparators(install_.absolutePath())).toLocal8Bit();
     info.lpParameters = parameters.constData();
 

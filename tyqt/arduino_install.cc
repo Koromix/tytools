@@ -72,7 +72,7 @@ bool ArduinoInstallation::integrate()
         if (line.startsWith("tools.teensyloader.upload.pattern") && !integrated) {
             emit log(tr(" + Integrate TyQt instructions after line %1").arg(i));
             out << QString("\n## TyQt\n"
-                           "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(tyQt->clientFilePath()));
+                           "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(TyQt::clientFilePath()));
             out << "tools.teensyloader.upload.params.quiet=--quiet\n"
                    "tools.teensyloader.upload.params.verbose=\n"
                    "tools.teensyloader.upload.pattern=\"{cmd.path}\" upload --autostart --wait"

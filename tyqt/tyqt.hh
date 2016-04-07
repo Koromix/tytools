@@ -64,13 +64,13 @@ public:
     TyQt(int &argc, char *argv[]);
     virtual ~TyQt();
 
+    static QString clientFilePath();
+
     void setDatabase(DatabaseInterface db) { db_ = db; }
     DatabaseInterface database() const { return db_; }
     void loadSettings();
 
     static int exec();
-
-    QString clientFilePath() const;
 
     static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
     Monitor *monitor() { return &monitor_; }

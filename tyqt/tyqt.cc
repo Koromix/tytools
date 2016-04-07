@@ -101,6 +101,15 @@ TyQt::~TyQt()
     ty_message_redirect(ty_message_default_handler, nullptr);
 }
 
+QString TyQt::clientFilePath()
+{
+#ifdef _WIN32
+    return applicationDirPath() + "/tyqtc.exe";
+#else
+    return applicationFilePath();
+#endif
+}
+
 void TyQt::loadSettings()
 {
     /* FIXME: Fix (most likely) broken behavior of hideOnStartup with
@@ -119,15 +128,6 @@ void TyQt::loadSettings()
 int TyQt::exec()
 {
     return tyQt->run(tyQt->argc_, tyQt->argv_);
-}
-
-QString TyQt::clientFilePath() const
-{
-#ifdef _WIN32
-    return applicationDirPath() + "/tyqtc.exe";
-#else
-    return applicationFilePath();
-#endif
 }
 
 SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
