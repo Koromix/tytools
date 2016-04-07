@@ -133,14 +133,13 @@ QString TyQt::clientFilePath() const
 
 SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
 {
-    auto dialog = new SelectorDialog(&monitor_, getMainWindow());
+    auto dialog = new SelectorDialog(&monitor_);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
 
     if (!action.isEmpty())
         dialog->setAction(action);
     if (!desc.isEmpty())
         dialog->setDescription(desc);
-    activateMainWindow();
 
     return dialog;
 }
