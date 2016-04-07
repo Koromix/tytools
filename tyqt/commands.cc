@@ -24,11 +24,19 @@ class BoardSelectorTask : public Task, private TaskListener {
     function<TaskInterface(Board &)> f_;
 
 public:
-    BoardSelectorTask(const QString &action, function<TaskInterface(Board &)> f)
+    BoardSelectorTask(const QString &action = QString(),
+                      function<TaskInterface(Board &)> f = function<TaskInterface(Board &)>())
         : action_(action), f_(f) {}
+    BoardSelectorTask(function<TaskInterface(Board &)> f)
+        : f_(f) {}
+
+    void setAction(const QString &action) { action_ = action; }
+    QString action() const { return action_; }
 
     void setDescription(const QString &desc) { desc_ = desc; }
     QString description() const { return desc_; }
+
+    void setFunction(function<TaskInterface(Board &)> f) { f_ = f; }
 
     bool start() override;
 
@@ -185,13 +193,15 @@ TaskInterface Commands::upload(const QString &tag, const QStringList &filenames)
         }
 
         if (!board) {
-            auto task = make_shared<BoardSelectorTask>("Upload", [=](Board &board) {
+            auto task = make_shared<BoardSelectorTask>([=](Board &board) {
                 return upload(board, filenames);
             });
             if (filenames.count() == 1) {
+                task->setAction(TyQt::tr("Upload '%1'").arg(QFileInfo(filenames[0]).fileName()));
                 task->setDescription(TyQt::tr("Upload '%1' to:").arg(QFileInfo(filenames[0]).fileName()));
             } else {
-                task->setDescription(TyQt::tr("Upload %1 firmwares to:").arg(filenames.count()));
+                task->setAction(TyQt::tr("Upload firmwares"));
+                task->setDescription(TyQt::tr("Upload firmwares to:"));
             }
 
             return TaskInterface(task);
