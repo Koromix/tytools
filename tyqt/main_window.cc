@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(actionQuit, &QAction::triggered, tyQt, &TyQt::quit);
 
     // View menu
-    connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openMainWindow);
+    connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openCloneWindow);
     connect(actionMinimalInterface, &QAction::triggered, this, &MainWindow::setCompactMode);
     connect(actionClearMonitor, &QAction::triggered, this, &MainWindow::clearMonitor);
 
@@ -278,10 +278,17 @@ void MainWindow::setCompactMode(bool enable)
     }
 }
 
-void MainWindow::openMainWindow()
+void MainWindow::openCloneWindow()
 {
     auto win = new MainWindow();
     win->setAttribute(Qt::WA_DeleteOnClose);
+
+    win->resize(size());
+    win->setCompactMode(compactMode());
+    win->boardList->selectionModel()->select(boardList->selectionModel()->selection(),
+                                           QItemSelectionModel::SelectCurrent);
+    win->tabWidget->setCurrentIndex(tabWidget->currentIndex());
+
     win->show();
 }
 

@@ -69,7 +69,7 @@ public slots:
 
     void setCompactMode(bool enable);
 
-    void openMainWindow();
+    void openCloneWindow();
     void openArduinoTool();
     void openPreferences();
     void openAboutDialog();
