@@ -727,6 +727,7 @@
   </customwidget>
  </customwidgets>
  <tabstops>
+  <tabstop>boardComboBox</tabstop>
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>idText</tabstop>
