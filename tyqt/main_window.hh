@@ -49,7 +49,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     AboutDialog *about_dialog_ = nullptr;
 
 public:
-    MainWindow(Monitor *monitor, QWidget *parent = nullptr);
+    MainWindow(QWidget *parent = nullptr);
 
     bool event(QEvent *ev) override;
 

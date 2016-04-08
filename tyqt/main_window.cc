@@ -27,8 +27,8 @@ using namespace std;
 QStringList MainWindow::codecs_;
 QHash<QString, int> MainWindow::codec_indexes_;
 
-MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
-    : QMainWindow(parent), monitor_(monitor)
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent), monitor_(tyQt->monitor())
 {
     setupUi(this);
 
@@ -90,11 +90,11 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(actionAbout, &QAction::triggered, this, &MainWindow::openAboutDialog);
 
     // Board list
-    boardList->setModel(monitor);
-    boardList->setItemDelegate(new BoardItemDelegate(monitor));
+    boardList->setModel(monitor_);
+    boardList->setItemDelegate(new BoardItemDelegate(monitor_));
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             &MainWindow::selectionChanged);
-    connect(monitor, &Monitor::boardAdded, this, [=]() {
+    connect(monitor_, &Monitor::boardAdded, this, [=]() {
         // Select this board if there were none available before
         if (monitor_->boardCount() == 1)
             boardList->setCurrentIndex(monitor_->index(0, 0));
@@ -103,7 +103,7 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
 
     // Board dropdown (compact mode)
-    boardComboBox->setModel(monitor);
+    boardComboBox->setModel(monitor_);
     boardComboBox->setVisible(false);
     auto spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

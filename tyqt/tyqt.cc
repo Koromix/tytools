@@ -132,7 +132,7 @@ int TyQt::exec()
 
 SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
 {
-    auto dialog = new SelectorDialog(&monitor_);
+    auto dialog = new SelectorDialog();
     dialog->setAttribute(Qt::WA_DeleteOnClose);
 
     if (!action.isEmpty())
@@ -145,7 +145,7 @@ SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
 
 void TyQt::openMainWindow()
 {
-    auto win = new MainWindow(&monitor_);
+    auto win = new MainWindow();
     win->setAttribute(Qt::WA_DeleteOnClose);
     win->show();
 }
@@ -386,7 +386,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
     if (show_tray_icon_)
         tray_icon_.show();
     action_visible_->setChecked(!hide_on_startup_);
-    auto win = new MainWindow(&monitor_);
+    auto win = new MainWindow();
     win->setAttribute(Qt::WA_DeleteOnClose);
     if (!hide_on_startup_)
         win->show();

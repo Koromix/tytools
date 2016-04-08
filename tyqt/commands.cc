@@ -11,6 +11,7 @@
 #include "board.hh"
 #include "commands.hh"
 #include "firmware.hh"
+#include "main_window.hh"
 #include "selector_dialog.hh"
 #include "task.hh"
 #include "tyqt.hh"

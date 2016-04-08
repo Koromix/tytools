@@ -10,11 +10,12 @@
 #include "board.hh"
 #include "monitor.hh"
 #include "selector_dialog.hh"
+#include "tyqt.hh"
 
 using namespace std;
 
-SelectorDialog::SelectorDialog(Monitor *monitor, QWidget *parent)
-    : QDialog(parent), monitor_(monitor)
+SelectorDialog::SelectorDialog(QWidget *parent)
+    : QDialog(parent), monitor_(tyQt->monitor())
 {
     setupUi(this);
 
@@ -22,16 +23,16 @@ SelectorDialog::SelectorDialog(Monitor *monitor, QWidget *parent)
     connect(buttonBox, &QDialogButtonBox::rejected, this, &SelectorDialog::reject);
     connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::doubleClicked);
 
-    tree->setModel(monitor);
+    tree->setModel(monitor_);
     connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             &SelectorDialog::selectionChanged);
     tree->header()->setStretchLastSection(false);
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
-    current_board_ = monitor->board(0);
+    current_board_ = monitor_->board(0);
     if (current_board_) {
-        tree->setCurrentIndex(monitor->index(0, 0));
+        tree->setCurrentIndex(monitor_->index(0, 0));
     } else {
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
     }
@@ -75,9 +76,9 @@ void SelectorDialog::done(int result)
     emit boardSelected(result ? current_board_.get() : nullptr);
 }
 
-shared_ptr<Board> SelectorDialog::getBoard(Monitor *monitor, QWidget *parent)
+shared_ptr<Board> SelectorDialog::getBoard(QWidget *parent)
 {
-    SelectorDialog dialog(monitor, parent);
+    SelectorDialog dialog(parent);
 
     dialog.exec();
 

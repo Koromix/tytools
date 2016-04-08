@@ -24,7 +24,7 @@ class SelectorDialog : public QDialog, private Ui::SelectorDialog {
     std::shared_ptr<Board> current_board_;
 
 public:
-    SelectorDialog(Monitor *monitor, QWidget *parent = nullptr);
+    SelectorDialog(QWidget *parent = nullptr);
 
     void setAction(const QString &action);
     QString action() const { return action_; }
@@ -35,7 +35,7 @@ public:
     std::shared_ptr<Board> currentBoard() const { return current_board_; }
     std::shared_ptr<Board> selectedBoard() const;
 
-    static std::shared_ptr<Board> getBoard(Monitor *monitor, QWidget *parent = nullptr);
+    static std::shared_ptr<Board> getBoard(QWidget *parent = nullptr);
 
 protected slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
