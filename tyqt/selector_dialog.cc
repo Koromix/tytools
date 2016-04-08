@@ -21,7 +21,7 @@ SelectorDialog::SelectorDialog(QWidget *parent)
 
     connect(buttonBox, &QDialogButtonBox::accepted, this, &SelectorDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &SelectorDialog::reject);
-    connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::doubleClicked);
+    connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::accept);
 
     tree->setModel(monitor_);
     connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this,
@@ -64,23 +64,8 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
     emit currentChanged(current_board_.get());
 }
 
-void SelectorDialog::doubleClicked(const QModelIndex &index)
-{
-    Q_UNUSED(index);
-    accept();
-}
-
 void SelectorDialog::done(int result)
 {
     QDialog::done(result);
     emit boardSelected(result ? current_board_.get() : nullptr);
-}
-
-shared_ptr<Board> SelectorDialog::getBoard(QWidget *parent)
-{
-    SelectorDialog dialog(parent);
-
-    dialog.exec();
-
-    return dialog.selectedBoard();
 }

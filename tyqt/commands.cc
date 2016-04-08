@@ -52,11 +52,11 @@ bool BoardSelectorTask::start()
     reportLog(TY_LOG_INFO, "Waiting for user selection");
     reportStarted();
 
-    auto dialog = tyQt->openSelector(action_, desc_);
-    if (!dialog) {
-        reportFinished(false, nullptr);
-        return true;
-    }
+    auto dialog = new SelectorDialog();
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    dialog->setAction(action_);
+    dialog->setDescription(desc_);
 
     auto ptr = shared_from_this();
     QObject::connect(dialog, &SelectorDialog::boardSelected, [this, ptr](Board *board) {
@@ -70,6 +70,7 @@ bool BoardSelectorTask::start()
         setTask(&task);
         task.start();
     });
+
     dialog->show();
 
     return true;
@@ -118,7 +119,10 @@ TaskInterface Commands::execute(const QString &cmd, const QStringList &parameter
 TaskInterface Commands::openMainWindow()
 {
     return make_task<ImmediateTask>([]() {
-        tyQt->openMainWindow();
+        auto win = new MainWindow();
+        win->setAttribute(Qt::WA_DeleteOnClose, true);
+        win->show();
+
         return true;
     });
 }

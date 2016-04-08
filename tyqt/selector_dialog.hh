@@ -35,11 +35,8 @@ public:
     std::shared_ptr<Board> currentBoard() const { return current_board_; }
     std::shared_ptr<Board> selectedBoard() const;
 
-    static std::shared_ptr<Board> getBoard(QWidget *parent = nullptr);
-
 protected slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
-    void doubleClicked(const QModelIndex &index);
     void done(int result) override;
 
 signals:

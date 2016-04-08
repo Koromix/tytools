@@ -19,7 +19,6 @@
 #include "commands.hh"
 #include "log_dialog.hh"
 #include "main_window.hh"
-#include "selector_dialog.hh"
 #include "task.hh"
 #include "tyqt.hh"
 #include "ty/version.h"
@@ -128,26 +127,6 @@ void TyQt::loadSettings()
 int TyQt::exec()
 {
     return tyQt->run(tyQt->argc_, tyQt->argv_);
-}
-
-SelectorDialog *TyQt::openSelector(const QString &action, const QString &desc)
-{
-    auto dialog = new SelectorDialog();
-    dialog->setAttribute(Qt::WA_DeleteOnClose);
-
-    if (!action.isEmpty())
-        dialog->setAction(action);
-    if (!desc.isEmpty())
-        dialog->setDescription(desc);
-
-    return dialog;
-}
-
-void TyQt::openMainWindow()
-{
-    auto win = new MainWindow();
-    win->setAttribute(Qt::WA_DeleteOnClose);
-    win->show();
 }
 
 void TyQt::showLogWindow()

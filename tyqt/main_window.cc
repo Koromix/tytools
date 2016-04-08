@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(actionQuit, &QAction::triggered, tyQt, &TyQt::quit);
 
     // View menu
-    connect(actionNewWindow, &QAction::triggered, tyQt, &TyQt::openMainWindow);
+    connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openMainWindow);
     connect(actionMinimalInterface, &QAction::triggered, this, &MainWindow::setCompactMode);
     connect(actionClearMonitor, &QAction::triggered, this, &MainWindow::clearMonitor);
 
@@ -276,6 +276,13 @@ void MainWindow::setCompactMode(bool enable)
 
         setContextMenuPolicy(Qt::NoContextMenu);
     }
+}
+
+void MainWindow::openMainWindow()
+{
+    auto win = new MainWindow();
+    win->setAttribute(Qt::WA_DeleteOnClose);
+    win->show();
 }
 
 void MainWindow::openArduinoTool()

@@ -75,8 +75,6 @@ public:
     static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
     Monitor *monitor() { return &monitor_; }
 
-    SelectorDialog *openSelector(const QString &action = QString(), const QString &desc = QString());
-
     bool visible() const { return action_visible_->isChecked(); }
 
     void setClientConsole(bool console) { client_console_ = console; }
@@ -96,7 +94,6 @@ public:
     void clearSettingsAndResetWithConfirmation(QWidget *parent = nullptr);
 
 public slots:
-    void openMainWindow();
     void showLogWindow();
 
     void reportError(const QString &msg);
