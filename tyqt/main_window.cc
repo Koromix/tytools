@@ -8,6 +8,7 @@
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QScrollBar>
+#include <QTextCodec>
 #include <QToolButton>
 #include <QUrl>
 
@@ -22,6 +23,9 @@
 #include "tyqt.hh"
 
 using namespace std;
+
+QStringList MainWindow::codecs_;
+QHash<QString, int> MainWindow::codec_indexes_;
 
 MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     : QMainWindow(parent), monitor_(monitor)
@@ -126,9 +130,14 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(actionAttachMonitor, &QAction::triggered, this,
             &MainWindow::setAttachMonitorForSelection);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
+    connect(codecComboBox, &QComboBox::currentTextChanged, this, &MainWindow::setSerialCodecForSelection);
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setScrollBackLimitForSelection);
+
+    initCodecList();
+    for (auto codec: codecs_)
+        codecComboBox->addItem(codec);
 
     // TyQt errors
     connect(tyQt, &TyQt::globalError, this, &MainWindow::showErrorMessage);
@@ -306,17 +315,35 @@ void MainWindow::sendMonitorInput()
     monitorEdit->clear();
 
     auto echo = echoCheck->isChecked();
-    auto bytes = s.toUtf8();
     for (auto &board: selected_boards_) {
         if (echo)
             board->appendToSerialDocument(s);
-        board->sendSerial(bytes);
+        board->sendSerial(s);
     }
 }
 
 void MainWindow::clearMonitor()
 {
     monitorText->clear();
+}
+
+void MainWindow::initCodecList()
+{
+    if (!codecs_.isEmpty())
+        return;
+
+    auto mibs = QTextCodec::availableMibs();
+
+    codecs_.reserve(mibs.count());
+    for (auto mib: mibs)
+        codecs_.append(QTextCodec::codecForMib(mib)->name());
+    codecs_.sort(Qt::CaseInsensitive);
+    codecs_.removeDuplicates();
+
+    codec_indexes_.reserve(codecs_.count());
+    int index = 0;
+    for (auto codec: codecs_)
+        codec_indexes_.insert(codec, index++);
 }
 
 void MainWindow::enableBoardWidgets()
@@ -519,6 +546,9 @@ void MainWindow::refreshSettings()
 
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
+    codecComboBox->blockSignals(true);
+    codecComboBox->setCurrentIndex(codec_indexes_.value(current_board_->serialCodecName(), 0));
+    codecComboBox->blockSignals(false);
     clearOnResetCheck->setChecked(current_board_->clearOnReset());
     scrollBackLimitSpin->blockSignals(true);
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
@@ -600,6 +630,12 @@ void MainWindow::setResetAfterForSelection(bool reset_after)
 {
     for (auto &board: selected_boards_)
         board->setResetAfter(reset_after);
+}
+
+void MainWindow::setSerialCodecForSelection(const QString &codec_name)
+{
+    for (auto &board: selected_boards_)
+        board->setSerialCodecName(codec_name.toUtf8());
 }
 
 void MainWindow::setClearOnResetForSelection(bool clear_on_reset)

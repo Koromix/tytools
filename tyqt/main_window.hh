@@ -8,6 +8,9 @@
 #ifndef MAIN_WINDOW_HH
 #define MAIN_WINDOW_HH
 
+#include <QHash>
+#include <QStringList>
+
 #include <memory>
 #include <vector>
 
@@ -20,6 +23,9 @@ class Monitor;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
+
+    static QStringList codecs_;
+    static QHash<QString, int> codec_indexes_;
 
     QMenu *menuUpload;
     QMenu *menuBrowseFirmware;
@@ -67,6 +73,8 @@ public slots:
     void clearMonitor();
 
 private:
+    static void initCodecList();
+
     void enableBoardWidgets();
     void disableBoardWidgets();
     void updateWindowTitle();
@@ -90,6 +98,7 @@ private slots:
     void browseForFirmware();
 
     void setResetAfterForSelection(bool reset_after);
+    void setSerialCodecForSelection(const QString &codec_name);
     void setClearOnResetForSelection(bool clear_on_reset);
     void setScrollBackLimitForSelection(int limit);
     void setAttachMonitorForSelection(bool attach_monitor);
