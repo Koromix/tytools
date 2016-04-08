@@ -10,6 +10,8 @@
 
 #include <QMutex>
 #include <QStringList>
+#include <QTextCodec>
+#include <QTextDecoder>
 #include <QTextDocument>
 #include <QThread>
 #include <QTimer>
@@ -43,6 +45,8 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool serial_attach_ = false;
     ty_board_interface *serial_iface_ = nullptr;
     DescriptorNotifier serial_notifier_;
+    QTextCodec *serial_codec_;
+    std::unique_ptr<QTextDecoder> serial_decoder_;
     QMutex serial_lock_;
     char serial_buf_[262144];
     size_t serial_buf_len_ = 0;
@@ -52,6 +56,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     QString firmware_;
     bool reset_after_;
+    QString serial_codec_name_;
     bool clear_on_reset_;
 
     QString status_firmware_;
@@ -101,6 +106,8 @@ public:
     QString firmware() const { return firmware_; }
     QStringList recentFirmwares() const { return recent_firmwares_; }
     bool resetAfter() const { return reset_after_; }
+    QString serialCodecName() const { return serial_codec_name_; }
+    QTextCodec *serialCodec() const { return serial_codec_; }
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
     bool attachMonitor() const { return serial_attach_; }
@@ -118,6 +125,7 @@ public:
     TaskInterface reboot();
 
     bool sendSerial(const QByteArray &buf);
+    bool sendSerial(const QString &s);
 
     TaskInterface runningTask() const { return running_task_; }
 
@@ -127,6 +135,7 @@ public slots:
     void setFirmware(const QString &firmware);
     void clearRecentFirmwares();
     void setResetAfter(bool reset_after);
+    void setSerialCodecName(QString codec_name);
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
     void setAttachMonitor(bool attach_monitor);

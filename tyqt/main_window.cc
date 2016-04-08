@@ -306,11 +306,10 @@ void MainWindow::sendMonitorInput()
     monitorEdit->clear();
 
     auto echo = echoCheck->isChecked();
-    auto bytes = s.toUtf8();
     for (auto &board: selected_boards_) {
         if (echo)
             board->appendToSerialDocument(s);
-        board->sendSerial(bytes);
+        board->sendSerial(s);
     }
 }
 

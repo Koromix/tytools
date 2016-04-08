@@ -71,6 +71,13 @@ void Board::loadSettings()
         recent_firmwares_.erase(recent_firmwares_.begin() + MAX_RECENT_FIRMWARES,
                                 recent_firmwares_.end());
     reset_after_ = db_.get("resetAfter", true).toBool();
+    serial_codec_name_ = db_.get("serialCodec", "UTF-8").toString();
+    serial_codec_ = QTextCodec::codecForName(serial_codec_name_.toUtf8());
+    if (!serial_codec_) {
+        serial_codec_name_ = "UTF-8";
+        serial_codec_ = QTextCodec::codecForName("UTF-8");
+    }
+    serial_decoder_.reset(serial_codec_->makeDecoder());
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
     serial_attach_ = db_.get("attachMonitor", true).toBool();
@@ -329,6 +336,11 @@ bool Board::sendSerial(const QByteArray &buf)
     return true;
 }
 
+bool Board::sendSerial(const QString &s)
+{
+    return sendSerial(serial_codec_->fromUnicode(s));
+}
+
 void Board::setTag(const QString &tag)
 {
     if (tag.isEmpty() && ty_board_get_tag(board_) == ty_board_get_id(board_))
@@ -374,6 +386,23 @@ void Board::setResetAfter(bool reset_after)
     reset_after_ = reset_after;
 
     db_.put("resetAfter", reset_after);
+    emit settingsChanged();
+}
+
+void Board::setSerialCodecName(QString codec_name)
+{
+    if (codec_name == serial_codec_name_)
+        return;
+
+    auto codec = QTextCodec::codecForName(codec_name.toUtf8());
+    if (!codec)
+        return;
+
+    serial_codec_name_ = codec_name;
+    serial_codec_ = codec;
+    serial_decoder_.reset(serial_codec_->makeDecoder());
+
+    db_.put("serialCodec", codec_name);
     emit settingsChanged();
 }
 
@@ -499,11 +528,10 @@ void Board::serialReceived(ty_descriptor desc)
 void Board::updateSerialDocument()
 {
     QMutexLocker locker(&serial_lock_);
-    auto str = QString::fromLocal8Bit(serial_buf_, serial_buf_len_);
+    auto str = serial_decoder_->toUnicode(serial_buf_, serial_buf_len_);
     serial_buf_len_ = 0;
     locker.unlock();
 
-    // FIXME: behavior with partial characters (UTF-8 or other multibyte encodings)
     appendToSerialDocument(str);
 }
 
