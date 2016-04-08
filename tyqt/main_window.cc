@@ -255,6 +255,7 @@ void MainWindow::setCompactMode(bool enable)
         menubar->setVisible(false);
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
         if (boardComboAction) {
+            tabWidget->setTabPosition(QTabWidget::West);
             boardComboAction->setVisible(true);
         } else {
             tabWidget->setCornerWidget(boardComboBox, Qt::TopRightCorner);
@@ -267,6 +268,7 @@ void MainWindow::setCompactMode(bool enable)
         menubar->setVisible(true);
         toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
         if (boardComboAction) {
+            tabWidget->setTabPosition(QTabWidget::North);
             boardComboAction->setVisible(false);
         } else {
             boardComboBox->setVisible(false);
