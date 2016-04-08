@@ -123,6 +123,25 @@ MainWindow::MainWindow(Monitor *monitor, QWidget *parent)
     connect(monitorEdit, &QLineEdit::returnPressed, this, &MainWindow::sendMonitorInput);
     connect(sendButton, &QToolButton::clicked, this, &MainWindow::sendMonitorInput);
 
+    auto add_eol_action = [=](const QString &title, const QString &eol) {
+        auto action = new QAction(title, actionMonitorEOLGroup);
+        action->setCheckable(true);
+        action->setProperty("EOL", eol);
+        return action;
+    };
+
+    menuMonitorOptions = new QMenu(this);
+    actionMonitorEOLGroup = new QActionGroup(this);
+    add_eol_action(tr("No line ending"), "");
+    add_eol_action(tr("Newline (LF)"), "\n")->setChecked(true);
+    add_eol_action(tr("Carriage return (CR)"), "\r");
+    add_eol_action(tr("Both (CRLF)"), "\r\n");
+    menuMonitorOptions->addActions(actionMonitorEOLGroup->actions());
+    menuMonitorOptions->addSeparator();
+    actionMonitorEcho = menuMonitorOptions->addAction(tr("Echo"));
+    actionMonitorEcho->setCheckable(true);
+    sendButton->setMenu(menuMonitorOptions);
+
     // Settings tab
     connect(firmwarePath, &QLineEdit::editingFinished, this, &MainWindow::validateAndSetFirmwarePath);
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
@@ -299,27 +318,16 @@ void MainWindow::openAboutDialog()
 void MainWindow::sendMonitorInput()
 {
     auto s = monitorEdit->text();
-    switch (newlineComboBox->currentIndex()) {
-    case 1:
-        s += '\n';
-        break;
-    case 2:
-        s += '\r';
-        break;
-    case 3:
-        s += "\r\n";
-        break;
-    default:
-        break;
-    }
-    monitorEdit->clear();
+    s += actionMonitorEOLGroup->checkedAction()->property("EOL").toString();
 
-    auto echo = echoCheck->isChecked();
+    auto echo = actionMonitorEcho->isChecked();
     for (auto &board: selected_boards_) {
         if (echo)
             board->appendToSerialDocument(s);
         board->sendSerial(s);
     }
+
+    monitorEdit->clear();
 }
 
 void MainWindow::clearMonitor()

@@ -34,6 +34,10 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QMenu *menuRecentFirmwares2;
 #endif
 
+    QMenu *menuMonitorOptions;
+    QAction *actionMonitorEcho;
+    QActionGroup *actionMonitorEOLGroup;
+
     // We need to keep this around to show/hide the board QComboBox
     QAction *boardComboAction;
 

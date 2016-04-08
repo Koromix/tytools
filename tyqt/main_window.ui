@@ -238,6 +238,9 @@
              <property name="text">
               <string>Send</string>
              </property>
+             <property name="popupMode">
+              <enum>QToolButton::MenuButtonPopup</enum>
+             </property>
             </widget>
            </item>
           </layout>
@@ -385,57 +388,6 @@
                 <property name="singleStep">
                  <number>100</number>
                 </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_4">
-              <item>
-               <widget class="QCheckBox" name="echoCheck">
-                <property name="text">
-                 <string>Echo</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_2">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QComboBox" name="newlineComboBox">
-                <property name="currentIndex">
-                 <number>1</number>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>No line ending</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Newline (LF)</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Carriage return (CR)</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Both (CRLF)</string>
-                 </property>
-                </item>
                </widget>
               </item>
              </layout>
@@ -779,8 +731,6 @@
   <tabstop>codecComboBox</tabstop>
   <tabstop>clearOnResetCheck</tabstop>
   <tabstop>scrollBackLimitSpin</tabstop>
-  <tabstop>echoCheck</tabstop>
-  <tabstop>newlineComboBox</tabstop>
  </tabstops>
  <resources>
   <include location="tyqt.qrc"/>
