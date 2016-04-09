@@ -1,5 +1,6 @@
 /* For some reason, including winuser.h breaks MSVC rc.exe when using an XP
    PlatformToolset (e.g. v140_xp) with a cryptic error message. */
 
-1 RT_MANIFEST "tyqt_win32.manifest" // CREATEPROCESS_MANIFEST_RESOURCE_ID
+// CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST
+1 24 "tyqt_win32.manifest"
 IDR_MAINFRAME ICON "images/tyqt.ico"
