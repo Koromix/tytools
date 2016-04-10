@@ -49,11 +49,7 @@ class TyQt : public QApplication {
     QSystemTrayIcon tray_icon_;
     QMenu tray_menu_;
 
-#ifdef _WIN32
     bool client_console_ = false;
-#else
-    bool client_console_ = true;
-#endif
 
     bool show_tray_icon_;
     bool hide_on_startup_;
