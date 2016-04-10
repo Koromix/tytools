@@ -282,8 +282,8 @@ int TyQt::run(int argc, char *argv[])
         }
 
         if (argv[1][0] != '-') {
-            command_ = argv[1];
-            argv[1] = argv[0];
+            swap(argv[0], argv[1]);
+            command_ = argv[0];
             argc--;
             argv++;
         }
