@@ -10,24 +10,32 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
+#define _CRT_RAND_S
 #include <stdlib.h>
 #include <string.h>
 
 struct echo_context {
+    HANDLE pipe;
+
     HANDLE in;
     HANDLE out;
 };
 
 #define UNUSED(arg) ((void)(arg))
+#define COUNTOF(a) (sizeof(a) / sizeof(*(a)))
 
 static DWORD WINAPI echo_thread(void *udata)
 {
     struct echo_context *ctx = udata;
+    BOOL success;
+
+    success = ConnectNamedPipe(ctx->pipe, NULL);
+    if (!success)
+        return 0;
 
     while (true) {
         uint8_t buf[1024];
         DWORD len;
-        BOOL success;
 
         success = ReadFile(ctx->in, buf, sizeof(buf), &len, NULL);
         if (!success)
@@ -42,37 +50,45 @@ static DWORD WINAPI echo_thread(void *udata)
 }
 
 typedef enum echo_direction {
-    ECHO_IN = 0,
-    ECHO_OUT = 1
+    ECHO_IN,
+    ECHO_OUT
 } echo_direction;
 
-/* If this function succeeds, resources will be leaked when the thread ends but
-   it is supposed to keep running to the end anyway. */
-static HANDLE start_echo_thread(HANDLE desc, echo_direction dir)
+static inline bool handle_is_valid(HANDLE h)
+{
+    return h && h != INVALID_HANDLE_VALUE;
+}
+
+/* If this function succeeds, resources will be leaked when the thread ends but it
+   is supposed to run until the end anyway. */
+static bool start_echo_thread(HANDLE desc, echo_direction dir, char *path, size_t path_size)
 {
     struct echo_context *ctx;
-    HANDLE pipe[2] = {NULL}, thread;
-    BOOL success;
+    HANDLE thread;
 
     ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
         goto error;
 
-    success = CreatePipe(&pipe[0], &pipe[1], NULL, 0);
-    if (!success)
-        goto error;
-    success = DuplicateHandle(GetCurrentProcess(), pipe[dir], GetCurrentProcess(), &pipe[dir], 0,
-                              TRUE, DUPLICATE_CLOSE_SOURCE | DUPLICATE_SAME_ACCESS);
-    if (!success)
+    for (unsigned int i = 0; i < 8 && !handle_is_valid(ctx->pipe); i++) {
+        unsigned int rnd;
+
+        rand_s(&rnd);
+        snprintf(path, path_size, "\\\\.\\pipe\\tyqtc-pipe-%04x", rnd);
+
+        ctx->pipe = CreateNamedPipe(path, PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
+                                    PIPE_TYPE_BYTE | PIPE_READMODE_BYTE, 1, 512, 512, 0, NULL);
+    }
+    if (!handle_is_valid(ctx->pipe))
         goto error;
 
     switch (dir) {
     case ECHO_IN:
         ctx->in = desc;
-        ctx->out = pipe[1];
+        ctx->out = ctx->pipe;
         break;
     case ECHO_OUT:
-        ctx->in = pipe[0];
+        ctx->in = ctx->pipe;
         ctx->out = desc;
         break;
     }
@@ -82,45 +98,41 @@ static HANDLE start_echo_thread(HANDLE desc, echo_direction dir)
         goto error;
     CloseHandle(thread);
 
-    return pipe[dir];
+    return true;
 
 error:
-    if (pipe[0])
-        CloseHandle(pipe[0]);
-    if (pipe[1])
-        CloseHandle(pipe[1]);
+    if (ctx && handle_is_valid(ctx->pipe))
+        CloseHandle(ctx->pipe);
     free(ctx);
-    return NULL;
+    return false;
 }
 
 static bool setup_pipes(void)
 {
-    HANDLE handles[3] = {NULL};
-    char buf[128];
+    char paths[3][256], env[1024];
 
 #define START_ECHO_THREAD(n, nstd, dir) \
         do { \
-            handles[n] = start_echo_thread(GetStdHandle(nstd), (dir)); \
-            if (!handles[n]) \
+            bool ret = start_echo_thread(GetStdHandle(nstd), (dir), paths[n], sizeof(paths[n])); \
+            if (!ret) \
                 return false; \
         } while (false)
 
-    /* You cannot use asynchronous I/O or the Wait functions for anonymous pipes on Windows,
-       do not ask me why but that is sad. */
+    /* You cannot use asynchronous I/O or the Wait functions for console I/O on Windows,
+       do not ask me why but that is sad. It is possible for Named Pipes though. */
     START_ECHO_THREAD(0, STD_INPUT_HANDLE, ECHO_IN);
     START_ECHO_THREAD(1, STD_OUTPUT_HANDLE, ECHO_OUT);
     START_ECHO_THREAD(2, STD_ERROR_HANDLE, ECHO_OUT);
 
 #undef START_ECHO_THREAD
 
-    sprintf(buf, "_TYQT_BRIDGE=%"PRIxPTR":%"PRIxPTR":%"PRIxPTR, (uintptr_t)handles[0],
-            (uintptr_t)handles[1], (uintptr_t)handles[2]);
-    _putenv(buf);
+    snprintf(env, sizeof(env), "_TYQTC_PIPES=%s:%s:%s", paths[0], paths[1], paths[2]);
+    _putenv(env);
 
     return true;
 }
 
-static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *ret)
+static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *rret)
 {
     char path[MAX_PATH + 1], *ptr;
     PROCESS_INFORMATION proc;
@@ -140,12 +152,9 @@ static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *ret)
     CloseHandle(proc.hThread);
 
     WaitForSingleObject(proc.hProcess, INFINITE);
-    if (ret)
-        GetExitCodeProcess(proc.hProcess, ret);
+    if (rret)
+        GetExitCodeProcess(proc.hProcess, rret);
     CloseHandle(proc.hProcess);
-
-    // Small delay to avoid dropping unread output/error data
-    Sleep(50);
 
     return true;
 }
@@ -162,6 +171,9 @@ int main(void)
         goto error;
     if (!execute_tyqt(GetCommandLine(), &si, &ret))
         goto error;
+
+    // Small delay to avoid dropping unread output/error data
+    Sleep(50);
 
     return (int)ret;
 

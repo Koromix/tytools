@@ -29,32 +29,37 @@
 using namespace std;
 
 #ifdef _WIN32
-static void set_standard_handle(DWORD n, HANDLE h, FILE *f, const char *mode)
-{
-    SetStdHandle(n, h);
 
-    *f = *_fdopen(_open_osfhandle(reinterpret_cast<uintptr_t>(h), _O_TEXT), mode);
-    setvbuf(f, NULL, _IONBF, 0);
+static bool reopen_stream(FILE *fp, const QString &path, const char *mode)
+{
+    fp = freopen(path.toLocal8Bit().constData(), mode, fp);
+    if (!fp)
+        return false;
+    setvbuf(fp, NULL, _IONBF, 0);
+
+    return true;
 }
 
 static bool open_tyqtc_bridge()
 {
-    QStringList parts = QString(getenv("_TYQT_BRIDGE")).split(':');
+    auto parts = QString(getenv("_TYQTC_PIPES")).split(':');
     if (parts.count() != 3)
         return false;
-    _putenv("_TYQT_BRIDGE=");
+    _putenv("_TYQTC_PIPES=");
 
-#define SET_STANDARD_HANDLE(nstd, n, f, mode) \
-        set_standard_handle((nstd), reinterpret_cast<HANDLE>(parts[n].toULong(nullptr, 16)), (f), (mode))
+#define REOPEN_STREAM(fp, path, mode) \
+        if (!reopen_stream((fp), (path), (mode))) \
+            return false;
 
-    SET_STANDARD_HANDLE(STD_INPUT_HANDLE, 0, stdin, "r");
-    SET_STANDARD_HANDLE(STD_OUTPUT_HANDLE, 1, stdout, "w");
-    SET_STANDARD_HANDLE(STD_ERROR_HANDLE, 2, stderr, "w");
+    REOPEN_STREAM(stdin, parts[0], "r");
+    REOPEN_STREAM(stdout, parts[1], "w");
+    REOPEN_STREAM(stderr, parts[2], "w");
 
-#undef SET_STANDARD_HANDLE
+#undef REOPEN_STREAM
 
     return true;
 }
+
 #endif
 
 int main(int argc, char *argv[])
