@@ -29,23 +29,32 @@
 using namespace std;
 
 #ifdef _WIN32
-
-static bool attach_win32_console()
+static void set_standard_handle(DWORD n, HANDLE h, FILE *f, const char *mode)
 {
-    BOOL success;
+    SetStdHandle(n, h);
 
-    success = AttachConsole(ATTACH_PARENT_PROCESS);
-    if (!success)
+    *f = *_fdopen(_open_osfhandle(reinterpret_cast<uintptr_t>(h), _O_TEXT), mode);
+    setvbuf(f, NULL, _IONBF, 0);
+}
+
+static bool open_tyqtc_bridge()
+{
+    QStringList parts = QString(getenv("_TYQT_BRIDGE")).split(':');
+    if (parts.count() != 3)
         return false;
+    _putenv("_TYQT_BRIDGE=");
 
-    freopen("CONIN$", "r", stdin);
-    freopen("CONOUT$", "w", stdout);
-    freopen("CONOUT$", "w", stdout);
-    ios::sync_with_stdio();
+#define SET_STANDARD_HANDLE(nstd, n, f, mode) \
+        set_standard_handle((nstd), reinterpret_cast<HANDLE>(parts[n].toULong(nullptr, 16)), (f), (mode))
+
+    SET_STANDARD_HANDLE(STD_INPUT_HANDLE, 0, stdin, "r");
+    SET_STANDARD_HANDLE(STD_OUTPUT_HANDLE, 1, stdout, "w");
+    SET_STANDARD_HANDLE(STD_ERROR_HANDLE, 2, stderr, "w");
+
+#undef SET_STANDARD_HANDLE
 
     return true;
 }
-
 #endif
 
 int main(int argc, char *argv[])
@@ -58,10 +67,7 @@ int main(int argc, char *argv[])
 
     TyQt app(argc, argv);
 #ifdef _WIN32
-    if (getenv("_TYQTC")) {
-        _putenv("_TYQTC=");
-        app.setClientConsole(attach_win32_console());
-    }
+    app.setClientConsole(open_tyqtc_bridge());
 #else
     app.setClientConsole(ty_standard_get_modes(TY_STANDARD_OUTPUT) != TY_DESCRIPTOR_MODE_DEVICE);
 #endif
