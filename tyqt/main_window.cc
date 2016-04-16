@@ -251,6 +251,8 @@ void MainWindow::rebootSelection()
 
 void MainWindow::setCompactMode(bool enable)
 {
+    actionMinimalInterface->setChecked(enable);
+
     if (enable) {
         menubar->setVisible(false);
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
