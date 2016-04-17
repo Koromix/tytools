@@ -14,6 +14,10 @@
 #include <QThread>
 
 #include <getopt.h>
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
 
 #include "arduino_install.hh"
 #include "commands.hh"
@@ -183,6 +187,10 @@ void TyQt::acceptClient()
     connect(peer, &SessionPeer::received, this, [=](const QStringList &arguments) {
         executeAction(*peer, arguments);
     });
+
+#ifdef _WIN32
+    peer->send({"allowsetforegroundwindow", QString::number(GetCurrentProcessId())});
+#endif
 }
 
 void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
@@ -247,6 +255,21 @@ void TyQt::readAnswer(const QStringList &arguments)
         unsigned int total = parameters[2].toUInt();
 
         ty_progress(action.toLocal8Bit().constData(), progress, total);
+#ifdef _WIN32
+    } else if (cmd == "allowsetforegroundwindow") {
+        if (parameters.count() < 1)
+            goto error;
+
+        /* The server may show a window for some commands, such as the board dialog. Executables
+           launched from an application with focus can pop on top, so this instance can probably
+           do it but the TyQt main instance cannot unless we call AllowSetForegroundWindow(). It
+           also works if this instance is run through tyqtc (to provide console I/O) because
+           tyqtc calls AllowSetForegroundWindow() for this process too.
+
+           We could use GetNamedPipeServerProcessId() instead of sending the PID through the
+           channel, but it is not available on XP. */
+        AllowSetForegroundWindow(parameters[0].toUInt());
+#endif
     } else {
         goto error;
     }

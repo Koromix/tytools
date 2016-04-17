@@ -151,6 +151,8 @@ static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *rret)
         return false;
     CloseHandle(proc.hThread);
 
+    AllowSetForegroundWindow(GetProcessId(proc.hProcess));
+
     WaitForSingleObject(proc.hProcess, INFINITE);
     if (rret)
         GetExitCodeProcess(proc.hProcess, rret);
