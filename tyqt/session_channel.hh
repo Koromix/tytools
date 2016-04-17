@@ -11,39 +11,44 @@
 #include <QLockFile>
 #include <QLocalServer>
 #include <QLocalSocket>
-#include <QPointer>
 
 #include <memory>
-
-class SessionChannel;
 
 class SessionPeer : public QObject {
     Q_OBJECT
 
-    SessionChannel *channel_;
-    QLocalSocket *socket_;
-
-    unsigned int busy_ = 0;
-
+    std::unique_ptr<QLocalSocket> socket_;
     uint32_t expected_length_ = 0;
 
 public:
+    enum CloseReason {
+        LocalClose,
+        RemoteClose,
+        Error
+    };
+
+    static std::unique_ptr<SessionPeer> wrapSocket(QLocalSocket *socket);
+    static std::unique_ptr<SessionPeer> connectTo(const QString &name);
+    ~SessionPeer();
+
+    void close();
+
+    bool isConnected() const { return socket_->state() == QLocalSocket::ConnectedState; }
+
     void send(const QStringList &arguments);
     void send(const QString &argument) { send(QStringList(argument)); }
     void send(const char *argument) { send(QStringList(argument)); }
 
-    bool isConnected() const { return socket_->state() == QLocalSocket::ConnectedState; }
+signals:
+    void received(const QStringList &arguments);
+    void closed(SessionPeer::CloseReason reason);
 
 private:
-    SessionPeer(SessionChannel *channel, QLocalSocket *socket = new QLocalSocket());
-
-    bool connect(const QString &name);
+    SessionPeer(QLocalSocket *socket);
+    void close(CloseReason reason);
 
 private slots:
     void dataReceived();
-    void dropClient();
-
-    friend class SessionChannel;
 };
 
 class SessionChannel : public QObject {
@@ -58,8 +63,7 @@ class SessionChannel : public QObject {
     QString id_;
     bool locked_ = false;
 
-    QLocalServer server_;
-    QPointer<SessionPeer> client_;
+    std::unique_ptr<QLocalServer> server_;
 
 public:
     SessionChannel(const QString &id, QObject *parent = nullptr);
@@ -76,24 +80,16 @@ public:
     bool isLocked() const { return locked_; }
 
     bool listen();
-    bool connectToMaster();
-    bool isConnected() const { return client_ && client_->isConnected(); }
+    std::unique_ptr<SessionPeer> nextPendingConnection();
     void close();
 
-    void send(const QStringList &arguments);
-    void send(const QString &argument) { send(QStringList(argument)); }
-    void send(const char *argument) { send(QStringList(argument)); }
+    std::unique_ptr<SessionPeer> connectToServer();
 
 signals:
-    void received(SessionPeer &peer, const QStringList &arguments);
-
-    void masterClosed();
+    void newConnection();
 
 private:
     QString makeSocketName() const;
-
-private slots:
-    void receiveConnection();
 };
 
 #endif

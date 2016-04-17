@@ -16,7 +16,6 @@
     #include <unistd.h>
 #endif
 
-#include "ty/common.h"
 #include "session_channel.hh"
 
 #ifdef _WIN32
@@ -38,19 +37,14 @@ SessionChannel::SessionChannel(const QString &id, QObject *parent)
 
 SessionChannel::~SessionChannel()
 {
-    if (client_)
-        disconnect(client_.data(), &QObject::destroyed, this, &SessionChannel::masterClosed);
-
     close();
     unlock();
 }
 
 void SessionChannel::init(const QString &id)
 {
-    if (!id_.isEmpty()) {
-        close();
-        unlock();
-    }
+    close();
+    unlock();
 
     if (!id.isEmpty()) {
         id_ = id;
@@ -136,68 +130,89 @@ QString SessionChannel::makeSocketName() const
 
 bool SessionChannel::listen()
 {
-    if (id_.isEmpty() || !locked_)
+    if (!lock())
         return false;
-
-    if (server_.isListening())
+    if (server_ && server_->isListening())
         return true;
 
-    QString socketName = makeSocketName();
+    auto socket_name = makeSocketName();
 
-    QLocalServer::removeServer(socketName);
+    QLocalServer::removeServer(socket_name);
 
-    server_.setSocketOptions(QLocalServer::UserAccessOption);
-    connect(&server_, &QLocalServer::newConnection, this, &SessionChannel::receiveConnection);
+    if (!server_) {
+        server_ = unique_ptr<QLocalServer>(new QLocalServer());
+        connect(server_.get(), &QLocalServer::newConnection, this, &SessionChannel::newConnection);
+    }
+    server_->setSocketOptions(QLocalServer::UserAccessOption);
 
-    return server_.listen(socketName);
+    return server_->listen(socket_name);
 }
 
-bool SessionChannel::connectToMaster()
+unique_ptr<SessionPeer> SessionChannel::nextPendingConnection()
 {
-    if (id_.isEmpty() || locked_)
-        return false;
-
-    if (client_) {
-        if (client_->isConnected())
-            return true;
-    } else {
-        client_ = new SessionPeer(this);
-        connect(client_.data(), &QObject::destroyed, this, &SessionChannel::masterClosed);
-    }
-
-    return client_->connect(makeSocketName());
+    auto socket = server_->nextPendingConnection();
+    if (!socket)
+        return nullptr;
+    return SessionPeer::wrapSocket(socket);
 }
 
 void SessionChannel::close()
 {
-    server_.close();
-    delete client_;
+    server_.reset();
 }
 
-void SessionChannel::send(const QStringList &arguments)
+unique_ptr<SessionPeer> SessionChannel::connectToServer()
 {
-    if (!client_)
-        return;
+    if (id_.isEmpty())
+        return nullptr;
+    if (locked_)
+        return nullptr;
 
-    client_->send(arguments);
+    return SessionPeer::connectTo(makeSocketName());
 }
 
-void SessionChannel::receiveConnection()
+unique_ptr<SessionPeer> SessionPeer::wrapSocket(QLocalSocket *socket)
 {
-    QLocalSocket *socket = server_.nextPendingConnection();
     if (!socket)
-        return;
+        return nullptr;
 
-    new SessionPeer(this, socket);
+    return unique_ptr<SessionPeer>(new SessionPeer(socket));
 }
 
-SessionPeer::SessionPeer(SessionChannel *channel, QLocalSocket *socket)
-    : QObject(channel), channel_(channel), socket_(socket)
+unique_ptr<SessionPeer> SessionPeer::connectTo(const QString &name)
 {
-    socket->setParent(this);
+    auto socket = unique_ptr<QLocalSocket>(new QLocalSocket());
+
+    socket->connectToServer(name);
+    if (!socket->waitForConnected(1000))
+        return nullptr;
+
+    return unique_ptr<SessionPeer>(new SessionPeer(socket.release()));
+}
+
+SessionPeer::SessionPeer(QLocalSocket *socket)
+    : socket_(socket)
+{
+    socket_->setParent(nullptr);
 
     QObject::connect(socket, &QLocalSocket::readyRead, this, &SessionPeer::dataReceived);
-    QObject::connect(socket, &QLocalSocket::disconnected, this, &SessionPeer::dropClient);
+    QObject::connect(socket, &QLocalSocket::disconnected, this, [=]() {
+        close(RemoteClose);
+    });
+    QObject::connect(socket, static_cast<void(QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error),
+                     this, [=]() {
+        close(Error);
+    });
+}
+
+SessionPeer::~SessionPeer()
+{
+    close();
+}
+
+void SessionPeer::close()
+{
+    close(LocalClose);
 }
 
 void SessionPeer::send(const QStringList &arguments)
@@ -214,56 +229,42 @@ void SessionPeer::send(const QStringList &arguments)
     socket_->write(buf);
 }
 
-bool SessionPeer::connect(const QString &name)
-{
-    socket_->connectToServer(name);
-    return socket_->waitForConnected(1000);
-}
-
 void SessionPeer::dataReceived()
 {
     if (socket_->state() != QLocalSocket::ConnectedState)
         return;
 
-    /* Any slot may run an event loop (for example with QDialog::exec()), so we have to delay
-     * deletion of this peer if it's disconnected. */
-    busy_++;
-
     while (true) {
+        // Get the length first (first 8 bytes)
         if (!expected_length_) {
             if (socket_->bytesAvailable() < static_cast<qint64>(sizeof(expected_length_)))
                 break;
 
             qint64 read = socket_->read(reinterpret_cast<char *>(&expected_length_), sizeof(expected_length_));
             if (read < static_cast<qint64>(sizeof(expected_length_))) {
-                dropClient();
+                close(Error);
                 break;
             }
         }
-
-        // Easier to let the OS handle the buffer, I won't use very big messages anyway
+        // Easier to let Qt/OS handle the buffer, I won't use very big messages anyway
         if (socket_->bytesAvailable() < expected_length_)
             break;
 
-        QByteArray buf = socket_->read(static_cast<qint64>(expected_length_));
+        auto buf = socket_->read(static_cast<qint64>(expected_length_));
         expected_length_ = 0;
 
         QDataStream stream(buf);
         QStringList arguments;
         stream >> arguments;
-
-        emit channel_->received(*this, arguments);
+        emit received(arguments);
     }
-
-    busy_--;
-
-    if (!busy_ && socket_->state() != QLocalSocket::ConnectedState)
-        deleteLater();
 }
 
-void SessionPeer::dropClient()
+void SessionPeer::close(CloseReason reason)
 {
+    if (!isConnected())
+        return;
+
     socket_->close();
-    if (!busy_)
-        deleteLater();
+    emit closed(reason);
 }

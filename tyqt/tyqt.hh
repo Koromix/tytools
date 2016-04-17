@@ -117,11 +117,13 @@ private:
     void showClientMessage(const QString &msg);
     void showClientError(const QString &msg);
 
+    void executeAction(SessionPeer &peer, const QStringList &arguments);
+
 private slots:
     void trayActivated(QSystemTrayIcon::ActivationReason reason);
 
-    void executeAction(SessionPeer &peer, const QStringList &arguments);
-    void readAnswer(SessionPeer &peer, const QStringList &arguments);
+    void acceptClient();
+    void readAnswer(const QStringList &arguments);
 };
 
 #endif

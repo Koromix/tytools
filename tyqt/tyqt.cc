@@ -175,6 +175,16 @@ void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 #endif
 }
 
+void TyQt::acceptClient()
+{
+    auto peer = channel_.nextPendingConnection().release();
+
+    connect(peer, &SessionPeer::closed, peer, &SessionPeer::deleteLater);
+    connect(peer, &SessionPeer::received, this, [=](const QStringList &arguments) {
+        executeAction(*peer, arguments);
+    });
+}
+
 void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
 {
     if (arguments.isEmpty()) {
@@ -206,10 +216,8 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
     task.start();
 }
 
-void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
+void TyQt::readAnswer(const QStringList &arguments)
 {
-    Q_UNUSED(peer);
-
     QStringList parameters = arguments;
     QString cmd;
 
@@ -226,10 +234,8 @@ void TyQt::readAnswer(SessionPeer &peer, const QStringList &arguments)
 
         ty_log(static_cast<ty_log_level>(level), "%s", msg.toLocal8Bit().constData());
     } else if (cmd == "start") {
-        if (!wait_) {
-            channel_.disconnect(this);
+        if (!wait_)
             exit(0);
-        }
     } else if (cmd == "exit") {
         exit(parameters.value(0, "0").toInt());
     } else if (cmd == "progress") {
@@ -337,7 +343,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    connect(&channel_, &SessionChannel::received, this, &TyQt::executeAction);
+    connect(&channel_, &SessionChannel::newConnection, this, &TyQt::acceptClient);
 
     // This can be triggered from multiple threads, but Qt can queue signals appropriately
     ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
@@ -428,7 +434,8 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
         }
     }
 
-    if (!channel_.connectToMaster()) {
+    auto client = channel_.connectToServer();
+    if (!client) {
         if (autostart) {
             if (!QProcess::startDetached(applicationFilePath(), {"-qqq"})) {
                 showClientError(tr("Failed to start TyQt main instance"));
@@ -437,17 +444,19 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
 
             QElapsedTimer timer;
             timer.start();
-            while (!channel_.connectToMaster() && timer.elapsed() < 3000)
+            while (!client && timer.elapsed() < 3000) {
                 QThread::msleep(20);
+                client = channel_.connectToServer();
+            }
         }
 
-        if (!channel_.isConnected()) {
+        if (!client) {
             showClientError(tr("Cannot connect to main TyQt instance"));
             return EXIT_FAILURE;
         }
     }
 
-    connect(&channel_, &SessionChannel::received, this, &TyQt::readAnswer);
+    connect(client.get(), &SessionPeer::received, this, &TyQt::readAnswer);
 
     // Hack for Arduino integration, see getopt loop in TyQt::run()
     if (!usbtype.isEmpty() && !usbtype.contains("_SERIAL"))
@@ -456,11 +465,13 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
     QStringList arguments = {command_, QDir::currentPath(), board};
     for (int i = optind; i < argc; i++)
         arguments.append(argv[i]);
-    channel_.send(arguments);
+    client->send(arguments);
 
-    connect(&channel_, &SessionChannel::masterClosed, this, [=]() {
-        showClientError(tr("Main TyQt instance closed the connection"));
-        exit(1);
+    connect(client.get(), &SessionPeer::closed, this, [=](SessionPeer::CloseReason reason) {
+        if (reason != SessionPeer::LocalClose) {
+            showClientError(tr("Main TyQt instance closed the connection"));
+            exit(1);
+        }
     });
 
     return QApplication::exec();
