@@ -66,11 +66,8 @@ static void print_progress(const void *data)
     }
 
     if (show_progress) {
-        if (msg->value)
-            printf("\r");
-        printf("%s... %u%%", msg->action, 100 * msg->value / msg->max);
-        if (msg->value == msg->max)
-            printf("\n");
+        printf("%s... %u%%%c", msg->action, 100 * msg->value / msg->max,
+               msg->value < msg->max ? '\r' : '\n');
 
         fflush(stdout);
     } else if (!msg->value) {
