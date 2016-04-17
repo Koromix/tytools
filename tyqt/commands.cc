@@ -72,6 +72,8 @@ bool BoardSelectorTask::start()
     });
 
     dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
 
     return true;
 }
