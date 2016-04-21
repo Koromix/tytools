@@ -47,6 +47,9 @@
          <height>0</height>
         </size>
        </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
        <property name="horizontalScrollBarPolicy">
         <enum>Qt::ScrollBarAlwaysOff</enum>
        </property>
@@ -702,6 +705,14 @@
    </property>
    <property name="toolTip">
     <string>Preferences</string>
+   </property>
+  </action>
+  <action name="actionRenameBoard">
+   <property name="text">
+    <string>R&amp;ename board</string>
+   </property>
+   <property name="toolTip">
+    <string>Rename board</string>
    </property>
   </action>
  </widget>

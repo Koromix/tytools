@@ -29,9 +29,12 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 
     QMenu *menuUpload;
     QMenu *menuBrowseFirmware;
+    QMenu *menuBoardContext;
+
 #ifdef __APPLE__
     // See MainWindow::MainWindow() in main_window.cc for more information about that
     QMenu *menuRecentFirmwares2;
+    QMenu *menuRecentFirmwares3;
 #endif
 
     QMenu *menuMonitorOptions;
@@ -90,6 +93,7 @@ private:
 
 private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
+    void openBoardListContextMenu(const QPoint &pos);
 
     void refreshActions();
     void refreshInfo();

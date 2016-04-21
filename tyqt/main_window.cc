@@ -32,20 +32,39 @@ MainWindow::MainWindow(QWidget *parent)
 {
     setupUi(this);
 
-    menuUpload = new QMenu(this);
-    menuUpload->addAction(actionUploadNew);
-    menuUpload->addAction(actionDropFirmware);
 #ifdef __APPLE__
     /* Workaround for Qt OSX bug https://bugreports.qt.io/browse/QTBUG-34160
        The actions in menuRecentFirmwares are copied to menuRecentFirmwares2
        in updateFirmwareMenus(). */
     menuRecentFirmwares2 = new QMenu(menuRecentFirmwares->title(), this);
+    menuRecentFirmwares3 = new QMenu(menuRecentFirmwares->title(), this);
+#endif
+
+    menuUpload = new QMenu(this);
+    menuUpload->addAction(actionUploadNew);
+    menuUpload->addAction(actionDropFirmware);
+#ifdef __APPLE__
     menuUpload->addMenu(menuRecentFirmwares2);
 #else
     menuUpload->addMenu(menuRecentFirmwares);
 #endif
 
     menuBrowseFirmware = new QMenu(this);
+
+    menuBoardContext = new QMenu(this);
+    menuBoardContext->addAction(actionUpload);
+    menuBoardContext->addAction(actionUploadNew);
+    menuBoardContext->addAction(actionDropFirmware);
+#ifdef __APPLE__
+    menuBoardContext->addMenu(menuRecentFirmwares3);
+#else
+    menuBoardContext->addMenu(menuRecentFirmwares);
+#endif
+    menuBoardContext->addSeparator();
+    menuBoardContext->addAction(actionReset);
+    menuBoardContext->addAction(actionReboot);
+    menuBoardContext->addSeparator();
+    menuBoardContext->addAction(actionRenameBoard);
 
     auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
     if (uploadButton) {
@@ -92,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Board list
     boardList->setModel(monitor_);
     boardList->setItemDelegate(new BoardItemDelegate(monitor_));
+    connect(boardList, &QListView::customContextMenuRequested, this,
+            &MainWindow::openBoardListContextMenu);
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             &MainWindow::selectionChanged);
     connect(monitor_, &Monitor::boardAdded, this, [=]() {
@@ -101,6 +122,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     // The blue selection frame displayed on OSX looks awful
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
+    connect(actionRenameBoard, &QAction::triggered, this, [=]() {
+        boardList->edit(boardList->currentIndex());
+    });
 
     // Board dropdown (compact mode)
     boardComboBox->setModel(monitor_);
@@ -383,6 +407,8 @@ void MainWindow::enableBoardWidgets()
     monitorText->setDocument(&current_board_->serialDocument());
     monitorText->moveCursor(QTextCursor::End);
     monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
+
+    actionRenameBoard->setEnabled(true);
 }
 
 void MainWindow::disableBoardWidgets()
@@ -403,6 +429,8 @@ void MainWindow::disableBoardWidgets()
     actionClearMonitor->setEnabled(false);
     uploadTab->setEnabled(false);
     actionAttachMonitor->setEnabled(false);
+
+    actionRenameBoard->setEnabled(false);
 }
 
 void MainWindow::updateWindowTitle()
@@ -467,6 +495,10 @@ void MainWindow::updateFirmwareMenus()
     menuRecentFirmwares2->clear();
     menuRecentFirmwares2->addActions(menuRecentFirmwares->actions());
     menuRecentFirmwares2->setEnabled(menuRecentFirmwares->isEnabled());
+
+    menuRecentFirmwares3->clear();
+    menuRecentFirmwares3->addActions(menuRecentFirmwares->actions());
+    menuRecentFirmwares3->setEnabled(menuRecentFirmwares->isEnabled());
 #endif
 }
 
@@ -538,6 +570,19 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         updateWindowTitle();
         updateFirmwareMenus();
     }
+}
+
+void MainWindow::openBoardListContextMenu(const QPoint &pos)
+{
+    /* Most of the time, the right click changes selection so we can just open a context
+       menu with the various actions in their current state. In some seemingly random cases,
+       a context menu can be opened on unselected items, and I don't know enough about the
+       subtleties of the QAbstractItemView selection system / modes to know if it is normal
+       or not. As a quick "fix", only show the menu in the "normal" case. */
+    if (!boardList->selectionModel()->isSelected(boardList->indexAt(pos)))
+        return;
+
+    menuBoardContext->exec(boardList->viewport()->mapToGlobal(pos));
 }
 
 void MainWindow::refreshActions()
