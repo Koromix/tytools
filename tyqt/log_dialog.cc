@@ -7,7 +7,11 @@
 
 #include <QMenu>
 
+#include <memory>
+
 #include "log_dialog.hh"
+
+using namespace std;
 
 LogDialog::LogDialog(QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent, f)
@@ -48,9 +52,8 @@ void LogDialog::keyPressEvent(QKeyEvent *e)
 void LogDialog::showLogContextMenu(const QPoint &pos)
 {
     auto edit = qobject_cast<QPlainTextEdit *>(sender());
-    auto menu = edit->createStandardContextMenu();
-    if (menu) {
-        menu->addAction(tr("Clear"), edit, SLOT(clear()));
-        menu->exec(edit->viewport()->mapToGlobal(pos));
-    }
+
+    unique_ptr<QMenu> menu(edit->createStandardContextMenu());
+    menu->addAction(tr("Clear"), edit, SLOT(clear()));
+    menu->exec(edit->viewport()->mapToGlobal(pos));
 }

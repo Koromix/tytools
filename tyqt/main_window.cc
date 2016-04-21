@@ -612,7 +612,7 @@ void MainWindow::refreshStatus()
 
 void MainWindow::openMonitorContextMenu(const QPoint &pos)
 {
-    auto menu = monitorText->createStandardContextMenu();
+    unique_ptr<QMenu> menu(monitorText->createStandardContextMenu());
     menu->addAction(actionClearMonitor);
     menu->exec(monitorText->viewport()->mapToGlobal(pos));
 }
