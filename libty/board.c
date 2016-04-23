@@ -375,11 +375,12 @@ static int wait_for_callback(ty_monitor *monitor, void *udata)
     TY_UNUSED(monitor);
 
     struct wait_for_context *ctx = udata;
+    ty_board *board = ctx->board;
 
-    if (ctx->board->state == TY_BOARD_STATE_DROPPED)
-        return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
+    if (board->state == TY_BOARD_STATE_DROPPED)
+        return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' has disappeared", board->tag);
 
-    return ty_board_has_capability(ctx->board, ctx->capability);
+    return ty_board_has_capability(board, ctx->capability);
 }
 
 // FIXME: this function probably belongs to the monitor API
@@ -391,9 +392,9 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
     struct wait_for_context ctx;
 
     if (board->state == TY_BOARD_STATE_DROPPED)
-        return ty_error(TY_ERROR_NOT_FOUND, "Board has disappeared");
+        return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' has disappeared", board->tag);
     if (!monitor)
-        return ty_error(TY_ERROR_NOT_FOUND, "Cannot wait on unmonitored board");
+        return ty_error(TY_ERROR_NOT_FOUND, "Cannot wait on unmonitored board '%s'", board->tag);
 
     ctx.board = board;
     ctx.capability = capability;
@@ -412,7 +413,7 @@ int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, int flags)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
+        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
 
     r = (*iface->vtable->serial_set_attributes)(iface, rate, flags);
 
@@ -433,7 +434,7 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeou
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
+        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
 
     r = (*iface->vtable->serial_read)(iface, buf, size, timeout);
 
@@ -453,7 +454,7 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available in this mode");
+        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
 
     if (!size)
         size = strlen(buf);
@@ -476,7 +477,7 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
     if (r < 0)
         goto cleanup;
     if (!r) {
-        r = ty_error(TY_ERROR_MODE, "Firmware upload is not available in this mode");
+        r = ty_error(TY_ERROR_MODE, "Firmware upload is not available for '%s", board->tag);
         goto cleanup;
     }
     assert(board->model);
@@ -504,7 +505,7 @@ int ty_board_reset(ty_board *board)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot reset in this mode");
+        return ty_error(TY_ERROR_MODE, "Cannot reset '%s' in this mode", board->tag);
 
     r = (*iface->vtable->reset)(iface);
 
@@ -523,7 +524,7 @@ int ty_board_reboot(ty_board *board)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot reboot in this mode");
+        return ty_error(TY_ERROR_MODE, "Cannot reboot '%s' in this mode", board->tag);
 
     r = (*iface->vtable->reboot)(iface);
 
@@ -645,7 +646,7 @@ static int new_task(ty_board *board, const struct _ty_task_vtable *vtable, ty_ta
     int r;
 
     if (board->current_task)
-        return ty_error(TY_ERROR_BUSY, "A task is already running for board '%s'", board->tag);
+        return ty_error(TY_ERROR_BUSY, "Board '%s' is busy with another task", board->tag);
 
     r = _ty_task_new(sizeof(*task), vtable, &task);
     if (r < 0)
@@ -695,10 +696,11 @@ static int get_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned 
                 ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
                                 i ? (i + 1 < count ? ", " : " and ") : "", guesses[i]->name);
 
-            return ty_error(TY_ERROR_FIRMWARE, "This firmware is only compatible with %s", buf);
+            return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
+                            ty_firmware_get_name(fws[0]), buf);
         } else {
-            return ty_error(TY_ERROR_FIRMWARE, "This firmware is not compatible with '%s'",
-                            board->tag);
+            return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
+                            ty_firmware_get_name(fws[0]), board->tag);
         }
     }
 }

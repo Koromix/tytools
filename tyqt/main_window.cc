@@ -248,8 +248,11 @@ void MainWindow::uploadNewToSelection()
 
         fws.push_back(fw);
     }
-    if (fws.empty())
+    if (fws.empty()) {
+        for (auto &board: selected_boards_)
+            board->notifyLog(TY_LOG_ERROR, ty_error_last_message());
         return;
+    }
 
     for (auto &board: selected_boards_)
         board->startUpload(fws);
