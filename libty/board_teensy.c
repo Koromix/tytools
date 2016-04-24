@@ -261,6 +261,7 @@ static int teensy_open_interface(ty_board_interface *iface)
 
         case TEENSY_USAGE_PAGE_RAWHID:
             iface->name = "RawHID";
+            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
             break;
 
         case TEENSY_USAGE_PAGE_SEREMU:
