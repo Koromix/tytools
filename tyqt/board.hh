@@ -8,6 +8,7 @@
 #ifndef BOARD_HH
 #define BOARD_HH
 
+#include <QIcon>
 #include <QMutex>
 #include <QStringList>
 #include <QTextCodec>
@@ -59,6 +60,10 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QString serial_codec_name_;
     bool clear_on_reset_;
 
+    QString status_text_;
+    QString status_icon_name_;
+    QIcon status_icon_;
+
     QString status_firmware_;
     QStringList recent_firmwares_;
 
@@ -99,8 +104,8 @@ public:
     bool serialOpen() const { return serial_iface_; }
     bool errorOccured() const;
 
-    QString statusIconFileName() const;
-    QString statusText() const;
+    QString statusText() const { return status_text_; }
+    QIcon statusIcon() const { return status_icon_; }
 
     QString firmware() const { return firmware_; }
     QStringList recentFirmwares() const { return recent_firmwares_; }
@@ -156,6 +161,8 @@ signals:
     void dropped();
 
 private slots:
+    void updateStatus();
+
     void serialReceived(ty_descriptor desc);
     void updateSerialDocument();
 

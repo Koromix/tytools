@@ -20,7 +20,7 @@ class BoardWidget : public QWidget, private Ui::BoardWidget {
 public:
     BoardWidget(QWidget *parent = nullptr);
 
-    void setIcon(const QPixmap &pixmap) { boardIcon->setPixmap(pixmap); }
+    void setIcon(const QIcon &icon);
     void setModel(const QString &model) { modelLabel->setText(model); }
     void setTag(const QString &tag) { tagLabel->setText(tag); }
     void setStatus(const QString &status);

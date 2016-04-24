@@ -88,6 +88,7 @@ void Board::loadSettings()
         closeSerialInterface();
     }
 
+    updateStatus();
     emit infoChanged();
     emit settingsChanged();
 }
@@ -187,33 +188,41 @@ bool Board::errorOccured() const
     return error_timer_.remainingTime() > 0;
 }
 
-QString Board::statusIconFileName() const
+void Board::updateStatus()
 {
-    if (errorOccured())
-        return ":/board_error";
-    switch (running_task_.status()) {
-    case TY_TASK_STATUS_PENDING:
-        return ":/board_pending";
-    case TY_TASK_STATUS_RUNNING:
-        return ":/board_working";
-    default:
+    const char *icon_name = nullptr;
+
+    switch (ty_board_get_state(board_)) {
+    case TY_BOARD_STATE_ONLINE:
+        if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RUN)) {
+            status_text_ = status_firmware_.isEmpty() ? tr("(running)") : status_firmware_;
+            icon_name = serialOpen() ? ":/board_attached" : ":/board_detached";
+            break;
+        } else if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD)) {
+            status_text_ = tr("(bootloader)");
+            icon_name = ":/board_bootloader";
+            break;
+        }
+    case TY_BOARD_STATE_MISSING:
+    case TY_BOARD_STATE_DROPPED:
+        status_text_ = tr("(missing)");
+        icon_name = ":/board_other";
         break;
     }
-    if (isRunning())
-        return serialOpen() ? ":/board_attached" : ":/board_detached";
-    if (uploadAvailable())
-        return ":/board_bootloader";
 
-    return ":/board_missing";
-}
+    if (errorOccured()) {
+        icon_name = ":/board_error";
+    } else if (running_task_.status() == TY_TASK_STATUS_PENDING) {
+        icon_name = ":/board_pending";
+    } else if (running_task_.status() == TY_TASK_STATUS_RUNNING) {
+        icon_name = ":/board_working";
+    }
+    if (status_icon_name_ != icon_name) {
+        status_icon_name_ = icon_name;
+        status_icon_ = QIcon(icon_name);
+    }
 
-QString Board::statusText() const
-{
-    if (isRunning())
-        return status_firmware_.isEmpty() ? tr("(running)") : status_firmware_;
-    if (uploadAvailable())
-        return tr("(bootloader)");
-    return tr("(missing)");
+    emit statusChanged();
 }
 
 void Board::appendToSerialDocument(const QString &s)
@@ -437,6 +446,7 @@ void Board::setAttachMonitor(bool attach_monitor)
     serial_attach_ = attach_monitor;
 
     db_.put("attachMonitor", attach_monitor);
+    updateStatus();
     emit settingsChanged();
 }
 
@@ -481,7 +491,7 @@ void Board::notifyLog(ty_log_level level, const QString &msg)
 
     if (level == TY_LOG_ERROR) {
         error_timer_.start();
-        emit statusChanged();
+        updateStatus();
     }
 }
 
@@ -538,7 +548,7 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
     running_task_ = TaskInterface();
     task_watcher_.setTask(nullptr);
 
-    emit statusChanged();
+    updateStatus();
 }
 
 void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
@@ -547,7 +557,7 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
     Q_UNUSED(value);
     Q_UNUSED(max);
 
-    emit statusChanged();
+    updateStatus();
 }
 
 void Board::refreshBoard()
@@ -563,7 +573,7 @@ void Board::refreshBoard()
         return;
     }
 
-    emit statusChanged();
+    updateStatus();
     emit infoChanged();
     emit interfacesChanged();
 }
@@ -613,8 +623,8 @@ TaskInterface Board::watchTask(TaskInterface task)
        disconnect everyone and restore sane connections. */
     task_watcher_.disconnect();
     connect(&task_watcher_, &TaskWatcher::log, this, &Board::notifyLog);
-    connect(&task_watcher_, &TaskWatcher::pending, this, &Board::statusChanged);
-    connect(&task_watcher_, &TaskWatcher::started, this, &Board::statusChanged);
+    connect(&task_watcher_, &TaskWatcher::pending, this, &Board::updateStatus);
+    connect(&task_watcher_, &TaskWatcher::started, this, &Board::updateStatus);
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
     connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
 
@@ -639,6 +649,6 @@ void Board::addUploadedFirmware(ty_firmware *fw)
     setFirmware(filename);
     blockSignals(false);
 
-    emit statusChanged();
+    updateStatus();
     emit settingsChanged();
 }

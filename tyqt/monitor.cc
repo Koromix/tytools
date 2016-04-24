@@ -181,7 +181,7 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
         case Qt::EditRole:
             return board->tag();
         case Qt::DecorationRole:
-            return QIcon(board->statusIconFileName());
+            return board->statusIcon();
         case Qt::ToolTipRole:
             return tr("%1\n+ Location: %2\n+ Serial Number: %3\n+ Status: %4\n+ Capabilities: %5")
                    .arg(board->modelName())

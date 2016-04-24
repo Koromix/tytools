@@ -20,6 +20,11 @@ BoardWidget::BoardWidget(QWidget *parent)
     setupUi(this);
 }
 
+void BoardWidget::setIcon(const QIcon &icon)
+{
+    boardIcon->setPixmap(icon.pixmap(boardIcon->size()));
+}
+
 void BoardWidget::setStatus(const QString &status)
 {
     QFontMetrics metrics(statusLabel->font());
@@ -53,7 +58,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
 
     widget_.resize(option.rect.size());
 
-    widget_.setIcon(QPixmap(board->statusIconFileName()));
+    widget_.setIcon(board->statusIcon());
     widget_.setModel(board->modelName());
     widget_.setTag(board->tag());
     widget_.setStatus(board->statusText());
