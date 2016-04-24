@@ -568,6 +568,7 @@ void Board::refreshBoard()
         return;
     }
 
+    emit statusChanged();
     emit infoChanged();
     emit interfacesChanged();
 }
