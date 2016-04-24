@@ -79,7 +79,6 @@ public:
 
     bool matchesTag(const QString &id);
 
-    ty_board_state state() const;
     uint16_t capabilities() const;
 
     const ty_board_model *model() const;

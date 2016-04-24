@@ -97,11 +97,6 @@ bool Board::matchesTag(const QString &id)
     return ty_board_matches_tag(board_, id.toLocal8Bit().constData());
 }
 
-ty_board_state Board::state() const
-{
-    return ty_board_get_state(board_);
-}
-
 uint16_t Board::capabilities() const
 {
     return ty_board_get_capabilities(board_);
@@ -563,7 +558,7 @@ void Board::refreshBoard()
         closeSerialInterface();
     }
 
-    if (state() == TY_BOARD_STATE_DROPPED) {
+    if (ty_board_get_state(board_) == TY_BOARD_STATE_DROPPED) {
         emit dropped();
         return;
     }
