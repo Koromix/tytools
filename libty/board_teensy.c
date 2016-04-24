@@ -36,6 +36,7 @@ struct ty_board_model {
 
 enum {
     TEENSY_USAGE_PAGE_BOOTLOADER = 0xFF9C,
+    TEENSY_USAGE_PAGE_RAWHID = 0xFFAB,
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
@@ -256,6 +257,10 @@ static int teensy_open_interface(ty_board_interface *iface)
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
             }
+            break;
+
+        case TEENSY_USAGE_PAGE_RAWHID:
+            iface->name = "RawHID";
             break;
 
         case TEENSY_USAGE_PAGE_SEREMU:
