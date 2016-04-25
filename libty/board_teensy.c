@@ -84,7 +84,6 @@ static const ty_board_model teensy_pp20_model = {
     .mcu = "at90usb1286",
 
     .usage = 0x1C,
-    .experimental = true,
 
     .code_size = 130048,
     .halfkay_version = 2,
