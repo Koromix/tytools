@@ -31,7 +31,7 @@ Board::Board(ty_board *board, QObject *parent)
 
     error_timer_.setInterval(SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
-    connect(&error_timer_, &QTimer::timeout, this, &Board::statusChanged);
+    connect(&error_timer_, &QTimer::timeout, this, &Board::updateStatus);
 
     loadSettings();
 }
