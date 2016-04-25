@@ -127,6 +127,10 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     // Board dropdown (compact mode)
+    boardComboBox = new QComboBox(this);
+    setTabOrder(boardList, boardComboBox);
+    boardComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    boardComboBox->setMinimumContentsLength(12);
     boardComboBox->setModel(monitor_);
     boardComboBox->setVisible(false);
     auto spacer = new QWidget();

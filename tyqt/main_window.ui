@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>610</width>
-    <height>412</height>
+    <width>542</width>
+    <height>384</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -25,16 +25,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_7">
-    <item>
-     <widget class="QComboBox" name="boardComboBox">
-      <property name="sizeAdjustPolicy">
-       <enum>QComboBox::AdjustToContents</enum>
-      </property>
-      <property name="minimumContentsLength">
-       <number>12</number>
-      </property>
-     </widget>
-    </item>
     <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
@@ -66,6 +56,9 @@
        </property>
        <property name="currentIndex">
         <number>0</number>
+       </property>
+       <property name="elideMode">
+        <enum>Qt::ElideRight</enum>
        </property>
        <widget class="QWidget" name="infoTab">
         <attribute name="title">
@@ -159,6 +152,12 @@
          </item>
          <item>
           <widget class="QTreeWidget" name="interfaceTree">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
+             <horstretch>0</horstretch>
+             <verstretch>1</verstretch>
+            </sizepolicy>
+           </property>
            <property name="indentation">
             <number>0</number>
            </property>
@@ -423,8 +422,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>610</width>
-     <height>21</height>
+     <width>542</width>
+     <height>23</height>
     </rect>
    </property>
    <property name="contextMenuPolicy">
@@ -724,7 +723,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>boardComboBox</tabstop>
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>idText</tabstop>

@@ -41,6 +41,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QAction *actionMonitorEcho;
     QActionGroup *actionMonitorEOLGroup;
 
+    QComboBox *boardComboBox;
     // We need to keep this around to show/hide the board QComboBox
     QAction *boardComboAction;
 
