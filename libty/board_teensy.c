@@ -278,6 +278,11 @@ static int teensy_open_interface(ty_board_interface *iface)
         break;
     }
 
+    /* We cannot uniquely identify AVR Teensy boards because the S/N is always 12345,
+       or custom ARM Teensy boards without a valid MAC address. */
+    if (iface->serial && iface->serial != 12345 && iface->serial != UINT32_MAX)
+        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
+
     if (!iface->model)
         iface->model = &teensy_unknown_model;
     iface->vtable = &teensy_vtable;
