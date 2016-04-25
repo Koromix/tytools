@@ -426,6 +426,7 @@ void MainWindow::enableBoardWidgets()
     monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
 
     actionRenameBoard->setEnabled(true);
+    ambiguousBoardLabel->setVisible(!current_board_->hasCapability(TY_BOARD_CAPABILITY_UNIQUE));
 }
 
 void MainWindow::disableBoardWidgets()
@@ -448,6 +449,7 @@ void MainWindow::disableBoardWidgets()
     actionAttachMonitor->setEnabled(false);
 
     actionRenameBoard->setEnabled(false);
+    ambiguousBoardLabel->setVisible(false);
 }
 
 void MainWindow::updateWindowTitle()
