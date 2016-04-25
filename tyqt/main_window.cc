@@ -606,9 +606,11 @@ void MainWindow::refreshActions()
 {
     bool upload = false, reset = false, reboot = false;
     for (auto &board: selected_boards_) {
-        upload |= board->uploadAvailable();
-        reset |= board->resetAvailable();
-        reboot |= board->rebootAvailable();
+        upload |= board->hasCapability(TY_BOARD_CAPABILITY_UPLOAD) ||
+                  board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+        reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
+                 board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+        reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
     }
 
     actionUpload->setEnabled(upload);

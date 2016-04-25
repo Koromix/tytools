@@ -82,7 +82,7 @@ void Board::loadSettings()
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
     serial_attach_ = db_.get("attachMonitor", true).toBool();
 
-    if (serial_attach_ && serialAvailable()) {
+    if (serial_attach_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
         serial_attach_ = openSerialInterface();
     } else {
         closeSerialInterface();
@@ -101,6 +101,11 @@ bool Board::matchesTag(const QString &id)
 uint16_t Board::capabilities() const
 {
     return ty_board_get_capabilities(board_);
+}
+
+bool Board::hasCapability(ty_board_capability cap) const
+{
+    return ty_board_has_capability(board_, cap);
 }
 
 const ty_board_model *Board::model() const
@@ -158,47 +163,17 @@ std::vector<BoardInterfaceInfo> Board::interfaces() const
     return vec;
 }
 
-bool Board::isRunning() const
-{
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RUN);
-}
-
-bool Board::uploadAvailable() const
-{
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD) || rebootAvailable();
-}
-
-bool Board::resetAvailable() const
-{
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RESET) || rebootAvailable();
-}
-
-bool Board::rebootAvailable() const
-{
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_REBOOT);
-}
-
-bool Board::serialAvailable() const
-{
-    return ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL);
-}
-
-bool Board::errorOccured() const
-{
-    return error_timer_.remainingTime() > 0;
-}
-
 void Board::updateStatus()
 {
     const char *icon_name = nullptr;
 
     switch (ty_board_get_state(board_)) {
     case TY_BOARD_STATE_ONLINE:
-        if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_RUN)) {
+        if (hasCapability(TY_BOARD_CAPABILITY_RUN)) {
             status_text_ = status_firmware_.isEmpty() ? tr("(running)") : status_firmware_;
             icon_name = serialOpen() ? ":/board_attached" : ":/board_detached";
             break;
-        } else if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_UPLOAD)) {
+        } else if (hasCapability(TY_BOARD_CAPABILITY_UPLOAD)) {
             status_text_ = tr("(bootloader)");
             icon_name = ":/board_bootloader";
             break;
@@ -437,7 +412,7 @@ void Board::setAttachMonitor(bool attach_monitor)
     if (attach_monitor == serial_attach_)
         return;
 
-    if (attach_monitor && serialAvailable()) {
+    if (attach_monitor && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
         attach_monitor = openSerialInterface();
     } else {
         closeSerialInterface();
@@ -562,7 +537,7 @@ void Board::notifyProgress(const QString &action, unsigned int value, unsigned i
 
 void Board::refreshBoard()
 {
-    if (ty_board_has_capability(board_, TY_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
+    if (hasCapability(TY_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
         openSerialInterface();
     } else {
         closeSerialInterface();

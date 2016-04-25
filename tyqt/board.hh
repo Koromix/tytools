@@ -85,6 +85,7 @@ public:
     bool matchesTag(const QString &id);
 
     uint16_t capabilities() const;
+    bool hasCapability(ty_board_capability cap) const;
 
     const ty_board_model *model() const;
     QString modelName() const;
@@ -96,13 +97,7 @@ public:
 
     std::vector<BoardInterfaceInfo> interfaces() const;
 
-    bool isRunning() const;
-    bool uploadAvailable() const;
-    bool resetAvailable() const;
-    bool rebootAvailable() const;
-    bool serialAvailable() const;
-    bool serialOpen() const { return serial_iface_; }
-    bool errorOccured() const;
+    bool errorOccured() const { return error_timer_.remainingTime() > 0; }
 
     QString statusText() const { return status_text_; }
     QIcon statusIcon() const { return status_icon_; }
@@ -116,6 +111,7 @@ public:
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
     bool attachMonitor() const { return serial_attach_; }
 
+    bool serialOpen() const { return serial_iface_; }
     QTextDocument &serialDocument() { return serial_document_; }
     void appendToSerialDocument(const QString& s);
 
