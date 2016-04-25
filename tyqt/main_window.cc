@@ -287,6 +287,8 @@ void MainWindow::setCompactMode(bool enable)
     if (enable) {
         menubar->setVisible(false);
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
+
+        bool focus = boardList->hasFocus();
         if (boardComboAction) {
             tabWidget->setTabPosition(QTabWidget::West);
             boardComboAction->setVisible(true);
@@ -294,12 +296,17 @@ void MainWindow::setCompactMode(bool enable)
             tabWidget->setCornerWidget(boardComboBox, Qt::TopRightCorner);
             boardComboBox->setVisible(true);
         }
+
         boardList->setVisible(false);
+        if (focus)
+            boardComboBox->setFocus(Qt::OtherFocusReason);
 
         setContextMenuPolicy(Qt::ActionsContextMenu);
     } else {
         menubar->setVisible(true);
         toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
+
+        bool focus = boardComboBox->hasFocus();
         if (boardComboAction) {
             tabWidget->setTabPosition(QTabWidget::North);
             boardComboAction->setVisible(false);
@@ -307,7 +314,10 @@ void MainWindow::setCompactMode(bool enable)
             boardComboBox->setVisible(false);
             tabWidget->setCornerWidget(nullptr, Qt::TopRightCorner);
         }
+
         boardList->setVisible(true);
+        if (focus)
+            boardList->setFocus(Qt::OtherFocusReason);
 
         setContextMenuPolicy(Qt::NoContextMenu);
     }
