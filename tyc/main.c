@@ -64,11 +64,7 @@ static void print_main_usage(FILE *f)
     fputc('\n', f);
 
     fprintf(f, "Supported models:\n");
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
-
-        ty_board_family_list_models(family, print_family_model, f);
-    }
+    ty_board_model_list(print_family_model, f);
 }
 
 void print_common_options(FILE *f)

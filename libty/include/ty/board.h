@@ -50,14 +50,16 @@ enum {
 
 #define TY_UPLOAD_MAX_FIRMWARES 256
 
-typedef int ty_board_family_list_models_func(const ty_board_model *model, void *udata);
+typedef int ty_board_model_list_func(const ty_board_model *model, void *udata);
 typedef int ty_board_list_interfaces_func(ty_board_interface *iface, void *udata);
 typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *fw, size_t uploaded, void *udata);
 
 TY_PUBLIC extern const ty_board_family *ty_board_families[];
 
 TY_PUBLIC const char *ty_board_family_get_name(const ty_board_family *family);
-TY_PUBLIC int ty_board_family_list_models(const ty_board_family *family, ty_board_family_list_models_func *f, void *udata);
+
+TY_PUBLIC int ty_board_model_list(ty_board_model_list_func *f, void *udata);
+TY_PUBLIC const ty_board_model *ty_board_model_find(const char *name);
 
 TY_PUBLIC bool ty_board_model_is_real(const ty_board_model *model);
 TY_PUBLIC bool ty_board_model_test_firmware(const ty_board_model *model, const struct ty_firmware *fw,

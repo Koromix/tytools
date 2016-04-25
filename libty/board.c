@@ -63,20 +63,41 @@ const char *ty_board_family_get_name(const ty_board_family *family)
     return family->name;
 }
 
-int ty_board_family_list_models(const ty_board_family *family, ty_board_family_list_models_func *f, void *udata)
+int ty_board_model_list(ty_board_model_list_func *f, void *udata)
 {
-    assert(family);
     assert(f);
 
-    for (const ty_board_model **cur = family->models; *cur; cur++) {
-        const ty_board_model *model = *cur;
+    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
+        const ty_board_family *family = *cur;
 
-        int r = (*f)(model, udata);
-        if (r)
-            return r;
+        for (const ty_board_model **cur2 = family->models; *cur2; cur2++) {
+            const ty_board_model *model = *cur2;
+
+            int r = (*f)(model, udata);
+            if (r)
+                return r;
+        }
     }
 
     return 0;
+}
+
+const ty_board_model *ty_board_model_find(const char *name)
+{
+    assert(name);
+
+    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
+        const ty_board_family *family = *cur;
+
+        for (const ty_board_model **cur2 = family->models; *cur2; cur2++) {
+            const ty_board_model *model = *cur2;
+
+            if (strcmp(model->name, name) == 0)
+                return model;
+        }
+    }
+
+    return NULL;
 }
 
 bool ty_board_model_is_real(const ty_board_model *model)
