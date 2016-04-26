@@ -12,6 +12,7 @@
 #include "database.hh"
 #include "descriptor_notifier.hh"
 #include "monitor.hh"
+#include "hs/platform.h"
 #include "ty/task.h"
 
 using namespace std;
@@ -36,7 +37,21 @@ Monitor::~Monitor()
 
 void Monitor::loadSettings()
 {
-    ty_pool_set_max_threads(pool_, db_.get("maxTasks", 8).toUInt());
+    auto max_tasks = db_.get("maxTasks").toUInt();
+    if (!max_tasks) {
+#ifdef _WIN32
+        if (hs_win32_version() >= HS_WIN32_VERSION_10) {
+            /* Windows 10 is much faster to load drivers and make the device available, we
+               can probably afford that. */
+            max_tasks = 2;
+        } else {
+            max_tasks = 1;
+        }
+#else
+        max_tasks = 4;
+#endif
+    }
+    ty_pool_set_max_threads(pool_, max_tasks);
 
     emit settingsChanged();
 }
