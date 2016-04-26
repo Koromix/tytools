@@ -259,8 +259,10 @@ void Monitor::handleAddedEvent(ty_board *board)
 {
     auto ptr = Board::createBoard(board);
 
-    ptr->setDatabase(db_.subDatabase(ptr->id()));
-    ptr->loadSettings();
+    if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
+        ptr->setDatabase(db_.subDatabase(ptr->id()));
+        ptr->loadSettings();
+    }
 
     ptr->setThreadPool(pool_);
     ptr->serial_notifier_.moveToThread(&serial_thread_);

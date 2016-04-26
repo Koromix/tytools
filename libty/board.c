@@ -42,6 +42,7 @@ const ty_board_family *ty_board_families[] = {
 };
 
 static const char *capability_names[] = {
+    "unique",
     "run",
     "upload",
     "reset",
