@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTextCodec>
 #include <QThread>
 
@@ -384,6 +385,8 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
     initDatabase("boards", monitor_db_);
     monitor_.setDatabase(&monitor_db_);
+    initCache("boards", monitor_cache_);
+    monitor_.setCache(&monitor_cache_);
     monitor_.loadSettings();
 
     log_dialog_ = unique_ptr<LogDialog>(new LogDialog());
@@ -574,6 +577,8 @@ int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
 
 void TyQt::resetMonitor()
 {
+    monitor_cache_.clear();
+    monitor_.loadSettings();
     monitor_.stop();
     monitor_.start();
 }
@@ -584,6 +589,7 @@ void TyQt::clearSettingsAndReset()
     loadSettings();
 
     monitor_db_.clear();
+    monitor_cache_.clear();
     monitor_.loadSettings();
     monitor_.stop();
     monitor_.start();
@@ -613,6 +619,17 @@ void TyQt::initDatabase(const QString &name, SettingsDatabase &db)
                                   organizationName(), name, this);
     settings->setIniCodec(QTextCodec::codecForName("UTF-8"));
     db.setSettings(settings);
+}
+
+void TyQt::initCache(const QString &name, SettingsDatabase &cache)
+{
+    /* QStandardPaths adds organizationName()/applicationName() at the end, but we put our
+       files in organizationName() to share them with tyc. Cheat the system with '..'. */
+    auto path = QString("%1/../%2.ini").arg(QStandardPaths::writableLocation(QStandardPaths::CacheLocation),
+                                         name);
+    auto settings = new QSettings(path, QSettings::IniFormat, this);
+    settings->setIniCodec(QTextCodec::codecForName("UTF-8"));
+    cache.setSettings(settings);
 }
 
 QString TyQt::helpText()

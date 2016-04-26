@@ -82,6 +82,18 @@ void Board::loadSettings()
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
     serial_attach_ = db_.get("attachMonitor", true).toBool();
 
+    /* Even if the user decides to enable persistence for ambiguous identifiers,
+       we still don't want to cache the board model. */
+    if (!ty_board_model_get_code_size(ty_board_get_model(board_)) &&
+            hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
+        auto model_name = cache_.get("model");
+        if (model_name.isValid()) {
+            auto model = ty_board_model_find(model_name.toString().toUtf8().constData());
+            if (model)
+                ty_board_set_model(board_, model);
+        }
+    }
+
     if (serial_attach_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
         serial_attach_ = openSerialInterface();
     } else {
@@ -538,6 +550,10 @@ void Board::refreshBoard()
         emit dropped();
         return;
     }
+
+    auto model = this->model();
+    if (ty_board_model_get_code_size(model))
+        cache_.put("model", ty_board_model_get_name(model));
 
     updateStatus();
     emit infoChanged();

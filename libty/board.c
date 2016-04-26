@@ -313,6 +313,12 @@ uint64_t ty_board_get_serial_number(const ty_board *board)
     return board->serial;
 }
 
+void ty_board_set_model(ty_board *board, const ty_board_model *model)
+{
+    assert(board);
+    board->model = model;
+}
+
 const ty_board_model *ty_board_get_model(const ty_board *board)
 {
     assert(board);
