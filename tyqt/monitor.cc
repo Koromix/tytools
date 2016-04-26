@@ -261,6 +261,7 @@ void Monitor::handleAddedEvent(ty_board *board)
 
     if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         ptr->setDatabase(db_.subDatabase(ptr->id()));
+        ptr->setCache(cache_.subDatabase(ptr->id()));
         ptr->loadSettings();
     }
 

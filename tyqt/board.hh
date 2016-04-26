@@ -40,6 +40,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_OBJECT
 
     DatabaseInterface db_;
+    DatabaseInterface cache_;
 
     ty_board *board_;
 
@@ -78,6 +79,8 @@ public:
 
     void setDatabase(DatabaseInterface db) { db_ = db; }
     DatabaseInterface database() const { return db_; }
+    void setCache(DatabaseInterface cache) { cache_ = cache; }
+    DatabaseInterface cache() const { return cache_; }
     void loadSettings();
 
     ty_board *board() const { return board_; }

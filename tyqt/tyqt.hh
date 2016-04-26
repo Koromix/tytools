@@ -41,6 +41,7 @@ class TyQt : public QApplication {
 
     SettingsDatabase tyqt_db_;
     SettingsDatabase monitor_db_;
+    SettingsDatabase monitor_cache_;
 
     DatabaseInterface db_;
 
@@ -112,6 +113,7 @@ signals:
 
 private:
     void initDatabase(const QString &name, SettingsDatabase &db);
+    void initCache(const QString &name, SettingsDatabase &cache);
 
     QString helpText();
     void showClientMessage(const QString &msg);

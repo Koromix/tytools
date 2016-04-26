@@ -26,6 +26,7 @@ class Monitor : public QAbstractListModel {
     Q_OBJECT
 
     DatabaseInterface db_;
+    DatabaseInterface cache_;
 
     bool started_ = false;
     ty_monitor *monitor_ = nullptr;
@@ -45,6 +46,8 @@ public:
 
     void setDatabase(DatabaseInterface db) { db_ = db; }
     DatabaseInterface database() const { return db_; }
+    void setCache(DatabaseInterface cache) { cache_ = cache; }
+    DatabaseInterface cache() const { return cache_; }
     void loadSettings();
 
     void setMaxTasks(unsigned int max_tasks);
