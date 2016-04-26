@@ -934,6 +934,11 @@ static int run_reboot(ty_task *task)
 
     ty_log(TY_LOG_INFO, "Rebooting board '%s' (%s)", board->tag, board->model->name);
 
+    if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
+        ty_log(TY_LOG_INFO, "Board is already in bootloader mode");
+        return 0;
+    }
+
     ty_log(TY_LOG_INFO, "Triggering board reboot");
     r = ty_board_reboot(board);
     if (r < 0)
