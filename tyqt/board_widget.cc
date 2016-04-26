@@ -63,7 +63,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setTag(board->tag());
     widget_.setStatus(board->statusText());
 
-    auto task = board->runningTask();
+    auto task = board->task();
     if (task.status() == TY_TASK_STATUS_RUNNING) {
         widget_.setProgress(task.progress(), task.progressMaximum());
     } else {

@@ -187,9 +187,9 @@ void Board::updateStatus()
 
     if (errorOccured()) {
         icon_name = ":/board_error";
-    } else if (running_task_.status() == TY_TASK_STATUS_PENDING) {
+    } else if (task_.status() == TY_TASK_STATUS_PENDING) {
         icon_name = ":/board_pending";
-    } else if (running_task_.status() == TY_TASK_STATUS_RUNNING) {
+    } else if (task_.status() == TY_TASK_STATUS_RUNNING) {
         icon_name = ":/board_working";
     }
     if (status_icon_name_ != icon_name) {
@@ -520,7 +520,7 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
     Q_UNUSED(success);
     Q_UNUSED(result);
 
-    running_task_ = TaskInterface();
+    task_ = TaskInterface();
     task_watcher_.setTask(nullptr);
 
     updateStatus();
@@ -583,7 +583,7 @@ void Board::closeSerialInterface()
 
 TaskInterface Board::watchTask(TaskInterface task)
 {
-    running_task_ = task;
+    task_ = task;
 
     /* There may be task-specific slots, such as the firmware one from upload(),
        disconnect everyone and restore sane connections. */
@@ -594,9 +594,9 @@ TaskInterface Board::watchTask(TaskInterface task)
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
     connect(&task_watcher_, &TaskWatcher::progress, this, &Board::progressChanged);
 
-    task_watcher_.setTask(&running_task_);
+    task_watcher_.setTask(&task_);
 
-    return running_task_;
+    return task_;
 }
 
 void Board::addUploadedFirmware(ty_firmware *fw)

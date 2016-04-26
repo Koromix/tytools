@@ -69,7 +69,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     ty_pool *pool_ = nullptr;
 
-    TaskInterface running_task_;
+    TaskInterface task_;
     TaskWatcher task_watcher_;
 
 public:
@@ -127,7 +127,8 @@ public:
     bool sendSerial(const QByteArray &buf);
     bool sendSerial(const QString &s);
 
-    TaskInterface runningTask() const { return running_task_; }
+    TaskInterface task() const { return task_; }
+    ty_task_status taskStatus() const { return task_.status(); }
 
 public slots:
     void setTag(const QString &tag);
