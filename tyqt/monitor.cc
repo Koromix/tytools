@@ -276,6 +276,9 @@ void Monitor::handleAddedEvent(ty_board *board)
     connect(ptr.get(), &Board::statusChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
+    connect(ptr.get(), &Board::progressChanged, this, [=]() {
+        refreshBoardItem(findBoardIterator(board));
+    });
     connect(ptr.get(), &Board::dropped, this, [=]() {
         removeBoardItem(findBoardIterator(board));
     });

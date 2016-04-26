@@ -526,15 +526,6 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
     updateStatus();
 }
 
-void Board::notifyProgress(const QString &action, unsigned int value, unsigned int max)
-{
-    Q_UNUSED(action);
-    Q_UNUSED(value);
-    Q_UNUSED(max);
-
-    updateStatus();
-}
-
 void Board::refreshBoard()
 {
     if (hasCapability(TY_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
@@ -601,7 +592,7 @@ TaskInterface Board::watchTask(TaskInterface task)
     connect(&task_watcher_, &TaskWatcher::pending, this, &Board::updateStatus);
     connect(&task_watcher_, &TaskWatcher::started, this, &Board::updateStatus);
     connect(&task_watcher_, &TaskWatcher::finished, this, &Board::notifyFinished);
-    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::notifyProgress);
+    connect(&task_watcher_, &TaskWatcher::progress, this, &Board::progressChanged);
 
     task_watcher_.setTask(&running_task_);
 

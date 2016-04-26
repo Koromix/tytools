@@ -153,6 +153,7 @@ signals:
     void settingsChanged();
     void interfacesChanged();
     void statusChanged();
+    void progressChanged();
 
     void dropped();
 
@@ -163,7 +164,6 @@ private slots:
     void updateSerialDocument();
 
     void notifyFinished(bool success, std::shared_ptr<void> result);
-    void notifyProgress(const QString &action, unsigned int value, unsigned int max);
 
 private:
     Board(ty_board *board, QObject *parent = nullptr);
