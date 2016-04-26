@@ -21,14 +21,14 @@ matrix:
       dist: trusty
       env:
         - INSTALLER=win32
-        - CMAKE_TOOLCHAIN_FILE=../contrib/cmake/i686-w64-mingw32.cmake
+        - CMAKE_FLAGS="-DCMAKE_TOOLCHAIN_FILE=../contrib/cmake/i686-w64-mingw32.cmake"
     - os: linux
       compiler: gcc
       sudo: required
       dist: trusty
       env:
         - INSTALLER=win64
-        - CMAKE_TOOLCHAIN_FILE=../contrib/cmake/x86_64-w64-mingw32.cmake
+        - CMAKE_FLAGS="-DCMAKE_TOOLCHAIN_FILE=../contrib/cmake/x86_64-w64-mingw32.cmake"
     - os: osx
       compiler: clang
 
@@ -37,7 +37,7 @@ install:
 
 before_script:
   - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE ..
+  - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE $CMAKE_FLAGS ..
 script:
   - make
   - if [[ "$INSTALLER" == "osx" ]]; then cpack; fi
