@@ -562,11 +562,15 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
             selected_boards_.push_back(monitor_->board(idx.row()));
     }
 
+    for (auto &board: selected_boards_) {
+        connect(board.get(), &Board::interfacesChanged, this, &MainWindow::refreshActions);
+        connect(board.get(), &Board::statusChanged, this, &MainWindow::refreshActions);
+    }
+
     if (selected_boards_.size() == 1) {
         current_board_ = selected_boards_.front().get();
         boardComboBox->setCurrentIndex(indexes.first().row());
 
-        connect(current_board_, &Board::interfacesChanged, this, &MainWindow::refreshActions);
         connect(current_board_, &Board::infoChanged, this, &MainWindow::refreshInfo);
         connect(current_board_, &Board::settingsChanged, this, &MainWindow::refreshSettings);
         connect(current_board_, &Board::interfacesChanged, this, &MainWindow::refreshInterfaces);
@@ -580,9 +584,6 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         refreshStatus();
     } else {
         boardComboBox->setCurrentIndex(-1);
-
-        for (auto &board: selected_boards_)
-            connect(board.get(), &Board::interfacesChanged, this, &MainWindow::refreshActions);
 
         disableBoardWidgets();
         refreshActions();
@@ -608,6 +609,9 @@ void MainWindow::refreshActions()
 {
     bool upload = false, reset = false, reboot = false;
     for (auto &board: selected_boards_) {
+        if (board->taskStatus() != TY_TASK_STATUS_READY)
+            continue;
+
         upload |= board->hasCapability(TY_BOARD_CAPABILITY_UPLOAD) ||
                   board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
         reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
