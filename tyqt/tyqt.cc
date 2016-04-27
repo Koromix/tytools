@@ -623,10 +623,16 @@ void TyQt::initDatabase(const QString &name, SettingsDatabase &db)
 
 void TyQt::initCache(const QString &name, SettingsDatabase &cache)
 {
-    /* QStandardPaths adds organizationName()/applicationName() at the end, but we put our
-       files in organizationName() to share them with tyc. Cheat the system with '..'. */
-    auto path = QString("%1/../%2.ini").arg(QStandardPaths::writableLocation(QStandardPaths::CacheLocation),
-                                         name);
+    /* QStandardPaths adds organizationName()/applicationName() to the generic OS cache path,
+       but we put our files in organizationName() to share them with tyc. On Windows, Qt uses
+       AppData/Local/organizationName()/applicationName()/cache so we need to special case that. */
+#ifdef _WIN32
+    auto path = QString("%1/../cache/%2.ini")
+                .arg(QStandardPaths::writableLocation(QStandardPaths::DataLocation), name);
+#else
+    auto path = QString("%1/../%2.ini")
+                .arg(QStandardPaths::writableLocation(QStandardPaths::CacheLocation), name);
+#endif
     auto settings = new QSettings(path, QSettings::IniFormat, this);
     settings->setIniCodec(QTextCodec::codecForName("UTF-8"));
     cache.setSettings(settings);
