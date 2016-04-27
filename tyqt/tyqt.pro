@@ -8,7 +8,7 @@ QT += widgets network
 
 TARGET = tyqt
 
-LIBS = -lty
+LIBS = -lty -lhs
 
 FORMS += about_dialog.ui \
     arduino_dialog.ui \

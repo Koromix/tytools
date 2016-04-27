@@ -9,7 +9,7 @@ CONFIG += console
 
 TARGET = tyc
 
-LIBS = -lty
+LIBS = -lty -lhs
 
 HEADERS = main.h
 
