@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include "hs/common.h"
 #include "ty/system.h"
+#include "ty/version.h"
 #include "task_priv.h"
 
 struct ty_task {
@@ -24,6 +25,11 @@ static TY_THREAD_LOCAL ty_err mask[16];
 static TY_THREAD_LOCAL unsigned int mask_count;
 
 static TY_THREAD_LOCAL char last_error_msg[256];
+
+const char *ty_version_string(void)
+{
+    return TY_VERSION;
+}
 
 static bool log_level_is_enabled(ty_log_level level)
 {

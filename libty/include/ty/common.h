@@ -139,6 +139,8 @@ typedef void ty_message_func(struct ty_task *task, ty_message_type type, const v
 
 TY_PUBLIC extern int ty_config_verbosity;
 
+TY_PUBLIC const char *ty_version_string(void);
+
 TY_PUBLIC void ty_message_default_handler(struct ty_task *task, ty_message_type type, const void *data, void *udata);
 TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
 

@@ -5,11 +5,11 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
+#include <QCoreApplication>
 #include <QDesktopServices>
 #include <QUrl>
 
 #include "about_dialog.hh"
-#include "ty/version.h"
 
 AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent, f)
@@ -21,7 +21,8 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     connect(licenseButton, &QPushButton::clicked, &AboutDialog::openLicense);
     connect(descriptionText, &QLabel::linkActivated, this, &AboutDialog::openLink);
 
-    versionLabel->setText(QString("TyQt ") + TY_VERSION);
+    versionLabel->setText(QString("%1 %2").arg(QCoreApplication::applicationName(),
+                                               QCoreApplication::applicationVersion()));
 }
 
 void AboutDialog::openWebsite()

@@ -22,11 +22,11 @@
 
 #include "arduino_install.hh"
 #include "commands.hh"
+#include "ty/common.h"
 #include "log_dialog.hh"
 #include "main_window.hh"
 #include "task.hh"
 #include "tyqt.hh"
-#include "ty/version.h"
 
 struct ClientCommand {
     const char *name;
@@ -74,7 +74,7 @@ TyQt::TyQt(int &argc, char *argv[])
 {
     setOrganizationName("ty");
     setApplicationName("TyQt");
-    setApplicationVersion(TY_VERSION);
+    setApplicationVersion(ty_version_string());
 
     initDatabase("tyqt", tyqt_db_);
     setDatabase(&tyqt_db_);

@@ -11,7 +11,6 @@
     #include <sys/wait.h>
 #endif
 #include "hs/common.h"
-#include "ty/version.h"
 #include "main.h"
 
 struct command {
@@ -40,7 +39,7 @@ static ty_board *main_board;
 
 static void print_version(FILE *f)
 {
-    fprintf(f, "tyc "TY_VERSION"\n");
+    fprintf(f, "tyc %s\n", ty_version_string());
 }
 
 static int print_family_model(const ty_board_model *model, void *udata)
