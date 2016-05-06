@@ -55,8 +55,8 @@ struct hs_monitor {
     HANDLE hwnd;
 };
 
-struct device_class {
-    const GUID *guid;
+struct setup_class {
+    const char *name;
     hs_device_type type;
 };
 
@@ -89,12 +89,12 @@ extern const struct _hs_device_vtable _hs_win32_device_vtable;
 #define MAX_USB_DEPTH 8
 #define MONITOR_CLASS_NAME "hs_monitor"
 
-static GUID hid_guid;
-static struct device_class device_classes[] = {
-    {&GUID_DEVINTERFACE_USB_DEVICE, HS_DEVICE_TYPE_SERIAL},
-    {&hid_guid,                     HS_DEVICE_TYPE_HID},
-    {NULL}
+static const struct setup_class setup_classes[] = {
+    {"Ports",    HS_DEVICE_TYPE_SERIAL},
+    {"HIDClass", HS_DEVICE_TYPE_HID}
 };
+
+static GUID hid_guid;
 
 static CRITICAL_SECTION controllers_lock;
 static _HS_LIST(controllers);
@@ -900,15 +900,15 @@ cleanup:
     return r;
 }
 
-static int enumerate_class(const GUID *guid, const _hs_filter *filter, hs_enumerate_func *f,
-                           void *udata)
+static int enumerate_setup_class(const GUID *guid, const _hs_filter *filter, hs_enumerate_func *f,
+                                 void *udata)
 {
     HDEVINFO set = NULL;
     SP_DEVINFO_DATA info;
     hs_device *dev;
     int r;
 
-    set = SetupDiGetClassDevs(guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    set = SetupDiGetClassDevs(guid, NULL, NULL, DIGCF_PRESENT);
     if (!set) {
         r = hs_error(HS_ERROR_SYSTEM, "SetupDiGetClassDevs() failed: %s", hs_win32_strerror(0));
         goto cleanup;
@@ -947,11 +947,23 @@ int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
     if (r < 0)
         return r;
 
-    for (unsigned int i = 0; device_classes[i].guid; i++) {
-        if (_hs_filter_has_type(filter, device_classes[i].type)) {
-            r = enumerate_class(device_classes[i].guid, filter, f, udata);
-            if (r)
-                return r;
+    for (unsigned int i = 0; i < _HS_COUNTOF(setup_classes); i++) {
+        if (_hs_filter_has_type(filter, setup_classes[i].type)) {
+            GUID guids[8];
+            DWORD guids_count;
+            BOOL success;
+
+            success = SetupDiClassGuidsFromName(setup_classes[i].name, guids, _HS_COUNTOF(guids),
+                                                &guids_count);
+            if (!success)
+                return hs_error(HS_ERROR_SYSTEM, "SetupDiClassGuidsFromName('%s') failed: %s",
+                                setup_classes[i].name, hs_win32_strerror(0));
+
+            for (unsigned int j = 0; j < guids_count; j++) {
+                r = enumerate_setup_class(&guids[j], filter, f, udata);
+                if (r)
+                    return r;
+            }
         }
     }
 
@@ -1067,23 +1079,6 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
-static int register_notification(HWND hwnd, const GUID *guid, HDEVNOTIFY *rh)
-{
-    DEV_BROADCAST_DEVICEINTERFACE filter = {0};
-    HDEVNOTIFY h;
-
-    filter.dbcc_size = sizeof(filter);
-    filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
-    filter.dbcc_classguid = *guid;
-
-    h = RegisterDeviceNotification(hwnd, &filter, DEVICE_NOTIFY_WINDOW_HANDLE);
-    if (!h)
-        return hs_error(HS_ERROR_SYSTEM, "RegisterDeviceNotification() failed: %s", hs_win32_strerror(0));
-
-    *rh = h;
-    return 0;
-}
-
 static unsigned int __stdcall monitor_thread(void *udata)
 {
     _HS_UNUSED(udata);
@@ -1092,8 +1087,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     WNDCLASSEX cls = {0};
     DEV_BROADCAST_DEVICEINTERFACE filter = {0};
-    HDEVNOTIFY notify[8];
-    unsigned int notify_count = 0;
+    HDEVNOTIFY notify_handle = NULL;
     MSG msg;
     ATOM atom;
     BOOL ret;
@@ -1126,15 +1120,14 @@ static unsigned int __stdcall monitor_thread(void *udata)
     filter.dbcc_size = sizeof(filter);
     filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
 
-    for (unsigned int i = 0; device_classes[i].guid; i++) {
-        if (_hs_filter_has_type(&monitor->filter, device_classes[i].type)) {
-            assert(notify_count < _HS_COUNTOF(notify));
-
-            r = register_notification(monitor->hwnd, device_classes[i].guid, &notify[notify_count]);
-            if (r < 0)
-                goto cleanup;
-            notify_count++;
-        }
+    /* We monitor everything because I cannot find an interface class to detect
+       serial devices within an IAD, and RegisterDeviceNotification() does not
+       support device setup class filtering. */
+    notify_handle = RegisterDeviceNotification(monitor->hwnd, &filter,
+                                               DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
+    if (!notify_handle) {
+        r = hs_error(HS_ERROR_SYSTEM, "RegisterDeviceNotification() failed: %s", hs_win32_strerror(0));
+        goto cleanup;
     }
 
     /* Our fake window is created and ready to receive device notifications,
@@ -1153,8 +1146,8 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     r = 0;
 cleanup:
-    for (unsigned int i = 0; i < notify_count; i++)
-        UnregisterDeviceNotification(notify[i]);
+    if (notify_handle)
+        UnregisterDeviceNotification(notify_handle);
     if (monitor->hwnd)
         DestroyWindow(monitor->hwnd);
     UnregisterClass(MONITOR_CLASS_NAME, NULL);
