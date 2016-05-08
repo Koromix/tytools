@@ -100,6 +100,8 @@ _HS_INIT()
 
 _HS_EXIT()
 {
+    UnregisterClass(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
+
     for (unsigned int i = 0; i < controllers_count; i++)
         free(controllers[i]);
     DeleteCriticalSection(&controllers_lock);
@@ -1047,7 +1049,6 @@ static unsigned int __stdcall monitor_thread(void *udata)
     DEV_BROADCAST_DEVICEINTERFACE filter = {0};
     HDEVNOTIFY notify_handle = NULL;
     MSG msg;
-    ATOM atom;
     BOOL success;
     int r;
 
@@ -1056,11 +1057,9 @@ static unsigned int __stdcall monitor_thread(void *udata)
     cls.lpszClassName = MONITOR_CLASS_NAME;
     cls.lpfnWndProc = window_proc;
 
-    atom = RegisterClassEx(&cls);
-    if (!atom) {
-        r = hs_error(HS_ERROR_SYSTEM, "RegisterClass() failed: %s", hs_win32_strerror(0));
-        goto cleanup;
-    }
+    /* If this fails, CreateWindow() will fail too so we can ignore errors here. This
+       also takes care of any failure that may result from the class already existing. */
+    RegisterClassEx(&cls);
 
     monitor->thread_hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0,
                                         HWND_MESSAGE, NULL, NULL, NULL);
@@ -1109,7 +1108,6 @@ cleanup:
         UnregisterDeviceNotification(notify_handle);
     if (monitor->thread_hwnd)
         DestroyWindow(monitor->thread_hwnd);
-    UnregisterClass(MONITOR_CLASS_NAME, NULL);
     if (r < 0) {
         monitor->thread_ret = r;
         SetEvent(monitor->notifications_event);
