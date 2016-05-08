@@ -1355,7 +1355,7 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
         _hs_list_remove(&notification->list);
         free_notification(notification);
 
-        if (r < 0)
+        if (r)
             goto cleanup;
     }
 

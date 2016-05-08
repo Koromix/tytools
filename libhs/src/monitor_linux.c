@@ -483,7 +483,7 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 
         udev_device_unref(udev_dev);
 
-        if (r < 0)
+        if (r)
             return r;
 
         errno = 0;
