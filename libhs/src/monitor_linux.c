@@ -35,8 +35,8 @@
 struct hs_monitor {
     _HS_MONITOR
 
-    struct udev_monitor *monitor;
-    int fd;
+    struct udev_monitor *udev_mon;
+    int wait_fd;
 };
 
 struct device_subsystem {
@@ -346,7 +346,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
     }
-    monitor->fd = -1;
+    monitor->wait_fd = -1;
 
     r = _hs_monitor_init(monitor, matches, count);
     if (r < 0)
@@ -356,8 +356,8 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     if (r < 0)
         goto error;
 
-    monitor->fd = fcntl(common_eventfd, F_DUPFD_CLOEXEC, 0);
-    if (monitor->fd < 0) {
+    monitor->wait_fd = fcntl(common_eventfd, F_DUPFD_CLOEXEC, 0);
+    if (monitor->wait_fd < 0) {
         r = hs_error(HS_ERROR_SYSTEM, "fcntl(F_DUPFD_CLOEXEC) failed: %s", strerror(errno));
         goto error;
     }
@@ -375,8 +375,8 @@ void hs_monitor_free(hs_monitor *monitor)
     if (monitor) {
         _hs_monitor_release(monitor);
 
-        close(monitor->fd);
-        udev_monitor_unref(monitor->monitor);
+        close(monitor->wait_fd);
+        udev_monitor_unref(monitor->udev_mon);
     }
 
     free(monitor);
@@ -393,18 +393,18 @@ int hs_monitor_start(hs_monitor *monitor)
 
     int r;
 
-    if (monitor->monitor)
+    if (monitor->udev_mon)
         return 0;
 
-    monitor->monitor = udev_monitor_new_from_netlink(udev, "udev");
-    if (!monitor->monitor) {
+    monitor->udev_mon = udev_monitor_new_from_netlink(udev, "udev");
+    if (!monitor->udev_mon) {
         r = hs_error(HS_ERROR_SYSTEM, "udev_monitor_new_from_netlink() failed");
         goto error;
     }
 
     for (unsigned int i = 0; device_subsystems[i].subsystem; i++) {
         if (_hs_filter_has_type(&monitor->filter, device_subsystems[i].type)) {
-            r = udev_monitor_filter_add_match_subsystem_devtype(monitor->monitor, device_subsystems[i].subsystem, NULL);
+            r = udev_monitor_filter_add_match_subsystem_devtype(monitor->udev_mon, device_subsystems[i].subsystem, NULL);
             if (r < 0) {
                 r = hs_error(HS_ERROR_SYSTEM, "udev_monitor_filter_add_match_subsystem_devtype() failed");
                 goto error;
@@ -412,7 +412,7 @@ int hs_monitor_start(hs_monitor *monitor)
         }
     }
 
-    r = udev_monitor_enable_receiving(monitor->monitor);
+    r = udev_monitor_enable_receiving(monitor->udev_mon);
     if (r < 0) {
         r = hs_error(HS_ERROR_SYSTEM, "udev_monitor_enable_receiving() failed");
         goto error;
@@ -424,7 +424,7 @@ int hs_monitor_start(hs_monitor *monitor)
 
     /* Given the documentation of dup3() and the kernel code handling it, I'm reasonably sure
        nothing can make this call fail. */
-    dup3(udev_monitor_get_fd(monitor->monitor), monitor->fd, O_CLOEXEC);
+    dup3(udev_monitor_get_fd(monitor->udev_mon), monitor->wait_fd, O_CLOEXEC);
 
     return 0;
 
@@ -437,21 +437,20 @@ void hs_monitor_stop(hs_monitor *monitor)
 {
     assert(monitor);
 
-    if (!monitor->monitor)
+    if (!monitor->udev_mon)
         return;
-
-    dup3(common_eventfd, monitor->fd, O_CLOEXEC);
 
     _hs_monitor_clear(monitor);
 
-    udev_monitor_unref(monitor->monitor);
-    monitor->monitor = NULL;
+    dup3(common_eventfd, monitor->wait_fd, O_CLOEXEC);
+    udev_monitor_unref(monitor->udev_mon);
+    monitor->udev_mon = NULL;
 }
 
 hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor)
 {
     assert(monitor);
-    return monitor->fd;
+    return monitor->wait_fd;
 }
 
 int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
@@ -461,11 +460,11 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
     struct udev_device *udev_dev;
     int r;
 
-    if (!monitor->monitor)
+    if (!monitor->udev_mon)
         return 0;
 
     errno = 0;
-    while ((udev_dev = udev_monitor_receive_device(monitor->monitor))) {
+    while ((udev_dev = udev_monitor_receive_device(monitor->udev_mon))) {
         const char *action = udev_device_get_action(udev_dev);
 
         r = 0;
@@ -480,9 +479,7 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
         } else if (strcmp(action, "remove") == 0) {
             _hs_monitor_remove(monitor, udev_device_get_devpath(udev_dev), f, udata);
         }
-
         udev_device_unref(udev_dev);
-
         if (r)
             return r;
 
