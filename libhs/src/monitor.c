@@ -41,7 +41,6 @@ static int find_callback(hs_device *dev, void *udata)
 int hs_find(const hs_match *matches, unsigned int count, hs_device **rdev)
 {
     assert(rdev);
-
     return hs_enumerate(matches, count, find_callback, rdev);
 }
 
@@ -64,7 +63,6 @@ void _hs_monitor_release(hs_monitor *monitor)
 {
     _hs_monitor_clear(monitor);
     _hs_htable_release(&monitor->devices);
-
     _hs_filter_release(&monitor->filter);
 }
 
@@ -77,23 +75,33 @@ void _hs_monitor_clear(hs_monitor *monitor)
     _hs_htable_clear(&monitor->devices);
 }
 
+bool _hs_monitor_has_device(hs_monitor *monitor, const char *key, uint8_t iface)
+{
+    _hs_htable_foreach_hash(cur, &monitor->devices, _hs_htable_hash_str(key)) {
+        hs_device *dev = _hs_container_of(cur, hs_device, hnode);
+
+        if (strcmp(dev->key, key) == 0 && dev->iface == iface)
+            return true;
+    }
+
+    return false;
+}
+
 int _hs_monitor_add(hs_monitor *monitor, hs_device *dev, hs_enumerate_func *f, void *udata)
 {
     if (!_hs_filter_match_device(&monitor->filter, dev))
         return 0;
-
-    _hs_htable_foreach_hash(cur, &monitor->devices, _hs_htable_hash_str(dev->key)) {
-        hs_device *dev2 = _hs_container_of(cur, hs_device, hnode);
-
-        if (strcmp(dev2->key, dev->key) == 0 && dev2->iface == dev->iface)
-            return 0;
-    }
-
+    if (_hs_monitor_has_device(monitor, dev->key, dev->iface))
+        return 0;
 
     hs_device_ref(dev);
     _hs_htable_add(&monitor->devices, _hs_htable_hash_str(dev->key), &dev->hnode);
 
-    return f ? (*f)(dev, udata) : 0;
+    if (f) {
+        return (*f)(dev, udata);
+    } else {
+        return 0;
+    }
 }
 
 void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func *f,

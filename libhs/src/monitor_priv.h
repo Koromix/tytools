@@ -43,6 +43,8 @@ void _hs_monitor_release(hs_monitor *monitor);
 
 void _hs_monitor_clear(hs_monitor *monitor);
 
+bool _hs_monitor_has_device(hs_monitor *monitor, const char *key, uint8_t iface);
+
 int _hs_monitor_add(hs_monitor *monitor, struct hs_device *dev, hs_enumerate_func *f,
                     void *udata);
 void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func *f,
