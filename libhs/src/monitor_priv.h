@@ -37,8 +37,6 @@ struct hs_device;
     _hs_filter filter; \
     \
     _hs_htable devices; \
-    \
-    void *udata;
 
 int _hs_monitor_init(hs_monitor *monitor, const hs_match *matches, unsigned int count);
 void _hs_monitor_release(hs_monitor *monitor);

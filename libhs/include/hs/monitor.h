@@ -159,19 +159,6 @@ HS_PUBLIC hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor);
 
 /**
  * @ingroup monitor
- * @brief Store a custom pointer in this monitor.
- *
- * @sa hs_monitor_get_userdata() Retrieve this pointer.
- */
-HS_PUBLIC void hs_monitor_set_userdata(hs_monitor *monitor, void *udata);
-/**
- * @ingroup monitor
- * @brief Retrieve the pointer stored by hs_monitor_set_userdata().
- */
-HS_PUBLIC void *hs_monitor_get_userdata(const hs_monitor *monitor);
-
-/**
- * @ingroup monitor
  * @brief Start listening to OS notifications.
  *
  * This function lists current devices and connects to the OS device manager for device change

@@ -191,27 +191,6 @@ HS_PUBLIC const char *hs_device_get_product_string(const hs_device *dev);
  * @return This function returns the serial number string, or NULL if the device did not report one.
  */
 HS_PUBLIC const char *hs_device_get_serial_number_string(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the monitor that manages this device.
- *
- * @param dev Device object.
- * @return This function returns the monitor object.
- */
-HS_PUBLIC struct hs_monitor *hs_device_get_monitor(const hs_device *dev);
-
-/**
- * @ingroup device
- * @brief Store a custom pointer in this device object.
- *
- * @sa hs_device_get_userdata() Retrieve this pointer.
- */
-HS_PUBLIC void hs_device_set_userdata(hs_device *dev, void *udata);
-/**
- * @ingroup device
- * @brief Retrieve the pointer stored by hs_device_set_userdata().
- */
-HS_PUBLIC void *hs_device_get_userdata(const hs_device *dev);
 
 /**
  * @ingroup device
@@ -268,19 +247,6 @@ HS_PUBLIC hs_device *hs_handle_get_device(const hs_handle *h);
  * @sa hs_descriptor
  */
 HS_PUBLIC hs_descriptor hs_handle_get_descriptor(const hs_handle *h);
-
-/**
- * @ingroup device
- * @brief Store a custom pointer in this handle object.
- *
- * @sa hs_handle_get_userdata() Retrieve this pointer.
- */
-HS_PUBLIC void hs_handle_set_userdata(hs_handle *h, void *udata);
-/**
- * @ingroup device
- * @brief Retrieve the pointer stored by hs_handle_set_userdata().
- */
-HS_PUBLIC void *hs_handle_get_userdata(const hs_handle *h);
 
 HS_END_C
 

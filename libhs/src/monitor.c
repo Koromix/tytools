@@ -72,8 +72,6 @@ void _hs_monitor_clear(hs_monitor *monitor)
 {
     _hs_htable_foreach(cur, &monitor->devices) {
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
-
-        dev->monitor = NULL;
         hs_device_unref(dev);
     }
     _hs_htable_clear(&monitor->devices);
@@ -91,7 +89,6 @@ int _hs_monitor_add(hs_monitor *monitor, hs_device *dev, hs_enumerate_func *f, v
             return 0;
     }
 
-    dev->monitor = monitor;
 
     hs_device_ref(dev);
     _hs_htable_add(&monitor->devices, _hs_htable_hash_str(dev->key), &dev->hnode);
@@ -115,18 +112,6 @@ void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func 
             hs_device_unref(dev);
         }
     }
-}
-
-void hs_monitor_set_userdata(hs_monitor *monitor, void *udata)
-{
-    assert(monitor);
-    monitor->udata = udata;
-}
-
-void *hs_monitor_get_userdata(const hs_monitor *monitor)
-{
-    assert(monitor);
-    return monitor->udata;
 }
 
 int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)

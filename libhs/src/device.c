@@ -130,24 +130,6 @@ const char *hs_device_get_serial_number_string(const hs_device *dev)
     return dev->serial;
 }
 
-hs_monitor *hs_device_get_monitor(const hs_device *dev)
-{
-    assert(dev);
-    return dev->monitor;
-}
-
-void hs_device_set_userdata(hs_device *dev, void *udata)
-{
-    assert(dev);
-    dev->udata = udata;
-}
-
-void *hs_device_get_userdata(const hs_device *dev)
-{
-    assert(dev);
-    return dev->udata;
-}
-
 int hs_device_open(hs_device *dev, hs_handle **rh)
 {
     assert(dev);
@@ -177,16 +159,4 @@ hs_descriptor hs_handle_get_descriptor(const hs_handle *h)
 {
     assert(h);
     return (*h->dev->vtable->get_descriptor)(h);
-}
-
-void hs_handle_set_userdata(hs_handle *h, void *udata)
-{
-    assert(h);
-    h->udata = udata;
-}
-
-void *hs_handle_get_userdata(const hs_handle *h)
-{
-    assert(h);
-    return h->udata;
 }

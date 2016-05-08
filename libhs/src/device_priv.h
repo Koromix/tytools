@@ -39,7 +39,6 @@ struct _hs_device_vtable {
 };
 
 struct hs_device {
-    struct hs_monitor *monitor;
     _hs_htable_head hnode;
 
     unsigned int refcount;
@@ -63,12 +62,9 @@ struct hs_device {
 
     uint8_t iface;
 
-    void *udata;
 };
 
 #define _HS_HANDLE \
-    hs_device *dev; \
-    \
-    void *udata;
+    hs_device *dev;
 
 #endif
