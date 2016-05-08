@@ -46,13 +46,13 @@
 struct hs_monitor {
     _HS_MONITOR
 
-    CRITICAL_SECTION mutex;
-    int ret;
-    _hs_list_head notifications;
-    HANDLE event;
-
     HANDLE thread;
-    HANDLE hwnd;
+    HANDLE thread_hwnd;
+
+    HANDLE notifications_event;
+    CRITICAL_SECTION notifications_lock;
+    _hs_list_head notifications;
+    int thread_ret;
 };
 
 struct setup_class {
@@ -60,23 +60,15 @@ struct setup_class {
     hs_device_type type;
 };
 
-struct usb_controller {
-    _hs_list_head list;
-
-    uint8_t index;
-    char roothub_id[];
-};
-
-enum device_event {
+enum notification_type {
     DEVICE_EVENT_ADDED,
     DEVICE_EVENT_REMOVED
 };
 
-struct device_notification {
-    _hs_list_head list;
-
-    enum device_event event;
-    char *key;
+struct notification {
+    enum notification_type event;
+    _hs_list_head node;
+    char device_key[];
 };
 
 #if defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 4
@@ -97,7 +89,8 @@ static const struct setup_class setup_classes[] = {
 static GUID hid_guid;
 
 static CRITICAL_SECTION controllers_lock;
-static _HS_LIST(controllers);
+static char *controllers[32];
+static unsigned int controllers_count;
 
 _HS_INIT()
 {
@@ -107,24 +100,16 @@ _HS_INIT()
 
 _HS_EXIT()
 {
+    for (unsigned int i = 0; i < controllers_count; i++)
+        free(controllers[i]);
     DeleteCriticalSection(&controllers_lock);
-}
-
-static void free_notification(struct device_notification *notification)
-{
-    if (notification)
-        free(notification->key);
-
-    free(notification);
 }
 
 static uint8_t find_controller(const char *id)
 {
-    _hs_list_foreach(cur, &controllers) {
-        struct usb_controller *controller = _hs_container_of(cur, struct usb_controller, list);
-
-        if (strcmp(controller->roothub_id, id) == 0)
-            return controller->index;
+    for (unsigned int i = 0; i < controllers_count; i++) {
+        if (strcmp(controllers[i], id) == 0)
+            return (uint8_t)(i + 1);
     }
 
     return 0;
@@ -503,7 +488,7 @@ cleanup:
     return r;
 }
 
-static int get_string_descriptor(HANDLE h, uint8_t port, uint8_t index, char **rs)
+static int get_string_descriptor(HANDLE hub, uint8_t port, uint8_t index, char **rs)
 {
     // A bit ugly, but using USB_DESCRIPTOR_REQUEST directly triggers a C2229 on MSVC
     struct {
@@ -525,33 +510,27 @@ static int get_string_descriptor(HANDLE h, uint8_t port, uint8_t index, char **r
             UCHAR bDescriptorType;
             WCHAR bString[MAXIMUM_USB_STRING_LENGTH];
         } desc;
-    } string;
-    DWORD len = 0;
+    } rq;
+    DWORD desc_len = 0;
     char *s;
     BOOL success;
     int r;
 
-    memset(&string, 0, sizeof(string));
-    string.req.ConnectionIndex = port;
-    string.req.SetupPacket.wValue = (USHORT)((USB_STRING_DESCRIPTOR_TYPE << 8) | index);
-    string.req.SetupPacket.wIndex = 0x409;
-    string.req.SetupPacket.wLength = sizeof(string.desc);
+    memset(&rq, 0, sizeof(rq));
+    rq.req.ConnectionIndex = port;
+    rq.req.SetupPacket.wValue = (USHORT)((USB_STRING_DESCRIPTOR_TYPE << 8) | index);
+    rq.req.SetupPacket.wIndex = 0x409;
+    rq.req.SetupPacket.wLength = sizeof(rq.desc);
 
-    success = DeviceIoControl(h, IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION, &string, sizeof(string),
-                              &string, sizeof(string), &len, NULL);
-    if (!success) {
-        hs_log(HS_LOG_WARNING, "DeviceIoControl(IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION) failed: %s",
-               hs_win32_strerror(0));
+    success = DeviceIoControl(hub, IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION, &rq,
+                              sizeof(rq), &rq, sizeof(rq), &desc_len, NULL);
+    if (!success || desc_len < 2 || rq.desc.bDescriptorType != USB_STRING_DESCRIPTOR_TYPE ||
+            rq.desc.bLength != desc_len - sizeof(rq.req) || rq.desc.bLength % 2 != 0) {
+        hs_log(HS_LOG_DEBUG, "Invalid string descriptor %"PRIu8, index);
         return 0;
     }
 
-    if (len < 2 || string.desc.bDescriptorType != USB_STRING_DESCRIPTOR_TYPE ||
-            string.desc.bLength != len - sizeof(string.req) || string.desc.bLength % 2 != 0) {
-        hs_log(HS_LOG_WARNING, "Malformed or corrupt string descriptor");
-        return 0;
-    }
-
-    r = wide_to_cstring(string.desc.bString, len - sizeof(USB_DESCRIPTOR_REQUEST), &s);
+    r = wide_to_cstring(rq.desc.bString, desc_len - sizeof(USB_DESCRIPTOR_REQUEST), &s);
     if (r < 0)
         return r;
 
@@ -563,7 +542,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
 {
     char buf[256];
     char *path = NULL;
-    HANDLE h = NULL;
+    HANDLE hub = NULL;
     DWORD len;
     USB_NODE_CONNECTION_INFORMATION_EX *node = NULL;
     CONFIGRET cret;
@@ -623,8 +602,8 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
     if (r < 0)
         goto cleanup;
 
-    h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-    if (!h) {
+    hub = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (!hub) {
         hs_log(HS_LOG_DEBUG, "Cannot open parent hub device at '%s', ignoring device properties for '%s'",
                path, dev->key);
         r = 1;
@@ -639,7 +618,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
     }
 
     node->ConnectionIndex = port;
-    success = DeviceIoControl(h, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, node, len,
+    success = DeviceIoControl(hub, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX, node, len,
                               node, len, &len, NULL);
     if (!success) {
         hs_log(HS_LOG_DEBUG, "Failed to interrogate hub device at '%s' for device '%s'", path,
@@ -659,7 +638,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
 
 #define READ_STRING_DESCRIPTOR(index, var) \
         if (index) { \
-            r = get_string_descriptor(h, port, (index), (var)); \
+            r = get_string_descriptor(hub, port, (index), (var)); \
             if (r < 0) \
                 goto cleanup; \
         }
@@ -673,8 +652,8 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
     r = 1;
 cleanup:
     free(node);
-    if (h)
-        CloseHandle(h);
+    if (hub)
+        CloseHandle(hub);
     free(path);
     return r;
 }
@@ -824,43 +803,6 @@ cleanup:
     return r;
 }
 
-static int add_controller(DEVINST inst, uint8_t index)
-{
-    DEVINST roothub_inst;
-    char roothub_id[512];
-    struct usb_controller *controller;
-    CONFIGRET cret;
-
-    cret = CM_Get_Child(&roothub_inst, inst, 0);
-    if (cret != CR_SUCCESS) {
-        hs_log(HS_LOG_WARNING, "Found USB Host controller without a root hub");
-        return 0;
-    }
-
-    cret = CM_Get_Device_ID(roothub_inst, roothub_id, sizeof(roothub_id), 0);
-    if (cret != CR_SUCCESS) {
-        hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed: 0x%lx", cret);
-        return 0;
-    }
-    if (!strstr(roothub_id, "\\ROOT_HUB")) {
-        hs_log(HS_LOG_WARNING, "Unsupported root HUB at '%s'", roothub_id);
-        return 0;
-    }
-
-    controller = malloc(sizeof(*controller) + strlen(roothub_id) + 1);
-    if (!controller)
-        return hs_error(HS_ERROR_MEMORY, NULL);
-
-    controller->index = index;
-    strcpy(controller->roothub_id, roothub_id);
-
-    hs_log(HS_LOG_DEBUG, "Found USB root hub '%s' with ID %"PRIu8, controller->roothub_id,
-           controller->index);
-    _hs_list_add_tail(&controllers, &controller->list);
-
-    return 1;
-}
-
 static int populate_controllers(void)
 {
     HDEVINFO set = NULL;
@@ -869,28 +811,52 @@ static int populate_controllers(void)
 
     EnterCriticalSection(&controllers_lock);
 
-    if (!_hs_list_is_empty(&controllers)) {
+    if (controllers_count) {
         r = 0;
         goto cleanup;
     }
 
-    set = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_HOST_CONTROLLER, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    set = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_HOST_CONTROLLER, NULL, NULL,
+                              DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     if (!set) {
         r = hs_error(HS_ERROR_SYSTEM, "SetupDiGetClassDevs() failed: %s", hs_win32_strerror(0));
         goto cleanup;
     }
 
+    DWORD i = 0;
     info.cbSize = sizeof(info);
-    for (DWORD i = 0; SetupDiEnumDeviceInfo(set, i, &info); i++) {
-        if (i + 1 == UINT8_MAX) {
+    for (i = 0; SetupDiEnumDeviceInfo(set, i, &info); i++) {
+        DEVINST roothub_inst;
+        char roothub_id[256];
+        CONFIGRET cret;
+
+        if (i == _HS_COUNTOF(controllers)) {
             hs_log(HS_LOG_WARNING, "Reached maximum controller ID %d, ignoring", UINT8_MAX);
             break;
         }
 
-        r = add_controller(info.DevInst, (uint8_t)(i + 1));
-        if (r < 0)
+        cret = CM_Get_Child(&roothub_inst, info.DevInst, 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_WARNING, "Found USB Host controller without a root hub");
+            continue;
+        }
+        cret = CM_Get_Device_ID(roothub_inst, roothub_id, sizeof(roothub_id), 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed: 0x%lx", cret);
+            continue;
+        }
+        if (!strstr(roothub_id, "\\ROOT_HUB")) {
+            hs_log(HS_LOG_WARNING, "Expected root hub device at '%s'", roothub_id);
+            continue;
+        }
+
+        controllers[i] = strdup(roothub_id);
+        if (!controllers[i]) {
+            r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
+        }
     }
+    controllers_count = i;
 
     r = 0;
 cleanup:
@@ -987,60 +953,53 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
     return r;
 }
 
-static int extract_device_id(const char *key, char **rid)
+static int post_notification(hs_monitor *monitor, enum notification_type event,
+                             DEV_BROADCAST_DEVICEINTERFACE *msg)
 {
-    char *id, *ptr;
+    const char *id, *id_end;
+    struct notification *notif;
 
-    if (strncmp(key, "\\\\?\\", 4) == 0
-            || strncmp(key, "\\\\.\\", 4) == 0
-            || strncmp(key, "##.#", 4) == 0
-            || strncmp(key, "##?#", 4) == 0)
-        key += 4;
+    if (msg->dbcc_devicetype != DBT_DEVTYP_DEVICEINTERFACE)
+        return 0;
 
-    id = strdup(key);
-    if (!id)
+    /* Extract the device instance ID part.
+       - in: \\?\USB#Vid_2341&Pid_0042#85336303532351101252#{a5dcbf10-6530-11d2-901f-00c04fb951ed}
+       - out: USB#Vid_2341&Pid_0042#85336303532351101252
+       You may notice that paths from RegisterDeviceNotification() seem to start with '\\?\',
+       which according to MSDN is the file namespace, not the device namespace '\\.\'. Oh well. */
+    id = msg->dbcc_name;
+    id_end = id + strlen(id);
+    if (strncmp(id, "\\\\?\\", 4) == 0
+            || strncmp(id, "\\\\.\\", 4) == 0
+            || strncmp(id, "##.#", 4) == 0
+            || strncmp(id, "##?#", 4) == 0)
+        id += 4;
+    if (id_end - id >= 39 && id_end[-39] == '#' && id_end[-38] == '{' && id_end[-1] == '}')
+        id_end -= 39;
+
+    notif = malloc(sizeof(*notif) + (size_t)(id_end - id + 1));
+    if (!notif)
         return hs_error(HS_ERROR_MEMORY, NULL);
+    notif->event = event;
+    memcpy(notif->device_key, id, (size_t)(id_end - id));
+    notif->device_key[id_end - id] = 0;
 
-    ptr = strrpbrk(id, "\\#");
-    if (ptr && ptr[1] == '{')
-        *ptr = 0;
-
-    for (ptr = id; *ptr; ptr++) {
-        *ptr = (char)toupper(*ptr);
-        if (*ptr == '#')
+    /* Normalize device instance ID, uppercase and replace '#' with '\'. Could not do it on msg,
+       Windows may not like it. Maybe, not sure so don't try. */
+    for (char *ptr = notif->device_key; *ptr; ptr++) {
+        if (*ptr == '#') {
             *ptr = '\\';
+        } else if (*ptr >= 97 && *ptr <= 122) {
+            *ptr = (char)(*ptr - 32);
+        }
     }
 
-    *rid = id;
-    return 0;
-}
-
-static int post_device_event(hs_monitor *monitor, enum device_event event, DEV_BROADCAST_DEVICEINTERFACE *data)
-{
-    struct device_notification *notification;
-    int r;
-
-    notification = calloc(1, sizeof(*notification));
-    if (!notification)
-        return hs_error(HS_ERROR_MEMORY, NULL);
-
-    notification->event = event;
-    r = extract_device_id(data->dbcc_name, &notification->key);
-    if (r < 0)
-        goto error;
-
-    EnterCriticalSection(&monitor->mutex);
-
-    _hs_list_add_tail(&monitor->notifications, &notification->list);
-    SetEvent(monitor->event);
-
-    LeaveCriticalSection(&monitor->mutex);
+    EnterCriticalSection(&monitor->notifications_lock);
+    _hs_list_add_tail(&monitor->notifications, &notif->node);
+    SetEvent(monitor->notifications_event);
+    LeaveCriticalSection(&monitor->notifications_lock);
 
     return 0;
-
-error:
-    free_notification(notification);
-    return r;
 }
 
 static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -1054,21 +1013,20 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
         r = 0;
         switch (wparam) {
         case DBT_DEVICEARRIVAL:
-            r = post_device_event(monitor, DEVICE_EVENT_ADDED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+            r = post_notification(monitor, DEVICE_EVENT_ADDED,
+                                  (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
             break;
         case DBT_DEVICEREMOVECOMPLETE:
-            r = post_device_event(monitor, DEVICE_EVENT_REMOVED, (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+            r = post_notification(monitor, DEVICE_EVENT_REMOVED,
+                                  (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
             break;
         }
         if (r < 0) {
-            EnterCriticalSection(&monitor->mutex);
-
-            monitor->ret = r;
-            SetEvent(monitor->event);
-
-            LeaveCriticalSection(&monitor->mutex);
+            EnterCriticalSection(&monitor->notifications_lock);
+            monitor->thread_ret = r;
+            SetEvent(monitor->notifications_event);
+            LeaveCriticalSection(&monitor->notifications_lock);
         }
-
         break;
 
     case WM_CLOSE:
@@ -1090,7 +1048,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
     HDEVNOTIFY notify_handle = NULL;
     MSG msg;
     ATOM atom;
-    BOOL ret;
+    BOOL success;
     int r;
 
     cls.cbSize = sizeof(cls);
@@ -1104,14 +1062,15 @@ static unsigned int __stdcall monitor_thread(void *udata)
         goto cleanup;
     }
 
-    monitor->hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL, NULL);
-    if (!monitor->hwnd) {
+    monitor->thread_hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0,
+                                        HWND_MESSAGE, NULL, NULL, NULL);
+    if (!monitor->thread_hwnd) {
         r = hs_error(HS_ERROR_SYSTEM, "CreateWindow() failed: %s", hs_win32_strerror(0));
         goto cleanup;
     }
 
     SetLastError(0);
-    SetWindowLongPtr(monitor->hwnd, GWLP_USERDATA, (LONG_PTR)monitor);
+    SetWindowLongPtr(monitor->thread_hwnd, GWLP_USERDATA, (LONG_PTR)monitor);
     if (GetLastError()) {
         r = hs_error(HS_ERROR_SYSTEM, "SetWindowLongPtr() failed: %s", hs_win32_strerror(0));
         goto cleanup;
@@ -1123,7 +1082,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
     /* We monitor everything because I cannot find an interface class to detect
        serial devices within an IAD, and RegisterDeviceNotification() does not
        support device setup class filtering. */
-    notify_handle = RegisterDeviceNotification(monitor->hwnd, &filter,
+    notify_handle = RegisterDeviceNotification(monitor->thread_hwnd, &filter,
                                                DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
     if (!notify_handle) {
         r = hs_error(HS_ERROR_SYSTEM, "RegisterDeviceNotification() failed: %s", hs_win32_strerror(0));
@@ -1132,10 +1091,10 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     /* Our fake window is created and ready to receive device notifications,
        hs_monitor_new() can go on. */
-    SetEvent(monitor->event);
+    SetEvent(monitor->notifications_event);
 
-    while((ret = GetMessage(&msg, NULL, 0, 0)) != 0) {
-        if(ret < 0) {
+    while ((success = GetMessage(&msg, NULL, 0, 0)) != 0) {
+        if(success < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "GetMessage() failed: %s", hs_win32_strerror(0));
             goto cleanup;
         }
@@ -1148,12 +1107,12 @@ static unsigned int __stdcall monitor_thread(void *udata)
 cleanup:
     if (notify_handle)
         UnregisterDeviceNotification(notify_handle);
-    if (monitor->hwnd)
-        DestroyWindow(monitor->hwnd);
+    if (monitor->thread_hwnd)
+        DestroyWindow(monitor->thread_hwnd);
     UnregisterClass(MONITOR_CLASS_NAME, NULL);
     if (r < 0) {
-        monitor->ret = r;
-        SetEvent(monitor->event);
+        monitor->thread_ret = r;
+        SetEvent(monitor->notifications_event);
     }
     return 0;
 }
@@ -1184,9 +1143,9 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     if (r < 0)
         goto error;
 
-    InitializeCriticalSection(&monitor->mutex);
-    monitor->event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (!monitor->event) {
+    InitializeCriticalSection(&monitor->notifications_lock);
+    monitor->notifications_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!monitor->notifications_event) {
         r = hs_error(HS_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
         goto error;
     }
@@ -1206,9 +1165,9 @@ void hs_monitor_free(hs_monitor *monitor)
     if (monitor) {
         hs_monitor_stop(monitor);
 
-        DeleteCriticalSection(&monitor->mutex);
-        if (monitor->event)
-            CloseHandle(monitor->event);
+        DeleteCriticalSection(&monitor->notifications_lock);
+        if (monitor->notifications_event)
+            CloseHandle(monitor->notifications_event);
 
         _hs_monitor_release(monitor);
     }
@@ -1219,7 +1178,7 @@ void hs_monitor_free(hs_monitor *monitor)
 hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor)
 {
     assert(monitor);
-    return monitor->event;
+    return monitor->notifications_event;
 }
 
 int hs_monitor_start(hs_monitor *monitor)
@@ -1241,12 +1200,12 @@ int hs_monitor_start(hs_monitor *monitor)
         goto error;
     }
 
-    WaitForSingleObject(monitor->event, INFINITE);
-    if (monitor->ret < 0) {
-        r = monitor->ret;
+    WaitForSingleObject(monitor->notifications_event, INFINITE);
+    if (monitor->thread_ret < 0) {
+        r = monitor->thread_ret;
         goto error;
     }
-    ResetEvent(monitor->event);
+    ResetEvent(monitor->notifications_event);
 
     r = enumerate(&monitor->filter, monitor_enumerate_callback, monitor);
     if (r < 0)
@@ -1268,16 +1227,16 @@ void hs_monitor_stop(hs_monitor *monitor)
 
     _hs_monitor_clear(monitor);
 
-    if (monitor->hwnd) {
-        PostMessage(monitor->hwnd, WM_CLOSE, 0, 0);
+    if (monitor->thread_hwnd) {
+        PostMessage(monitor->thread_hwnd, WM_CLOSE, 0, 0);
         WaitForSingleObject(monitor->thread, INFINITE);
     }
     CloseHandle(monitor->thread);
     monitor->thread = NULL;
 
     _hs_list_foreach(cur, &monitor->notifications) {
-        struct device_notification *notification = _hs_container_of(cur, struct device_notification, list);
-        free_notification(notification);
+        struct notification *notif = _hs_container_of(cur, struct notification, node);
+        free(notif);
     }
 }
 
@@ -1315,38 +1274,37 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
     if (!monitor->thread)
         return 0;
 
-    EnterCriticalSection(&monitor->mutex);
-
     /* We don't want to keep the lock for too long, so move all notifications to our own list
        and let the background thread work and process Win32 events. */
+    EnterCriticalSection(&monitor->notifications_lock);
     _hs_list_splice(&notifications, &monitor->notifications);
-
-    r = monitor->ret;
-    monitor->ret = 0;
-
-    LeaveCriticalSection(&monitor->mutex);
+    r = monitor->thread_ret;
+    monitor->thread_ret = 0;
+    LeaveCriticalSection(&monitor->notifications_lock);
 
     if (r < 0)
         goto cleanup;
 
     _hs_list_foreach(cur, &notifications) {
-        struct device_notification *notification = _hs_container_of(cur, struct device_notification, list);
+        struct notification *notif = _hs_container_of(cur, struct notification, node);
 
-        switch (notification->event) {
+        switch (notif->event) {
         case DEVICE_EVENT_ADDED:
-            hs_log(HS_LOG_DEBUG, "Received arrival notification for device '%s'", notification->key);
-            r = process_arrival_notification(monitor, notification->key, f, udata);
+            hs_log(HS_LOG_DEBUG, "Received arrival notification for device '%s'",
+                   notif->device_key);
+            r = process_arrival_notification(monitor, notif->device_key, f, udata);
             break;
 
         case DEVICE_EVENT_REMOVED:
-            hs_log(HS_LOG_DEBUG, "Received removal notification for device '%s'", notification->key);
-            _hs_monitor_remove(monitor, notification->key, f, udata);
+            hs_log(HS_LOG_DEBUG, "Received removal notification for device '%s'",
+                   notif->device_key);
+            _hs_monitor_remove(monitor, notif->device_key, f, udata);
             r = 0;
             break;
         }
 
-        _hs_list_remove(&notification->list);
-        free_notification(notification);
+        _hs_list_remove(&notif->node);
+        free(notif);
 
         if (r)
             goto cleanup;
@@ -1354,14 +1312,12 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 
     r = 0;
 cleanup:
-    EnterCriticalSection(&monitor->mutex);
-
     /* If an error occurs, there maty be unprocessed notifications. We don't want to lose them so
        put everything back in front of the notification list. */
+    EnterCriticalSection(&monitor->notifications_lock);
     _hs_list_splice(&monitor->notifications, &notifications);
     if (_hs_list_is_empty(&monitor->notifications))
-        ResetEvent(monitor->event);
-
-    LeaveCriticalSection(&monitor->mutex);
+        ResetEvent(monitor->notifications_event);
+    LeaveCriticalSection(&monitor->notifications_lock);
     return r;
 }
