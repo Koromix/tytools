@@ -76,6 +76,20 @@ TyQt::TyQt(int &argc, char *argv[])
     setApplicationName("TyQt");
     setApplicationVersion(ty_version_string());
 
+    // This can be triggered from multiple threads, but Qt can queue signals appropriately
+    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
+        ty_message_default_handler(task, type, data, udata);
+
+        if (type == TY_MESSAGE_LOG) {
+            auto print = static_cast<const ty_log_message *>(data);
+            if (print->level <= TY_LOG_WARNING) {
+                tyQt->reportError(print->msg);
+            } else {
+                tyQt->reportDebug(print->msg);
+            }
+        }
+    }, nullptr);
+
     initDatabase("tyqt", tyqt_db_);
     setDatabase(&tyqt_db_);
     loadSettings();
@@ -368,20 +382,6 @@ int TyQt::runMainInstance(int argc, char *argv[])
     }
 
     connect(&channel_, &SessionChannel::newConnection, this, &TyQt::acceptClient);
-
-    // This can be triggered from multiple threads, but Qt can queue signals appropriately
-    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
-        ty_message_default_handler(task, type, data, udata);
-
-        if (type == TY_MESSAGE_LOG) {
-            auto print = static_cast<const ty_log_message *>(data);
-            if (print->level <= TY_LOG_WARNING) {
-                tyQt->reportError(print->msg);
-            } else {
-                tyQt->reportDebug(print->msg);
-            }
-        }
-    }, nullptr);
 
     initDatabase("boards", monitor_db_);
     monitor_.setDatabase(&monitor_db_);
