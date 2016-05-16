@@ -3,8 +3,7 @@
 # Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
 # Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
 
-find_package(Qt5 REQUIRED
-    COMPONENTS Widgets Network PrintSupport
+find_package(Qt5 REQUIRED COMPONENTS Widgets Network PrintSupport
     HINTS "${CMAKE_SOURCE_DIR}/qt5/${HOST}"
     NO_CMAKE_FIND_ROOT_PATH)
 
@@ -49,39 +48,33 @@ add_executable(tyqt WIN32 ${TYQT_SOURCES} ${TYQT_FORMS_HEADERS} ${TYQT_RESOURCES
 target_link_libraries(tyqt ${TY_LIBRARIES} Qt5::Core Qt5::Widgets Qt5::Network)
 set_target_properties(tyqt PROPERTIES AUTOMOC ON)
 
+# Static libraries are painful. Be careful when you touch this, it was made
+# through an extremely evolved trial and error process :]
 get_target_property(QT5_TYPE Qt5::Core TYPE)
 if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
-    get_target_property(QT5_LIBRARY_DIRECTORY Qt5::Core LOCATION)
-    get_filename_component(QT5_LIBRARY_DIRECTORY "${QT5_LIBRARY_DIRECTORY}" DIRECTORY)
+    get_target_property(QT5_DIRECTORY Qt5::Core LOCATION)
+    get_filename_component(QT5_DIRECTORY "${QT5_DIRECTORY}" DIRECTORY)
+    get_filename_component(QT5_DIRECTORY "${QT5_DIRECTORY}" DIRECTORY)
+    set(QT5_LIBRARY_DIRECTORIES "${QT5_DIRECTORY}/lib" "${QT5_DIRECTORY}/plugins/platforms")
 
     if(WIN32)
         # Fix undefined reference to _imp__WSAAsyncSelect@16
         set_property(TARGET Qt5::Network APPEND PROPERTY INTERFACE_LINK_LIBRARIES ws2_32)
 
         # Why is there no config package for this?
-        find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupportd
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+        find_library(Qt5PlatformSupport_LIBRARIES Qt5PlatformSupport
+            HINTS ${QT5_LIBRARY_DIRECTORIES}
             NO_CMAKE_FIND_ROOT_PATH)
-        find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+        find_library(qtpcre_LIBRARIES qtpcre
+            HINTS ${QT5_LIBRARY_DIRECTORIES}
             NO_CMAKE_FIND_ROOT_PATH)
-        find_library(qtpcre_LIBRARIES_DEBUG qtpcred
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
-            NO_CMAKE_FIND_ROOT_PATH)
-        find_library(qtpcre_LIBRARIES_OPTIMIZED qtpcre
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
-            NO_CMAKE_FIND_ROOT_PATH)
-        find_library(qtfreetype_LIBRARIES_DEBUG qtfreetyped
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
-            NO_CMAKE_FIND_ROOT_PATH)
-        find_library(qtfreetype_LIBRARIES_OPTIMIZED qtfreetype
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+        find_library(qtfreetype_LIBRARIES qtfreetype
+            HINTS ${QT5_LIBRARY_DIRECTORIES}
             NO_CMAKE_FIND_ROOT_PATH)
 
         target_link_libraries(tyqt
             Qt5::QWindowsIntegrationPlugin imm32 winmm
-            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG} ${qtpcre_LIBRARIES_DEBUG} ${qtfreetype_LIBRARIES_DEBUG}
-            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED} ${qtpcre_LIBRARIES_OPTIMIZED} ${qtfreetype_LIBRARIES_OPTIMIZED})
+            ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES} ${qtfreetype_LIBRARIES})
     elseif(APPLE)
         find_library(COCOA_LIBRARIES Cocoa)
         find_library(CARBON_LIBRARIES Carbon)
@@ -90,23 +83,16 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
         find_package(ZLIB REQUIRED)
         find_package(Cups REQUIRED)
 
-        find_library(Qt5PlatformSupport_LIBRARIES_DEBUG Qt5PlatformSupport_debug
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+        find_library(Qt5PlatformSupport_LIBRARIES Qt5PlatformSupport
+            HINTS ${QT5_LIBRARY_DIRECTORIES}
             NO_CMAKE_FIND_ROOT_PATH)
-        find_library(Qt5PlatformSupport_LIBRARIES_OPTIMIZED Qt5PlatformSupport
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
-            NO_CMAKE_FIND_ROOT_PATH)
-        find_library(qtpcre_LIBRARIES_DEBUG qtpcre_debug
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
-            NO_CMAKE_FIND_ROOT_PATH)
-        find_library(qtpcre_LIBRARIES_OPTIMIZED qtpcre
-            HINTS "${QT5_LIBRARY_DIRECTORY}" "${QT5_LIBRARY_DIRECTORY}/../lib"
+        find_library(qtpcre_LIBRARIES qtpcre
+            HINTS ${QT5_LIBRARY_DIRECTORIES}
             NO_CMAKE_FIND_ROOT_PATH)
 
         target_link_libraries(tyqt
             Qt5::QCocoaIntegrationPlugin Qt5::PrintSupport
-            debug ${Qt5PlatformSupport_LIBRARIES_DEBUG} ${qtpcre_LIBRARIES_DEBUG}
-            optimized ${Qt5PlatformSupport_LIBRARIES_OPTIMIZED} ${qtpcre_LIBRARIES_OPTIMIZED}
+            ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES}
             ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${SECURITY_LIBRARIES}
             ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES})
     endif()
