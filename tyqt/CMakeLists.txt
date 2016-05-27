@@ -82,6 +82,7 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
         find_library(SC_LIBRARIES SystemConfiguration)
         find_package(ZLIB REQUIRED)
         find_package(Cups REQUIRED)
+        find_package(OpenGL REQUIRED)
 
         find_library(Qt5PlatformSupport_LIBRARIES Qt5PlatformSupport
             HINTS ${QT5_LIBRARY_DIRECTORIES}
@@ -94,7 +95,7 @@ if(QT5_TYPE STREQUAL "STATIC_LIBRARY")
             Qt5::QCocoaIntegrationPlugin Qt5::PrintSupport
             ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES}
             ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${SECURITY_LIBRARIES}
-            ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES})
+            ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES} ${OPENGL_LIBRARIES})
     endif()
 elseif(WIN32 OR APPLE)
     message(WARNING "Cannot package Qt5 shared libraries")
