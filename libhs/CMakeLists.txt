@@ -23,6 +23,9 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(libhs C)
 
+set(HS_SHARED_MSVCRT OFF CACHE BOOL "Build with static version of MS CRT (/MD)")
+set(HS_BUILD_EXAMPLES ON CACHE BOOL "Build examples")
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/contrib/cmake")
 
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
@@ -45,8 +48,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
 elseif(MSVC)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
 
-    set(HS_STATIC_MSVCRT OFF CACHE BOOL "Build with static version of MS CRT (/MT)")
-    if(HS_STATIC_MSVCRT)
+    if(NOT HS_SHARED_MSVCRT)
         foreach(mode DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
             string(REPLACE "/MD" "/MT" CMAKE_C_FLAGS_${mode} "${CMAKE_C_FLAGS_${mode}}")
         endforeach()
@@ -112,8 +114,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(include)
 
 add_subdirectory(src)
-
-set(HS_BUILD_EXAMPLES ON CACHE BOOL "Build examples")
 if(HS_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
