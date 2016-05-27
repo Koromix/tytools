@@ -35,7 +35,7 @@ matrix:
       compiler: clang
       env:
         - INSTALLER=osx
-        - QT_PACKAGE=qtbase-5.5.1-x86_64-darwin-clang-static.txz
+        - QT_PACKAGE=qtbase-5.6.0-x86_64-darwin-clang-static.txz
 
 install:
   - contrib/ci/install-$INSTALLER.sh
