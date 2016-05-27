@@ -8,8 +8,8 @@ project(ty C CXX)
 
 # Don't contaminate external projects with our variables, I know you're supposed to
 # use ExternalProject... but add_subdirectory() avoids a lot of ExternalProject's mess.
-if(TY_STATIC_MSVCRT)
-    set(HS_STATIC_MSVCRT ON CACHE BOOL "" FORCE)
+if(NOT TY_STATIC_MSVCRT)
+    set(HS_SHARED_MSVCRT ON CACHE BOOL "" FORCE)
 endif()
 set(HS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(libhs)
