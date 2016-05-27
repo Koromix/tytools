@@ -10,9 +10,9 @@ environment:
   BUILD_TYPE: "RelWithDebInfo"
 
   matrix:
-    - CMAKE_FLAGS: '-G "Visual Studio 14 2015" -T "v140_xp" -DTY_STATIC_MSVCRT=1'
+    - CMAKE_FLAGS: '-G "Visual Studio 14 2015" -T "v140_xp"'
       QT_PACKAGE: qtbase-5.6.0-i686-win32-msvc2015-mt-static.7z
-    - CMAKE_FLAGS: '-G "Visual Studio 14 2015 Win64" -DTY_STATIC_MSVCRT=1'
+    - CMAKE_FLAGS: '-G "Visual Studio 14 2015 Win64"'
       QT_PACKAGE: qtbase-5.6.0-x86_64-win32-msvc2015-mt-static.7z
 
 install:
