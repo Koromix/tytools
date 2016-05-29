@@ -1,4 +1,6 @@
-# Windows / MSVC 2015 32-bit with static MSVCRT
+# Compilation on Windows
+
+## MSVC 2015 32-bit with static MSVCRT
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.7z
 
@@ -30,7 +32,7 @@ nmake
 Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
 you move your project.
 
-# Windows / MSVC 2015 64-bit with static MSVCRT
+## MSVC 2015 64-bit with static MSVCRT
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.7z
 
@@ -87,6 +89,72 @@ cd x86_64-darwin-clang
     -no-cups \
     -no-freetype \
     -qt-pcre
+make
+```
+
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
+you move your project.
+
+# Cross-compiling for Windows from Linux with MinGW-w64
+
+## 32-bit build with MinGW-w64
+
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.tar.xz
+
+Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "i686-w64-mingw32". Open
+a terminal and go to that directory.
+
+```sh
+cd i686-w64-mingw32
+REM Now we are in ty/qt5/i686-w64-mingw32
+configure -xplatform win32-g++ \
+    -device-option CROSS_COMPILE=i686-w64-mingw32- \
+    -opensource \
+    -confirm-license \
+    -static \
+    -release \
+    -nomake examples \
+    -nomake tests \
+    -no-pkg-config \
+    -no-opengl \
+    -no-harfbuzz \
+    -no-icu \
+    -no-cups \
+    -qt-pcre \
+    -qt-zlib \
+    -qt-freetype
+make
+```
+
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
+you move your project.
+
+## 64-bit build with MinGW-w64
+
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.tar.xz
+
+Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-w64-mingw32". Open
+a terminal and go to that directory.
+
+```sh
+cd x86_64-w64-mingw32
+REM Now we are in ty/qt5/x86_64-w64-mingw32
+configure -xplatform win32-g++ \
+    -device-option CROSS_COMPILE=x86_64-w64-mingw32- \
+    -opensource \
+    -confirm-license \
+    -static \
+    -release \
+    -nomake examples \
+    -nomake tests \
+    -no-pkg-config \
+    -no-opengl \
+    -no-harfbuzz \
+    -no-icu \
+    -no-cups \
+    -qt-pcre \
+    -qt-zlib \
+    -qt-freetype
 make
 ```
 
