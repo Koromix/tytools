@@ -164,13 +164,18 @@ static const ty_board_model *identify_model(const hs_hid_descriptor *desc)
     if (desc->usage_page != TEENSY_USAGE_PAGE_BOOTLOADER)
         return NULL;
 
+
     for (const ty_board_model **cur = teensy_models; *cur; cur++) {
         const ty_board_model *model = *cur;
 
-        if (model->usage == desc->usage)
+        if (model->usage == desc->usage) {
+            ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16, model->name,
+                   desc->usage);
             return *cur;
+        }
     }
 
+    ty_log(TY_LOG_DEBUG, "Unknown Teensy model with usage value 0x%"PRIx16, desc->usage);
     return NULL;
 }
 
