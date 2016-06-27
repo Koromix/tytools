@@ -1298,7 +1298,7 @@ static int process_arrival_notification(hs_monitor *monitor, const char *key, hs
 
     cret = CM_Locate_DevNode(&inst, (DEVINSTID)key, CM_LOCATE_DEVNODE_NORMAL);
     if (cret != CR_SUCCESS) {
-        hs_log(HS_LOG_WARNING, "Device node '%s' does not exist: 0x%lx", dev->key, cret);
+        hs_log(HS_LOG_DEBUG, "Device node '%s' does not exist: 0x%lx", key, cret);
         return 0;
     }
 
