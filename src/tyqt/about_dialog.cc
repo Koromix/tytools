@@ -15,6 +15,7 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent, f)
 {
     setupUi(this);
+    setWindowTitle(tr("About %1").arg(QApplication::applicationName()));
 
     connect(closeButton, &QPushButton::clicked, this, &AboutDialog::close);
     connect(reportBugButton, &QPushButton::clicked, &AboutDialog::openBugReports);

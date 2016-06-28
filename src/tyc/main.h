@@ -14,6 +14,8 @@
 
 TY_C_BEGIN
 
+extern const char *executable_name;
+
 void print_common_options(FILE *f);
 bool parse_common_option(int argc, char *argv[], int c);
 

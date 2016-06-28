@@ -17,6 +17,7 @@ LogDialog::LogDialog(QWidget *parent, Qt::WindowFlags f)
     : QDialog(parent, f)
 {
     setupUi(this);
+    setWindowTitle(tr("%1 Log").arg(QApplication::applicationName()));
 
     connect(closeButton, &QPushButton::clicked, this, &LogDialog::close);
     connect(clearButton, &QPushButton::clicked, this, &LogDialog::clearAll);

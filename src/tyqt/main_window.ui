@@ -730,15 +730,15 @@
   </action>
   <action name="actionResetApp">
    <property name="text">
-    <string>Reset TyQt</string>
+    <string>Reset Application</string>
    </property>
   </action>
   <action name="actionResetSettingsApp">
    <property name="text">
-    <string>Reset Settings &amp;&amp; TyQt</string>
+    <string>Reset Settings &amp;&amp; Application</string>
    </property>
    <property name="toolTip">
-    <string>Reset Settings &amp; TyQt</string>
+    <string>Reset Settings &amp; Application</string>
    </property>
   </action>
   <action name="actionOpenLog">

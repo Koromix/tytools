@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), monitor_(tyQt->monitor())
 {
     setupUi(this);
+    setWindowTitle(QApplication::applicationName());
 
 #ifdef __APPLE__
     /* Workaround for Qt OSX bug https://bugreports.qt.io/browse/QTBUG-34160

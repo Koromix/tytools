@@ -34,7 +34,7 @@
       <item>
        <widget class="QCheckBox" name="hideOnStartupCheck">
         <property name="text">
-         <string>Hide TyQt on startup</string>
+         <string>Hide application on startup</string>
         </property>
        </widget>
       </item>

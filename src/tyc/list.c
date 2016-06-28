@@ -38,7 +38,7 @@ static bool collection_started;
 
 static void print_list_usage(FILE *f)
 {
-    fprintf(f, "usage: tyc list [options]\n\n");
+    fprintf(f, "usage: %s list [options]\n\n", executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");

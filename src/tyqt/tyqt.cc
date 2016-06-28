@@ -45,7 +45,7 @@ enum {
 
 static const ClientCommand commands[] = {
     {"run",       &TyQt::runMainInstance,      NULL,                      NULL},
-    {"open",      &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Open a new TyQt window (default)")},
+    {"open",      &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Open a new window (default)")},
     {"reset",     &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
     {"reboot",    &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
     {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
@@ -73,7 +73,7 @@ TyQt::TyQt(int &argc, char *argv[])
     : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
     setOrganizationName("ty");
-    setApplicationName("TyQt");
+    setApplicationName(TY_CONFIG_TYQT_NAME);
     setApplicationVersion(ty_version_string());
 
     // This can be triggered from multiple threads, but Qt can queue signals appropriately
@@ -292,7 +292,7 @@ void TyQt::readAnswer(const QStringList &arguments)
     return;
 
 error:
-    showClientError(tr("Received incorrect data from main TyQt instance"));
+    showClientError(tr("Received incorrect data from main instance"));
     exit(1);
 }
 
@@ -377,7 +377,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
     }
 
     if (!channel_.lock()) {
-        showClientError(tr("Cannot start main TyQt instance, lock file in place"));
+        showClientError(tr("Cannot start main instance, lock file in place"));
         return EXIT_FAILURE;
     }
 
@@ -477,7 +477,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
         }
 
         if (!client) {
-            showClientError(tr("Cannot connect to main TyQt instance"));
+            showClientError(tr("Cannot connect to main instance"));
             return EXIT_FAILURE;
         }
     }
@@ -495,7 +495,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
 
     connect(client.get(), &SessionPeer::closed, this, [=](SessionPeer::CloseReason reason) {
         if (reason != SessionPeer::LocalClose) {
-            showClientError(tr("Main TyQt instance closed the connection"));
+            showClientError(tr("Main instance closed the connection"));
             exit(1);
         }
     });
@@ -600,8 +600,8 @@ void TyQt::clearSettingsAndResetWithConfirmation(QWidget *parent)
     QMessageBox msgbox(parent);
 
     msgbox.setIcon(QMessageBox::Warning);
-    msgbox.setWindowTitle(tr("Reset Settings & TyQt"));
-    msgbox.setText(tr("Reset will erase all your TyQt settings, including individual board settings and tags."));
+    msgbox.setWindowTitle(tr("Reset Settings & Application"));
+    msgbox.setText(tr("Reset will erase all your settings, including individual board settings and tags."));
     auto reset = msgbox.addButton(tr("Reset"), QMessageBox::AcceptRole);
     msgbox.addButton(QMessageBox::Cancel);
     msgbox.setDefaultButton(QMessageBox::Cancel);
@@ -640,14 +640,14 @@ void TyQt::initCache(const QString &name, SettingsDatabase &cache)
 
 QString TyQt::helpText()
 {
-    QString help = tr("usage: tyqt <command> [options]\n\n"
+    QString help = tr("usage: %1 <command> [options]\n\n"
                       "General options:\n"
                       "       --help               Show help message\n"
                       "       --version            Display version information\n\n"
                       "   -w, --wait               Wait until task completion\n"
                       "   -b, --board <tag>        Work with board <tag> instead of first detected\n"
                       "   -q, --quiet              Disable output, use -qqq to silence errors\n\n"
-                      "Commands:\n");
+                      "Commands:\n").arg(QFileInfo(QApplication::applicationFilePath()).fileName());
 
     for (auto cmd = commands; cmd->name; cmd++) {
         if (!cmd->description)
@@ -668,7 +668,7 @@ void TyQt::showClientMessage(const QString &msg)
     if (client_console_) {
         printf("%s\n", qPrintable(msg));
     } else {
-        QMessageBox::information(nullptr, "TyQt", msg);
+        QMessageBox::information(nullptr, QApplication::applicationName(), msg);
     }
 }
 
@@ -677,6 +677,6 @@ void TyQt::showClientError(const QString &msg)
     if (client_console_) {
         fprintf(stderr, "%s\n", qPrintable(msg));
     } else {
-        QMessageBox::critical(nullptr, tr("TyQt (error)"), msg);
+        QMessageBox::critical(nullptr, tr("%1 (error)").arg(QApplication::applicationName()), msg);
     }
 }

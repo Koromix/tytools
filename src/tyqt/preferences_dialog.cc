@@ -17,6 +17,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     : QDialog(parent)
 {
     setupUi(this);
+    setWindowTitle(tr("%1 Preferences").arg(QApplication::applicationName()));
 
     connect(buttonBox, &QDialogButtonBox::accepted, this, &PreferencesDialog::accept);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &PreferencesDialog::reject);

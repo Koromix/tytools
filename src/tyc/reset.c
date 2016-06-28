@@ -20,7 +20,7 @@ static bool bootloader = false;
 
 static void print_reset_usage(FILE *f)
 {
-    fprintf(f, "usage: tyc reset\n\n");
+    fprintf(f, "usage: %s reset\n\n", executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");

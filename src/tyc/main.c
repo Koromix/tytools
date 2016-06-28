@@ -11,6 +11,7 @@
     #include <sys/wait.h>
 #endif
 #include "hs/common.h"
+#include "ty/system.h"
 #include "main.h"
 
 struct command {
@@ -41,7 +42,7 @@ static ty_board *main_board;
 
 static void print_version(FILE *f)
 {
-    fprintf(f, "tyc %s\n", ty_version_string());
+    fprintf(f, "%s %s\n", executable_name, ty_version_string());
 }
 
 static int print_family_model(const ty_board_model *model, void *udata)
@@ -54,7 +55,7 @@ static int print_family_model(const ty_board_model *model, void *udata)
 
 static void print_main_usage(FILE *f)
 {
-    fprintf(f, "usage: tyc <command> [options]\n\n");
+    fprintf(f, "usage: %s <command> [options]\n\n", executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -185,6 +186,18 @@ int main(int argc, char *argv[])
 {
     const struct command *cmd;
     int r;
+
+    if (argc && *argv[0]) {
+        executable_name = argv[0] + strlen(argv[0]);
+        while (executable_name > argv[0] && !strchr(TY_PATH_SEPARATORS, executable_name[-1]))
+            executable_name--;
+    } else {
+#ifdef _WIN32
+        executable_name = TY_CONFIG_TYC_EXECUTABLE ".exe";
+#else
+        executable_name = TY_CONFIG_TYC_EXECUTABLE;
+#endif
+    }
 
     hs_log_set_handler(ty_libhs_log_handler, NULL);
 

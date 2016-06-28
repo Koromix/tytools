@@ -66,7 +66,7 @@ static ssize_t input_ret;
 
 static void print_monitor_usage(FILE *f)
 {
-    fprintf(f, "usage: tyc monitor [options]\n\n");
+    fprintf(f, "usage: %s monitor [options]\n\n", executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
