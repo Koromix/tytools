@@ -31,6 +31,8 @@ static void *log_handler_udata;
 static _HS_THREAD_LOCAL hs_error_code mask[32];
 static _HS_THREAD_LOCAL unsigned int mask_count;
 
+static _HS_THREAD_LOCAL char last_error_msg[256];
+
 uint32_t hs_version(void)
 {
     return HS_VERSION;
@@ -110,13 +112,9 @@ int hs_error_is_masked(int err)
     return 0;
 }
 
-HS_PRINTF_FORMAT(3, 0)
-static void logv(hs_log_level level, int err, const char *fmt, va_list ap)
+const char *hs_error_last_message()
 {
-    char buf[512];
-
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    (*log_handler)(level, err, buf, log_handler_udata);
+    return last_error_msg;
 }
 
 void hs_log(hs_log_level level, const char *fmt, ...)
@@ -124,26 +122,34 @@ void hs_log(hs_log_level level, const char *fmt, ...)
     assert(fmt);
 
     va_list ap;
+    char buf[sizeof(last_error_msg)];
 
     va_start(ap, fmt);
-    logv(level, 0, fmt, ap);
+    vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
+
+    (*log_handler)(level, 0, buf, log_handler_udata);
 }
 
 int hs_error(hs_error_code err, const char *fmt, ...)
 {
     va_list ap;
+    char buf[sizeof(last_error_msg)];
 
-    if (hs_error_is_masked(err))
-        return err;
-
+    /* Don't copy directly to last_error_message because we need to support
+       ty_error(err, "%s", ty_error_last_message()). */
     if (fmt) {
         va_start(ap, fmt);
-        logv(HS_LOG_ERROR, err, fmt, ap);
+        vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
     } else {
-        (*log_handler)(HS_LOG_ERROR, err, generic_message(err), log_handler_udata);
+        strncpy(buf, generic_message(err), sizeof(buf));
+        buf[sizeof(buf) - 1] = 0;
     }
+
+    strcpy(last_error_msg, buf);
+    if (!hs_error_is_masked(err))
+        (*log_handler)(HS_LOG_ERROR, err, buf, log_handler_udata);
 
     return err;
 }

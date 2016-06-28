@@ -271,6 +271,13 @@ HS_PUBLIC void hs_error_unmask(void);
  * @sa hs_error_mask()
  */
 HS_PUBLIC int hs_error_is_masked(int err);
+
+/**
+  * @ingroup misc
+  * @brief Get the last error message emitted on the current thread.
+  */
+HS_PUBLIC const char *hs_error_last_message();
+
 /**
  * @ingroup misc
  * @brief Call the log callback with a printf-formatted error message.
