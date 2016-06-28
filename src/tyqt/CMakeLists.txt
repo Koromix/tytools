@@ -28,6 +28,10 @@ if(WIN32)
     list(APPEND TYQT_SOURCES tyqt_win32.rc)
 endif()
 
+if(TY_CONFIG_VARIANT AND EXISTS "${TY_CONFIG_VARIANT}/tyqt_resources.qrc")
+    list(APPEND TYQT_RESOURCES "${TY_CONFIG_VARIANT}/tyqt_resources.qrc")
+endif()
+
 qt5_wrap_ui(TYQT_FORMS_HEADERS ${TYQT_FORMS})
 qt5_add_resources(TYQT_RESOURCES_RCC ${TYQT_RESOURCES})
 

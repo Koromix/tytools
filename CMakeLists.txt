@@ -8,6 +8,15 @@ project(ty C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+if(TY_CONFIG_VARIANT)
+    if(NOT IS_ABSOLUTE "${TY_CONFIG_VARIANT}")
+        set(TY_CONFIG_VARIANT "${CMAKE_CURRENT_BINARY_DIR}/${TY_CONFIG_VARIANT}")
+    endif()
+    if(EXISTS "${TY_CONFIG_VARIANT}/settings.cmake")
+        include("${TY_CONFIG_VARIANT}/settings.cmake")
+    endif()
+endif()
+
 set(TY_CONFIG_VERSION_DEFAULT "0.7.5" CACHE STRING "Default version number")
 set(TY_CONFIG_VERSION_AUTO ON CACHE BOOL "Compute version using git tags (fallback)")
 
