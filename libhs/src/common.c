@@ -26,10 +26,10 @@
 #include <stdarg.h>
 
 static hs_log_handler_func *log_handler = hs_log_default_handler;
-static void *log_handler_udata = NULL;
+static void *log_handler_udata;
 
-static hs_error_code mask[32];
-static unsigned int mask_count = 0;
+static _HS_THREAD_LOCAL hs_error_code mask[32];
+static _HS_THREAD_LOCAL unsigned int mask_count;
 
 uint32_t hs_version(void)
 {
