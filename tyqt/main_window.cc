@@ -521,7 +521,7 @@ void MainWindow::updateFirmwareMenus()
 #endif
 }
 
-QString MainWindow::browseFirmwareDirectory()
+QString MainWindow::browseFirmwareDirectory() const
 {
     if (selected_boards_.empty())
         return "";
@@ -535,7 +535,7 @@ QString MainWindow::browseFirmwareDirectory()
     }
 }
 
-QString MainWindow::browseFirmwareFilter()
+QString MainWindow::browseFirmwareFilter() const
 {
     QString exts;
     for (auto format = ty_firmware_formats; format->name; format++)

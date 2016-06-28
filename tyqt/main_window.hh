@@ -89,8 +89,8 @@ private:
     void updateWindowTitle();
     void updateFirmwareMenus();
 
-    QString browseFirmwareDirectory();
-    QString browseFirmwareFilter();
+    QString browseFirmwareDirectory() const;
+    QString browseFirmwareFilter() const;
 
 private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
