@@ -50,9 +50,6 @@
     #endif
 #endif
 
-char *_hs_strrpbrk(const char *s, const char *accept);
-#define strrpbrk _hs_strrpbrk
-
 #ifndef HAVE_STPCPY
 char *_hs_stpcpy(char *dest, const char *src);
     #define stpcpy _hs_stpcpy

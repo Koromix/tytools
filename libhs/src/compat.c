@@ -24,23 +24,6 @@
 
 #include "util.h"
 
-char *_hs_strrpbrk(const char *s, const char *accept)
-{
-    const char *start = s;
-
-    s += strlen(s);
-    while (--s >= start)
-    {
-        const char *a = accept;
-        while (*a != '\0') {
-            if (*a++ == *s)
-                return (char *)s;
-        }
-    }
-
-    return NULL;
-}
-
 #ifndef HAVE_STPCPY
 char *_hs_stpcpy(char *dest, const char *src)
 {
