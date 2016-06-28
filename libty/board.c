@@ -824,7 +824,7 @@ wait:
         if (r < 0)
             return r;
         if (!r)
-            return ty_error(TY_ERROR_TIMEOUT, "Reset does not seem to work");
+            return ty_error(TY_ERROR_TIMEOUT, "Failed to reset board '%s'", board->tag);
     } else {
         ty_log(TY_LOG_INFO, "Firmware uploaded, reset the board to use it");
     }
@@ -903,7 +903,7 @@ static int run_reset(ty_task *task)
 
         r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RESET, MANUAL_REBOOT_DELAY);
         if (r <= 0)
-            return ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work");
+            return ty_error(TY_ERROR_TIMEOUT, "Failed to reboot board '%s'", board->tag);
     }
 
     ty_log(TY_LOG_INFO, "Sending reset command");
@@ -915,7 +915,7 @@ static int run_reset(ty_task *task)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_TIMEOUT, "Reset does not seem to work");
+        return ty_error(TY_ERROR_TIMEOUT, "Failed to reset board '%s'", board->tag);
 
     return 0;
 }
@@ -954,7 +954,7 @@ static int run_reboot(ty_task *task)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_TIMEOUT, "Reboot does not seem to work");
+        return ty_error(TY_ERROR_TIMEOUT, "Failed to reboot board '%s", board->tag);
 
     return 0;
 }
