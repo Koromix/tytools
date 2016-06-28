@@ -13,9 +13,6 @@
 
 TY_C_BEGIN
 
-char *_ty_strrpbrk(const char *s, const char *accept);
-#define strrpbrk _ty_strrpbrk
-
 #ifndef HAVE_ASPRINTF
 int _ty_asprintf(char **strp, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 #define asprintf _ty_asprintf

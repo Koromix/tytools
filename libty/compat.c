@@ -8,22 +8,6 @@
 #include "util.h"
 #include <stdarg.h>
 
-char *_ty_strrpbrk(const char *s, const char *accept)
-{
-    const char *start = s;
-
-    s += strlen(s);
-    while (--s >= start) {
-        const char *a = accept;
-        while (*a != '\0') {
-            if (*a++ == *s)
-                return (char *)s;
-        }
-    }
-
-    return NULL;
-}
-
 #ifndef HAVE_ASPRINTF
 
 int _ty_asprintf(char **strp, const char *fmt, ...)

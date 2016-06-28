@@ -22,11 +22,17 @@ const ty_firmware_format ty_firmware_formats[] = {
 
 static const char *get_basename(const char *filename)
 {
-    const char *basename = strrpbrk(filename, TY_PATH_SEPARATORS);
-    if (!basename)
-        return filename;
+    const char *basename;
 
-    return basename + 1;
+    basename = filename + strlen(filename);
+    // Skip the separators at the end, if any
+    while(basename > filename && strchr(TY_PATH_SEPARATORS, basename[-1]))
+        basename--;
+    // Find the last path part
+    while (basename > filename && !strchr(TY_PATH_SEPARATORS, basename[-1]))
+        basename--;
+
+    return basename;
 }
 
 int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfw)
