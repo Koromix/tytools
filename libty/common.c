@@ -114,7 +114,7 @@ void ty_log(ty_log_level level, const char *fmt, ...)
     assert(fmt);
 
     va_list ap;
-    char buf[256];
+    char buf[sizeof(last_error_msg)];
     ty_log_message msg;
 
     va_start(ap, fmt);
@@ -205,25 +205,28 @@ const char *ty_error_last_message(void)
 int ty_error(ty_err err, const char *fmt, ...)
 {
     va_list ap;
+    char buf[sizeof(last_error_msg)];
     ty_log_message msg;
 
+    /* Don't copy directly to last_error_message because we need to support
+       ty_error(err, "%s", ty_error_last_message()). */
     if (fmt) {
         va_start(ap, fmt);
-        vsnprintf(last_error_msg, sizeof(last_error_msg), fmt, ap);
+        vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
     } else {
-        strncpy(last_error_msg, generic_error(err), sizeof(last_error_msg));
-        last_error_msg[sizeof(last_error_msg) - 1] = 0;
+        strncpy(buf, generic_error(err), sizeof(buf));
+        buf[sizeof(buf) - 1] = 0;
     }
+    strcpy(last_error_msg, buf);
 
-    if (ty_error_is_masked(err))
-        return err;
+    if (!ty_error_is_masked(err)) {
+        msg.level = TY_LOG_ERROR;
+        msg.err = err;
+        msg.msg = buf;
 
-    msg.level = TY_LOG_ERROR;
-    msg.err = err;
-    msg.msg = last_error_msg;
-
-    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+        _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+    }
 
     return err;
 }
@@ -280,22 +283,24 @@ void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *ud
 
     ty_log_message msg;
 
-    err = ty_libhs_translate_error(err);
-    if (ty_error_is_masked(err))
-        return;
-
     switch (level) {
     case HS_LOG_DEBUG:
         msg.level = TY_LOG_DEBUG;
+        msg.err = 0;
         break;
     case HS_LOG_WARNING:
         msg.level = TY_LOG_WARNING;
+        msg.err = 0;
         break;
     case HS_LOG_ERROR:
         msg.level = TY_LOG_ERROR;
+        msg.err = ty_libhs_translate_error(err);
+        strncpy(last_error_msg, log, sizeof(last_error_msg));
+        last_error_msg[sizeof(last_error_msg) - 1] = 0;
+        if (ty_error_is_masked(msg.err))
+            return;
         break;
     }
-    msg.err = err;
     msg.msg = log;
 
     _ty_message(NULL, TY_MESSAGE_LOG, &msg);
