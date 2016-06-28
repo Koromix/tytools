@@ -488,7 +488,7 @@ restart:
     hs_error_unmask();
     if (r < 0) {
         if (r == HS_ERROR_IO)
-            return ty_error(TY_ERROR_IO, "%s", ty_error_last_message());
+            return ty_error(TY_ERROR_IO, "%s", hs_error_last_message());
         return ty_libhs_translate_error((int)r);
     }
 
