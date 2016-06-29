@@ -104,7 +104,7 @@ a terminal and go to that directory.
 
 ```sh
 cd i686-w64-mingw32
-REM Now we are in ty/qt5/i686-w64-mingw32
+# Now we are in ty/qt5/i686-w64-mingw32
 configure -xplatform win32-g++ \
     -device-option CROSS_COMPILE=i686-w64-mingw32- \
     -opensource \
@@ -136,7 +136,7 @@ a terminal and go to that directory.
 
 ```sh
 cd x86_64-w64-mingw32
-REM Now we are in ty/qt5/x86_64-w64-mingw32
+# Now we are in ty/qt5/x86_64-w64-mingw32
 configure -xplatform win32-g++ \
     -device-option CROSS_COMPILE=x86_64-w64-mingw32- \
     -opensource \
