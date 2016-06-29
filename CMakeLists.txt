@@ -32,6 +32,8 @@ set(TY_CONFIG_UPTY_BUILD ON CACHE BOOL "Build UpTy (Teensy GUI updater)")
 set(TY_CONFIG_UPTY_EXECUTABLE "UpTy" CACHE STRING "Rename UpTy executable")
 set(TY_CONFIG_UPTY_NAME "UpTy" CACHE STRING "Rename UpTy application")
 
+set(TY_CONFIG_MSI_GUID "72663aca-47a7-4b9b-aa53-aa067b872b8a" CACHE STRING "Upgrade GUID used for MSI installer")
+
 if(CMAKE_C_COMPILER_ID MATCHES "[Cc]lang")
     set(CMAKE_COMPILER_IS_CLANG 1)
 endif()
@@ -145,7 +147,7 @@ if(WIN32)
         set(CPACK_GENERATOR ZIP)
     endif()
 
-    set(CPACK_WIX_UPGRADE_GUID "72663aca-47a7-4b9b-aa53-aa067b872b8a")
+    set(CPACK_WIX_UPGRADE_GUID "${TY_CONFIG_MSI_GUID}")
     set(CPACK_WIX_PRODUCT_ICON "${CMAKE_SOURCE_DIR}/src/tyqt/images/tyqt.ico")
     set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/images/wix_banner.jpg")
     set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/images/wix_dialog.jpg")
