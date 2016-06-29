@@ -1,9 +1,0 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
-
-#cmakedefine HAVE_ASPRINTF
-#cmakedefine HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
