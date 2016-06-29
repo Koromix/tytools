@@ -1,0 +1,21 @@
+/*
+ * ty, a collection of GUI and command-line tools to manage Teensy devices
+ *
+ * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
+ * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
+ */
+
+#ifndef TY_CONFIG_H
+#define TY_CONFIG_H
+
+#cmakedefine HAVE_ASPRINTF
+#cmakedefine HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+
+#define TY_CONFIG_TYC_NAME "@TY_CONFIG_TYC_NAME@"
+#define TY_CONFIG_TYC_EXECUTABLE "@TY_CONFIG_TYC_EXECUTABLE@"
+#define TY_CONFIG_TYQT_NAME "@TY_CONFIG_TYQT_NAME@"
+#define TY_CONFIG_TYQT_EXECUTABLE "@TY_CONFIG_TYQT_EXECUTABLE@"
+#define TY_CONFIG_UPTY_NAME "@TY_CONFIG_UPTY_NAME@"
+#define TY_CONFIG_UPTY_EXECUTABLE "@TY_CONFIG_UPTY_EXECUTABLE@"
+
+#endif

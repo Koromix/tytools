@@ -89,3 +89,7 @@ set_target_properties(hs_shared PROPERTIES OUTPUT_NAME hs CLEAN_DIRECT_OUTPUT ON
 target_link_libraries(hs_shared ${HS_LINK_LIBRARIES})
 set_target_properties(hs_static PROPERTIES CLEAN_DIRECT_OUTPUT ON)
 target_link_libraries(hs_static ${HS_LINK_LIBRARIES})
+target_include_directories(hs_static PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+                                     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(hs_shared PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+                                     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

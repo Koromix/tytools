@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0)
 project(libhs C)
 
 set(HS_SHARED_MSVCRT OFF CACHE BOOL "Build with static version of MS CRT (/MD)")
@@ -28,7 +28,7 @@ set(HS_BUILD_EXAMPLES ON CACHE BOOL "Build examples")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/contrib/cmake")
 
-if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+if(CMAKE_C_COMPILER_ID MATCHES "[Cc]lang")
     set(CMAKE_COMPILER_IS_CLANG 1)
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -98,10 +98,6 @@ elseif(APPLE)
 
     set(CMAKE_INSTALL_NAME_DIR "@rpath")
     set(CMAKE_INSTALL_RPATH "@executable_path;@executable_path/../lib;@executable_path/../Frameworks")
-
-    # Makes it easier for cross-compilation and testing. In my case, compile on Linux
-    # and test on OSX using sshfs
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 elseif(LINUX)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUDEV REQUIRED libudev)
