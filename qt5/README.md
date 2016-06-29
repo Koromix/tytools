@@ -18,7 +18,6 @@ configure -platform win32-msvc2015 \
     -release \
     -nomake examples \
     -nomake tests \
-    -no-pkg-config \
     -no-opengl \
     -no-harfbuzz \
     -no-icu \
@@ -50,7 +49,6 @@ configure -platform win32-msvc2015 \
     -release \
     -nomake examples \
     -nomake tests \
-    -no-pkg-config \
     -no-opengl \
     -no-harfbuzz \
     -no-icu \
