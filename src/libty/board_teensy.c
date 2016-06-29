@@ -527,14 +527,13 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_up
     for (size_t addr = 0; addr < size; addr += iface->model->block_size) {
         size_t block_size = TY_MIN(iface->model->block_size, (size_t)(size - addr));
 
-        // Writing to the first block triggers flash erasure hence the longer timeout
-        r = halfkay_send(iface, addr, image + addr, block_size, addr ? 300 : 3000);
+        r = halfkay_send(iface, addr, image + addr, block_size, 3000);
         if (r < 0)
             return r;
 
         /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
            first write takes longer because it triggers a complete erase of all blocks. */
-        ty_delay(addr ? 15 : 100);
+        ty_delay(addr ? 20 : 200);
 
         if (pf) {
             r = (*pf)(iface->board, fw, addr + block_size, udata);
