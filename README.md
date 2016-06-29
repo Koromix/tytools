@@ -1,4 +1,4 @@
-![TyQt Logo](/tyqt/images/banner.png)
+![TyQt Logo](/contrib/images/readme_banner.png)
 
 TyQt can help you track and monitor your Teensy devices. It runs on Linux, Windows and Mac OS X.
 

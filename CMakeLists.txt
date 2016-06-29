@@ -147,8 +147,8 @@ if(WIN32)
 
     set(CPACK_WIX_UPGRADE_GUID "72663aca-47a7-4b9b-aa53-aa067b872b8a")
     set(CPACK_WIX_PRODUCT_ICON "${CMAKE_SOURCE_DIR}/src/tyqt/images/tyqt.ico")
-    set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/win32/wix_banner.jpg")
-    set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/win32/wix_dialog.jpg")
+    set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/images/wix_banner.jpg")
+    set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/images/wix_dialog.jpg")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
 
     # Someday, notepad will support LF newlines and this won't be necessary anymore
