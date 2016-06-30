@@ -391,6 +391,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
     log_dialog_ = unique_ptr<LogDialog>(new LogDialog());
     log_dialog_->setAttribute(Qt::WA_QuitOnClose, false);
+    log_dialog_->setWindowIcon(QIcon(":/tyqt"));
     connect(this, &TyQt::globalError, log_dialog_.get(), &LogDialog::appendError);
     connect(this, &TyQt::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
 

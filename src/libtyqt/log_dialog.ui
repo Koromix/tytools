@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>TyQt Log</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="tyqt.qrc">
-    <normaloff>:/tyqt</normaloff>:/tyqt</iconset>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QTabWidget" name="tabWidget">
@@ -104,8 +100,6 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="tyqt.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
