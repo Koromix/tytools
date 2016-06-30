@@ -20,28 +20,32 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     connect(closeButton, &QPushButton::clicked, this, &AboutDialog::close);
     connect(reportBugButton, &QPushButton::clicked, &AboutDialog::openBugReports);
     connect(licenseButton, &QPushButton::clicked, &AboutDialog::openLicense);
-    connect(descriptionText, &QLabel::linkActivated, this, &AboutDialog::openLink);
+    connect(websiteLabel, &QLabel::linkActivated, this, [](const QString &link) {
+        QDesktopServices::openUrl(QUrl(link));
+    });
 
     versionLabel->setText(QString("%1 %2").arg(QCoreApplication::applicationName(),
                                                QCoreApplication::applicationVersion()));
+#ifdef TY_CONFIG_URL_WEBSITE
+    websiteLabel->setText(QString("<a href=\"%1\">%1</a>").arg(TY_CONFIG_URL_WEBSITE));
+#endif
 }
 
+#ifdef TY_CONFIG_URL_WEBSITE
 void AboutDialog::openWebsite()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty"));
+    QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_WEBSITE));
 }
+#endif
 
+#ifdef TY_CONFIG_URL_BUGS
 void AboutDialog::openBugReports()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/Koromix/ty/issues"));
+    QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_BUGS));
 }
+#endif
 
 void AboutDialog::openLicense()
 {
     QDesktopServices::openUrl(QUrl("https://opensource.org/licenses/MIT"));
-}
-
-void AboutDialog::openLink(const QString &link)
-{
-    QDesktopServices::openUrl(QUrl(link));
 }

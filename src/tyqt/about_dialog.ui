@@ -89,9 +89,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="descriptionText">
+        <widget class="QLabel" name="websiteLabel">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Cross-platform software to manage Teensy devices&lt;/p&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/Koromix/ty/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;https://github.com/Koromix/ty/&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string/>
          </property>
          <property name="alignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>

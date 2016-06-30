@@ -8,6 +8,7 @@
 #ifndef ABOUT_HH
 #define ABOUT_HH
 
+#include "ty/common.h"
 #include "ui_about_dialog.h"
 
 class AboutDialog: public QDialog, private Ui::AboutDialog {
@@ -17,12 +18,13 @@ public:
     AboutDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
 
 public slots:
+#ifdef TY_CONFIG_URL_WEBSITE
     static void openWebsite();
+#endif
+#ifdef TY_CONFIG_URL_BUGS
     static void openBugReports();
+#endif
     static void openLicense();
-
-private slots:
-    void openLink(const QString &link);
 };
 
 #endif

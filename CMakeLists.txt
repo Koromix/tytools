@@ -32,6 +32,9 @@ set(TY_CONFIG_UPTY_BUILD ON CACHE BOOL "Build UpTy (Teensy GUI updater)")
 set(TY_CONFIG_UPTY_EXECUTABLE "UpTy" CACHE STRING "Rename UpTy executable")
 set(TY_CONFIG_UPTY_NAME "UpTy" CACHE STRING "Rename UpTy application")
 
+set(TY_CONFIG_URL_WEBSITE "https://github.com/Koromix/ty" CACHE STRING "Project website")
+set(TY_CONFIG_URL_BUGS "https://github.com/Koromix/ty/issues" CACHE STRING "Project bug report page")
+
 set(TY_CONFIG_MSI_GUID "72663aca-47a7-4b9b-aa53-aa067b872b8a" CACHE STRING "Upgrade GUID used for MSI installer")
 
 if(CMAKE_C_COMPILER_ID MATCHES "[Cc]lang")

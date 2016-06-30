@@ -105,8 +105,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(actionPreferences, &QAction::triggered, this, &MainWindow::openPreferences);
 
     // About menu
+#ifdef TY_CONFIG_URL_WEBSITE
     connect(actionWebsite, &QAction::triggered, &AboutDialog::openWebsite);
+#else
+    actionWebsite->setVisible(false);
+#endif
+#ifdef TY_CONFIG_URL_BUGS
     connect(actionReportBug, &QAction::triggered, &AboutDialog::openBugReports);
+#else
+    actionReportBug->setVisible(false);
+#endif
+
     connect(actionAbout, &QAction::triggered, this, &MainWindow::openAboutDialog);
 
     // Board list
