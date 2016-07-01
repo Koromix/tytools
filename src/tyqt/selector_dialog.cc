@@ -14,6 +14,27 @@
 
 using namespace std;
 
+int SelectorDialogModelFilter::columnCount(const QModelIndex &parent) const
+{
+    Q_UNUSED(parent);
+    return 2;
+}
+
+QVariant SelectorDialogModelFilter::data(const QModelIndex &index, int role) const
+{
+    if (index.column() == Monitor::COLUMN_STATUS) {
+        switch (role) {
+            case Qt::ForegroundRole:
+                return QBrush(Qt::darkGray);
+            case Qt::TextAlignmentRole:
+                return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+        }
+    }
+
+    return QIdentityProxyModel::data(index, role);
+
+}
+
 SelectorDialog::SelectorDialog(QWidget *parent)
     : QDialog(parent), monitor_(tyQt->monitor())
 {
@@ -23,14 +44,15 @@ SelectorDialog::SelectorDialog(QWidget *parent)
     connect(buttonBox, &QDialogButtonBox::rejected, this, &SelectorDialog::reject);
     connect(tree, &QTreeView::doubleClicked, this, &SelectorDialog::accept);
 
-    tree->setModel(monitor_);
+    monitor_model_.setSourceModel(monitor_);
+    tree->setModel(&monitor_model_);
     connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             &SelectorDialog::selectionChanged);
     tree->header()->setStretchLastSection(false);
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
-    current_board_ = Monitor::boardFromModel(monitor_, 0);
+    current_board_ = Monitor::boardFromModel(&monitor_model_, 0);
     if (current_board_) {
         tree->setCurrentIndex(monitor_->index(0, 0));
     } else {
@@ -54,7 +76,7 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
     Q_UNUSED(previous);
 
     if (!selected.indexes().isEmpty()) {
-        current_board_ = Monitor::boardFromModel(monitor_, selected.indexes().front());
+        current_board_ = Monitor::boardFromModel(&monitor_model_, selected.indexes().front());
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
     } else {
         current_board_ = nullptr;

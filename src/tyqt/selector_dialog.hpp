@@ -8,6 +8,8 @@
 #ifndef SELECTOR_DIALOG_HH
 #define SELECTOR_DIALOG_HH
 
+#include <QIdentityProxyModel>
+
 #include <memory>
 
 #include "ui_selector_dialog.h"
@@ -15,10 +17,22 @@
 class Board;
 class Monitor;
 
+class SelectorDialogModelFilter: public QIdentityProxyModel {
+    Q_OBJECT
+
+public:
+    SelectorDialogModelFilter(QObject *parent = nullptr)
+        : QIdentityProxyModel(parent) {}
+
+    int columnCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+};
+
 class SelectorDialog : public QDialog, private Ui::SelectorDialog {
     Q_OBJECT
 
     Monitor *monitor_;
+    SelectorDialogModelFilter monitor_model_;
     QString action_;
 
     std::shared_ptr<Board> current_board_;

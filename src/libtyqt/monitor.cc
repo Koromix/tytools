@@ -171,21 +171,27 @@ int Monitor::rowCount(const QModelIndex &parent) const
 int Monitor::columnCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return 2;
+    return COLUMN_COUNT;
 }
 
 QVariant Monitor::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (orientation == Qt::Vertical)
+    if (orientation == Qt::Vertical || role != Qt::DisplayRole)
         return QVariant();
 
-    if (role == Qt::DisplayRole) {
-        switch (section) {
-        case 0:
-            return tr("Board");
-        case 1:
-            return tr("Status");
-        }
+    switch (section) {
+    case COLUMN_BOARD:
+        return tr("Board");
+    case COLUMN_STATUS:
+        return tr("Status");
+    case COLUMN_IDENTITY:
+        return tr("Identity");
+    case COLUMN_LOCATION:
+        return tr("Location");
+    case COLUMN_SERIAL_NUMBER:
+        return tr("Serial Number");
+    case COLUMN_DESCRIPTION:
+        return tr("Description");
     }
 
     return QVariant();
@@ -202,31 +208,36 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
 
     if (index.column() == 0) {
         switch (role) {
-        case Qt::DisplayRole:
-        case Qt::EditRole:
-            return board->tag();
-        case Qt::DecorationRole:
-            return board->statusIcon();
-        case Qt::ToolTipRole:
-            return tr("%1\n+ Location: %2\n+ Serial Number: %3\n+ Status: %4\n+ Capabilities: %5")
-                   .arg(board->modelName())
-                   .arg(board->location())
-                   .arg(board->serialNumber())
-                   .arg(board->statusText())
-                   .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
-        case Qt::SizeHintRole:
-            return QSize(0, 24);
+            case Qt::ToolTipRole:
+                return tr("%1\n+ Location: %2\n+ Serial Number: %3\n+ Status: %4\n+ Capabilities: %5")
+                       .arg(board->modelName())
+                       .arg(board->location())
+                       .arg(board->serialNumber())
+                       .arg(board->statusText())
+                       .arg(Board::makeCapabilityString(board->capabilities(), tr("(none)")));
+            case Qt::DecorationRole:
+                return board->statusIcon();
+            case Qt::EditRole:
+                return board->tag();
+            case Qt::SizeHintRole:
+                return QSize(0, 24);
         }
-    } else if (index.column() == 1) {
-        /* I don't like putting selector stuff into the base model but we can always
-           make a proxy later if there's a problem. */
-        switch (role) {
-        case Qt::DisplayRole:
+    }
+
+    if (role == Qt::DisplayRole) {
+        switch (index.column()) {
+        case COLUMN_BOARD:
+            return board->tag();
+        case COLUMN_STATUS:
             return board->statusText();
-        case Qt::ForegroundRole:
-            return QBrush(Qt::darkGray);
-        case Qt::TextAlignmentRole:
-            return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+        case COLUMN_IDENTITY:
+            return board->id();
+        case COLUMN_LOCATION:
+            return board->location();
+        case COLUMN_SERIAL_NUMBER:
+            return static_cast<quint64>(board->serialNumber());
+        case COLUMN_DESCRIPTION:
+            return board->description();
         }
     }
 

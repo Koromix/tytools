@@ -41,6 +41,17 @@ public:
     typedef decltype(boards_)::iterator iterator;
     typedef decltype(boards_)::const_iterator const_iterator;
 
+    enum Column {
+        COLUMN_BOARD,
+        COLUMN_STATUS,
+        COLUMN_IDENTITY,
+        COLUMN_LOCATION,
+        COLUMN_SERIAL_NUMBER,
+        COLUMN_DESCRIPTION,
+
+        COLUMN_COUNT
+    };
+
     enum CustomRole {
         ROLE_BOARD = Qt::UserRole + 1
     };
