@@ -38,14 +38,12 @@ struct ty_board_interface {
 
     const char *name;
     int capabilities;
+    const ty_board_model *model;
 
     hs_device *dev;
     ty_mutex open_lock;
     unsigned int open_count;
     hs_handle *h;
-
-    const ty_board_model *model;
-    uint64_t serial;
 };
 
 struct ty_board {

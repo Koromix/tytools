@@ -94,12 +94,12 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
 
     ty_list_init(&board->interfaces);
 
-    assert(iface->model);
-    board->model = iface->model;
-    board->serial = iface->serial;
-
     board->vid = hs_device_get_vid(iface->dev);
     board->pid = hs_device_get_pid(iface->dev);
+
+    r = (*iface->model->family->update_board)(iface, board);
+    if (r <= 0)
+        goto error;
 
     r = asprintf(&board->id, "%"PRIu64"-%s", board->serial, board->model->family->name);
     if (r < 0) {
@@ -112,7 +112,7 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     ty_list_add_tail(&monitor->boards, &board->monitor_node);
 
     *rboard = board;
-    return 0;
+    return 1;
 
 error:
     ty_board_unref(board);
@@ -187,7 +187,6 @@ static ty_board *find_board(ty_monitor *monitor, const char *location)
 static int open_new_interface(hs_device *dev, ty_board_interface **riface)
 {
     ty_board_interface *iface;
-    const char *serial;
     int r;
 
     iface = calloc(1, sizeof(*iface));
@@ -202,10 +201,6 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
         goto error;
 
     iface->dev = hs_device_ref(dev);
-
-    serial = hs_device_get_serial_number_string(dev);
-    if (serial)
-        iface->serial = strtoull(serial, NULL, 10);
 
     r = 0;
     for (const ty_board_family **cur = ty_board_families; *cur && !r; cur++) {
@@ -284,13 +279,13 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
             ty_board_unref(board);
 
             r = add_board(monitor, iface, &board);
-            if (r < 0)
+            if (r <= 0)
                 goto error;
             event = TY_MONITOR_EVENT_ADDED;
         }
     } else {
         r = add_board(monitor, iface, &board);
-        if (r < 0)
+        if (r <= 0)
             goto error;
         event = TY_MONITOR_EVENT_ADDED;
     }
