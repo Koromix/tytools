@@ -153,6 +153,11 @@ uint64_t Board::serialNumber() const
     return ty_board_get_serial_number(board_);
 }
 
+QString Board::description() const
+{
+    return ty_board_get_description(board_);
+}
+
 std::vector<BoardInterfaceInfo> Board::interfaces() const
 {
     std::vector<BoardInterfaceInfo> vec;

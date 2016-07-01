@@ -62,6 +62,7 @@ struct ty_board {
     uint16_t vid;
     uint16_t pid;
     uint64_t serial;
+    char *description;
     char *location;
 
     ty_mutex interfaces_lock;

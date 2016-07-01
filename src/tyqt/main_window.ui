@@ -67,17 +67,10 @@
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <layout class="QGridLayout" name="gridLayout">
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="statusText">
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="idText">
              <property name="readOnly">
               <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Status:</string>
              </property>
             </widget>
            </item>
@@ -88,10 +81,31 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QLineEdit" name="idText">
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Status:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="statusText">
              <property name="readOnly">
               <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="modelText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Model:</string>
              </property>
             </widget>
            </item>
@@ -99,20 +113,6 @@
          </item>
          <item>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Serial Number:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="serialText">
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="2">
             <widget class="QLineEdit" name="locationText">
              <property name="readOnly">
@@ -127,17 +127,31 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QLineEdit" name="modelText">
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Serial Number:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="serialText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_4">
+           <item row="1" column="3">
+            <widget class="QLineEdit" name="descriptionText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QLabel" name="label_10">
              <property name="text">
-              <string>Model:</string>
+              <string>Description:</string>
              </property>
             </widget>
            </item>
@@ -779,10 +793,11 @@
   <tabstop>boardList</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>idText</tabstop>
-  <tabstop>statusText</tabstop>
   <tabstop>modelText</tabstop>
+  <tabstop>statusText</tabstop>
   <tabstop>serialText</tabstop>
   <tabstop>locationText</tabstop>
+  <tabstop>descriptionText</tabstop>
   <tabstop>interfaceTree</tabstop>
   <tabstop>monitorText</tabstop>
   <tabstop>monitorEdit</tabstop>

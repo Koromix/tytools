@@ -97,6 +97,7 @@ public:
     QString id() const;
     QString location() const;
     uint64_t serialNumber() const;
+    QString description() const;
 
     std::vector<BoardInterfaceInfo> interfaces() const;
 

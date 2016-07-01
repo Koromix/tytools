@@ -293,10 +293,11 @@ cleanup:
 
 static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 {
-    const char *serial_string;
+    const char *serial_string, *product_string;
     uint64_t serial = 0;
 
     serial_string = hs_device_get_serial_number_string(iface->dev);
+    product_string = hs_device_get_product_string(iface->dev);
 
     if (iface->model->code_size) {
         if (board->model && board->model->code_size && board->model != iface->model)
@@ -321,6 +322,12 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
                 }
             }
         }
+
+        if (!board->description) {
+            board->description = strdup("Teensy (HalfKay)");
+            if (!board->description)
+                return ty_error(TY_ERROR_MEMORY, NULL);
+        }
     } else {
         if (!board->model)
             board->model = iface->model;
@@ -334,6 +341,11 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
                 return 0;
             }
         }
+
+        free(board->description);
+        board->description = strdup(product_string ? product_string : "Teensy");
+        if (!board->description)
+            return ty_error(TY_ERROR_MEMORY, NULL);
     }
 
     /* We cannot uniquely identify AVR Teensy boards because the S/N is always 12345,

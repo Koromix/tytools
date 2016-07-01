@@ -171,12 +171,15 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
     if (output == OUTPUT_PLAIN) {
         printf("%s %s %s", action, ty_board_get_tag(board),
                model ? ty_board_model_get_name(model) : "(unknown)");
+        if (ty_board_get_description(board))
+            printf(" (%s)", ty_board_get_description(board));
     } else {
         print_field("action", "%s", action);
         print_field("tag", "%s", ty_board_get_tag(board));
         print_field("serial", "%"PRIu64, ty_board_get_serial_number(board));
-        if (model)
-            print_field("model", "%s", ty_board_model_get_name(model));
+        if (ty_board_get_description(board))
+            print_field("description", "%s", ty_board_get_description(board));
+        print_field("model", "%s", ty_board_model_get_name(model));
     }
 
     if (verbose && ((event != TY_MONITOR_EVENT_DROPPED && event != TY_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {

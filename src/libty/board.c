@@ -180,6 +180,7 @@ void ty_board_unref(ty_board *board)
             free(board->tag);
         free(board->id);
         free(board->location);
+        free(board->description);
 
         ty_mutex_release(&board->interfaces_lock);
 
@@ -311,6 +312,12 @@ uint64_t ty_board_get_serial_number(const ty_board *board)
 {
     assert(board);
     return board->serial;
+}
+
+const char *ty_board_get_description(const ty_board *board)
+{
+    assert(board);
+    return board->description;
 }
 
 void ty_board_set_model(ty_board *board, const ty_board_model *model)

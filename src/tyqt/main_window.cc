@@ -451,6 +451,7 @@ void MainWindow::disableBoardWidgets()
     modelText->clear();
     locationText->clear();
     serialText->clear();
+    descriptionText->clear();
     interfaceTree->clear();
 
     monitorTab->setEnabled(false);
@@ -643,6 +644,7 @@ void MainWindow::refreshInfo()
     modelText->setText(current_board_->modelName());
     locationText->setText(current_board_->location());
     serialText->setText(QString::number(current_board_->serialNumber()));
+    descriptionText->setText(current_board_->description());
 }
 
 void MainWindow::refreshSettings()
