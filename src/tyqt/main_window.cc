@@ -127,7 +127,7 @@ MainWindow::MainWindow(QWidget *parent)
             &MainWindow::selectionChanged);
     connect(monitor_, &Monitor::boardAdded, this, [=]() {
         // Select this board if there were none available before
-        if (monitor_->boardCount() == 1)
+        if (monitor_->rowCount() == 1)
             boardList->setCurrentIndex(monitor_->index(0, 0));
     });
     // The blue selection frame displayed on OSX looks awful
@@ -199,7 +199,7 @@ MainWindow::MainWindow(QWidget *parent)
     // TyQt errors
     connect(tyQt, &TyQt::globalError, this, &MainWindow::showErrorMessage);
 
-    if (monitor_->boardCount()) {
+    if (monitor_->rowCount()) {
         boardList->setCurrentIndex(monitor_->index(0, 0));
     } else {
         disableBoardWidgets();
@@ -570,7 +570,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     auto indexes = boardList->selectionModel()->selectedIndexes();
     for (auto &idx: indexes) {
         if (idx.column() == 0)
-            selected_boards_.push_back(monitor_->board(idx.row()));
+            selected_boards_.push_back(Monitor::boardFromModel(monitor_, idx));
     }
 
     for (auto &board: selected_boards_) {

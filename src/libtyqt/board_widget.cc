@@ -52,9 +52,9 @@ QRect BoardWidget::tagGeometry() const
 
 void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    if (index.row() >= static_cast<int>(model_->boardCount()))
+    auto board = Monitor::boardFromModel(model_, index);
+    if (!board)
         return;
-    auto board = model_->board(index.row());
 
     widget_.resize(option.rect.size());
 

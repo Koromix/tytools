@@ -41,6 +41,10 @@ public:
     typedef decltype(boards_)::iterator iterator;
     typedef decltype(boards_)::const_iterator const_iterator;
 
+    enum CustomRole {
+        ROLE_BOARD = Qt::UserRole + 1
+    };
+
     Monitor(QObject *parent = nullptr);
     virtual ~Monitor();
 
@@ -66,6 +70,13 @@ public:
     std::vector<std::shared_ptr<Board>> boards();
     std::shared_ptr<Board> board(unsigned int i);
     unsigned int boardCount() const;
+
+    static std::shared_ptr<Board> boardFromModel(const QAbstractItemModel *model,
+                                                 const QModelIndex &index);
+    static std::shared_ptr<Board> boardFromModel(const QAbstractItemModel *model, int index)
+    {
+        return boardFromModel(model, model->index(index, 0));
+    }
 
     std::shared_ptr<Board> find(std::function<bool(Board &board)> filter);
 

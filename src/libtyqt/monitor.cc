@@ -145,6 +145,13 @@ unsigned int Monitor::boardCount() const
     return boards_.size();
 }
 
+shared_ptr<Board> Monitor::boardFromModel(const QAbstractItemModel *model,
+                                          const QModelIndex &index)
+{
+    auto board = model->data(index, Monitor::ROLE_BOARD).value<Board *>();
+    return board ? board->shared_from_this() : nullptr;
+}
+
 shared_ptr<Board> Monitor::find(function<bool(Board &board)> filter)
 {
     auto board = find_if(boards_.begin(), boards_.end(), [&](shared_ptr<Board> &ptr) { return filter(*ptr); });
@@ -186,9 +193,12 @@ QVariant Monitor::headerData(int section, Qt::Orientation orientation, int role)
 
 QVariant Monitor::data(const QModelIndex &index, int role) const
 {
-    if (index.row() >= static_cast<int>(boards_.size()))
+    if (!index.isValid() || index.row() >= static_cast<int>(boards_.size()))
         return QVariant();
+
     auto board = boards_[index.row()];
+    if (role == ROLE_BOARD)
+        return QVariant::fromValue(board.get());
 
     if (index.column() == 0) {
         switch (role) {
@@ -231,11 +241,12 @@ Qt::ItemFlags Monitor::flags(const QModelIndex &index) const
 
 bool Monitor::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (role != Qt::EditRole || index.row() >= static_cast<int>(boards_.size()))
+    if (role != Qt::EditRole || !index.isValid() || index.row() >= static_cast<int>(boards_.size()))
         return false;
-    auto board = boards_[index.row()];
 
+    auto board = boards_[index.row()];
     board->setTag(value.toString());
+
     return true;
 }
 

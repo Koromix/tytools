@@ -30,7 +30,7 @@ SelectorDialog::SelectorDialog(QWidget *parent)
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
-    current_board_ = monitor_->board(0);
+    current_board_ = Monitor::boardFromModel(monitor_, 0);
     if (current_board_) {
         tree->setCurrentIndex(monitor_->index(0, 0));
     } else {
@@ -54,7 +54,7 @@ void SelectorDialog::selectionChanged(const QItemSelection &selected, const QIte
     Q_UNUSED(previous);
 
     if (!selected.indexes().isEmpty()) {
-        current_board_ = monitor_->board(selected.indexes().front().row());
+        current_board_ = Monitor::boardFromModel(monitor_, selected.indexes().front());
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
     } else {
         current_board_ = nullptr;
