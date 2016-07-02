@@ -1,6 +1,6 @@
 [Desktop Entry]
 Version=@TY_CONFIG_VERSION@
-Name=TyQt
+Name=@TY_CONFIG_TYQT_NAME@
 Comment=GUI tool to manage Teensy devices
 TryExec=@TY_CONFIG_TYQT_EXECUTABLE@
 Icon=tyqt
