@@ -23,21 +23,28 @@ set(TYQT_FORMS about_dialog.ui
                main_window.ui
                preferences_dialog.ui
                selector_dialog.ui)
+
+set(TYQT_ICON_FILE_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/images/tyqt")
 set(TYQT_RESOURCES tyqt.qrc)
-if(WIN32)
-    list(APPEND TYQT_SOURCES tyqt_win32.rc)
+if(TY_CONFIG_VARIANT)
+    if(EXISTS "${TY_CONFIG_VARIANT}/tyqt.png")
+        set(TYQT_ICON_FILE_PREFIX "{TY_CONFIG_VARIANT}/tyqt")
+    endif()
+    if(EXISTS "${TY_CONFIG_VARIANT}/tyqt_resources.qrc")
+        list(INSERT TYQT_RESOURCES 0 "${TY_CONFIG_VARIANT}/tyqt_resources.qrc")
+    endif()
 endif()
 
-if(TY_CONFIG_VARIANT AND EXISTS "${TY_CONFIG_VARIANT}/tyqt_resources.qrc")
-    list(APPEND TYQT_RESOURCES "${TY_CONFIG_VARIANT}/tyqt_resources.qrc")
+if(WIN32)
+    configure_file(tyqt_win32.rc.in tyqt_win32.rc)
+    list(APPEND TYQT_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/tyqt_win32.rc")
+elseif(APPLE)
+    list(APPEND TYQT_SOURCES "${TYQT_ICON_FILE_PREFIX}.icns")
 endif()
 
 qt5_wrap_ui(TYQT_FORMS_HEADERS ${TYQT_FORMS})
 qt5_add_resources(TYQT_RESOURCES_RCC ${TYQT_RESOURCES})
 
-if(APPLE)
-    list(APPEND TYQT_SOURCES images/tyqt.icns)
-endif()
 add_executable(tyqt WIN32 MACOSX_BUNDLE
                ${TYQT_SOURCES} ${TYQT_FORMS_HEADERS} ${TYQT_RESOURCES_RCC})
 set_target_properties(tyqt PROPERTIES AUTOMOC ON
@@ -46,9 +53,10 @@ target_link_libraries(tyqt PRIVATE ${LIBHS_LIBRARIES} libty libtyqt EasyQt5)
 target_include_directories(tyqt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                         ${CMAKE_CURRENT_BINARY_DIR})
 if(APPLE)
-    set_source_files_properties(images/tyqt.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    set_source_files_properties("${TYQT_ICON_FILE_PREFIX}.icns" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    get_filename_component(_icon_file_name "${TYQT_ICON_FILE_PREFIX}.icns" NAME)
     set_target_properties(tyqt PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${TY_CONFIG_TYQT_NAME}
-                                          MACOSX_BUNDLE_ICON_FILE tyqt.icns)
+                                          MACOSX_BUNDLE_ICON_FILE ${_icon_file_name})
 endif()
 
 if(WIN32)
@@ -65,3 +73,5 @@ else()
     configure_file(tyqt_linux.desktop.in tyqt_linux.desktop)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tyqt_linux.desktop" DESTINATION share/applications RENAME tyqt.desktop)
 endif()
+
+set(TYQT_ICON_FILE_PREFIX ${TYQT_ICON_FILE_PREFIX} PARENT_SCOPE)
