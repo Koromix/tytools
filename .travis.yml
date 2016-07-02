@@ -1,6 +1,10 @@
 # We need the last tag to generate a correct version string, 50 commits is not enough
 git:
   depth: 500
+branches:
+  only:
+    - master
+    - /^test-.*$/
 
 language: cpp
 

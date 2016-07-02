@@ -1,3 +1,8 @@
+branches:
+  only:
+    - master
+    - /^test-.*$/
+
 version: '{build}'
 
 os: Visual Studio 2015
