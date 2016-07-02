@@ -2,10 +2,11 @@
 
 TyQt can help you track and monitor your Teensy devices. It runs on Linux, Windows and Mac OS X.
 
-Download the [latest release from GitHub](https://github.com/Koromix/ty/releases). You can find development [builds on BinTray](https://bintray.com/koromix/ty/ty/view#files).
+Two other tools are provided alongside TyQt:
+- UpTy is an easy to use barebone Teensy firmware updater
+- tyc is the command-line equivalent of TyQt and provides a similar feature set
 
-There is also a command-line version called `tyc` which does not depend on Qt and provides similar
-features. It is packaged with TyQt in the release files.
+Download the [latest release from GitHub](https://github.com/Koromix/ty/releases). You can find development [builds on BinTray](https://bintray.com/koromix/ty/ty/view#files).
 
 - [Command-line usage](#tyc)
   - [List devices](#tyc_list)
