@@ -81,7 +81,7 @@ typedef enum hs_handle_mode {
 
 /**
  * @{
- * @name Device Functions
+ * @name Resource management
  */
 
 /**
@@ -103,6 +103,11 @@ HS_PUBLIC hs_device *hs_device_ref(hs_device *dev);
  * @param dev Device object.
  */
 HS_PUBLIC void hs_device_unref(hs_device *dev);
+
+/**
+  * @{
+  * @name Device information
+  */
 
 /**
  * @ingroup device
