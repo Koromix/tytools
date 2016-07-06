@@ -40,39 +40,40 @@ struct hs_handle {
 
     io_service_t service;
     union {
-        IOHIDDeviceRef hid;
+        IOHIDDeviceRef hid_ref;
     };
 
-    uint8_t *buf;
-    size_t size;
+    uint8_t *read_buf;
+    size_t read_size;
 
     pthread_mutex_t mutex;
     bool mutex_init;
-    int pipe[2];
+    int poll_pipe[2];
     int thread_ret;
 
     _hs_list_head reports;
     unsigned int allocated_reports;
     _hs_list_head free_reports;
 
-    pthread_t thread;
+    pthread_t read_thread;
     pthread_cond_t cond;
     bool cond_init;
 
-    CFRunLoopRef loop;
-    CFRunLoopSourceRef shutdown;
+    CFRunLoopRef thread_loop;
+    CFRunLoopSourceRef shutdown_source;
+    bool device_removed;
 };
 
 static void fire_device_event(hs_handle *h)
 {
     char buf = '.';
-    write(h->pipe[1], &buf, 1);
+    write(h->poll_pipe[1], &buf, 1);
 }
 
 static void reset_device_event(hs_handle *h)
 {
     char buf;
-    read(h->pipe[0], &buf, 1);
+    read(h->poll_pipe[0], &buf, 1);
 }
 
 static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
@@ -83,13 +84,8 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     hs_handle *h = ctx;
 
     pthread_mutex_lock(&h->mutex);
-
-    CFRelease(h->hid);
-    h->hid = NULL;
-
-    CFRunLoopSourceSignal(h->shutdown);
-    h->loop = NULL;
-
+    h->device_removed = true;
+    CFRunLoopSourceSignal(h->shutdown_source);
     pthread_mutex_unlock(&h->mutex);
 
     fire_device_event(h);
@@ -132,7 +128,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
         }
 
         // Don't forget the leading report ID
-        report = calloc(1, sizeof(struct hid_report) + h->size + 1);
+        report = calloc(1, sizeof(struct hid_report) + h->read_size + 1);
         if (!report) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
@@ -141,8 +137,8 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     }
 
     // You never know, even if h->size is supposed to be the maximum input report size
-    if (report_size > (CFIndex)h->size)
-        report_size = (CFIndex)h->size;
+    if (report_size > (CFIndex)h->read_size)
+        report_size = (CFIndex)h->read_size;
 
     report->data[0] = (uint8_t)report_id;
     memcpy(report->data + 1, report_data, report_size);
@@ -159,30 +155,28 @@ cleanup:
         fire_device_event(h);
 }
 
-static void *device_thread(void *ptr)
+static void *hid_read_thread(void *ptr)
 {
     hs_handle *h = ptr;
-
     CFRunLoopSourceContext shutdown_ctx = {0};
     int r;
 
     pthread_mutex_lock(&h->mutex);
 
-    h->loop = CFRunLoopGetCurrent();
+    h->thread_loop = CFRunLoopGetCurrent();
 
-    shutdown_ctx.info = h->loop;
+    shutdown_ctx.info = h->thread_loop;
     shutdown_ctx.perform = (void (*)(void *))CFRunLoopStop;
-
     /* close_hid_device() could be called before the loop is running, while this thread is between
        pthread_barrier_wait() and CFRunLoopRun(). That's the purpose of the shutdown source. */
-    h->shutdown = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &shutdown_ctx);
-    if (!h->shutdown) {
+    h->shutdown_source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &shutdown_ctx);
+    if (!h->shutdown_source) {
         r = hs_error(HS_ERROR_SYSTEM, "CFRunLoopSourceCreate() failed");
         goto error;
     }
 
-    CFRunLoopAddSource(h->loop, h->shutdown, kCFRunLoopCommonModes);
-    IOHIDDeviceScheduleWithRunLoop(h->hid, h->loop, kCFRunLoopCommonModes);
+    CFRunLoopAddSource(h->thread_loop, h->shutdown_source, kCFRunLoopCommonModes);
+    IOHIDDeviceScheduleWithRunLoop(h->hid_ref, h->thread_loop, kCFRunLoopCommonModes);
 
     // This thread is ready, open_hid_device() can carry on
     h->thread_ret = 1;
@@ -191,11 +185,10 @@ static void *device_thread(void *ptr)
 
     CFRunLoopRun();
 
-    if (h->hid)
-        IOHIDDeviceUnscheduleFromRunLoop(h->hid, h->loop, kCFRunLoopCommonModes);
+    IOHIDDeviceUnscheduleFromRunLoop(h->hid_ref, h->thread_loop, kCFRunLoopCommonModes);
 
     pthread_mutex_lock(&h->mutex);
-    h->loop = NULL;
+    h->thread_loop = NULL;
     pthread_mutex_unlock(&h->mutex);
 
     return NULL;
@@ -207,10 +200,10 @@ error:
     return NULL;
 }
 
-static bool get_hid_device_property_number(IOHIDDeviceRef dev, CFStringRef prop, CFNumberType type,
-                                           void *rn)
+static bool get_hid_device_property_number(IOHIDDeviceRef ref, CFStringRef prop,
+                                           CFNumberType type, void *rn)
 {
-    CFTypeRef data = IOHIDDeviceGetProperty(dev, prop);
+    CFTypeRef data = IOHIDDeviceGetProperty(ref, prop);
     if (!data || CFGetTypeID(data) != CFNumberGetTypeID())
         return false;
 
@@ -230,8 +223,8 @@ static int open_hid_device(hs_device *dev, hs_handle **rh)
     }
     h->dev = hs_device_ref(dev);
 
-    h->pipe[0] = -1;
-    h->pipe[1] = -1;
+    h->poll_pipe[0] = -1;
+    h->poll_pipe[1] = -1;
 
     _hs_list_init(&h->reports);
     _hs_list_init(&h->free_reports);
@@ -242,40 +235,41 @@ static int open_hid_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
 
-    h->hid = IOHIDDeviceCreate(kCFAllocatorDefault, h->service);
-    if (!h->hid) {
+    h->hid_ref = IOHIDDeviceCreate(kCFAllocatorDefault, h->service);
+    if (!h->hid_ref) {
         r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
         goto error;
     }
 
-    kret = IOHIDDeviceOpen(h->hid, 0);
+    kret = IOHIDDeviceOpen(h->hid_ref, 0);
     if (kret != kIOReturnSuccess) {
         r = hs_error(HS_ERROR_SYSTEM, "Failed to open HID device '%s'", dev->path);
         goto error;
     }
 
-    r = get_hid_device_property_number(h->hid, CFSTR(kIOHIDMaxInputReportSizeKey), kCFNumberSInt32Type,
-                                       &h->size);
+    r = get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDMaxInputReportSizeKey), kCFNumberSInt32Type,
+                                       &h->read_size);
     if (!r) {
         r = hs_error(HS_ERROR_SYSTEM, "HID device '%s' has no valid report size key", dev->path);
         goto error;
     }
-    h->buf = malloc(h->size);
-    if (!h->buf) {
+    h->read_buf = malloc(h->read_size);
+    if (!h->read_buf) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
     }
 
-    IOHIDDeviceRegisterRemovalCallback(h->hid, hid_removal_callback, h);
-    IOHIDDeviceRegisterInputReportCallback(h->hid, h->buf, (CFIndex)h->size, hid_report_callback, h);
+    IOHIDDeviceRegisterRemovalCallback(h->hid_ref, hid_removal_callback, h);
+    IOHIDDeviceRegisterInputReportCallback(h->hid_ref, h->read_buf, (CFIndex)h->read_size,
+                                           hid_report_callback, h);
 
-    r = pipe(h->pipe);
+    r = pipe(h->poll_pipe);
     if (r < 0) {
         r = hs_error(HS_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
         goto error;
     }
-    fcntl(h->pipe[0], F_SETFL, fcntl(h->pipe[0], F_GETFL, 0) | O_NONBLOCK);
-    fcntl(h->pipe[1], F_SETFL, fcntl(h->pipe[1], F_GETFL, 0) | O_NONBLOCK);
+    fcntl(h->poll_pipe[0], F_SETFL, fcntl(h->poll_pipe[0], F_GETFL, 0) | O_NONBLOCK);
+    fcntl(h->poll_pipe[1], F_SETFL, fcntl(h->poll_pipe[1], F_GETFL, 0) | O_NONBLOCK);
 
     r = pthread_mutex_init(&h->mutex, NULL);
     if (r < 0) {
@@ -293,7 +287,7 @@ static int open_hid_device(hs_device *dev, hs_handle **rh)
 
     pthread_mutex_lock(&h->mutex);
 
-    r = pthread_create(&h->thread, NULL, device_thread, h);
+    r = pthread_create(&h->read_thread, NULL, hid_read_thread, h);
     if (r) {
         r = hs_error(HS_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
         goto error;
@@ -320,18 +314,18 @@ error:
 static void close_hid_device(hs_handle *h)
 {
     if (h) {
-        if (h->shutdown) {
+        if (h->shutdown_source) {
             pthread_mutex_lock(&h->mutex);
 
-            if (h->loop) {
-                CFRunLoopSourceSignal(h->shutdown);
-                CFRunLoopWakeUp(h->loop);
+            if (h->thread_loop) {
+                CFRunLoopSourceSignal(h->shutdown_source);
+                CFRunLoopWakeUp(h->thread_loop);
             }
 
             pthread_mutex_unlock(&h->mutex);
-            pthread_join(h->thread, NULL);
+            pthread_join(h->read_thread, NULL);
 
-            CFRelease(h->shutdown);
+            CFRelease(h->shutdown_source);
         }
 
         if (h->cond_init)
@@ -345,14 +339,14 @@ static void close_hid_device(hs_handle *h)
             free(report);
         }
 
-        close(h->pipe[0]);
-        close(h->pipe[1]);
+        close(h->poll_pipe[0]);
+        close(h->poll_pipe[1]);
 
-        free(h->buf);
+        free(h->read_buf);
 
-        if (h->hid) {
-            IOHIDDeviceClose(h->hid, 0);
-            CFRelease(h->hid);
+        if (h->hid_ref) {
+            IOHIDDeviceClose(h->hid_ref, 0);
+            CFRelease(h->hid_ref);
         }
         if (h->service)
             IOObjectRelease(h->service);
@@ -365,7 +359,7 @@ static void close_hid_device(hs_handle *h)
 
 static hs_descriptor get_hid_descriptor(const hs_handle *h)
 {
-    return h->pipe[0];
+    return h->poll_pipe[0];
 }
 
 const struct _hs_device_vtable _hs_darwin_hid_vtable = {
@@ -377,15 +371,15 @@ const struct _hs_device_vtable _hs_darwin_hid_vtable = {
 
 int hs_hid_parse_descriptor(hs_handle *h, hs_hid_descriptor *desc)
 {
-    if (!h->hid)
+    if (h->device_removed)
         return hs_error(HS_ERROR_IO, "Device '%s' was removed", h->dev->path);
 
     memset(desc, 0, sizeof(*desc));
 
-    get_hid_device_property_number(h->hid, CFSTR(kIOHIDPrimaryUsagePageKey), kCFNumberSInt16Type,
-                                   &desc->usage_page);
-    get_hid_device_property_number(h->hid, CFSTR(kIOHIDPrimaryUsageKey), kCFNumberSInt16Type,
-                                   &desc->usage);
+    get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDPrimaryUsagePageKey),
+                                   kCFNumberSInt16Type, &desc->usage_page);
+    get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDPrimaryUsageKey),
+                                   kCFNumberSInt16Type, &desc->usage);
 
     return 0;
 }
@@ -400,7 +394,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     struct hid_report *report;
     ssize_t r;
 
-    if (!h->hid)
+    if (h->device_removed)
         return hs_error(HS_ERROR_IO, "Device '%s' was removed", h->dev->path);
 
     if (timeout) {
@@ -408,7 +402,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
         uint64_t start;
 
         pfd.events = POLLIN;
-        pfd.fd = h->pipe[0];
+        pfd.fd = h->poll_pipe[0];
 
         start = hs_millis();
 restart:
@@ -460,7 +454,7 @@ static ssize_t send_report(hs_handle *h, IOHIDReportType type, const uint8_t *bu
     uint8_t report;
     kern_return_t kret;
 
-    if (!h->hid)
+    if (h->device_removed)
         return hs_error(HS_ERROR_IO, "Device '%s' was removed", h->dev->path);
 
     if (size < 2)
@@ -473,7 +467,7 @@ static ssize_t send_report(hs_handle *h, IOHIDReportType type, const uint8_t *bu
     }
 
     // FIXME: detect various errors, here and elsewhere for common kIOReturn values
-    kret = IOHIDDeviceSetReport(h->hid, type, report, buf, (CFIndex)size);
+    kret = IOHIDDeviceSetReport(h->hid_ref, type, report, buf, (CFIndex)size);
     if (kret != kIOReturnSuccess)
         return hs_error(HS_ERROR_IO, "IOHIDDeviceSetReport() failed on '%s'", h->dev->path);
 
@@ -499,9 +493,11 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
     CFIndex len;
     kern_return_t kret;
 
-    len = (CFIndex)size - 1;
+    if (h->device_removed)
+        return hs_error(HS_ERROR_IO, "Device '%s' was removed", h->dev->path);
 
-    kret = IOHIDDeviceGetReport(h->hid, kIOHIDReportTypeFeature, report_id, buf + 1, &len);
+    len = (CFIndex)size - 1;
+    kret = IOHIDDeviceGetReport(h->hid_ref, kIOHIDReportTypeFeature, report_id, buf + 1, &len);
     if (kret != kIOReturnSuccess)
         return hs_error(HS_ERROR_IO, "IOHIDDeviceGetReport() failed on '%s'", h->dev->path);
 
