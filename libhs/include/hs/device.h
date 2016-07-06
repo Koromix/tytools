@@ -68,6 +68,18 @@ typedef enum hs_device_type {
 } hs_device_type;
 
 /**
+ * @ingroup device
+ * @brief Device open mode.
+ *
+ * @sa hs_handle_open()
+ */
+typedef enum hs_handle_mode {
+    HS_HANDLE_MODE_READ  = 1,
+    HS_HANDLE_MODE_WRITE = 2,
+    HS_HANDLE_MODE_RW    = 3
+} hs_handle_mode;
+
+/**
  * @{
  * @name Device Functions
  */
@@ -193,23 +205,23 @@ HS_PUBLIC const char *hs_device_get_product_string(const hs_device *dev);
 HS_PUBLIC const char *hs_device_get_serial_number_string(const hs_device *dev);
 
 /**
+  * @{
+  * @name Handle Functions
+  */
+
+/**
  * @ingroup device
  * @brief Open a device.
  *
  * The handle object keeps a refcounted reference to the device object, you are free to drop
  * your own reference.
  *
- * @param      dev Device object to open.
- * @param[out] rh  Device handle, the value is changed only if the function succeeds.
+ * @param      dev  Device object to open.
+ * @param      mode Open device for read / write or both.
+ * @param[out] rh   Device handle, the value is changed only if the function succeeds.
  * @return This function returns 0 on success, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC int hs_device_open(hs_device *dev, hs_handle **rh);
-
-/**
-  * @{
-  * @name Handle Functions
-  */
-
+HS_PUBLIC int hs_handle_open(hs_device *dev, hs_handle_mode mode, hs_handle **rh);
 /**
  * @ingroup device
  * @brief Close a device, and free all used resources.
@@ -247,6 +259,17 @@ HS_PUBLIC hs_device *hs_handle_get_device(const hs_handle *h);
  * @sa hs_descriptor
  */
 HS_PUBLIC hs_descriptor hs_handle_get_descriptor(const hs_handle *h);
+
+/**
+  * @{
+  * @name Deprecated functions
+  */
+
+/**
+ * @ingroup device
+ * @deprecated Use hs_handle_open() instead.
+ */
+HS_PUBLIC int hs_device_open(hs_device *dev, hs_handle **rh);
 
 HS_END_C
 

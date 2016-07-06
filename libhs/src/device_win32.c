@@ -43,9 +43,10 @@ _HS_INIT()
     CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(h, "CancelIoEx");
 }
 
-static int open_win32_device(hs_device *dev, hs_handle **rh)
+static int open_win32_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     hs_handle *h = NULL;
+    DWORD access;
     int r;
 
     h = calloc(1, sizeof(*h));
@@ -54,8 +55,21 @@ static int open_win32_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
     h->dev = hs_device_ref(dev);
+    h->mode = mode;
 
-    h->handle = CreateFile(dev->path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+    switch (mode) {
+    case HS_HANDLE_MODE_READ:
+        access = GENERIC_READ;
+        break;
+    case HS_HANDLE_MODE_WRITE:
+        access = GENERIC_WRITE;
+        break;
+    case HS_HANDLE_MODE_RW:
+        access = GENERIC_READ | GENERIC_WRITE;
+        break;
+    }
+
+    h->handle = CreateFile(dev->path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
                            NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (h->handle == INVALID_HANDLE_VALUE) {
         switch (GetLastError()) {
@@ -79,24 +93,6 @@ static int open_win32_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
 
-    h->ov = calloc(1, sizeof(*h->ov));
-    if (!h->ov) {
-        r = hs_error(HS_ERROR_MEMORY, NULL);
-        goto error;
-    }
-
-    h->ov->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (!h->ov->hEvent) {
-        r = hs_error(HS_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
-        goto error;
-    }
-
-    h->buf = malloc(READ_BUFFER_SIZE);
-    if (!h->buf) {
-        r = hs_error(HS_ERROR_MEMORY, NULL);
-        goto error;
-    }
-
     if (dev->type == HS_DEVICE_TYPE_SERIAL) {
         COMMTIMEOUTS timeouts;
 
@@ -114,10 +110,30 @@ static int open_win32_device(hs_device *dev, hs_handle **rh)
         EscapeCommFunction(h->handle, SETDTR);
     }
 
-    _hs_win32_start_async_read(h);
-    if (h->status < 0) {
-        r = h->status;
-        goto error;
+    if (mode & HS_HANDLE_MODE_READ) {
+        h->ov = calloc(1, sizeof(*h->ov));
+        if (!h->ov) {
+            r = hs_error(HS_ERROR_MEMORY, NULL);
+            goto error;
+        }
+
+        h->ov->hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+        if (!h->ov->hEvent) {
+            r = hs_error(HS_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
+            goto error;
+        }
+
+        h->buf = malloc(READ_BUFFER_SIZE);
+        if (!h->buf) {
+            r = hs_error(HS_ERROR_MEMORY, NULL);
+            goto error;
+        }
+
+        _hs_win32_start_async_read(h);
+        if (h->status < 0) {
+            r = h->status;
+            goto error;
+        }
     }
 
     *rh = h;

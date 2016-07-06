@@ -130,7 +130,7 @@ const char *hs_device_get_serial_number_string(const hs_device *dev)
     return dev->serial;
 }
 
-int hs_device_open(hs_device *dev, hs_handle **rh)
+int hs_handle_open(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     assert(dev);
     assert(rh);
@@ -138,7 +138,7 @@ int hs_device_open(hs_device *dev, hs_handle **rh)
     if (dev->state != HS_DEVICE_STATUS_ONLINE)
         return hs_error(HS_ERROR_NOT_FOUND, "Device '%s' is not connected", dev->path);
 
-    return (*dev->vtable->open)(dev, rh);
+    return (*dev->vtable->open)(dev, mode ,rh);
 }
 
 void hs_handle_close(hs_handle *h)
@@ -159,4 +159,10 @@ hs_descriptor hs_handle_get_descriptor(const hs_handle *h)
 {
     assert(h);
     return (*h->dev->vtable->get_descriptor)(h);
+}
+
+// Deprecated, replaced by hs_handle_open
+int hs_device_open(hs_device *dev, hs_handle **rh)
+{
+    return hs_handle_open(dev, HS_HANDLE_MODE_RW, rh);
 }

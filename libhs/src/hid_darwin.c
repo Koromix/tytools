@@ -210,7 +210,7 @@ static bool get_hid_device_property_number(IOHIDDeviceRef ref, CFStringRef prop,
     return CFNumberGetValue(data, type, rn);
 }
 
-static int open_hid_device(hs_device *dev, hs_handle **rh)
+static int open_hid_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     hs_handle *h;
     kern_return_t kret;
@@ -222,6 +222,7 @@ static int open_hid_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
     h->dev = hs_device_ref(dev);
+    h->mode = mode;
 
     h->poll_pipe[0] = -1;
     h->poll_pipe[1] = -1;
@@ -247,61 +248,64 @@ static int open_hid_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
 
-    r = get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDMaxInputReportSizeKey), kCFNumberSInt32Type,
-                                       &h->read_size);
-    if (!r) {
-        r = hs_error(HS_ERROR_SYSTEM, "HID device '%s' has no valid report size key", dev->path);
-        goto error;
-    }
-    h->read_buf = malloc(h->read_size);
-    if (!h->read_buf) {
-        r = hs_error(HS_ERROR_MEMORY, NULL);
-        goto error;
-    }
-
     IOHIDDeviceRegisterRemovalCallback(h->hid_ref, hid_removal_callback, h);
-    IOHIDDeviceRegisterInputReportCallback(h->hid_ref, h->read_buf, (CFIndex)h->read_size,
-                                           hid_report_callback, h);
 
-    r = pipe(h->poll_pipe);
-    if (r < 0) {
-        r = hs_error(HS_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
-        goto error;
+    if (mode & HS_HANDLE_MODE_READ) {
+        r = get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDMaxInputReportSizeKey), kCFNumberSInt32Type,
+                                           &h->read_size);
+        if (!r) {
+            r = hs_error(HS_ERROR_SYSTEM, "HID device '%s' has no valid report size key", dev->path);
+            goto error;
+        }
+        h->read_buf = malloc(h->read_size);
+        if (!h->read_buf) {
+            r = hs_error(HS_ERROR_MEMORY, NULL);
+            goto error;
+        }
+
+        IOHIDDeviceRegisterInputReportCallback(h->hid_ref, h->read_buf, (CFIndex)h->read_size,
+                                               hid_report_callback, h);
+
+        r = pipe(h->poll_pipe);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
+            goto error;
+        }
+        fcntl(h->poll_pipe[0], F_SETFL, fcntl(h->poll_pipe[0], F_GETFL, 0) | O_NONBLOCK);
+        fcntl(h->poll_pipe[1], F_SETFL, fcntl(h->poll_pipe[1], F_GETFL, 0) | O_NONBLOCK);
+
+        r = pthread_mutex_init(&h->mutex, NULL);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "pthread_mutex_init() failed: %s", strerror(r));
+            goto error;
+        }
+        h->mutex_init = true;
+
+        r = pthread_cond_init(&h->cond, NULL);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "pthread_cond_init() failed: %s", strerror(r));
+            goto error;
+        }
+        h->cond_init = true;
+
+        pthread_mutex_lock(&h->mutex);
+
+        r = pthread_create(&h->read_thread, NULL, hid_read_thread, h);
+        if (r) {
+            r = hs_error(HS_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
+            goto error;
+        }
+
+        /* Barriers are great for this, but OSX doesn't have those... And since it's the only
+           place we would use them, it's probably not worth it to have a custom implementation. */
+        while (!h->thread_ret)
+            pthread_cond_wait(&h->cond, &h->mutex);
+        r = h->thread_ret;
+        h->thread_ret = 0;
+        pthread_mutex_unlock(&h->mutex);
+        if (r < 0)
+            goto error;
     }
-    fcntl(h->poll_pipe[0], F_SETFL, fcntl(h->poll_pipe[0], F_GETFL, 0) | O_NONBLOCK);
-    fcntl(h->poll_pipe[1], F_SETFL, fcntl(h->poll_pipe[1], F_GETFL, 0) | O_NONBLOCK);
-
-    r = pthread_mutex_init(&h->mutex, NULL);
-    if (r < 0) {
-        r = hs_error(HS_ERROR_SYSTEM, "pthread_mutex_init() failed: %s", strerror(r));
-        goto error;
-    }
-    h->mutex_init = true;
-
-    r = pthread_cond_init(&h->cond, NULL);
-    if (r < 0) {
-        r = hs_error(HS_ERROR_SYSTEM, "pthread_cond_init() failed: %s", strerror(r));
-        goto error;
-    }
-    h->cond_init = true;
-
-    pthread_mutex_lock(&h->mutex);
-
-    r = pthread_create(&h->read_thread, NULL, hid_read_thread, h);
-    if (r) {
-        r = hs_error(HS_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
-        goto error;
-    }
-
-    /* Barriers are great for this, but OSX doesn't have those... And since it's the only place
-       we would use them, it's probably not worth it to have a custom implementation. */
-    while (!h->thread_ret)
-        pthread_cond_wait(&h->cond, &h->mutex);
-    r = h->thread_ret;
-    h->thread_ret = 0;
-    pthread_mutex_unlock(&h->mutex);
-    if (r < 0)
-        goto error;
 
     *rh = h;
     return 0;
@@ -388,6 +392,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -478,6 +483,7 @@ ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
     return send_report(h, kIOHIDReportTypeOutput, buf, size);
@@ -487,6 +493,7 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -509,6 +516,7 @@ ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
     return send_report(h, kIOHIDReportTypeFeature, buf, size);

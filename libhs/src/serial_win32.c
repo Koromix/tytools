@@ -141,6 +141,7 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -182,6 +183,7 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, ssize_t size)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
     
     if (!size)

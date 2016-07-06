@@ -74,6 +74,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -109,6 +110,7 @@ ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
@@ -135,6 +137,7 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -165,6 +168,7 @@ ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
     if (size < 2)

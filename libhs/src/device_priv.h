@@ -32,7 +32,7 @@
 struct hs_monitor;
 
 struct _hs_device_vtable {
-    int (*open)(hs_device *dev, hs_handle **rh);
+    int (*open)(hs_device *dev, hs_handle_mode mode, hs_handle **rh);
     void (*close)(hs_handle *h);
 
     hs_descriptor (*get_descriptor)(const hs_handle *h);
@@ -65,6 +65,7 @@ struct hs_device {
 };
 
 #define _HS_HANDLE \
-    hs_device *dev;
+    hs_device *dev; \
+    hs_handle_mode mode;
 
 #endif

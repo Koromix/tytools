@@ -79,7 +79,7 @@ static int add_serial_source(hs_device *dev)
     }
 
     src->dev = hs_device_ref(dev);
-    r = hs_device_open(dev, &src->in);
+    r = hs_handle_open(dev, HS_HANDLE_MODE_READ, &src->in);
     if (r < 0) {
         // If something goes wrong, ignore this device and continue monitoring anyway
         r = 0;

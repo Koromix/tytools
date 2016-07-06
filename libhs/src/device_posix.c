@@ -32,12 +32,13 @@
 #include "device_posix_priv.h"
 #include "hs/platform.h"
 
-static int open_posix_device(hs_device *dev, hs_handle **rh)
+static int open_posix_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     hs_handle *h;
 #ifdef __APPLE__
     unsigned int retry = 4;
 #endif
+    int fd_flags;
     int r;
 
     h = calloc(1, sizeof(*h));
@@ -46,9 +47,23 @@ static int open_posix_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
     h->dev = hs_device_ref(dev);
+    h->mode = mode;
+
+    fd_flags = O_CLOEXEC | O_NOCTTY | O_NONBLOCK;
+    switch (mode) {
+    case HS_HANDLE_MODE_READ:
+        fd_flags |= O_RDONLY;
+        break;
+    case HS_HANDLE_MODE_WRITE:
+        fd_flags |= O_WRONLY;
+        break;
+    case HS_HANDLE_MODE_RW:
+        fd_flags |= O_RDWR;
+        break;
+    }
 
 restart:
-    h->fd = open(dev->path, O_RDWR | O_CLOEXEC | O_NOCTTY | O_NONBLOCK);
+    h->fd = open(dev->path, fd_flags);
     if (h->fd < 0) {
         switch (errno) {
         case EINTR:

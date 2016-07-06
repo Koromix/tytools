@@ -137,10 +137,11 @@ static void parse_descriptor(hs_handle *h, struct hidraw_report_descriptor *repo
     }
 }
 
-static int open_hidraw_device(hs_device *dev, hs_handle **rh)
+static int open_hidraw_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     hs_handle *h;
     struct hidraw_report_descriptor report;
+    int fd_flags;
     int size, r;
 
     h = calloc(1, sizeof(*h));
@@ -149,9 +150,23 @@ static int open_hidraw_device(hs_device *dev, hs_handle **rh)
         goto error;
     }
     h->dev = hs_device_ref(dev);
+    h->mode = mode;
+
+    fd_flags = O_CLOEXEC | O_NONBLOCK;
+    switch (mode) {
+    case HS_HANDLE_MODE_READ:
+        fd_flags |= O_RDONLY;
+        break;
+    case HS_HANDLE_MODE_WRITE:
+        fd_flags |= O_WRONLY;
+        break;
+    case HS_HANDLE_MODE_RW:
+        fd_flags |= O_RDWR;
+        break;
+    }
 
 restart:
-    h->fd = open(dev->path, O_RDWR | O_CLOEXEC | O_NONBLOCK);
+    h->fd = open(dev->path, fd_flags);
     if (h->fd < 0) {
         switch (errno) {
         case EINTR:
@@ -241,6 +256,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -309,6 +325,7 @@ ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
@@ -334,6 +351,7 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -360,6 +378,7 @@ ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_HID);
+    assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
