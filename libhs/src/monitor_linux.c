@@ -24,9 +24,11 @@
 
 #include "util.h"
 #include <fcntl.h>
+#include <linux/hidraw.h>
 #include <libudev.h>
 #include <pthread.h>
 #include <sys/eventfd.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include "device_priv.h"
 #include "monitor_priv.h"
@@ -177,6 +179,162 @@ static int fill_device_details(struct udev_aggregate *agg, hs_device *dev)
     return 1;
 }
 
+static size_t read_hid_descriptor_sysfs(struct udev_aggregate *agg, uint8_t *desc_buf,
+                                        size_t desc_buf_size)
+{
+    struct udev_device *hid_dev;
+    char report_path[4096];
+    int fd;
+    ssize_t r;
+
+    hid_dev = udev_device_get_parent_with_subsystem_devtype(agg->dev, "hid", NULL);
+    if (!hid_dev)
+        return 0;
+    snprintf(report_path, sizeof(report_path), "%s/report_descriptor",
+             udev_device_get_syspath(hid_dev));
+
+    fd = open(report_path, O_RDONLY);
+    if (fd < 0)
+        return 0;
+    r = read(fd, desc_buf, desc_buf_size);
+    close(fd);
+    if (r < 0)
+        return 0;
+
+    return (size_t)r;
+}
+
+static size_t read_hid_descriptor_hidraw(struct udev_aggregate *agg, uint8_t *desc_buf,
+                                         size_t desc_buf_size)
+{
+    const char *node_path;
+    int fd = -1;
+    int hidraw_desc_size = 0;
+    struct hidraw_report_descriptor hidraw_desc;
+    int r;
+
+    node_path = udev_device_get_devnode(agg->dev);
+    if (!node_path)
+        goto cleanup;
+    fd = open(node_path, O_RDONLY);
+    if (fd < 0)
+        goto cleanup;
+
+    r = ioctl(fd, HIDIOCGRDESCSIZE, &hidraw_desc_size);
+    if (r < 0)
+        goto cleanup;
+    hidraw_desc.size = (uint32_t)hidraw_desc_size;
+    r = ioctl(fd, HIDIOCGRDESC, &hidraw_desc);
+    if (r < 0) {
+        hidraw_desc_size = 0;
+        goto cleanup;
+    }
+
+    if (desc_buf_size > hidraw_desc.size)
+        desc_buf_size = hidraw_desc.size;
+    memcpy(desc_buf, hidraw_desc.value, desc_buf_size);
+
+cleanup:
+    close(fd);
+    return (size_t)hidraw_desc_size;
+}
+
+static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size)
+{
+    unsigned int collection_depth = 0;
+
+    unsigned int item_size = 0;
+    for (size_t i = 0; i < desc_size; i += item_size + 1) {
+        unsigned int item_type;
+        uint32_t item_data;
+
+        item_type = desc[i];
+
+        if (item_type == 0xFE) {
+            // not interested in long items
+            if (i + 1 < desc_size)
+                item_size = (unsigned int)desc[i + 1] + 2;
+            continue;
+        }
+
+        item_size = item_type & 3;
+        if (item_size == 3)
+            item_size = 4;
+        item_type &= 0xFC;
+
+        if (i + item_size >= desc_size) {
+            hs_log(HS_LOG_WARNING, "Invalid HID descriptor for device '%s'", dev->path);
+            return;
+        }
+
+        // little endian
+        switch (item_size) {
+        case 0:
+            item_data = 0;
+            break;
+        case 1:
+            item_data = desc[i + 1];
+            break;
+        case 2:
+            item_data = (uint32_t)(desc[i + 2] << 8) | desc[i + 1];
+            break;
+        case 4:
+            item_data = (uint32_t)((desc[i + 4] << 24) | (desc[i + 3] << 16)
+                | (desc[i + 2] << 8) | desc[i + 1]);
+            break;
+
+        // silence unitialized warning
+        default:
+            item_data = 0;
+            break;
+        }
+
+        switch (item_type) {
+        // main items
+        case 0xA0:
+            collection_depth++;
+            break;
+        case 0xC0:
+            collection_depth--;
+            break;
+
+        // global items
+        case 0x84:
+            dev->u.hid.numbered_reports = true;
+            break;
+        case 0x04:
+            if (!collection_depth)
+                dev->u.hid.usage_page = (uint16_t)item_data;
+            break;
+
+        // local items
+        case 0x08:
+            if (!collection_depth)
+                dev->u.hid.usage = (uint16_t)item_data;
+            break;
+        }
+    }
+}
+
+static void fill_hid_properties(struct udev_aggregate *agg, hs_device *dev)
+{
+    uint8_t desc[HID_MAX_DESCRIPTOR_SIZE];
+    size_t desc_size;
+
+    // The sysfs report_descriptor file appeared in 2011, somewhere around Linux 2.6.38
+    desc_size = read_hid_descriptor_sysfs(agg, desc, sizeof(desc));
+    if (!desc_size) {
+        desc_size = read_hid_descriptor_hidraw(agg, desc, sizeof(desc));
+        if (!desc_size) {
+            // This will happen pretty often on old kernels, most HID nodes are root-only
+            hs_log(HS_LOG_DEBUG, "Cannot get HID report descriptor from '%s'", dev->path);
+            return;
+        }
+    }
+
+    parse_hid_descriptor(dev, desc, desc_size);
+}
+
 static int read_device_information(struct udev_device *udev_dev, hs_device **rdev)
 {
     struct udev_aggregate agg;
@@ -202,6 +360,9 @@ static int read_device_information(struct udev_device *udev_dev, hs_device **rde
     r = fill_device_details(&agg, dev);
     if (r <= 0)
         goto cleanup;
+
+    if (dev->type == HS_DEVICE_TYPE_HID)
+        fill_hid_properties(&agg, dev);
 
     *rdev = dev;
     dev = NULL;

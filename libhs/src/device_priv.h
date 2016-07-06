@@ -62,6 +62,17 @@ struct hs_device {
 
     uint8_t iface;
 
+    union {
+        struct {
+            uint16_t usage_page;
+            uint16_t usage;
+#ifdef __linux__
+            // Needed to work around a bug on old Linux kernels
+            bool numbered_reports;
+#endif
+        } hid;
+    } u;
+
 };
 
 #define _HS_HANDLE \

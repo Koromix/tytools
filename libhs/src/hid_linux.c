@@ -283,7 +283,7 @@ restart:
             return 0;
     }
 
-    if (h->numbered_reports) {
+    if (h->dev->u.hid.numbered_reports) {
         /* Work around a hidraw bug introduced in Linux 2.6.28 and fixed in Linux 2.6.34, see
            https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a38f2c7c4dd53d5be097930902c108e362584a3 */
         if (detect_kernel26_byte_bug()) {
