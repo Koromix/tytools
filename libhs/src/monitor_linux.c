@@ -96,7 +96,7 @@ static int compute_device_location(struct udev_device *dev, char **rlocation)
     return 1;
 }
 
-static int fill_device_details(hs_device *dev, struct udev_aggregate *agg)
+static int fill_device_details(struct udev_aggregate *agg, hs_device *dev)
 {
     const char *buf;
     int r;
@@ -199,7 +199,7 @@ static int read_device_information(struct udev_device *udev_dev, hs_device **rde
     dev->refcount = 1;
     dev->state = HS_DEVICE_STATUS_ONLINE;
 
-    r = fill_device_details(dev, &agg);
+    r = fill_device_details(&agg, dev);
     if (r <= 0)
         goto cleanup;
 
