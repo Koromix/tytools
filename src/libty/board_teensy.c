@@ -159,23 +159,18 @@ static const ty_board_model *teensy_models[] = {
     NULL
 };
 
-static const ty_board_model *identify_model(const hs_hid_descriptor *desc)
+static const ty_board_model *identify_model(uint16_t usage)
 {
-    if (desc->usage_page != TEENSY_USAGE_PAGE_BOOTLOADER)
-        return NULL;
-
-
     for (const ty_board_model **cur = teensy_models; *cur; cur++) {
         const ty_board_model *model = *cur;
 
-        if (model->usage == desc->usage) {
-            ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16, model->name,
-                   desc->usage);
+        if (model->usage == usage) {
+            ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16, model->name, usage);
             return *cur;
         }
     }
 
-    ty_log(TY_LOG_DEBUG, "Unknown Teensy model with usage value 0x%"PRIx16, desc->usage);
+    ty_log(TY_LOG_DEBUG, "Unknown Teensy model with usage value 0x%"PRIx16, usage);
     return NULL;
 }
 
@@ -204,9 +199,6 @@ static uint64_t parse_bootloader_serial(const char *s)
 
 static int teensy_load_interface(ty_board_interface *iface)
 {
-    hs_hid_descriptor desc;
-    int r;
-
     if (hs_device_get_vid(iface->dev) != TEENSY_VID)
         return 0;
 
@@ -225,19 +217,8 @@ static int teensy_load_interface(ty_board_interface *iface)
         return 0;
     }
 
-    /* FIXME: do we always need to open? and we may be able to list
-       more devices (at least on Windows) without READ/WRITE rights. */
-    r = ty_board_interface_open(iface);
-    if (r < 0)
-        return r;
-
     switch (hs_device_get_type(iface->dev)) {
     case HS_DEVICE_TYPE_SERIAL:
-        /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
-           around and reuse them. The device will keep rebooting if 134 is what stays around,
-           so try to break the loop here. */
-        hs_serial_set_attributes(iface->h, 115200, 0);
-
         iface->name = "Serial";
         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
@@ -245,16 +226,10 @@ static int teensy_load_interface(ty_board_interface *iface)
         break;
 
     case HS_DEVICE_TYPE_HID:
-        r = hs_hid_parse_descriptor(iface->h, &desc);
-        if (r < 0) {
-            r = ty_libhs_translate_error(r);
-            goto cleanup;
-        }
-
-        switch (desc.usage_page) {
+        switch (hs_device_get_hid_usage_page(iface->dev)) {
         case TEENSY_USAGE_PAGE_BOOTLOADER:
             iface->name = "HalfKay";
-            iface->model = identify_model(&desc);
+            iface->model = identify_model(hs_device_get_hid_usage(iface->dev));
             if (iface->model) {
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
@@ -274,8 +249,7 @@ static int teensy_load_interface(ty_board_interface *iface)
             break;
 
         default:
-            r = 0;
-            goto cleanup;
+            return 0;
         }
 
         break;
@@ -285,10 +259,7 @@ static int teensy_load_interface(ty_board_interface *iface)
         iface->model = &teensy_unknown_model;
     iface->vtable = &teensy_vtable;
 
-    r = 1;
-cleanup:
-    ty_board_interface_close(iface);
-    return r;
+    return 1;
 }
 
 static int teensy_update_board(ty_board_interface *iface, ty_board *board)
