@@ -453,8 +453,6 @@ static int resolve_device_location(DEVINST inst, uint8_t ports[])
 static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc)
 {
     HANDLE h = NULL;
-    wchar_t wbuf[256];
-    BOOL success;
     int r;
 
     h = CreateFile(dev->path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -466,8 +464,11 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
 
 #define READ_HID_PROPERTY(index, func, dest) \
         if (index) { \
-            success = func(h, wbuf, sizeof(wbuf)); \
-            if (success) { \
+            wchar_t wbuf[256]; \
+            BOOL bret; \
+            \
+            bret = func(h, wbuf, sizeof(wbuf)); \
+            if (bret) { \
                 wbuf[_HS_COUNTOF(wbuf) - 1] = 0; \
                 r = wide_to_cstring(wbuf, wcslen(wbuf) * sizeof(wchar_t), (dest)); \
                 if (r < 0) \
@@ -726,6 +727,7 @@ static int find_device_node(DEVINST inst, hs_device *dev)
         hs_log(HS_LOG_DEBUG, "Unknown device type for '%s'", dev->key);
         return 0;
     }
+    dev->vtable = &_hs_win32_device_vtable;
 
     return 1;
 }
@@ -793,8 +795,6 @@ static int process_win32_device(DEVINST inst, const char *id, hs_device **rdev)
     r = build_location_string(ports, depth, &dev->location);
     if (r < 0)
         goto cleanup;
-
-    dev->vtable = &_hs_win32_device_vtable;
 
     *rdev = dev;
     dev = NULL;

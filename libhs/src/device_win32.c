@@ -35,8 +35,6 @@ static CancelIoEx_func *CancelIoEx_;
 
 #define READ_BUFFER_SIZE 16384
 
-const struct _hs_device_vtable _hs_win32_device_vtable;
-
 _HS_INIT()
 {
     HMODULE h = LoadLibrary("kernel32.dll");
