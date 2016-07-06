@@ -30,19 +30,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "device_priv.h"
+#include "device_posix_priv.h"
 #include "hs/hid.h"
 #include "hs/platform.h"
-
-struct hs_handle {
-    _HS_HANDLE
-
-    int fd;
-
-    // Used to work around an old kernel 2.6 (pre-2.6.34) bug
-    uint8_t *buf;
-    size_t buf_size;
-};
 
 static bool detect_kernel26_byte_bug()
 {
@@ -55,107 +45,6 @@ static bool detect_kernel26_byte_bug()
 
     return bug;
 }
-
-static int open_hidraw_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
-{
-    hs_handle *h;
-    struct hidraw_report_descriptor report;
-    int fd_flags;
-    int size, r;
-
-    h = calloc(1, sizeof(*h));
-    if (!h) {
-        r = hs_error(HS_ERROR_MEMORY, NULL);
-        goto error;
-    }
-    h->dev = hs_device_ref(dev);
-    h->mode = mode;
-
-    fd_flags = O_CLOEXEC | O_NONBLOCK;
-    switch (mode) {
-    case HS_HANDLE_MODE_READ:
-        fd_flags |= O_RDONLY;
-        break;
-    case HS_HANDLE_MODE_WRITE:
-        fd_flags |= O_WRONLY;
-        break;
-    case HS_HANDLE_MODE_RW:
-        fd_flags |= O_RDWR;
-        break;
-    }
-
-restart:
-    h->fd = open(dev->path, fd_flags);
-    if (h->fd < 0) {
-        switch (errno) {
-        case EINTR:
-            goto restart;
-        case EACCES:
-            r = hs_error(HS_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
-            break;
-        case EIO:
-        case ENXIO:
-        case ENODEV:
-            r = hs_error(HS_ERROR_IO, "I/O error while opening device '%s'", dev->path);
-            break;
-        case ENOENT:
-        case ENOTDIR:
-            r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
-            break;
-
-        default:
-            r = hs_error(HS_ERROR_SYSTEM, "open('%s') failed: %s", dev->path, strerror(errno));
-            break;
-        }
-        goto error;
-    }
-
-    r = ioctl(h->fd, HIDIOCGRDESCSIZE, &size);
-    if (r < 0) {
-        r = hs_error(HS_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESCSIZE) failed: %s", h->dev->path,
-                     strerror(errno));
-        goto error;
-    }
-    report.size = (uint32_t)size;
-
-    r = ioctl(h->fd, HIDIOCGRDESC, &report);
-    if (r < 0) {
-        r = hs_error(HS_ERROR_SYSTEM, "ioctl('%s', HIDIOCGRDESC) failed: %s", h->dev->path,
-                     strerror(errno));
-        goto error;
-    }
-
-    *rh = h;
-    return 0;
-
-error:
-    hs_handle_close(h);
-    return r;
-}
-
-static void close_hidraw_device(hs_handle *h)
-{
-    if (h) {
-        free(h->buf);
-
-        close(h->fd);
-        hs_device_unref(h->dev);
-    }
-
-    free(h);
-}
-
-static hs_descriptor get_hidraw_descriptor(const hs_handle *h)
-{
-    return h->fd;
-}
-
-const struct _hs_device_vtable _hs_linux_hid_vtable = {
-    .open = open_hidraw_device,
-    .close = close_hidraw_device,
-
-    .get_descriptor = get_hidraw_descriptor
-};
 
 ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
@@ -192,19 +81,19 @@ restart:
         /* Work around a hidraw bug introduced in Linux 2.6.28 and fixed in Linux 2.6.34, see
            https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a38f2c7c4dd53d5be097930902c108e362584a3 */
         if (detect_kernel26_byte_bug()) {
-            if (size + 1 > h->buf_size) {
-                free(h->buf);
-                h->buf_size = 0;
+            if (size + 1 > h->read_buf_size) {
+                free(h->read_buf);
+                h->read_buf_size = 0;
 
-                h->buf = malloc(size + 1);
-                if (!h->buf)
+                h->read_buf = malloc(size + 1);
+                if (!h->read_buf)
                     return hs_error(HS_ERROR_MEMORY, NULL);
-                h->buf_size = size + 1;
+                h->read_buf_size = size + 1;
             }
 
-            r = read(h->fd, h->buf, size + 1);
+            r = read(h->fd, h->read_buf, size + 1);
             if (r > 0)
-                memcpy(buf, h->buf + 1, (size_t)--r);
+                memcpy(buf, h->read_buf + 1, (size_t)--r);
         } else {
             r = read(h->fd, buf, size);
         }

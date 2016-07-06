@@ -32,6 +32,12 @@ struct hs_handle {
     _HS_HANDLE
 
     int fd;
+
+#ifdef __linux__
+    // Used to work around an old kernel 2.6 (pre-2.6.34) hidraw bug
+    uint8_t *read_buf;
+    size_t read_buf_size;
+#endif
 };
 
 #endif

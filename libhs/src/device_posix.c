@@ -113,6 +113,11 @@ error:
 static void close_posix_device(hs_handle *h)
 {
     if (h) {
+#ifdef __linux__
+        // Only used for hidraw to work around a bug on old kernels
+        free(h->read_buf);
+#endif
+
         close(h->fd);
         hs_device_unref(h->dev);
     }
