@@ -80,7 +80,7 @@ struct ty_board_family {
 
     const ty_board_model **models;
 
-    int (*open_interface)(ty_board_interface *iface);
+    int (*load_interface)(ty_board_interface *iface);
     int (*update_board)(ty_board_interface *iface, ty_board *board);
 
     unsigned int (*guess_models)(const struct ty_firmware *fw,

@@ -202,7 +202,7 @@ static uint64_t parse_bootloader_serial(const char *s)
     return serial;
 }
 
-static int teensy_open_interface(ty_board_interface *iface)
+static int teensy_load_interface(ty_board_interface *iface)
 {
     hs_hid_descriptor desc;
     int r;
@@ -628,7 +628,7 @@ const ty_board_family _ty_teensy_family = {
     .name = "Teensy",
     .models = teensy_models,
 
-    .open_interface = teensy_open_interface,
+    .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
 
     .guess_models = teensy_guess_models

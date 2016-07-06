@@ -207,7 +207,7 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
         const ty_board_family *family = *cur;
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*family->open_interface)(iface);
+        r = (*family->load_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
             // FIXME: propagate the errors when the initial enumeration abortion problem is fixed
