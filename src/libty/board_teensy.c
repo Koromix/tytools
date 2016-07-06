@@ -356,6 +356,29 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
     return 1;
 }
 
+int teensy_open_interface(ty_board_interface *iface)
+{
+    int r;
+
+    r = hs_handle_open(iface->dev, HS_HANDLE_MODE_RW, &iface->h);
+    if (r < 0)
+        return ty_libhs_translate_error(r);
+
+    /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
+       around and reuse them. The device will keep rebooting if 134 is what stays around,
+       so try to break the loop here. */
+    if (hs_device_get_type(iface->dev) == HS_DEVICE_TYPE_SERIAL)
+        hs_serial_set_attributes(iface->h, 115200, 0);
+
+    return 0;
+}
+
+void teensy_close_interface(ty_board_interface *iface)
+{
+    hs_handle_close(iface->h);
+    iface->h = NULL;
+}
+
 // FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
 static unsigned int teensy_guess_models(const ty_firmware *fw,
                                         const ty_board_model **rguesses, unsigned int max)
@@ -635,6 +658,9 @@ const ty_board_family _ty_teensy_family = {
 };
 
 static const struct _ty_board_interface_vtable teensy_vtable = {
+    .open_interface = teensy_open_interface,
+    .close_interface = teensy_close_interface,
+
     .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,
