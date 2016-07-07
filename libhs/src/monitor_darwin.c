@@ -321,6 +321,19 @@ static int fill_device_details(struct service_aggregate *agg, hs_device *dev)
     return 1;
 }
 
+static void fill_hid_properties(struct service_aggregate *agg, hs_device *dev)
+{
+    bool success = true;
+
+    success &= get_ioregistry_value_number(agg->dev_service, CFSTR("PrimaryUsagePage"),
+                                           kCFNumberSInt16Type, &dev->u.hid.usage_page);
+    success &= get_ioregistry_value_number(agg->dev_service, CFSTR("PrimaryUsage"),
+                                           kCFNumberSInt16Type, &dev->u.hid.usage);
+
+    if (!success)
+        hs_log(HS_LOG_WARNING, "Invalid HID values for '%s", dev->path);
+}
+
 static int process_darwin_device(io_service_t service, hs_device **rdev)
 {
     struct service_aggregate agg = {0};
@@ -350,6 +363,9 @@ static int process_darwin_device(io_service_t service, hs_device **rdev)
     r = fill_device_details(&agg, dev);
     if (r <= 0)
         goto cleanup;
+
+    if (dev->type == HS_DEVICE_TYPE_HID)
+        fill_hid_properties(&agg, dev);
 
     r = resolve_device_location(agg.usb_service, &dev->location);
     if (r <= 0)

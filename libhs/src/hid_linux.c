@@ -39,10 +39,6 @@ struct hs_handle {
 
     int fd;
 
-    bool numbered_reports;
-    uint16_t usage_page;
-    uint16_t usage;
-
     // Used to work around an old kernel 2.6 (pre-2.6.34) bug
     uint8_t *buf;
     size_t buf_size;
@@ -58,83 +54,6 @@ static bool detect_kernel26_byte_bug()
     }
 
     return bug;
-}
-
-static void parse_descriptor(hs_handle *h, struct hidraw_report_descriptor *report)
-{
-    unsigned int collection_depth = 0;
-
-    unsigned int size = 0;
-    for (size_t i = 0; i < report->size; i += size + 1) {
-        unsigned int type;
-        uint32_t data;
-
-        type = report->value[i];
-
-        if (type == 0xFE) {
-            // not interested in long items
-            if (i + 1 < report->size)
-                size = (unsigned int)report->value[i + 1] + 2;
-            continue;
-        }
-
-        size = type & 3;
-        if (size == 3)
-            size = 4;
-        type &= 0xFC;
-
-        if (i + size >= report->size) {
-            hs_log(HS_LOG_WARNING, "Invalid HID descriptor for device '%s'", h->dev->path);
-            return;
-        }
-
-        // little endian
-        switch (size) {
-        case 0:
-            data = 0;
-            break;
-        case 1:
-            data = report->value[i + 1];
-            break;
-        case 2:
-            data = (uint32_t)(report->value[i + 2] << 8) | report->value[i + 1];
-            break;
-        case 4:
-            data = (uint32_t)((report->value[i + 4] << 24) | (report->value[i + 3] << 16)
-                | (report->value[i + 2] << 8) | report->value[i + 1]);
-            break;
-
-        // silence unitialized warning
-        default:
-            data = 0;
-            break;
-        }
-
-        switch (type) {
-        // main items
-        case 0xA0:
-            collection_depth++;
-            break;
-        case 0xC0:
-            collection_depth--;
-            break;
-
-        // global items
-        case 0x84:
-            h->numbered_reports = true;
-            break;
-        case 0x04:
-            if (!collection_depth)
-                h->usage_page = (uint16_t)data;
-            break;
-
-        // local items
-        case 0x08:
-            if (!collection_depth)
-                h->usage = (uint16_t)data;
-            break;
-        }
-    }
 }
 
 static int open_hidraw_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
@@ -206,8 +125,6 @@ restart:
         goto error;
     }
 
-    parse_descriptor(h, &report);
-
     *rh = h;
     return 0;
 
@@ -240,18 +157,6 @@ const struct _hs_device_vtable _hs_linux_hid_vtable = {
     .get_descriptor = get_hidraw_descriptor
 };
 
-int hs_hid_parse_descriptor(hs_handle *h, hs_hid_descriptor *desc)
-{
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(desc);
-
-    desc->usage_page = h->usage_page;
-    desc->usage = h->usage;
-
-    return 0;
-}
-
 ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
@@ -283,7 +188,7 @@ restart:
             return 0;
     }
 
-    if (h->numbered_reports) {
+    if (h->dev->u.hid.numbered_reports) {
         /* Work around a hidraw bug introduced in Linux 2.6.28 and fixed in Linux 2.6.34, see
            https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a38f2c7c4dd53d5be097930902c108e362584a3 */
         if (detect_kernel26_byte_bug()) {

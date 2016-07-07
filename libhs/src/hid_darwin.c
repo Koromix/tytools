@@ -373,21 +373,6 @@ const struct _hs_device_vtable _hs_darwin_hid_vtable = {
     .get_descriptor = get_hid_descriptor
 };
 
-int hs_hid_parse_descriptor(hs_handle *h, hs_hid_descriptor *desc)
-{
-    if (h->device_removed)
-        return hs_error(HS_ERROR_IO, "Device '%s' was removed", h->dev->path);
-
-    memset(desc, 0, sizeof(*desc));
-
-    get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDPrimaryUsagePageKey),
-                                   kCFNumberSInt16Type, &desc->usage_page);
-    get_hid_device_property_number(h->hid_ref, CFSTR(kIOHIDPrimaryUsageKey),
-                                   kCFNumberSInt16Type, &desc->usage);
-
-    return 0;
-}
-
 ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {
     assert(h);

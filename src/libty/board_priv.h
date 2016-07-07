@@ -19,6 +19,9 @@
 TY_C_BEGIN
 
 struct _ty_board_interface_vtable {
+    int (*open_interface)(ty_board_interface *iface);
+    void (*close_interface)(ty_board_interface *iface);
+
     int (*serial_set_attributes)(ty_board_interface *iface, uint32_t rate, int flags);
     ssize_t (*serial_read)(ty_board_interface *iface, char *buf, size_t size, int timeout);
     ssize_t (*serial_write)(ty_board_interface *iface, const char *buf, size_t size);
@@ -80,7 +83,7 @@ struct ty_board_family {
 
     const ty_board_model **models;
 
-    int (*open_interface)(ty_board_interface *iface);
+    int (*load_interface)(ty_board_interface *iface);
     int (*update_board)(ty_board_interface *iface, ty_board *board);
 
     unsigned int (*guess_models)(const struct ty_firmware *fw,

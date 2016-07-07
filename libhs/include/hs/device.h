@@ -205,6 +205,29 @@ HS_PUBLIC const char *hs_device_get_product_string(const hs_device *dev);
 HS_PUBLIC const char *hs_device_get_serial_number_string(const hs_device *dev);
 
 /**
+ * @ingroup device
+ * @brief Get the primary usage page value from the HID report descriptor.
+ *
+ * It is invalid to call this function for non-HID devices, and will result in an assert
+ * on debug builds.
+ *
+ * @param dev Device object.
+ * @return This function returns the primary HID usage page value.
+ */
+HS_PUBLIC uint16_t hs_device_get_hid_usage_page(const hs_device *dev);
+/**
+ * @ingroup device
+ * @brief Get the primary usage value from the HID report descriptor.
+ *
+ * It is invalid to call this function for non-HID devices, and will result in an assert
+ * on debug builds.
+ *
+ * @param dev Device object.
+ * @return This function returns the primary HID usage value.
+ */
+HS_PUBLIC uint16_t hs_device_get_hid_usage(const hs_device *dev);
+
+/**
   * @{
   * @name Handle Functions
   */

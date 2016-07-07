@@ -130,6 +130,22 @@ const char *hs_device_get_serial_number_string(const hs_device *dev)
     return dev->serial;
 }
 
+uint16_t hs_device_get_hid_usage_page(const hs_device *dev)
+{
+    assert(dev);
+    assert(dev->type == HS_DEVICE_TYPE_HID);
+
+    return dev->u.hid.usage_page;
+}
+
+uint16_t hs_device_get_hid_usage(const hs_device *dev)
+{
+    assert(dev);
+    assert(dev->type == HS_DEVICE_TYPE_HID);
+
+    return dev->u.hid.usage;
+}
+
 int hs_handle_open(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     assert(dev);

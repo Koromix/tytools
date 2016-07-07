@@ -26,49 +26,15 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <hidsdi.h>
-#include <hidpi.h>
 #include <winioctl.h>
 #include "device_win32_priv.h"
 #include "hs/hid.h"
 #include "hs/platform.h"
 
-#if defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 4
-__declspec(dllimport) BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject,
-                                                          PHIDP_PREPARSED_DATA *PreparsedData);
-__declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
-#endif
-
 // Copied from hidclass.h in the MinGW-w64 headers
 #define HID_OUT_CTL_CODE(id) \
     CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 #define IOCTL_HID_GET_FEATURE HID_OUT_CTL_CODE(100)
-
-int hs_hid_parse_descriptor(hs_handle *h, hs_hid_descriptor *rdesc)
-{
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(rdesc);
-
-    // semi-hidden Hungarian pointers? Really , Microsoft?
-    PHIDP_PREPARSED_DATA pp;
-    HIDP_CAPS caps;
-    LONG ret;
-
-    ret = HidD_GetPreparsedData(h->handle, &pp);
-    if (!ret)
-        return hs_error(HS_ERROR_SYSTEM, "HidD_GetPreparsedData() failed");
-
-    // NTSTATUS and BOOL are both defined as LONG
-    ret = HidP_GetCaps(pp, &caps);
-    HidD_FreePreparsedData(pp);
-    if (ret != HIDP_STATUS_SUCCESS)
-        return hs_error(HS_ERROR_SYSTEM, "Invalid HID descriptor");
-
-    rdesc->usage_page = caps.UsagePage;
-    rdesc->usage = caps.Usage;
-
-    return 0;
-}
 
 ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
 {

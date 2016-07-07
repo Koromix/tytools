@@ -29,6 +29,7 @@
 #include <dbt.h>
 #include <devioctl.h>
 #include <hidsdi.h>
+#include <hidpi.h>
 #include <initguid.h>
 #include <process.h>
 #include <setupapi.h>
@@ -74,6 +75,9 @@ struct notification {
 #if defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 4
 __declspec(dllimport) BOOLEAN NTAPI HidD_GetSerialNumberString(HANDLE HidDeviceObject,
                                                                PVOID Buffer, ULONG BufferLength);
+__declspec(dllimport) BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject,
+                                                          PHIDP_PREPARSED_DATA *PreparsedData);
+__declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
 #endif
 
 extern const struct _hs_device_vtable _hs_win32_device_vtable;
@@ -483,6 +487,29 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
     READ_HID_PROPERTY(desc->iSerialNumber, HidD_GetSerialNumberString, &dev->serial);
 
 #undef READ_HID_PROPERTY
+
+    {
+        // semi-hidden Hungarian pointers? Really , Microsoft?
+        PHIDP_PREPARSED_DATA pp;
+        HIDP_CAPS caps;
+        LONG lret;
+
+        lret = HidD_GetPreparsedData(h, &pp);
+        if (!lret) {
+            hs_log(HS_LOG_WARNING, "HidD_GetPreparsedData() failed on '%s", dev->path);
+            goto ignore_hid_descriptor;
+        }
+        lret = HidP_GetCaps(pp, &caps);
+        HidD_FreePreparsedData(pp);
+        if (lret != HIDP_STATUS_SUCCESS) {
+            hs_log(HS_LOG_WARNING, "Invalid HID descriptor from '%s", dev->path);
+            goto ignore_hid_descriptor;
+        }
+
+        dev->u.hid.usage_page = caps.UsagePage;
+        dev->u.hid.usage = caps.Usage;
+    }
+ignore_hid_descriptor:
 
     r = 1;
 cleanup:

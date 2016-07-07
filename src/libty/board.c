@@ -599,11 +599,9 @@ int ty_board_interface_open(ty_board_interface *iface)
     ty_mutex_lock(&iface->open_lock);
 
     if (!iface->h) {
-        r = hs_device_open(iface->dev, &iface->h);
-        if (r < 0) {
-            r = ty_libhs_translate_error(r);
+        r = (*iface->vtable->open_interface)(iface);
+        if (r < 0)
             goto cleanup;
-        }
     }
     iface->open_count++;
 
@@ -621,10 +619,8 @@ void ty_board_interface_close(ty_board_interface *iface)
         return;
 
     ty_mutex_lock(&iface->open_lock);
-    if (!--iface->open_count) {
-        hs_handle_close(iface->h);
-        iface->h = NULL;
-    }
+    if (!--iface->open_count)
+        (*iface->vtable->close_interface)(iface);
     ty_mutex_unlock(&iface->open_lock);
 
     ty_board_interface_unref(iface);

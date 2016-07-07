@@ -38,35 +38,6 @@ struct hs_handle;
 
 /**
  * @ingroup hid
- * @brief Structure representing a parsed HID descriptor.
- *
- * @sa hs_hid_parse_descriptor()
- */
-typedef struct hs_hid_descriptor {
-    /** Primary usage page value. */
-    uint16_t usage_page;
-    /** Primary usage value. */
-    uint16_t usage;
-} hs_hid_descriptor;
-
-/**
- * @ingroup hid
- * @brief Parse the report descriptor from the device.
- *
- * This parser is very incomplete at the moment, only a few values are extracted from the
- * descriptor. See @ref hs_hid_descriptor.
- *
- * @param      h    Device handle.
- * @param[out] desc A pointer to a hs_hid_descriptor structure that receives the parsed
- *     descriptor information.
- * @return This function returns 0 on success, or a negative @ref hs_error_code value.
- *
- * @sa hs_hid_descriptor
- */
-HS_PUBLIC int hs_hid_parse_descriptor(struct hs_handle *h, hs_hid_descriptor *desc);
-
-/**
- * @ingroup hid
  * @brief Read an input report from the device.
  *
  * The first byte will contain the report ID, or 0 if the device does not use numbered reports.
