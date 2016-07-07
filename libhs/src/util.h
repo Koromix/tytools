@@ -50,7 +50,7 @@
     #define _HS_INIT() \
         static void __cdecl _HS_UNIQUE_ID(init_)(void); \
         __pragma(section(".CRT$XCU", read)) \
-        __declspec(allocate(".CRT$XCU")) void (__cdecl* _HS_UNIQUE_ID(init_) ## _)(void) = _HS_UNIQUE_ID(init_); \
+        static __declspec(allocate(".CRT$XCU")) void (__cdecl* _HS_UNIQUE_ID(init_) ## _)(void) = _HS_UNIQUE_ID(init_); \
         static void __cdecl _HS_UNIQUE_ID(init_)(void)
     #define _HS_EXIT() \
         static void __cdecl _HS_UNIQUE_ID(exit_)(void); \
