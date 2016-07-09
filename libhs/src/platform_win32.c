@@ -120,11 +120,17 @@ const char *hs_win32_strerror(DWORD err)
 
 uint32_t hs_win32_version(void)
 {
-    OSVERSIONINFOW info;
+    static uint32_t version;
 
-    // Windows 8.1 broke GetVersionEx, so bypass the intermediary
-    info.dwOSVersionInfoSize = sizeof(info);
-    RtlGetVersion_(&info);
+    if (!version) {
+        OSVERSIONINFOW info;
 
-    return info.dwMajorVersion * 100 + info.dwMinorVersion;
+        // Windows 8.1 broke GetVersionEx, so bypass the intermediary
+        info.dwOSVersionInfoSize = sizeof(info);
+        RtlGetVersion_(&info);
+
+        version = info.dwMajorVersion * 100 + info.dwMinorVersion;
+    }
+
+    return version;
 }
