@@ -27,11 +27,11 @@ set(TY_CONFIG_TYC_EXECUTABLE "tyc" CACHE STRING "Rename tyc executable")
 set(TY_CONFIG_TYC_NAME "tyc" CACHE STRING "Rename tyc application")
 
 set(TY_CONFIG_TYQT_BUILD ON CACHE BOOL "Build TyQt (Teensy GUI manager)")
-set(TY_CONFIG_TYQT_EXECUTABLE "TyQt" CACHE STRING "Rename TyQt executable")
+set(TY_CONFIG_TYQT_EXECUTABLE "tyqt" CACHE STRING "Rename TyQt executable")
 set(TY_CONFIG_TYQT_NAME "TyQt" CACHE STRING "Rename TyQt application")
 
 set(TY_CONFIG_UPTY_BUILD ON CACHE BOOL "Build UpTy (Teensy GUI updater)")
-set(TY_CONFIG_UPTY_EXECUTABLE "UpTy" CACHE STRING "Rename UpTy executable")
+set(TY_CONFIG_UPTY_EXECUTABLE "upty" CACHE STRING "Rename UpTy executable")
 set(TY_CONFIG_UPTY_NAME "UpTy" CACHE STRING "Rename UpTy application")
 
 set(TY_CONFIG_URL_WEBSITE "https://github.com/Koromix/ty" CACHE STRING "Project website")
