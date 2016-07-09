@@ -101,8 +101,6 @@ _HS_INIT()
 
 _HS_EXIT()
 {
-    UnregisterClass(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
-
     for (unsigned int i = 0; i < controllers_count; i++)
         free(controllers[i]);
     DeleteCriticalSection(&controllers_lock);
@@ -1067,6 +1065,11 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+static void unregister_monitor_class(void)
+{
+    UnregisterClass(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
+}
+
 static unsigned int __stdcall monitor_thread(void *udata)
 {
     _HS_UNUSED(udata);
@@ -1074,6 +1077,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
     hs_monitor *monitor = udata;
 
     WNDCLASSEX cls = {0};
+    ATOM cls_atom;
     DEV_BROADCAST_DEVICEINTERFACE filter = {0};
     HDEVNOTIFY notify_handle = NULL;
     MSG msg;
@@ -1087,7 +1091,9 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     /* If this fails, CreateWindow() will fail too so we can ignore errors here. This
        also takes care of any failure that may result from the class already existing. */
-    RegisterClassEx(&cls);
+    cls_atom = RegisterClassEx(&cls);
+    if (cls_atom)
+        atexit(unregister_monitor_class);
 
     monitor->thread_hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0,
                                         HWND_MESSAGE, NULL, NULL, NULL);
