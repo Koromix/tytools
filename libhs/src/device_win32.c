@@ -31,17 +31,10 @@
 
 typedef BOOL WINAPI CancelIoEx_func(HANDLE hFile, LPOVERLAPPED lpOverlapped);
 
-static CancelIoEx_func *CancelIoEx_;
+static BOOL WINAPI CancelIoEx_resolve(HANDLE hFile, LPOVERLAPPED lpOverlapped);
+static CancelIoEx_func *CancelIoEx_ = CancelIoEx_resolve;
 
 #define READ_BUFFER_SIZE 16384
-
-_HS_INIT()
-{
-    HMODULE h = LoadLibrary("kernel32.dll");
-    assert(h);
-
-    CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(h, "CancelIoEx");
-}
 
 static int open_win32_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
@@ -164,6 +157,12 @@ static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
     return 0;
 }
 
+static BOOL WINAPI CancelIoEx_resolve(HANDLE hFile, LPOVERLAPPED lpOverlapped)
+{
+    CancelIoEx_ = (CancelIoEx_func *)GetProcAddress(LoadLibrary("kernel32.dll"), "CancelIoEx");
+    return CancelIoEx_(hFile, lpOverlapped);
+}
+
 static void close_win32_device(hs_handle *h)
 {
     if (h) {
@@ -171,7 +170,7 @@ static void close_win32_device(hs_handle *h)
         h->dev = NULL;
 
         if (h->pending_thread) {
-            if (CancelIoEx_) {
+            if (hs_win32_version() >= HS_WIN32_VERSION_VISTA) {
                 CancelIoEx_(h->handle, NULL);
             } else if (h->pending_thread == GetCurrentThreadId()) {
                 CancelIo(h->handle);

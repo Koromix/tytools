@@ -90,26 +90,10 @@ static const struct setup_class setup_classes[] = {
     {"HIDClass", HS_DEVICE_TYPE_HID}
 };
 
-static GUID hid_guid;
-
+static volatile LONG controllers_lock_setup;
 static CRITICAL_SECTION controllers_lock;
 static char *controllers[32];
 static unsigned int controllers_count;
-
-_HS_INIT()
-{
-    HidD_GetHidGuid(&hid_guid);
-    InitializeCriticalSection(&controllers_lock);
-}
-
-_HS_EXIT()
-{
-    UnregisterClass(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
-
-    for (unsigned int i = 0; i < controllers_count; i++)
-        free(controllers[i]);
-    DeleteCriticalSection(&controllers_lock);
-}
 
 static uint8_t find_controller(const char *id)
 {
@@ -745,7 +729,11 @@ static int find_device_node(DEVINST inst, hs_device *dev)
 
         dev->type = HS_DEVICE_TYPE_SERIAL;
     } else if (strncmp(dev->key, "HID\\", 4) == 0) {
-        r = build_device_path(dev->key, &hid_guid, &dev->path);
+        static GUID hid_interface_guid;
+        if (!hid_interface_guid.Data1)
+            HidD_GetHidGuid(&hid_interface_guid);
+
+        r = build_device_path(dev->key, &hid_interface_guid, &dev->path);
         if (r < 0)
             return r;
 
@@ -832,11 +820,32 @@ cleanup:
     return r;
 }
 
+static void free_controllers(void)
+{
+    for (unsigned int i = 0; i < controllers_count; i++)
+        free(controllers[i]);
+    DeleteCriticalSection(&controllers_lock);
+}
+
 static int populate_controllers(void)
 {
     HDEVINFO set = NULL;
     SP_DEVINFO_DATA info;
     int r;
+
+    if (controllers_count)
+        return 0;
+
+    if (controllers_lock_setup != 2) {
+        if (!InterlockedCompareExchange(&controllers_lock_setup, 1, 0)) {
+            InitializeCriticalSection(&controllers_lock);
+            atexit(free_controllers);
+            controllers_lock_setup = 2;
+        } else {
+            while (controllers_lock_setup != 2)
+                continue;
+        }
+    }
 
     EnterCriticalSection(&controllers_lock);
 
@@ -1066,6 +1075,11 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
 
+static void unregister_monitor_class(void)
+{
+    UnregisterClass(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
+}
+
 static unsigned int __stdcall monitor_thread(void *udata)
 {
     _HS_UNUSED(udata);
@@ -1073,6 +1087,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
     hs_monitor *monitor = udata;
 
     WNDCLASSEX cls = {0};
+    ATOM cls_atom;
     DEV_BROADCAST_DEVICEINTERFACE filter = {0};
     HDEVNOTIFY notify_handle = NULL;
     MSG msg;
@@ -1086,7 +1101,9 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     /* If this fails, CreateWindow() will fail too so we can ignore errors here. This
        also takes care of any failure that may result from the class already existing. */
-    RegisterClassEx(&cls);
+    cls_atom = RegisterClassEx(&cls);
+    if (cls_atom)
+        atexit(unregister_monitor_class);
 
     monitor->thread_hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0,
                                         HWND_MESSAGE, NULL, NULL, NULL);
