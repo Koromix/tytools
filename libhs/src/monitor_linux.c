@@ -60,17 +60,9 @@ static struct device_subsystem device_subsystems[] = {
     {NULL}
 };
 
-static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t udev_init_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct udev *udev;
 static int common_eventfd = -1;
-
-_HS_EXIT()
-{
-    close(common_eventfd);
-    udev_unref(udev);
-
-    pthread_mutex_destroy(&init_lock);
-}
 
 static int compute_device_location(struct udev_device *dev, char **rlocation)
 {
@@ -371,15 +363,28 @@ cleanup:
     return r;
 }
 
+static void release_udev(void)
+{
+    close(common_eventfd);
+    udev_unref(udev);
+    pthread_mutex_destroy(&udev_init_lock);
+}
+
 static int init_udev(void)
 {
+    static bool atexit_called;
     int r;
 
     // fast path
     if (udev && common_eventfd >= 0)
         return 0;
 
-    pthread_mutex_lock(&init_lock);
+    pthread_mutex_lock(&udev_init_lock);
+
+    if (!atexit_called) {
+        atexit(release_udev);
+        atexit_called = true;
+    }
 
     if (!udev) {
         udev = udev_new();
@@ -401,7 +406,7 @@ static int init_udev(void)
 
     r = 0;
 cleanup:
-    pthread_mutex_unlock(&init_lock);
+    pthread_mutex_unlock(&udev_init_lock);
     return r;
 }
 
