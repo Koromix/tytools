@@ -90,15 +90,12 @@ static const struct setup_class setup_classes[] = {
     {"HIDClass", HS_DEVICE_TYPE_HID}
 };
 
-static GUID hid_guid;
-
 static CRITICAL_SECTION controllers_lock;
 static char *controllers[32];
 static unsigned int controllers_count;
 
 _HS_INIT()
 {
-    HidD_GetHidGuid(&hid_guid);
     InitializeCriticalSection(&controllers_lock);
 }
 
@@ -745,7 +742,11 @@ static int find_device_node(DEVINST inst, hs_device *dev)
 
         dev->type = HS_DEVICE_TYPE_SERIAL;
     } else if (strncmp(dev->key, "HID\\", 4) == 0) {
-        r = build_device_path(dev->key, &hid_guid, &dev->path);
+        static GUID hid_interface_guid;
+        if (!hid_interface_guid.Data1)
+            HidD_GetHidGuid(&hid_interface_guid);
+
+        r = build_device_path(dev->key, &hid_interface_guid, &dev->path);
         if (r < 0)
             return r;
 
