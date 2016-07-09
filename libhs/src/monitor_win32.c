@@ -90,21 +90,10 @@ static const struct setup_class setup_classes[] = {
     {"HIDClass", HS_DEVICE_TYPE_HID}
 };
 
+static volatile LONG controllers_lock_setup;
 static CRITICAL_SECTION controllers_lock;
 static char *controllers[32];
 static unsigned int controllers_count;
-
-_HS_INIT()
-{
-    InitializeCriticalSection(&controllers_lock);
-}
-
-_HS_EXIT()
-{
-    for (unsigned int i = 0; i < controllers_count; i++)
-        free(controllers[i]);
-    DeleteCriticalSection(&controllers_lock);
-}
 
 static uint8_t find_controller(const char *id)
 {
@@ -831,11 +820,32 @@ cleanup:
     return r;
 }
 
+static void free_controllers(void)
+{
+    for (unsigned int i = 0; i < controllers_count; i++)
+        free(controllers[i]);
+    DeleteCriticalSection(&controllers_lock);
+}
+
 static int populate_controllers(void)
 {
     HDEVINFO set = NULL;
     SP_DEVINFO_DATA info;
     int r;
+
+    if (controllers_count)
+        return 0;
+
+    if (controllers_lock_setup != 2) {
+        if (!InterlockedCompareExchange(&controllers_lock_setup, 1, 0)) {
+            InitializeCriticalSection(&controllers_lock);
+            atexit(free_controllers);
+            controllers_lock_setup = 2;
+        } else {
+            while (controllers_lock_setup != 2)
+                continue;
+        }
+    }
 
     EnterCriticalSection(&controllers_lock);
 
