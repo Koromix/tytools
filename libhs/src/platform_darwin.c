@@ -97,16 +97,15 @@ uint32_t hs_darwin_version(void)
 {
     static uint32_t version;
 
-    if (version)
-        return version;
+    if (!version) {
+        struct utsname name;
+        uint32_t major = 0, minor = 0, release = 0;
 
-    struct utsname name;
-    uint32_t major = 0, minor = 0, release = 0;
+        uname(&name);
+        sscanf(name.release, "%u.%u.%u", &major, &minor, &release);
 
-    uname(&name);
-    sscanf(name.release, "%u.%u.%u", &major, &minor, &release);
-
-    version = major * 10000 + minor * 100 + release;
+        version = major * 10000 + minor * 100 + release;
+    }
 
     return version;
 }
