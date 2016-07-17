@@ -50,7 +50,7 @@ struct hs_monitor {
     HANDLE thread;
     HANDLE thread_hwnd;
 
-    HANDLE notifications_event;
+    HANDLE thread_event;
     CRITICAL_SECTION notifications_lock;
     _hs_list_head notifications;
     int thread_ret;
@@ -1034,7 +1034,7 @@ static int post_notification(hs_monitor *monitor, enum notification_type event,
 
     EnterCriticalSection(&monitor->notifications_lock);
     _hs_list_add_tail(&monitor->notifications, &notif->node);
-    SetEvent(monitor->notifications_event);
+    SetEvent(monitor->thread_event);
     LeaveCriticalSection(&monitor->notifications_lock);
 
     return 0;
@@ -1062,7 +1062,7 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
         if (r < 0) {
             EnterCriticalSection(&monitor->notifications_lock);
             monitor->thread_ret = r;
-            SetEvent(monitor->notifications_event);
+            SetEvent(monitor->thread_event);
             LeaveCriticalSection(&monitor->notifications_lock);
         }
         break;
@@ -1133,7 +1133,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     /* Our fake window is created and ready to receive device notifications,
        hs_monitor_new() can go on. */
-    SetEvent(monitor->notifications_event);
+    SetEvent(monitor->thread_event);
 
     /* As it turns out, GetMessage() cannot fail if the parameters are correct.
        https://blogs.msdn.microsoft.com/oldnewthing/20130322-00/?p=4873/ */
@@ -1150,7 +1150,7 @@ cleanup:
         DestroyWindow(monitor->thread_hwnd);
     if (r < 0) {
         monitor->thread_ret = r;
-        SetEvent(monitor->notifications_event);
+        SetEvent(monitor->thread_event);
     }
     return 0;
 }
@@ -1182,8 +1182,8 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
         goto error;
 
     InitializeCriticalSection(&monitor->notifications_lock);
-    monitor->notifications_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (!monitor->notifications_event) {
+    monitor->thread_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!monitor->thread_event) {
         r = hs_error(HS_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
         goto error;
     }
@@ -1204,8 +1204,8 @@ void hs_monitor_free(hs_monitor *monitor)
         hs_monitor_stop(monitor);
 
         DeleteCriticalSection(&monitor->notifications_lock);
-        if (monitor->notifications_event)
-            CloseHandle(monitor->notifications_event);
+        if (monitor->thread_event)
+            CloseHandle(monitor->thread_event);
 
         _hs_monitor_release(monitor);
     }
@@ -1216,7 +1216,7 @@ void hs_monitor_free(hs_monitor *monitor)
 hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor)
 {
     assert(monitor);
-    return monitor->notifications_event;
+    return monitor->thread_event;
 }
 
 int hs_monitor_start(hs_monitor *monitor)
@@ -1238,12 +1238,12 @@ int hs_monitor_start(hs_monitor *monitor)
         goto error;
     }
 
-    WaitForSingleObject(monitor->notifications_event, INFINITE);
+    WaitForSingleObject(monitor->thread_event, INFINITE);
     if (monitor->thread_ret < 0) {
         r = monitor->thread_ret;
         goto error;
     }
-    ResetEvent(monitor->notifications_event);
+    ResetEvent(monitor->thread_event);
 
     r = enumerate(&monitor->filter, monitor_enumerate_callback, monitor);
     if (r < 0)
@@ -1355,7 +1355,7 @@ cleanup:
     EnterCriticalSection(&monitor->notifications_lock);
     _hs_list_splice(&monitor->notifications, &notifications);
     if (_hs_list_is_empty(&monitor->notifications))
-        ResetEvent(monitor->notifications_event);
+        ResetEvent(monitor->thread_event);
     LeaveCriticalSection(&monitor->notifications_lock);
     return r;
 }
