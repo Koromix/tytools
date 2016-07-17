@@ -24,9 +24,11 @@ struct ty_board_model {
     // Upload settings
     unsigned int halfkay_version;
     size_t block_size;
+};
 
-    // Firmware signature
-    uint8_t signature[8];
+struct firmware_signature {
+    uint64_t magic;
+    const ty_board_model *model;
 };
 
 #define TEENSY_VID 0x16C0
@@ -58,9 +60,7 @@ static const ty_board_model teensy_pp10_model = {
 
     .code_size = 64512,
     .halfkay_version = 1,
-    .block_size = 256,
-
-    .signature = {0x0C, 0x94, 0x00, 0x7E, 0xFF, 0xCF, 0xF8, 0x94}
+    .block_size = 256
 };
 
 static const ty_board_model teensy_20_model = {
@@ -73,9 +73,7 @@ static const ty_board_model teensy_20_model = {
 
     .code_size = 32256,
     .halfkay_version = 1,
-    .block_size = 128,
-
-    .signature = {0x0C, 0x94, 0x00, 0x3F, 0xFF, 0xCF, 0xF8, 0x94}
+    .block_size = 128
 };
 
 static const ty_board_model teensy_pp20_model = {
@@ -87,9 +85,7 @@ static const ty_board_model teensy_pp20_model = {
 
     .code_size = 130048,
     .halfkay_version = 2,
-    .block_size = 256,
-
-    .signature = {0x0C, 0x94, 0x00, 0xFE, 0xFF, 0xCF, 0xF8, 0x94}
+    .block_size = 256
 };
 
 static const ty_board_model teensy_30_model = {
@@ -101,9 +97,7 @@ static const ty_board_model teensy_30_model = {
 
     .code_size = 131072,
     .halfkay_version = 3,
-    .block_size = 1024,
-
-    .signature = {0x38, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
+    .block_size = 1024
 };
 
 static const ty_board_model teensy_31_model = {
@@ -115,9 +109,7 @@ static const ty_board_model teensy_31_model = {
 
     .code_size = 262144,
     .halfkay_version = 3,
-    .block_size = 1024,
-
-    .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
+    .block_size = 1024
 };
 
 static const ty_board_model teensy_lc_model = {
@@ -129,9 +121,7 @@ static const ty_board_model teensy_lc_model = {
 
     .code_size = 63488,
     .halfkay_version = 3,
-    .block_size = 512,
-
-    .signature = {0x34, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x00, 0x00}
+    .block_size = 512
 };
 
 static const ty_board_model teensy_32_model = {
@@ -143,9 +133,7 @@ static const ty_board_model teensy_32_model = {
 
     .code_size = 262144,
     .halfkay_version = 3,
-    .block_size = 1024,
-
-    .signature = {0x30, 0x80, 0x04, 0x40, 0x82, 0x3F, 0x04, 0x00}
+    .block_size = 1024
 };
 
 static const ty_board_model *teensy_models[] = {
@@ -157,6 +145,16 @@ static const ty_board_model *teensy_models[] = {
     &teensy_lc_model,
     &teensy_32_model,
     NULL
+};
+
+static const struct firmware_signature signatures[] = {
+    {0x0C94007EFFCFF894, &teensy_pp10_model},
+    {0x0C94003FFFCFF894, &teensy_20_model},
+    {0x0C9400FEFFCFF894, &teensy_pp20_model},
+    {0x38800440823F0400, &teensy_30_model},
+    {0x30800440823F0400, &teensy_31_model},
+    {0x34800440823F0000, &teensy_lc_model},
+    {0x30800440823F0400, &teensy_32_model}
 };
 
 static const ty_board_model *identify_model(uint16_t usage)
@@ -361,17 +359,26 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
     image = ty_firmware_get_image(fw);
     size = ty_firmware_get_size(fw);
 
-    if (size < ty_member_sizeof(ty_board_model, signature))
+    if (size < sizeof(uint64_t))
         return 0;
 
     /* Naive search with each board's signature, not pretty but unless
        thousands of models appear this is good enough. */
-    for (size_t i = 0; i < size - ty_member_sizeof(ty_board_model, signature); i++) {
-        for (const ty_board_model **cur = teensy_models; *cur; cur++) {
-            const ty_board_model *model = *cur;
+    for (size_t i = 0; i < size - sizeof(uint64_t); i++) {
+        uint64_t value8 = ((uint64_t)image[i] << 56) |
+                          ((uint64_t)image[i + 1] << 48) |
+                          ((uint64_t)image[i + 2] << 40) |
+                          ((uint64_t)image[i + 3] << 32) |
+                          ((uint64_t)image[i + 4] << 24) |
+                          ((uint64_t)image[i + 5] << 16) |
+                          ((uint64_t)image[i + 6] << 8) |
+                          image[i + 7];
 
-            if (memcmp(image + i, model->signature, ty_member_sizeof(ty_board_model, signature)) == 0) {
-                rguesses[count++] = model;
+        for (unsigned int j = 0; j < TY_COUNTOF(signatures); j++) {
+            const struct firmware_signature *sig = &signatures[j];
+
+            if (value8 == sig->magic) {
+                rguesses[count++] = sig->model;
                 if (count == max)
                     return count;
             }
