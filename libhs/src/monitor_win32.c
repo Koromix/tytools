@@ -1091,7 +1091,6 @@ static unsigned int __stdcall monitor_thread(void *udata)
     DEV_BROADCAST_DEVICEINTERFACE filter = {0};
     HDEVNOTIFY notify_handle = NULL;
     MSG msg;
-    BOOL success;
     int r;
 
     cls.cbSize = sizeof(cls);
@@ -1136,12 +1135,9 @@ static unsigned int __stdcall monitor_thread(void *udata)
        hs_monitor_new() can go on. */
     SetEvent(monitor->notifications_event);
 
-    while ((success = GetMessage(&msg, NULL, 0, 0)) != 0) {
-        if(success < 0) {
-            r = hs_error(HS_ERROR_SYSTEM, "GetMessage() failed: %s", hs_win32_strerror(0));
-            goto cleanup;
-        }
-
+    /* As it turns out, GetMessage() cannot fail if the parameters are correct.
+       https://blogs.msdn.microsoft.com/oldnewthing/20130322-00/?p=4873/ */
+    while (GetMessage(&msg, NULL, 0, 0) != 0) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
