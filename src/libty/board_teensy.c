@@ -137,6 +137,30 @@ static const ty_board_model teensy_32_model = {
     .block_size = 1024
 };
 
+static const ty_board_model teensy_k64_model = {
+    .family = &_ty_teensy_family,
+    .name = "Teensy 3.4",
+    .mcu = "mk64fx512",
+
+    .usage = 0x23,
+
+    .code_size = 524288,
+    .halfkay_version = 3,
+    .block_size = 1024
+};
+
+static const ty_board_model teensy_k66_model = {
+    .family = &_ty_teensy_family,
+    .name = "Teensy 3.5",
+    .mcu = "mk66fx1m0",
+
+    .usage = 0x22,
+
+    .code_size = 1048576,
+    .halfkay_version = 3,
+    .block_size = 1024
+};
+
 static const ty_board_model *teensy_models[] = {
     &teensy_pp10_model,
     &teensy_20_model,
@@ -145,6 +169,8 @@ static const ty_board_model *teensy_models[] = {
     &teensy_31_model,
     &teensy_lc_model,
     &teensy_32_model,
+    &teensy_k64_model,
+    &teensy_k66_model,
     NULL
 };
 
@@ -155,7 +181,9 @@ static const struct firmware_signature signatures[] = {
     {0x38800440823F0400, &teensy_30_model},
     {0x30800440823F0400, &teensy_31_model},
     {0x34800440823F0000, &teensy_lc_model},
-    {0x30800440823F0400, &teensy_32_model}
+    {0x30800440823F0400, &teensy_32_model},
+    {0x0100002B88ED00E0, &teensy_k64_model, 1},
+    {0x002008E003000085, &teensy_k66_model, 2}
 };
 
 static const ty_board_model *identify_model(uint16_t usage)
