@@ -53,6 +53,7 @@ struct hs_monitor {
     HANDLE thread_event;
     CRITICAL_SECTION notifications_lock;
     _hs_list_head notifications;
+    _hs_list_head pending_notifications;
     int thread_ret;
 };
 
@@ -996,6 +997,7 @@ static int post_notification(hs_monitor *monitor, enum notification_type event,
 {
     const char *id, *id_end;
     struct notification *notif;
+    UINT_PTR timer;
 
     if (msg->dbcc_devicetype != DBT_DEVTYP_DEVICEINTERFACE)
         return 0;
@@ -1032,10 +1034,11 @@ static int post_notification(hs_monitor *monitor, enum notification_type event,
         }
     }
 
-    EnterCriticalSection(&monitor->notifications_lock);
-    _hs_list_add_tail(&monitor->notifications, &notif->node);
-    SetEvent(monitor->thread_event);
-    LeaveCriticalSection(&monitor->notifications_lock);
+    _hs_list_add_tail(&monitor->pending_notifications, &notif->node);
+
+    timer = SetTimer(monitor->thread_hwnd, 1, 500, NULL);
+    if (!timer)
+        return hs_error(HS_ERROR_SYSTEM, "SetTimer() failed: %s", hs_win32_strerror(0));
 
     return 0;
 }
@@ -1062,6 +1065,17 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
         if (r < 0) {
             EnterCriticalSection(&monitor->notifications_lock);
             monitor->thread_ret = r;
+            SetEvent(monitor->thread_event);
+            LeaveCriticalSection(&monitor->notifications_lock);
+        }
+        break;
+
+    case WM_TIMER:
+        if (CMP_WaitNoPendingInstallEvents(0) == WAIT_OBJECT_0) {
+            KillTimer(hwnd, 1);
+
+            EnterCriticalSection(&monitor->notifications_lock);
+            _hs_list_splice_tail(&monitor->notifications, &monitor->pending_notifications);
             SetEvent(monitor->thread_event);
             LeaveCriticalSection(&monitor->notifications_lock);
         }
@@ -1189,6 +1203,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     }
 
     _hs_list_init(&monitor->notifications);
+    _hs_list_init(&monitor->pending_notifications);
 
     *rmonitor = monitor;
     return 0;
@@ -1276,6 +1291,12 @@ void hs_monitor_stop(hs_monitor *monitor)
         struct notification *notif = _hs_container_of(cur, struct notification, node);
         free(notif);
     }
+    _hs_list_foreach(cur, &monitor->pending_notifications) {
+        struct notification *notif = _hs_container_of(cur, struct notification, node);
+        free(notif);
+    }
+    _hs_list_init(&monitor->notifications);
+    _hs_list_init(&monitor->pending_notifications);
 }
 
 static int process_arrival_notification(hs_monitor *monitor, const char *key, hs_enumerate_func *f,
