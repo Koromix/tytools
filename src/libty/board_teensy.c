@@ -29,6 +29,7 @@ struct ty_board_model {
 struct firmware_signature {
     uint64_t magic;
     const ty_board_model *model;
+    unsigned int priority;
 };
 
 #define TEENSY_VID 0x16C0
@@ -354,7 +355,7 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
 {
     const uint8_t *image;
     size_t size;
-    unsigned int count = 0;
+    unsigned int priority = 0, count = 0;
 
     image = ty_firmware_get_image(fw);
     size = ty_firmware_get_size(fw);
@@ -377,10 +378,16 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
         for (unsigned int j = 0; j < TY_COUNTOF(signatures); j++) {
             const struct firmware_signature *sig = &signatures[j];
 
-            if (value8 == sig->magic) {
-                rguesses[count++] = sig->model;
-                if (count == max)
-                    return count;
+            if (value8 == sig->magic && sig->priority >= priority) {
+                if (sig->priority > priority) {
+                    priority = sig->priority;
+                    count = 0;
+                }
+
+                /* We need to continue, even if we reach max because a higher priority
+                   signature may clear the current guess list. */
+                if (count < max)
+                    rguesses[count++] = sig->model;
             }
         }
     }
