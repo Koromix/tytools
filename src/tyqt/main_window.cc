@@ -65,6 +65,9 @@ MainWindow::MainWindow(QWidget *parent)
     menuBoardContext->addAction(actionReset);
     menuBoardContext->addAction(actionReboot);
     menuBoardContext->addSeparator();
+    menuBoardContext->addAction(actionEnableSerial);
+    menuBoardContext->addAction(actionClearSerial);
+    menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionRenameBoard);
 
     auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
