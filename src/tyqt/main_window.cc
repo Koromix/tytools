@@ -93,8 +93,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // View menu
     connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openCloneWindow);
-    connect(actionMinimalInterface, &QAction::triggered, this, &MainWindow::setCompactMode);
-    connect(actionClearMonitor, &QAction::triggered, this, &MainWindow::clearMonitor);
+    connect(actionCompactMode, &QAction::triggered, this, &MainWindow::setCompactMode);
+    connect(actionClearSerial, &QAction::triggered, this, &MainWindow::clearSerial);
 
     // Tools menu
     connect(actionArduinoTool, &QAction::triggered, this, &MainWindow::openArduinoTool);
@@ -154,38 +154,38 @@ MainWindow::MainWindow(QWidget *parent)
     connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated),
             this, [=](int index) { boardList->setCurrentIndex(monitor_->index(index)); });
 
-    // Monitor tab
-    monitorText->setWordWrapMode(QTextOption::NoWrap);
-    connect(monitorText, &QPlainTextEdit::customContextMenuRequested, this,
-            &MainWindow::openMonitorContextMenu);
-    connect(monitorEdit, &QLineEdit::returnPressed, this, &MainWindow::sendMonitorInput);
-    connect(sendButton, &QToolButton::clicked, this, &MainWindow::sendMonitorInput);
+    // Serial tab
+    serialText->setWordWrapMode(QTextOption::NoWrap);
+    connect(serialText, &QPlainTextEdit::customContextMenuRequested, this,
+            &MainWindow::openSerialContextMenu);
+    connect(serialEdit, &QLineEdit::returnPressed, this, &MainWindow::sendSerialInput);
+    connect(sendButton, &QToolButton::clicked, this, &MainWindow::sendSerialInput);
 
     auto add_eol_action = [=](const QString &title, const QString &eol) {
-        auto action = new QAction(title, actionMonitorEOLGroup);
+        auto action = new QAction(title, actionSerialEOLGroup);
         action->setCheckable(true);
         action->setProperty("EOL", eol);
         return action;
     };
 
-    menuMonitorOptions = new QMenu(this);
-    actionMonitorEOLGroup = new QActionGroup(this);
+    menuSerialOptions = new QMenu(this);
+    actionSerialEOLGroup = new QActionGroup(this);
     add_eol_action(tr("No line ending"), "");
     add_eol_action(tr("Newline (LF)"), "\n")->setChecked(true);
     add_eol_action(tr("Carriage return (CR)"), "\r");
     add_eol_action(tr("Both (CRLF)"), "\r\n");
-    menuMonitorOptions->addActions(actionMonitorEOLGroup->actions());
-    menuMonitorOptions->addSeparator();
-    actionMonitorEcho = menuMonitorOptions->addAction(tr("Echo"));
-    actionMonitorEcho->setCheckable(true);
-    sendButton->setMenu(menuMonitorOptions);
+    menuSerialOptions->addActions(actionSerialEOLGroup->actions());
+    menuSerialOptions->addSeparator();
+    actionSerialEcho = menuSerialOptions->addAction(tr("Echo"));
+    actionSerialEcho->setCheckable(true);
+    sendButton->setMenu(menuSerialOptions);
 
     // Settings tab
     connect(firmwarePath, &QLineEdit::editingFinished, this, &MainWindow::validateAndSetFirmwarePath);
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
     firmwareBrowseButton->setMenu(menuBrowseFirmware);
-    connect(actionAttachMonitor, &QAction::triggered, this,
-            &MainWindow::setAttachMonitorForSelection);
+    connect(actionEnableSerial, &QAction::triggered, this,
+            &MainWindow::setEnableSerialForSelection);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
     connect(codecComboBox, &QComboBox::currentTextChanged, this, &MainWindow::setSerialCodecForSelection);
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
@@ -292,7 +292,7 @@ void MainWindow::rebootSelection()
 
 void MainWindow::setCompactMode(bool enable)
 {
-    actionMinimalInterface->setChecked(enable);
+    actionCompactMode->setChecked(enable);
 
     if (enable) {
         menubar->setVisible(false);
@@ -384,24 +384,24 @@ void MainWindow::openAboutDialog()
     about_dialog_->show();
 }
 
-void MainWindow::sendMonitorInput()
+void MainWindow::sendSerialInput()
 {
-    auto s = monitorEdit->text();
-    s += actionMonitorEOLGroup->checkedAction()->property("EOL").toString();
+    auto s = serialEdit->text();
+    s += actionSerialEOLGroup->checkedAction()->property("EOL").toString();
 
-    auto echo = actionMonitorEcho->isChecked();
+    auto echo = actionSerialEcho->isChecked();
     for (auto &board: selected_boards_) {
         if (echo)
             board->appendToSerialDocument(s);
         board->sendSerial(s);
     }
 
-    monitorEdit->clear();
+    serialEdit->clear();
 }
 
-void MainWindow::clearMonitor()
+void MainWindow::clearSerial()
 {
-    monitorText->clear();
+    serialText->clear();
 }
 
 void MainWindow::initCodecList()
@@ -426,14 +426,14 @@ void MainWindow::initCodecList()
 void MainWindow::enableBoardWidgets()
 {
     infoTab->setEnabled(true);
-    monitorTab->setEnabled(true);
-    actionClearMonitor->setEnabled(true);
-    uploadTab->setEnabled(true);
-    actionAttachMonitor->setEnabled(true);
+    serialTab->setEnabled(true);
+    actionClearSerial->setEnabled(true);
+    optionsTab->setEnabled(true);
+    actionEnableSerial->setEnabled(true);
 
-    monitorText->setDocument(&current_board_->serialDocument());
-    monitorText->moveCursor(QTextCursor::End);
-    monitorText->verticalScrollBar()->setValue(monitorText->verticalScrollBar()->maximum());
+    serialText->setDocument(&current_board_->serialDocument());
+    serialText->moveCursor(QTextCursor::End);
+    serialText->verticalScrollBar()->setValue(serialText->verticalScrollBar()->maximum());
 
     actionRenameBoard->setEnabled(true);
     ambiguousBoardLabel->setVisible(!current_board_->hasCapability(TY_BOARD_CAPABILITY_UNIQUE));
@@ -450,14 +450,14 @@ void MainWindow::disableBoardWidgets()
     statusText->clear();
     modelText->clear();
     locationText->clear();
-    serialText->clear();
+    serialNumberText->clear();
     descriptionText->clear();
     interfaceTree->clear();
 
-    monitorTab->setEnabled(false);
-    actionClearMonitor->setEnabled(false);
-    uploadTab->setEnabled(false);
-    actionAttachMonitor->setEnabled(false);
+    serialTab->setEnabled(false);
+    actionClearSerial->setEnabled(false);
+    optionsTab->setEnabled(false);
+    actionEnableSerial->setEnabled(false);
 
     actionRenameBoard->setEnabled(false);
     ambiguousBoardLabel->setVisible(false);
@@ -563,7 +563,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
 
     for (auto &board: selected_boards_)
         board->disconnect(this);
-    monitorText->setDocument(nullptr);
+    serialText->setDocument(nullptr);
     selected_boards_.clear();
     current_board_ = nullptr;
 
@@ -643,14 +643,14 @@ void MainWindow::refreshInfo()
     idText->setText(current_board_->id());
     modelText->setText(current_board_->modelName());
     locationText->setText(current_board_->location());
-    serialText->setText(QString::number(current_board_->serialNumber()));
+    serialNumberText->setText(QString::number(current_board_->serialNumber()));
     descriptionText->setText(current_board_->description());
 }
 
 void MainWindow::refreshSettings()
 {
-    actionAttachMonitor->setChecked(current_board_->attachMonitor());
-    monitorEdit->setEnabled(current_board_->serialOpen());
+    actionEnableSerial->setChecked(current_board_->enableSerial());
+    serialEdit->setEnabled(current_board_->serialOpen());
 
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
@@ -684,7 +684,7 @@ void MainWindow::refreshInterfaces()
         interfaceTree->addTopLevelItem(item);
     }
 
-    monitorEdit->setEnabled(current_board_->serialOpen());
+    serialEdit->setEnabled(current_board_->serialOpen());
 }
 
 void MainWindow::refreshStatus()
@@ -692,11 +692,11 @@ void MainWindow::refreshStatus()
     statusText->setText(current_board_->statusText());
 }
 
-void MainWindow::openMonitorContextMenu(const QPoint &pos)
+void MainWindow::openSerialContextMenu(const QPoint &pos)
 {
-    unique_ptr<QMenu> menu(monitorText->createStandardContextMenu());
-    menu->addAction(actionClearMonitor);
-    menu->exec(monitorText->viewport()->mapToGlobal(pos));
+    unique_ptr<QMenu> menu(serialText->createStandardContextMenu());
+    menu->addAction(actionClearSerial);
+    menu->exec(serialText->viewport()->mapToGlobal(pos));
 }
 
 void MainWindow::validateAndSetFirmwarePath()
@@ -758,8 +758,8 @@ void MainWindow::setScrollBackLimitForSelection(int limit)
         board->setScrollBackLimit(limit);
 }
 
-void MainWindow::setAttachMonitorForSelection(bool attach_monitor)
+void MainWindow::setEnableSerialForSelection(bool enable)
 {
     for (auto &board: selected_boards_)
-        board->setAttachMonitor(attach_monitor);
+        board->setEnableSerial(enable);
 }

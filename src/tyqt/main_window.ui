@@ -135,7 +135,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="serialText">
+            <widget class="QLineEdit" name="serialNumberText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
@@ -204,13 +204,13 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="monitorTab">
+       <widget class="QWidget" name="serialTab">
         <attribute name="title">
-         <string>&amp;Monitor</string>
+         <string>&amp;Serial</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="EnhancedPlainText" name="monitorText">
+          <widget class="EnhancedPlainText" name="serialText">
            <property name="minimumSize">
             <size>
              <width>240</width>
@@ -240,7 +240,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <widget class="QLineEdit" name="monitorEdit">
+            <widget class="QLineEdit" name="serialEdit">
              <property name="placeholderText">
               <string>Send data...</string>
              </property>
@@ -263,9 +263,9 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="uploadTab">
+       <widget class="QWidget" name="optionsTab">
         <attribute name="title">
-         <string>&amp;Settings</string>
+         <string>&amp;Options</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
@@ -530,10 +530,10 @@
      <string>&amp;View</string>
     </property>
     <addaction name="actionNewWindow"/>
-    <addaction name="actionMinimalInterface"/>
+    <addaction name="actionCompactMode"/>
     <addaction name="separator"/>
-    <addaction name="actionClearMonitor"/>
-    <addaction name="actionAttachMonitor"/>
+    <addaction name="actionEnableSerial"/>
+    <addaction name="actionClearSerial"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -617,7 +617,7 @@
    <addaction name="actionReset"/>
    <addaction name="actionReboot"/>
    <addaction name="separator"/>
-   <addaction name="actionAttachMonitor"/>
+   <addaction name="actionEnableSerial"/>
   </widget>
   <action name="actionUpload">
    <property name="icon">
@@ -686,15 +686,15 @@
     <string>&amp;Report a bug</string>
    </property>
   </action>
-  <action name="actionMinimalInterface">
+  <action name="actionCompactMode">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Minimal Interface</string>
+    <string>&amp;Compact Mode</string>
    </property>
    <property name="toolTip">
-    <string>Minimal Interface</string>
+    <string>Compact Mode</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+H</string>
@@ -708,12 +708,12 @@
     <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="actionClearMonitor">
+  <action name="actionClearSerial">
    <property name="text">
-    <string>&amp;Clear Monitor</string>
+    <string>C&amp;lear Serial</string>
    </property>
    <property name="toolTip">
-    <string>Clear Monitor</string>
+    <string>Clear Serial</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+X</string>
@@ -724,7 +724,7 @@
     <string>&amp;Integrate to Arduino</string>
    </property>
   </action>
-  <action name="actionAttachMonitor">
+  <action name="actionEnableSerial">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -733,23 +733,26 @@
      <normaloff>:/monitor</normaloff>:/monitor</iconset>
    </property>
    <property name="text">
-    <string>&amp;Monitor</string>
+    <string>Enable &amp;Serial</string>
+   </property>
+   <property name="iconText">
+    <string>Serial</string>
    </property>
    <property name="toolTip">
-    <string>Monitor</string>
+    <string>Serial</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+M</string>
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionResetApp">
    <property name="text">
-    <string>Reset Application</string>
+    <string>&amp;Reset Application</string>
    </property>
   </action>
   <action name="actionResetSettingsApp">
    <property name="text">
-    <string>Reset Settings &amp;&amp; Application</string>
+    <string>Reset &amp;Settings &amp;&amp; Application</string>
    </property>
    <property name="toolTip">
     <string>Reset Settings &amp; Application</string>
@@ -795,12 +798,12 @@
   <tabstop>idText</tabstop>
   <tabstop>modelText</tabstop>
   <tabstop>statusText</tabstop>
-  <tabstop>serialText</tabstop>
+  <tabstop>serialNumberText</tabstop>
   <tabstop>locationText</tabstop>
   <tabstop>descriptionText</tabstop>
   <tabstop>interfaceTree</tabstop>
-  <tabstop>monitorText</tabstop>
-  <tabstop>monitorEdit</tabstop>
+  <tabstop>serialText</tabstop>
+  <tabstop>serialEdit</tabstop>
   <tabstop>sendButton</tabstop>
   <tabstop>firmwarePath</tabstop>
   <tabstop>firmwareBrowseButton</tabstop>

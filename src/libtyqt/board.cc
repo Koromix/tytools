@@ -79,7 +79,7 @@ void Board::loadSettings()
     serial_decoder_.reset(serial_codec_->makeDecoder());
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
-    serial_attach_ = db_.get("attachMonitor", true).toBool();
+    enable_serial_ = db_.get("enableSerial", true).toBool();
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */
@@ -93,8 +93,8 @@ void Board::loadSettings()
         }
     }
 
-    if (serial_attach_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
-        serial_attach_ = openSerialInterface();
+    if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
+        openSerialInterface();
     } else {
         closeSerialInterface();
     }
@@ -423,20 +423,20 @@ void Board::setScrollBackLimit(unsigned int limit)
     emit settingsChanged();
 }
 
-void Board::setAttachMonitor(bool attach_monitor)
+void Board::setEnableSerial(bool enable)
 {
-    if (attach_monitor == serial_attach_)
+    if (enable == enable_serial_)
         return;
 
-    if (attach_monitor && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
-        attach_monitor = openSerialInterface();
+    if (enable && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
+        enable = openSerialInterface();
     } else {
         closeSerialInterface();
     }
 
-    serial_attach_ = attach_monitor;
+    enable_serial_ = enable;
 
-    db_.put("attachMonitor", attach_monitor);
+    db_.put("enableSerial", enable);
     updateStatus();
     emit settingsChanged();
 }
@@ -544,7 +544,7 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 
 void Board::refreshBoard()
 {
-    if (hasCapability(TY_BOARD_CAPABILITY_SERIAL) && serial_attach_) {
+    if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
         openSerialInterface();
     } else {
         closeSerialInterface();

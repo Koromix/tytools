@@ -44,7 +44,6 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     ty_board *board_;
 
-    bool serial_attach_ = false;
     ty_board_interface *serial_iface_ = nullptr;
     DescriptorNotifier serial_notifier_;
     QTextCodec *serial_codec_;
@@ -60,6 +59,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool reset_after_;
     QString serial_codec_name_;
     bool clear_on_reset_;
+    bool enable_serial_;
 
     QString status_text_;
     QString status_icon_name_;
@@ -113,7 +113,7 @@ public:
     QTextCodec *serialCodec() const { return serial_codec_; }
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
-    bool attachMonitor() const { return serial_attach_; }
+    bool enableSerial() const { return enable_serial_; }
 
     bool serialOpen() const { return serial_iface_; }
     QTextDocument &serialDocument() { return serial_document_; }
@@ -143,7 +143,7 @@ public slots:
     void setSerialCodecName(QString codec_name);
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
-    void setAttachMonitor(bool attach_monitor);
+    void setEnableSerial(bool enable);
 
     TaskInterface startUpload(const QString &filename = QString());
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);

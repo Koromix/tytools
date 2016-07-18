@@ -37,9 +37,9 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QMenu *menuRecentFirmwares3;
 #endif
 
-    QMenu *menuMonitorOptions;
-    QAction *actionMonitorEcho;
-    QActionGroup *actionMonitorEOLGroup;
+    QMenu *menuSerialOptions;
+    QAction *actionSerialEcho;
+    QActionGroup *actionSerialEOLGroup;
 
     QComboBox *boardComboBox;
     // We need to keep this around to show/hide the board QComboBox
@@ -78,8 +78,8 @@ public slots:
     void openPreferences();
     void openAboutDialog();
 
-    void sendMonitorInput();
-    void clearMonitor();
+    void sendSerialInput();
+    void clearSerial();
 
 private:
     static void initCodecList();
@@ -102,7 +102,7 @@ private slots:
     void refreshInterfaces();
     void refreshStatus();
 
-    void openMonitorContextMenu(const QPoint &pos);
+    void openSerialContextMenu(const QPoint &pos);
 
     void validateAndSetFirmwarePath();
     void browseForFirmware();
@@ -111,7 +111,7 @@ private slots:
     void setSerialCodecForSelection(const QString &codec_name);
     void setClearOnResetForSelection(bool clear_on_reset);
     void setScrollBackLimitForSelection(int limit);
-    void setAttachMonitorForSelection(bool attach_monitor);
+    void setEnableSerialForSelection(bool enable);
 };
 
 #endif
