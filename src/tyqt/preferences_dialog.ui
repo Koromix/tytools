@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>426</width>
-    <height>255</height>
+    <height>326</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,6 +35,22 @@
        <widget class="QCheckBox" name="hideOnStartupCheck">
         <property name="text">
          <string>Hide application on startup</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Board options</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <widget class="QCheckBox" name="serialByDefaultCheck">
+        <property name="text">
+         <string>Enable serial connection by default</string>
         </property>
        </widget>
       </item>

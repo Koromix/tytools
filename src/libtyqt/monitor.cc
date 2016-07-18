@@ -52,6 +52,7 @@ void Monitor::loadSettings()
 #endif
     }
     ty_pool_set_max_threads(pool_, max_tasks);
+    default_serial_ = db_.get("serialByDefault", true).toBool();
 
     emit settingsChanged();
 }
@@ -67,6 +68,23 @@ void Monitor::setMaxTasks(unsigned int max_tasks)
 unsigned int Monitor::maxTasks() const
 {
     return ty_pool_get_max_threads(pool_);
+}
+
+void Monitor::setSerialByDefault(bool default_serial)
+{
+    default_serial_ = default_serial;
+
+    for (auto &board: boards_) {
+        auto db = board->database();
+
+        if (!db.get("enableSerial").isValid()) {
+            board->setEnableSerial(default_serial);
+            db.remove("enableSerial");
+        }
+    }
+
+    db_.put("serialByDefault", default_serial);
+    emit settingsChanged();
 }
 
 bool Monitor::start()
@@ -294,7 +312,7 @@ Monitor::iterator Monitor::findBoardIterator(ty_board *board)
 
 void Monitor::handleAddedEvent(ty_board *board)
 {
-    auto ptr = Board::createBoard(board);
+    auto ptr = Board::createBoard(this, board);
 
     if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         ptr->setDatabase(db_.subDatabase(ptr->id()));

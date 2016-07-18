@@ -42,6 +42,7 @@ void PreferencesDialog::apply()
     tyQt->setHideOnStartup(hideOnStartupCheck->isChecked());
 
     auto monitor = tyQt->monitor();
+    monitor->setSerialByDefault(serialByDefaultCheck->isChecked());
     monitor->setMaxTasks(maxTasksSpin->value());
 }
 
@@ -63,5 +64,6 @@ void PreferencesDialog::refresh()
     hideOnStartupCheck->setChecked(tyQt->hideOnStartup());
 
     auto monitor = tyQt->monitor();
+    serialByDefaultCheck->setChecked(monitor->serialByDefault());
     maxTasksSpin->setValue(monitor->maxTasks());
 }

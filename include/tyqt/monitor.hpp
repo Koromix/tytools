@@ -35,6 +35,8 @@ class Monitor : public QAbstractListModel {
     ty_pool *pool_;
     QThread serial_thread_;
 
+    bool default_serial_;
+
     std::vector<std::shared_ptr<Board>> boards_;
 
 public:
@@ -67,6 +69,8 @@ public:
 
     void setMaxTasks(unsigned int max_tasks);
     unsigned int maxTasks() const;
+    void setSerialByDefault(bool default_serial);
+    bool serialByDefault() const { return default_serial_; }
 
     bool start();
     void stop();
