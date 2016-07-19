@@ -201,25 +201,29 @@ static const ty_board_model *identify_model(uint16_t usage)
     return NULL;
 }
 
-/* Two quirks have to be accounted when reading the serial number.
-
-   The bootloader returns the serial number as hexadecimal with prefixed zeros
-   (which would suggest octal to stroull).
-
-   In other modes a decimal value is used, but Teensyduino 1.19 added a workaround
-   for a Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
-   See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194d */
 static uint64_t parse_bootloader_serial(const char *s)
 {
     uint64_t serial;
 
-    // Teensy 2.0
+    // This happens for AVR Teensy boards (1.0 and 2.0)
     if (!s)
         return 12345;
 
+    /* The bootloader returns the serial number as hexadecimal with prefixed zeros
+       (which would suggest octal to stroull). */
     serial = strtoull(s, NULL, 16);
-    if (serial < 10000000)
+
+    /* In running modes, a decimal value is used but Teensyduino 1.19 added a workaround for a
+       Mac OS X CDC-ADM driver bug: if the number is < 10000000, append a 0.
+       See https://github.com/PaulStoffregen/cores/commit/4d8a62cf65624d2dc1d861748a9bb2e90aaf194
+
+       It seems beta K66 boards without a programmed S/N report 00000064 (100) as the S/N and we
+       need to ignore this value. */
+    if (serial == 100) {
+        serial = 0;
+    } else if (serial < 10000000) {
         serial *= 10;
+    }
 
     return serial;
 }
