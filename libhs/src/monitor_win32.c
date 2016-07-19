@@ -975,18 +975,35 @@ int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
     return 0;
 }
 
+struct enumerate_enumerate_context {
+    hs_enumerate_func *f;
+    void *udata;
+};
+
+static int enumerate_enumerate_callback(hs_device *dev, void *udata)
+{
+    struct enumerate_enumerate_context *ctx = udata;
+
+    _hs_device_log(dev, "Enumerate");
+    return (*ctx->f)(dev, ctx->udata);
+}
+
 int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata)
 {
     assert(f);
 
     _hs_filter filter = {0};
+    struct enumerate_enumerate_context ctx;
     int r;
 
     r = _hs_filter_init(&filter, matches, count);
     if (r < 0)
         return r;
 
-    r = enumerate(&filter, f, udata);
+    ctx.f = f;
+    ctx.udata = udata;
+
+    r = enumerate(&filter, enumerate_enumerate_callback, &ctx);
 
     _hs_filter_release(&filter);
     return r;

@@ -97,6 +97,8 @@ int _hs_monitor_add(hs_monitor *monitor, hs_device *dev, hs_enumerate_func *f, v
     hs_device_ref(dev);
     _hs_htable_add(&monitor->devices, _hs_htable_hash_str(dev->key), &dev->hnode);
 
+    _hs_device_log(dev, "Add");
+
     if (f) {
         return (*f)(dev, udata);
     } else {
@@ -112,6 +114,8 @@ void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func 
 
         if (strcmp(dev->key, key) == 0) {
             dev->state = HS_DEVICE_STATUS_DISCONNECTED;
+
+            hs_log(HS_LOG_DEBUG, "Remove device '%s'", dev->key);
 
             if (f)
                 (*f)(dev, udata);

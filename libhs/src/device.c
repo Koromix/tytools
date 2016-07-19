@@ -146,6 +146,33 @@ uint16_t hs_device_get_hid_usage(const hs_device *dev)
     return dev->u.hid.usage;
 }
 
+void _hs_device_log(const hs_device *dev, const char *verb)
+{
+    switch (dev->type) {
+    case HS_DEVICE_TYPE_SERIAL:
+        hs_log(HS_LOG_DEBUG, "%s serial device '%s' on iface %"PRIu8"\n"
+                             "  - USB VID/PID = %04"PRIx16":%04"PRIx16", USB location = %s\n"
+                             "  - USB manufacturer = %s, product = %s, S/N = %s",
+               verb, dev->key, dev->iface, dev->vid, dev->pid, dev->location,
+               dev->manufacturer ? dev->manufacturer : "(none)",
+               dev->product ? dev->product : "(none)",
+               dev->serial ? dev->serial : "(none)");
+        break;
+
+    case HS_DEVICE_TYPE_HID:
+        hs_log(HS_LOG_DEBUG, "%s HID device '%s' on iface %"PRIu8"\n"
+                             "  - USB VID/PID = %04"PRIx16":%04"PRIx16", USB location = %s\n"
+                             "  - USB manufacturer = %s, product = %s, S/N = %s\n"
+                             "  - HID usage page = 0x%"PRIx16", HID usage = 0x%"PRIx16,
+               verb, dev->key, dev->iface, dev->vid, dev->pid, dev->location,
+               dev->manufacturer ? dev->manufacturer : "(none)",
+               dev->product ? dev->product : "(none)",
+               dev->serial ? dev->serial : "(none)",
+               dev->u.hid.usage_page, dev->u.hid.usage);
+        break;
+    }
+}
+
 int hs_handle_open(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
 {
     assert(dev);

@@ -449,11 +449,25 @@ static void darwin_devices_detached(void *udata, io_iterator_t it)
     }
 }
 
+struct enumerate_enumerate_context {
+    hs_enumerate_func *f;
+    void *udata;
+};
+
+static int enumerate_enumerate_callback(hs_device *dev, void *udata)
+{
+    struct enumerate_enumerate_context *ctx = udata;
+
+    _hs_device_log(dev, "Enumerate");
+    return (*ctx->f)(dev, ctx->udata);
+}
+
 int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata)
 {
     assert(f);
 
     _hs_filter filter;
+    struct enumerate_enumerate_context ctx;
     io_iterator_t it = 0;
     kern_return_t kret;
     int r;
@@ -461,6 +475,9 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
     r = _hs_filter_init(&filter, matches, count);
     if (r < 0)
         goto cleanup;
+
+    ctx.f = f;
+    ctx.udata = udata;
 
     for (unsigned int i = 0; device_classes[i].old_stack; i++) {
         if (_hs_filter_has_type(&filter, device_classes[i].type)) {
@@ -472,7 +489,7 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
                 goto cleanup;
             }
 
-            r = process_iterator_devices(it, &filter, f, udata);
+            r = process_iterator_devices(it, &filter, enumerate_enumerate_callback, &ctx);
             if (r)
                 goto cleanup;
 

@@ -79,4 +79,6 @@ struct hs_device {
     hs_device *dev; \
     hs_handle_mode mode;
 
+void _hs_device_log(const struct hs_device *dev, const char *verb);
+
 #endif
