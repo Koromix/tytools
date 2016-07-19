@@ -31,7 +31,7 @@ static void *log_handler_udata;
 static _HS_THREAD_LOCAL hs_error_code mask[32];
 static _HS_THREAD_LOCAL unsigned int mask_count;
 
-static _HS_THREAD_LOCAL char last_error_msg[256];
+static _HS_THREAD_LOCAL char last_error_msg[512];
 
 uint32_t hs_version(void)
 {
