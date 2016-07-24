@@ -5,16 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <getopt.h>
 #include "ty/task.h"
 #include "main.h"
-
-static const char *short_options = COMMON_SHORT_OPTIONS"b";
-static const struct option long_options[] = {
-    COMMON_LONG_OPTIONS
-    {"bootloader", no_argument, NULL, 'b'},
-    {0}
-};
 
 static bool bootloader = false;
 
@@ -31,22 +23,25 @@ static void print_reset_usage(FILE *f)
 
 int reset(int argc, char *argv[])
 {
+    ty_optline_context optl;
+    char *opt;
     ty_board *board = NULL;
     ty_task *task = NULL;
     int r;
 
-    int c;
-    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        HANDLE_COMMON_OPTIONS(c, print_reset_usage);
-
-        case 'b':
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        if (strcmp(opt, "--help") == 0) {
+            print_reset_usage(stdout);
+            return EXIT_SUCCESS;
+        } else if (strcmp(opt, "-b") == 0 || strcmp(opt, "--bootloader") == 0) {
             bootloader = true;
-            break;
+        } else if (!parse_common_option(&optl, opt)) {
+            print_reset_usage(stderr);
+            return EXIT_FAILURE;
         }
     }
-
-    if (argc > optind) {
+    if (ty_optline_consume_non_option(&optl)) {
         ty_log(TY_LOG_ERROR, "No positional argument is allowed");
         print_reset_usage(stderr);
         return EXIT_FAILURE;

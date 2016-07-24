@@ -5,25 +5,9 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <getopt.h>
 #include "ty/firmware.h"
 #include "ty/task.h"
 #include "main.h"
-
-enum {
-    UPLOAD_OPTION_NOCHECK = 0x200,
-    UPLOAD_OPTION_NORESET
-};
-
-static const char *short_options = COMMON_SHORT_OPTIONS"f:w";
-static const struct option long_options[] = {
-    COMMON_LONG_OPTIONS
-    {"format",     required_argument, NULL, 'f'},
-    {"nocheck",    no_argument,       NULL, UPLOAD_OPTION_NOCHECK},
-    {"noreset",    no_argument,       NULL, UPLOAD_OPTION_NORESET},
-    {"wait",       no_argument,       NULL, 'w'},
-    {0}
-};
 
 static int upload_flags = 0;
 static const char *firmware_format = NULL;
@@ -50,55 +34,59 @@ static void print_upload_usage(FILE *f)
 
 int upload(int argc, char *argv[])
 {
+    ty_optline_context optl;
+    char *opt;
     ty_board *board = NULL;
-    ty_firmware **fws;
+    ty_firmware *fws[TY_UPLOAD_MAX_FIRMWARES];
     unsigned int fws_count;
     ty_task *task = NULL;
     int r;
 
-    int c;
-    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        HANDLE_COMMON_OPTIONS(c, print_upload_usage);
-
-        case UPLOAD_OPTION_NOCHECK:
-            upload_flags |= TY_UPLOAD_NOCHECK;
-            break;
-        case UPLOAD_OPTION_NORESET:
-            upload_flags |= TY_UPLOAD_NORESET;
-            break;
-        case 'w':
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        if (strcmp(opt, "--help") == 0) {
+            print_upload_usage(stdout);
+            return EXIT_SUCCESS;
+        } else if (strcmp(opt, "--wait") == 0 || strcmp(opt, "-w") == 0) {
             upload_flags |= TY_UPLOAD_WAIT;
-            break;
-
-        case 'f':
-            firmware_format = optarg;
-            break;
+        } else if (strcmp(opt, "--nocheck") == 0) {
+            upload_flags |= TY_UPLOAD_NOCHECK;
+        } else if (strcmp(opt, "--noreset") == 0) {
+            upload_flags |= TY_UPLOAD_NORESET;
+        } else if (strcmp(opt, "--format") == 0 || strcmp(opt, "-f") == 0) {
+            firmware_format = ty_optline_get_value(&optl);
+            if (!firmware_format) {
+                ty_log(TY_LOG_ERROR, "Option '--format' takes an argument");
+                print_upload_usage(stderr);
+                return EXIT_FAILURE;
+            }
+        } else if (!parse_common_option(&optl, opt)) {
+            print_upload_usage(stderr);
+            return EXIT_FAILURE;
         }
     }
 
-    if (optind >= argc) {
+    fws_count = 0;
+    while ((opt = ty_optline_consume_non_option(&optl))) {
+        if (fws_count >= TY_COUNTOF(fws)) {
+            ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %zu files", TY_COUNTOF(fws));
+            break;
+        }
+
+        r = ty_firmware_load(opt, firmware_format, &fws[fws_count]);
+        if (r < 0)
+            goto cleanup;
+        fws_count++;
+    }
+    if (!fws_count) {
         ty_log(TY_LOG_ERROR, "Missing firmware filename");
         print_upload_usage(stderr);
         return EXIT_FAILURE;
-    } else if (argc - optind > TY_UPLOAD_MAX_FIRMWARES) {
-        ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %d files",
-               TY_UPLOAD_MAX_FIRMWARES);
-        argc = optind + TY_UPLOAD_MAX_FIRMWARES;
     }
 
     r = get_board(&board);
     if (r < 0)
         goto cleanup;
-
-    fws = alloca((size_t)(argc - optind) * sizeof(*fws));
-    fws_count = 0;
-    for (unsigned int i = (unsigned int)optind; i < (unsigned int)argc; i++) {
-        r = ty_firmware_load(argv[i], firmware_format, &fws[fws_count]);
-        if (r < 0)
-            goto cleanup;
-        fws_count++;
-    }
 
     r = ty_upload(board, fws, fws_count, upload_flags, &task);
     for (unsigned int i = 0; i < fws_count; i++)

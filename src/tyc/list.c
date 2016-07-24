@@ -5,18 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <getopt.h>
 #include <stdarg.h>
 #include "main.h"
-
-static const char *short_options = COMMON_SHORT_OPTIONS"O:vw";
-static const struct option long_options[] = {
-    COMMON_LONG_OPTIONS
-    {"output",  required_argument, NULL, 'O'},
-    {"verbose", no_argument,       NULL, 'v'},
-    {"watch",   no_argument,       NULL, 'w'},
-    {0}
-};
 
 enum output_format {
     OUTPUT_PLAIN,
@@ -208,35 +198,43 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
 
 int list(int argc, char *argv[])
 {
+    ty_optline_context optl;
+    char *opt;
     ty_monitor *monitor;
     int r;
 
-    int c;
-    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        HANDLE_COMMON_OPTIONS(c, print_list_usage);
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        if (strcmp(opt, "--help") == 0) {
+            print_list_usage(stdout);
+            return EXIT_SUCCESS;
+        } else if (strcmp(opt, "--output") == 0 || strcmp(opt, "-O") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--output' takes an argument");
+                print_list_usage(stderr);
+                return EXIT_FAILURE;
+            }
 
-        case 'O':
-            if (strcmp(optarg, "plain") == 0) {
+            if (strcmp(value, "plain") == 0) {
                 output = OUTPUT_PLAIN;
-            } else if (strcmp(optarg, "json") == 0) {
+            } else if (strcmp(value, "json") == 0) {
                 output = OUTPUT_JSON;
             } else {
                 ty_log(TY_LOG_ERROR, "--output must be one off plain or json");
                 print_list_usage(stderr);
                 return EXIT_FAILURE;
             }
-            break;
-        case 'v':
+        } else if (strcmp(opt, "--verbose") == 0 || strcmp(opt, "-v") == 0) {
             verbose = true;
-            break;
-        case 'w':
+        } else if (strcmp(opt, "--watch") == 0 || strcmp(opt, "-w") == 0) {
             watch = true;
-            break;
+        } else if (!parse_common_option(&optl, opt)) {
+            print_list_usage(stderr);
+            return EXIT_FAILURE;
         }
     }
-
-    if (argc > optind) {
+    if (ty_optline_consume_non_option(&optl)) {
         ty_log(TY_LOG_ERROR, "No positional argument is allowed");
         print_list_usage(stderr);
         return EXIT_FAILURE;
