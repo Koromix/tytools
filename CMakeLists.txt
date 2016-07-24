@@ -141,6 +141,12 @@ if(TY_CONFIG_UPTY_BUILD)
     list(APPEND CPACK_PACKAGE_EXECUTABLES upty "${TY_CONFIG_UPTY_NAME}")
 endif()
 
+set(TY_BUILD_TESTS ON CACHE BOOL "Build unit tests and enable CTest")
+if(TY_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests/libty)
+endif()
+
 set(CPACK_PACKAGE_NAME "${TY_CONFIG_PACKAGE_NAME}")
 string(REGEX REPLACE "\\-.*$" "" CPACK_PACKAGE_VERSION "${TY_CONFIG_VERSION}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")
