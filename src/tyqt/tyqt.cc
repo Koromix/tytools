@@ -14,7 +14,6 @@
 #include <QTextCodec>
 #include <QThread>
 
-#include <getopt.h>
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
@@ -25,6 +24,7 @@
 #include "ty/common.h"
 #include "tyqt/log_dialog.hpp"
 #include "main_window.hpp"
+#include "ty/optline.h"
 #include "tyqt/task.hpp"
 #include "tyqt.hpp"
 
@@ -37,33 +37,16 @@ struct ClientCommand {
     const char *description;
 };
 
-enum {
-    OPTION_HELP = 0x100,
-    OPTION_AUTOSTART,
-    OPTION_USBTYPE
-};
-
 static const ClientCommand commands[] = {
-    {"run",       &TyQt::runMainInstance,      NULL,                      NULL},
-    {"open",      &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Open a new window (default)")},
-    {"reset",     &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reset board")},
-    {"reboot",    &TyQt::executeRemoteCommand, NULL,                      QT_TR_NOOP("Reboot board")},
-    {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[firmwares]"), QT_TR_NOOP("Upload current or new firmware")},
-    {"integrate", &TyQt::integrateArduino,     NULL,                      NULL},
-    {"restore",   &TyQt::integrateArduino,     NULL,                      NULL},
+    {"run",       &TyQt::runMainInstance,      NULL,                        NULL},
+    {"open",      &TyQt::executeRemoteCommand, NULL,                        QT_TR_NOOP("Open a new window (default)")},
+    {"reset",     &TyQt::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reset board")},
+    {"reboot",    &TyQt::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reboot board")},
+    {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[<firmwares>]"), QT_TR_NOOP("Upload current or new firmware")},
+    {"integrate", &TyQt::integrateArduino,     NULL,                        NULL},
+    {"restore",   &TyQt::integrateArduino,     NULL,                        NULL},
     // Hidden command for Arduino 1.0.6 integration
-    {"avrdude",   &TyQt::fakeAvrdudeUpload,    NULL,                      NULL},
-    {0}
-};
-
-static const char *short_options = ":qwb:";
-static const struct option long_options[] = {
-    {"help",         no_argument,       NULL, OPTION_HELP},
-    {"quiet",        no_argument,       NULL, 'q'},
-    {"autostart",    no_argument,       NULL, OPTION_AUTOSTART},
-    {"wait",         no_argument,       NULL, 'w'},
-    {"board",        required_argument, NULL, 'b'},
-    {"usbtype",      required_argument, NULL, OPTION_USBTYPE},
+    {"avrdude",   &TyQt::fakeAvrdudeUpload,    NULL,                        NULL},
     {0}
 };
 
@@ -349,9 +332,6 @@ int TyQt::run(int argc, char *argv[])
         }
     }
 
-    // We'll print our own, for consistency
-    opterr = 0;
-
     for (auto cmd = commands; cmd->name; cmd++) {
         if (command_ == cmd->name)
             return (this->*(cmd->f))(argc, argv);
@@ -363,16 +343,20 @@ int TyQt::run(int argc, char *argv[])
 
 int TyQt::runMainInstance(int argc, char *argv[])
 {
-    optind = 0;
-    int c;
-    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        case OPTION_HELP:
+    ty_optline_context optl;
+    char *opt;
+
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        QString opt2 = opt;
+        if (opt2 == "--help") {
             showClientMessage(helpText());
             return EXIT_SUCCESS;
-        case 'q':
+        } else if (opt2 == "--quiet" || opt2 == "-q") {
             ty_config_verbosity--;
-            break;
+        } else {
+            showClientError(tr("Unknown option '%1'\n%2").arg(opt2, helpText()));
+            return EXIT_FAILURE;
         }
     }
 
@@ -421,42 +405,44 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
 int TyQt::executeRemoteCommand(int argc, char *argv[])
 {
+    ty_optline_context optl;
+    char *opt;
     bool autostart = false;
     QString board, usbtype;
 
-    optind = 0;
-    int c;
-    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        case OPTION_HELP:
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        QString opt2 = opt;
+        if (opt2 == "--help") {
             showClientMessage(helpText());
             return EXIT_SUCCESS;
-        case 'q':
+        } else if (opt2 == "--quiet" || opt2 == "-q") {
             ty_config_verbosity--;
-            break;
-
-        case OPTION_AUTOSTART:
+        } else if (opt2 == "--autostart") {
             autostart = true;
-            break;
-        case 'w':
+        } else if (opt2 == "--wait" || opt2 == "-w") {
             wait_ = true;
-            break;
-        case 'b':
-            board = optarg;
-            break;
-        /* Hidden option to improve the Arduino integration. Basically, if mode is set and does
-           not contain "_SERIAL", --board is ignored. This way the IDE serial port selection
-           is ignored when uploading to a non-serial board. */
-        case OPTION_USBTYPE:
-            usbtype = optarg;
-            break;
+        } else if (opt2 == "--board" || opt2 == "-B") {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                showClientError(tr("Option '--board' takes an argument\n%1").arg(helpText()));
+                return EXIT_FAILURE;
+            }
 
-        case ':':
-            showClientError(tr("Option '%1' takes an argument\n%2").arg(argv[optind - 1])
-                                                                   .arg(helpText()));
-            return EXIT_FAILURE;
-        case '?':
-            showClientError(tr("Unknown option '%1'\n%2").arg(argv[optind - 1]).arg(helpText()));
+            board = value;
+        } else if (opt2 == "--usbtype") {
+            /* Hidden option to improve the Arduino integration. Basically, if mode is set and
+               does not contain "_SERIAL", --board is ignored. This way the IDE serial port
+               selection is ignored when uploading to a non-serial board. */
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                showClientError(tr("Option '--usbtype' takes an argument\n%1").arg(helpText()));
+                return EXIT_FAILURE;
+            }
+
+            usbtype = value;
+        } else {
+            showClientError(tr("Unknown option '%1'\n%2").arg(opt2, helpText()));
             return EXIT_FAILURE;
         }
     }
@@ -485,13 +471,13 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
 
     connect(client.get(), &SessionPeer::received, this, &TyQt::readAnswer);
 
-    // Hack for Arduino integration, see getopt loop in TyQt::run()
+    // Hack for Arduino integration, see option loop in TyQt::run()
     if (!usbtype.isEmpty() && !usbtype.contains("_SERIAL"))
         board = "";
 
     QStringList arguments = {command_, QDir::currentPath(), board};
-    for (int i = optind; i < argc; i++)
-        arguments.append(argv[i]);
+    while ((opt = ty_optline_consume_non_option(&optl)))
+        arguments.append(opt);
     client->send(arguments);
 
     connect(client.get(), &SessionPeer::closed, this, [=](SessionPeer::CloseReason reason) {
@@ -530,24 +516,25 @@ int TyQt::integrateArduino(int argc, char *argv[])
 
 int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
 {
+    ty_optline_context optl;
+    char *opt;
     QString upload;
     bool verbose = false;
 
-    optind = 0;
-    int c;
-    /* Ignore most switches, we need to pass the ones taking an argument to getopt() or
-       their arguments will be treated as concatenated single-character switches. */
-    while ((c = getopt(argc, argv, "U:vp:b:B:c:C:E:i:P:x:")) != -1) {
-        switch (c) {
-        case 'U':
-            upload = optarg;
-            break;
-        case 'v':
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        QString opt2 = opt;
+        if (opt2 == "-U") {
+            upload = ty_optline_get_value(&optl);
+        } else if (opt2 == "-v") {
             verbose = true;
-            break;
+        /* Ignore most switches, we need to get the value of the ones taking an argument
+           or they will treated as concatenated single-character switches. */
+        } else if (opt2 == "-p" || opt2 == "-b" || opt2 == "-B" || opt2 == "-c" || opt2 == "-C" ||
+                   opt2 == "-E" || opt2 == "-i" || opt2 == "-P" || opt2 == "-x") {
+            ty_optline_get_value(&optl);
         }
     }
-
 
     /* The only avrdude operation we support is -Uflash:w:filename[:format] (format is ignored)
        and of course filename can contain colons (the Windows drive separator, for example). */
@@ -644,10 +631,12 @@ QString TyQt::helpText()
     QString help = tr("usage: %1 <command> [options]\n\n"
                       "General options:\n"
                       "       --help               Show help message\n"
-                      "       --version            Display version information\n\n"
-                      "   -w, --wait               Wait until task completion\n"
-                      "   -b, --board <tag>        Work with board <tag> instead of first detected\n"
+                      "       --version            Display version information\n"
                       "   -q, --quiet              Disable output, use -qqq to silence errors\n\n"
+                      "Client options:\n"
+                      "       --autostart          Start main instance if it is not available\n"
+                      "   -w, --wait               Wait until task completion\n"
+                      "   -B, --board <tag>        Work with board <tag> instead of first detected\n\n"
                       "Commands:\n").arg(QFileInfo(QApplication::applicationFilePath()).fileName());
 
     for (auto cmd = commands; cmd->name; cmd++) {
