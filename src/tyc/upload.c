@@ -74,12 +74,11 @@ int upload(int argc, char *argv[])
         }
 
         r = ty_firmware_load(opt, firmware_format, &fws[fws_count]);
-        if (r < 0)
-            goto cleanup;
-        fws_count++;
+        if (!r)
+            fws_count++;
     }
     if (!fws_count) {
-        ty_log(TY_LOG_ERROR, "Missing firmware filename");
+        ty_log(TY_LOG_ERROR, "Missing valid firmware filename");
         print_upload_usage(stderr);
         return EXIT_FAILURE;
     }
