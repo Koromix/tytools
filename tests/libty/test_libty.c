@@ -8,6 +8,8 @@
 #include <stdarg.h>
 #include "test_libty.h"
 
+void test_optline(void);
+
 static char current_file[1024];
 static char current_fn[256];
 
@@ -63,6 +65,8 @@ void report_test(bool pred, const char *file, unsigned int line, const char *fn,
 
 int main(void)
 {
+    test_optline();
+
     conclude_current_test();
     if (cases_failures) {
         printf("\nFailed %u of %u test case(s)\n", cases_failures, cases_total);
