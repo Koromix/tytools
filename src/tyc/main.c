@@ -5,7 +5,6 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <getopt.h>
 #ifndef _WIN32
     #include <signal.h>
     #include <sys/wait.h>
@@ -74,7 +73,7 @@ void print_common_options(FILE *f)
     fprintf(f, "General options:\n"
                "       --help               Show help message\n"
                "       --version            Display version information\n\n"
-               "       --board <tag>        Work with board <tag> instead of first detected\n"
+               "   -B, --board <tag>        Work with board <tag> instead of first detected\n"
                "   -q, --quiet              Disable output, use -qqq to silence errors\n");
 }
 
@@ -159,27 +158,22 @@ int get_board(ty_board **rboard)
     return 0;
 }
 
-bool parse_common_option(int argc, char *argv[], int c)
+bool parse_common_option(ty_optline_context *optl, char *arg)
 {
-    TY_UNUSED(argc);
-
-    switch (c) {
-    case COMMON_OPTION_BOARD:
-        board_tag = optarg;
-        break;
-    case 'q':
+    if (strcmp(arg, "--board") == 0 || strcmp(arg, "-B") == 0) {
+        board_tag = ty_optline_get_value(optl);
+        if (!board_tag) {
+            ty_log(TY_LOG_ERROR, "Option '--board' takes an argument");
+            return false;
+        }
+        return true;
+    } else if (strcmp(arg, "--quiet") == 0 || strcmp(arg, "-q") == 0) {
         ty_config_verbosity--;
-        break;
-
-    case ':':
-        ty_log(TY_LOG_ERROR, "Option '%s' takes an argument", argv[optind - 1]);
-        return false;
-    case '?':
-        ty_log(TY_LOG_ERROR, "Unknown option '%s'", argv[optind - 1]);
+        return true;
+    } else {
+        ty_log(TY_LOG_ERROR, "Unknown option '%s'", arg);
         return false;
     }
-
-    return true;
 }
 
 int main(int argc, char *argv[])
@@ -228,9 +222,6 @@ int main(int argc, char *argv[])
         print_main_usage(stderr);
         return EXIT_FAILURE;
     }
-
-    // We'll print our own, for consistency
-    opterr = 0;
 
     r = (*cmd->f)(argc - 1, argv + 1);
 

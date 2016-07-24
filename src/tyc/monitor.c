@@ -5,7 +5,6 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include <getopt.h>
 #include <unistd.h>
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
@@ -14,27 +13,6 @@
 #include "hs/serial.h"
 #include "ty/system.h"
 #include "main.h"
-
-enum {
-    MONITOR_OPTION_NORESET = 0x200,
-    MONITOR_OPTION_TIMEOUT_EOF
-};
-
-static const char *short_options = COMMON_SHORT_OPTIONS"b:d:D:f:p:rRs";
-static const struct option long_options[] = {
-    COMMON_LONG_OPTIONS
-    {"baud",        required_argument, NULL, 'b'},
-    {"databits",    required_argument, NULL, 'd'},
-    {"direction",   required_argument, NULL, 'D'},
-    {"flow",        required_argument, NULL, 'f'},
-    {"noreset",     no_argument,       NULL, MONITOR_OPTION_NORESET},
-    {"parity",      required_argument, NULL, 'p'},
-    {"raw",         no_argument,       NULL, 'r'},
-    {"reconnect",   no_argument,       NULL, 'R'},
-    {"silent",      no_argument,       NULL, 's'},
-    {"timeout-eof", required_argument, NULL, MONITOR_OPTION_TIMEOUT_EOF},
-    {0}
-};
 
 enum {
     DIRECTION_INPUT = 1,
@@ -369,93 +347,125 @@ restart:
 
 int monitor(int argc, char *argv[])
 {
+    ty_optline_context optl;
+    char *opt;
     ty_board *board = NULL;
     int outfd = -1;
     int r;
 
-    int c;
-    while ((c = getopt_long(argc, argv, short_options, long_options, NULL)) != -1) {
-        switch (c) {
-        HANDLE_COMMON_OPTIONS(c, print_monitor_usage);
+    ty_optline_init_argv(&optl, argc, argv);
+    while ((opt = ty_optline_next_option(&optl))) {
+        if (strcmp(opt, "--help") == 0) {
+            print_monitor_usage(stdout);
+            return EXIT_SUCCESS;
+        } else if (strcmp(opt, "--baud") == 0 || strcmp(opt, "-b") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--baud' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
 
-        case 's':
-            terminal_flags |= TY_TERMINAL_SILENT;
-            break;
-        case 'r':
-            terminal_flags |= TY_TERMINAL_RAW;
-            break;
+            errno = 0;
+            device_rate = (uint32_t)strtoul(value, NULL, 10);
+            if (errno) {
+                ty_log(TY_LOG_ERROR, "--baud requires a number");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
+        } else if (strcmp(opt, "--databits") == 0 || strcmp(opt, "-d") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--databits' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
 
-        case 'D':
-            if (strcmp(optarg, "input") == 0) {
+            device_flags &= ~HS_SERIAL_MASK_CSIZE;
+            if (strcmp(value, "5") == 0) {
+                device_flags |= HS_SERIAL_CSIZE_5BITS;
+            } else if (strcmp(value, "6") == 0) {
+                device_flags |= HS_SERIAL_CSIZE_6BITS;
+            } else if (strcmp(value, "7") == 0) {
+                device_flags |= HS_SERIAL_CSIZE_7BITS;
+            } else if (strcmp(value, "8") != 0) {
+                ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
+        } else if (strcmp(opt, "--direction") == 0 || strcmp(opt, "-D") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--direction' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
+
+            if (strcmp(value, "input") == 0) {
                 directions = DIRECTION_INPUT;
-            } else if (strcmp(optarg, "output") == 0) {
+            } else if (strcmp(value, "output") == 0) {
                 directions = DIRECTION_OUTPUT;
-            } else if (strcmp(optarg, "both") == 0) {
+            } else if (strcmp(value, "both") == 0) {
                 directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
             } else {
                 ty_log(TY_LOG_ERROR, "--direction must be one off input, output or both");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
-            break;
+        } else if (strcmp(opt, "--flow") == 0 || strcmp(opt, "-f") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--flow' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
 
-        case 'b':
-            errno = 0;
-            device_rate = (uint32_t)strtoul(optarg, NULL, 10);
-            if (errno) {
-                ty_log(TY_LOG_ERROR, "--baud requires a number");
-                print_monitor_usage(stderr);
-                return EXIT_FAILURE;
-            }
-            break;
-        case 'd':
-           device_flags &= ~HS_SERIAL_MASK_CSIZE;
-            if (strcmp(optarg, "5") == 0) {
-                device_flags |= HS_SERIAL_CSIZE_5BITS;
-            } else if (strcmp(optarg, "6") == 0) {
-                device_flags |= HS_SERIAL_CSIZE_6BITS;
-            } else if (strcmp(optarg, "7") == 0) {
-                device_flags |= HS_SERIAL_CSIZE_7BITS;
-            } else if (strcmp(optarg, "8") != 0) {
-                ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
-                print_monitor_usage(stderr);
-                return EXIT_FAILURE;
-            }
-        case 'f':
             device_flags &= ~HS_SERIAL_MASK_FLOW;
-            if (strcmp(optarg, "x") == 0 || strcmp(optarg, "xonxoff") == 0) {
+            if (strcmp(value, "x") == 0 || strcmp(value, "xonxoff") == 0) {
                 device_flags |= HS_SERIAL_FLOW_XONXOFF;
-            } else if (strcmp(optarg, "h") == 0 || strcmp(optarg, "rtscts") == 0) {
+            } else if (strcmp(value, "h") == 0 || strcmp(value, "rtscts") == 0) {
                 device_flags |= HS_SERIAL_FLOW_RTSCTS;
-            } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") == 0) {
+            } else if (strcmp(value, "n") != 0 && strcmp(value, "none") == 0) {
                 ty_log(TY_LOG_ERROR, "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
-            break;
-        case MONITOR_OPTION_NORESET:
+        } else if (strcmp(opt, "--noreset") == 0) {
             device_flags |= HS_SERIAL_CLOSE_NOHUP;
-            break;
-        case 'p':
+        } else if (strcmp(opt, "--parity") == 0 || strcmp(opt, "-p") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--parity' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
+
             device_flags &= ~HS_SERIAL_MASK_PARITY;
-            if (strcmp(optarg, "o") == 0 || strcmp(optarg, "odd") == 0) {
+            if (strcmp(value, "o") == 0 || strcmp(value, "odd") == 0) {
                 device_flags |= HS_SERIAL_PARITY_ODD;
-            } else if (strcmp(optarg, "e") == 0 || strcmp(optarg, "even") == 0) {
+            } else if (strcmp(value, "e") == 0 || strcmp(value, "even") == 0) {
                 device_flags |= HS_SERIAL_PARITY_EVEN;
-            } else if (strcmp(optarg, "n") != 0 && strcmp(optarg, "none") != 0) {
+            } else if (strcmp(value, "n") != 0 && strcmp(value, "none") != 0) {
                 ty_log(TY_LOG_ERROR, "--parity must be one off o (odd), e (even) or n (none)");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
-            break;
-
-        case 'R':
+        } else if (strcmp(opt, "--raw") == 0 || strcmp(opt, "-r") == 0) {
+            terminal_flags |= TY_TERMINAL_RAW;
+        } else if (strcmp(opt, "--reconnect") == 0 || strcmp(opt, "-R") == 0) {
             reconnect = true;
-            break;
+        } else if (strcmp(opt, "--silent") == 0 || strcmp(opt, "-s") == 0) {
+            terminal_flags |= TY_TERMINAL_SILENT;
+        } else if (strcmp(opt, "--timeout-eof") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--timeout-eof' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
 
-        case MONITOR_OPTION_TIMEOUT_EOF:
             errno = 0;
-            timeout_eof = (int)strtol(optarg, NULL, 10);
+            timeout_eof = (int)strtol(value, NULL, 10);
             if (errno) {
                 ty_log(TY_LOG_ERROR, "--timeout requires a number");
                 print_monitor_usage(stderr);
@@ -463,11 +473,12 @@ int monitor(int argc, char *argv[])
             }
             if (timeout_eof < 0)
                 timeout_eof = -1;
-            break;
+        } else if (!parse_common_option(&optl, opt)) {
+            print_monitor_usage(stderr);
+            return EXIT_FAILURE;
         }
     }
-
-    if (argc > optind) {
+    if (ty_optline_consume_non_option(&optl)) {
         ty_log(TY_LOG_ERROR, "No positional argument is allowed");
         print_monitor_usage(stderr);
         return EXIT_FAILURE;

@@ -8,9 +8,6 @@ set(TYC_SOURCES list.c
                 monitor.c
                 reset.c
                 upload.c)
-if(MSVC)
-    list(APPEND TYC_SOURCES "${CMAKE_SOURCE_DIR}/contrib/msvc/getopt.c")
-endif()
 
 add_executable(tyc ${TYC_SOURCES})
 set_target_properties(tyc PROPERTIES OUTPUT_NAME ${TY_CONFIG_TYC_EXECUTABLE})
