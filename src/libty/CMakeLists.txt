@@ -7,6 +7,7 @@ set(LIBTY_SOURCES ../../include/ty/board.h
                   ../../include/ty/common.h
                   ../../include/ty/firmware.h
                   ../../include/ty/monitor.h
+                  ../../include/ty/optline.h
                   ../../include/ty/system.h
                   ../../include/ty/task.h
                   ../../include/ty/thread.h
@@ -24,6 +25,7 @@ set(LIBTY_SOURCES ../../include/ty/board.h
                   htable.c
                   list.h
                   monitor.c
+                  optline.c
                   system.c
                   task.c
                   task_priv.h
