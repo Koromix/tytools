@@ -238,7 +238,6 @@ static void test_optline_complex(void)
 static void test_optline_argv(void)
 {
     {
-        char *argv[] = {0};
         ty_optline_context ctx;
         ty_optline_init_argv(&ctx, 0, NULL);
 
