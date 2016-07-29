@@ -65,8 +65,7 @@ static void print_monitor_usage(FILE *f)
                "   -f, --flow <control>     Define flow-control mode\n"
                "                            Must be one of: off, rtscts or xonxoff\n"
                "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
-               "                            Must be one of: off, even, or odd\n"
-               "       --noreset            Don't reset serial port when closing\n\n"
+               "                            Must be one of: off, even, or odd\n\n"
                "These settings are mostly ignored by the USB serial emulation, but you can still\n"
                "access them in your embedded code (e.g. the Serial object API on Teensy).\n");
 }
@@ -434,8 +433,6 @@ int monitor(int argc, char *argv[])
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
-        } else if (strcmp(opt, "--noreset") == 0) {
-            device_flags |= HS_SERIAL_CLOSE_NOHUP;
         } else if (strcmp(opt, "--parity") == 0 || strcmp(opt, "-p") == 0) {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
