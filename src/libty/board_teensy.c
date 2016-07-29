@@ -435,20 +435,6 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
     return count;
 }
 
-static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate, int flags)
-{
-    int r;
-
-    if (hs_device_get_type(iface->dev) != HS_DEVICE_TYPE_SERIAL)
-        return 0;
-
-    r = hs_serial_set_attributes(iface->h, rate, flags);
-    if (r < 0)
-        return ty_libhs_translate_error(r);
-
-    return 0;
-}
-
 static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
 {
     uint8_t hid_buf[SEREMU_RX_SIZE + 1];
@@ -684,7 +670,6 @@ static const struct _ty_board_interface_vtable teensy_vtable = {
     .open_interface = teensy_open_interface,
     .close_interface = teensy_close_interface,
 
-    .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,
 
