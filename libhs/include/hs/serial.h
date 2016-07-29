@@ -79,49 +79,6 @@ enum hs_serial_rate {
 
 /**
  * @ingroup serial
- * @brief Masks for groups of serial control flags.
- */
-enum hs_serial_mask {
-    HS_SERIAL_MASK_CSIZE  = 0x3,
-    HS_SERIAL_MASK_PARITY = 0xC,
-    HS_SERIAL_MASK_STOP   = 0x10,
-    HS_SERIAL_MASK_FLOW   = 0x60,
-    HS_SERIAL_MASK_CLOSE  = 0x80
-};
-
-/**
- * @ingroup serial
- * @brief Supported serial control flags.
- *
- * @sa hs_serial_set_attributes()
- */
-enum hs_serial_flag {
-    /** Use 7 bits in the bytes transmitted and received, instead of 8 bytes. */
-    HS_SERIAL_CSIZE_7BITS  = 0x1,
-    /** Use 6 bits in the bytes transmitted and received, instead of 8 bytes. */
-    HS_SERIAL_CSIZE_6BITS  = 0x2,
-    /** Use 5 bits in the bytes transmitted and received, instead of 8 bytes. */
-    HS_SERIAL_CSIZE_5BITS  = 0x3,
-
-    /** Use an odd scheme for parity, instead of no parity. */
-    HS_SERIAL_PARITY_ODD   = 0x4,
-    /** Use an even scheme for parity, instead of no parity. */
-    HS_SERIAL_PARITY_EVEN  = 0x8,
-
-    /** Use two stop bits instead of one. */
-    HS_SERIAL_STOP_2BITS   = 0x10,
-
-    /** Enable XON/XOFF (software) flow control on input. */
-    HS_SERIAL_FLOW_XONXOFF = 0x20,
-    /** Enable RTS/CTS (hardware) flow control. */
-    HS_SERIAL_FLOW_RTSCTS  = 0x40,
-
-    /** Keep the DTR line high on close (not supported on Windows). */
-    HS_SERIAL_CLOSE_NOHUP  = 0x80
-};
-
-/**
- * @ingroup serial
  * @brief Supported serial parity modes.
  *
  * @sa hs_serial_config
@@ -224,22 +181,6 @@ typedef struct hs_serial_config {
     /** Serial XON/XOFF (software) flow control. */
     hs_serial_config_xonxoff xonxoff;
 } hs_serial_config;
-
-/**
- * @ingroup serial
- * @brief Set the parameters associated with a serial device.
- *
- * The change is carried out immediately, before the buffers are emptied.
- *
- * @param h     Open serial device handle.
- * @param rate  Serial baud rate, see @ref hs_serial_rate.
- * @param flags Serial connection settings, see @ref hs_serial_flag.
- * @return This function returns 0 on success, or a negative @ref hs_error_code value.
- *
- * @sa hs_serial_rate for acceptable baud rates.
- * @sa hs_serial_flag for supported control flags.
- */
-HS_PUBLIC int hs_serial_set_attributes(struct hs_handle *h, uint32_t rate, int flags);
 
 /**
  * @ingroup serial
