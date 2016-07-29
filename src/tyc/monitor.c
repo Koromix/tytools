@@ -50,21 +50,25 @@ static void print_monitor_usage(FILE *f)
     fprintf(f, "\n");
 
     fprintf(f, "Monitor options:\n"
-               "   -b, --baud <rate>        Use baudrate for serial port\n"
-               "   -d, --databits <bits>    Change number of bits for each character\n"
-               "                            Must be one of 5, 6, 7 or 8 (default)\n"
-               "   -D, --direction <dir>    Open serial connection in given direction\n"
-               "                            Supports input, output, both (default)\n"
-               "   -f, --flow <control>     Define flow-control mode\n"
-               "                            Supports xonxoff (x), rtscts (h) and none (n)\n"
-               "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
-               "                            Supports odd (o), even (e) and none (n)\n\n"
                "   -r, --raw                Disable line-buffering and line-editing\n"
                "   -s, --silent             Disable echoing of local input on terminal\n\n"
                "   -R, --reconnect          Try to reconnect on I/O errors\n"
-               "       --noreset            Don't reset serial port when closing\n"
+               "   -D, --direction <dir>    Open serial connection in given direction\n"
+               "                            Supports input, output, both (default)\n"
                "       --timeout-eof <ms>   Time before closing after EOF on standard input\n"
-               "                            Defaults to %d ms, use -1 to disable\n", timeout_eof);
+               "                            Defaults to %d ms, use -1 to disable\n\n", timeout_eof);
+
+    fprintf(f, "Serial settings:\n"
+               "   -b, --baudrate <rate>    Use baudrate for serial port\n"
+               "   -d, --databits <bits>    Change number of bits for every character\n"
+               "                            Must be one of: 5, 6, 7 or 8\n"
+               "   -f, --flow <control>     Define flow-control mode\n"
+               "                            Must be one of: off, rtscts or xonxoff\n"
+               "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
+               "                            Must be one of: off, even, or odd\n"
+               "       --noreset            Don't reset serial port when closing\n\n"
+               "These settings are mostly ignored by the USB serial emulation, but you can still\n"
+               "access them in your embedded code (e.g. the Serial object API on Teensy).\n");
 }
 
 static int redirect_stdout(int *routfd)
@@ -358,10 +362,10 @@ int monitor(int argc, char *argv[])
         if (strcmp(opt, "--help") == 0) {
             print_monitor_usage(stdout);
             return EXIT_SUCCESS;
-        } else if (strcmp(opt, "--baud") == 0 || strcmp(opt, "-b") == 0) {
+        } else if (strcmp(opt, "--baudrate") == 0 || strcmp(opt, "-b") == 0) {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
-                ty_log(TY_LOG_ERROR, "Option '--baud' takes an argument");
+                ty_log(TY_LOG_ERROR, "Option '--baudrate' takes an argument");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
@@ -369,7 +373,7 @@ int monitor(int argc, char *argv[])
             errno = 0;
             device_rate = (uint32_t)strtoul(value, NULL, 10);
             if (errno) {
-                ty_log(TY_LOG_ERROR, "--baud requires a number");
+                ty_log(TY_LOG_ERROR, "--baudrate requires a number");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
@@ -389,7 +393,7 @@ int monitor(int argc, char *argv[])
             } else if (strcmp(value, "7") == 0) {
                 device_flags |= HS_SERIAL_CSIZE_7BITS;
             } else if (strcmp(value, "8") != 0) {
-                ty_log(TY_LOG_ERROR, "--databits must be one off 5, 6, 7 or 8");
+                ty_log(TY_LOG_ERROR, "--databits must be one of: 5, 6, 7 or 8");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
@@ -408,7 +412,7 @@ int monitor(int argc, char *argv[])
             } else if (strcmp(value, "both") == 0) {
                 directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
             } else {
-                ty_log(TY_LOG_ERROR, "--direction must be one off input, output or both");
+                ty_log(TY_LOG_ERROR, "--direction must be one of: input, output or both");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
@@ -421,12 +425,12 @@ int monitor(int argc, char *argv[])
             }
 
             device_flags &= ~HS_SERIAL_MASK_FLOW;
-            if (strcmp(value, "x") == 0 || strcmp(value, "xonxoff") == 0) {
-                device_flags |= HS_SERIAL_FLOW_XONXOFF;
-            } else if (strcmp(value, "h") == 0 || strcmp(value, "rtscts") == 0) {
+            if (strcmp(value, "rtscts") == 0) {
                 device_flags |= HS_SERIAL_FLOW_RTSCTS;
-            } else if (strcmp(value, "n") != 0 && strcmp(value, "none") == 0) {
-                ty_log(TY_LOG_ERROR, "--flow must be one off x (xonxoff), h (rtscts) or n (none)");
+            } else if (strcmp(value, "xonxoff") == 0) {
+                device_flags |= HS_SERIAL_FLOW_XONXOFF;
+            } else if (strcmp(value, "off") != 0) {
+                ty_log(TY_LOG_ERROR, "--flow must be one of: off, rtscts or xonxoff");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
@@ -441,12 +445,12 @@ int monitor(int argc, char *argv[])
             }
 
             device_flags &= ~HS_SERIAL_MASK_PARITY;
-            if (strcmp(value, "o") == 0 || strcmp(value, "odd") == 0) {
-                device_flags |= HS_SERIAL_PARITY_ODD;
-            } else if (strcmp(value, "e") == 0 || strcmp(value, "even") == 0) {
+            if (strcmp(value, "even") == 0) {
                 device_flags |= HS_SERIAL_PARITY_EVEN;
-            } else if (strcmp(value, "n") != 0 && strcmp(value, "none") != 0) {
-                ty_log(TY_LOG_ERROR, "--parity must be one off o (odd), e (even) or n (none)");
+            } else if (strcmp(value, "odd") == 0) {
+                device_flags |= HS_SERIAL_PARITY_ODD;
+            } else if (strcmp(value, "off") != 0) {
+                ty_log(TY_LOG_ERROR, "--parity must be one of: off, even or odd");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
