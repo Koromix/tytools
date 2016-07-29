@@ -62,9 +62,11 @@ static void print_monitor_usage(FILE *f)
                "   -b, --baudrate <rate>    Use baudrate for serial port\n"
                "   -d, --databits <bits>    Change number of bits for every character\n"
                "                            Must be one of: 5, 6, 7 or 8\n"
+               "   -p, --stopbits <bits>    Change number of stop bits for every character\n"
+               "                            Must be one of: 1 or 2\n"
                "   -f, --flow <control>     Define flow-control mode\n"
                "                            Must be one of: off, rtscts or xonxoff\n"
-               "   -p, --parity <bits>      Change parity mode to use for the serial port\n"
+               "   -y, --parity <bits>      Change parity mode to use for the serial port\n"
                "                            Must be one of: off, even, or odd\n\n"
                "These settings are mostly ignored by the USB serial emulation, but you can still\n"
                "access them in your embedded code (e.g. the Serial object API on Teensy).\n");
@@ -396,6 +398,22 @@ int monitor(int argc, char *argv[])
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
+        } else if (strcmp(opt, "--stopbits") == 0 || strcmp(opt, "-p") == 0) {
+            char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--stopbits' takes an argument");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
+
+            device_flags &= ~HS_SERIAL_MASK_STOP;
+            if (strcmp(value, "2") == 0) {
+                device_flags |= HS_SERIAL_STOP_2BITS;
+            } else if (strcmp(value, "1") != 0) {
+                ty_log(TY_LOG_ERROR, "--stopbits must be one of: 1 or 2");
+                print_monitor_usage(stderr);
+                return EXIT_FAILURE;
+            }
         } else if (strcmp(opt, "--direction") == 0 || strcmp(opt, "-D") == 0) {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
@@ -433,7 +451,7 @@ int monitor(int argc, char *argv[])
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
-        } else if (strcmp(opt, "--parity") == 0 || strcmp(opt, "-p") == 0) {
+        } else if (strcmp(opt, "--parity") == 0 || strcmp(opt, "-y") == 0) {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
                 ty_log(TY_LOG_ERROR, "Option '--parity' takes an argument");
