@@ -10,6 +10,7 @@
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
+#include "hs/device.h"
 #include "hs/serial.h"
 #include "ty/system.h"
 #include "main.h"
@@ -23,8 +24,7 @@ enum {
 #define ERROR_IO_TIMEOUT 5000
 
 static int terminal_flags = 0;
-static uint32_t device_rate = 115200;
-static int device_flags = 0;
+static hs_serial_config serial_config = {0};
 static int directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
 static bool reconnect = false;
 static int timeout_eof = 200;
@@ -181,25 +181,41 @@ static void stop_stdin_thread(void)
 
 #endif
 
+static int open_serial_interface(ty_board *board, ty_board_interface **riface)
+{
+    ty_board_interface *iface;
+    int r;
+
+    r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_SERIAL, &iface);
+    if (r < 0)
+        return r;
+
+    if (hs_device_get_type(ty_board_interface_get_device(iface)) == HS_DEVICE_TYPE_SERIAL) {
+        r = hs_serial_set_config(ty_board_interface_get_handle(iface), &serial_config);
+        if (r < 0)
+            return (int)r;
+    }
+
+    *riface = iface;
+    return 0;
+}
+
 static int fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
 {
+    ty_board_interface *iface;
+    int r;
+
     ty_descriptor_set_clear(set);
 
+    // Board events / state changes
     ty_monitor_get_descriptors(ty_board_get_monitor(board), set, 1);
-    if (directions & DIRECTION_INPUT) {
-        ty_board_interface *iface;
-        int r;
 
-        r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_SERIAL, &iface);
-        if (r < 0)
-            return r;
+    r = open_serial_interface(board, &iface);
+    if (r < 0)
+        return r;
 
+    if (directions & DIRECTION_INPUT)
         ty_board_interface_get_descriptors(iface, set, 2);
-
-        /* ty_board_interface_unref() keeps iface->open_count > 0 so the interface
-           does not get closed, and we can monitor the handle. */
-        ty_board_interface_unref(iface);
-    }
 #ifdef _WIN32
     if (directions & DIRECTION_OUTPUT) {
         if (input_available) {
@@ -213,6 +229,11 @@ static int fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
         ty_descriptor_set_add(set, STDIN_FILENO, 3);
 #endif
 
+    /* ty_board_interface_unref() keeps iface->open_count > 0 so the device file does not
+       get closed, and we can monitor the descriptor. When the refcount reaches 0, the
+       device is closed anyway so we don't leak anything. */
+    ty_board_interface_unref(iface);
+
     return 0;
 }
 
@@ -224,10 +245,6 @@ static int loop(ty_board *board, int outfd)
     ssize_t r;
 
 restart:
-    r = ty_board_serial_set_attributes(board, device_rate, device_flags);
-    if (r < 0)
-        return (int)r;
-
     r = fill_descriptor_set(&set, board);
     if (r < 0)
         return (int)r;
@@ -372,7 +389,7 @@ int monitor(int argc, char *argv[])
             }
 
             errno = 0;
-            device_rate = (uint32_t)strtoul(value, NULL, 10);
+            serial_config.baudrate = (uint32_t)strtoul(value, NULL, 10);
             if (errno) {
                 ty_log(TY_LOG_ERROR, "--baudrate requires a number");
                 print_monitor_usage(stderr);
@@ -386,14 +403,8 @@ int monitor(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            device_flags &= ~HS_SERIAL_MASK_CSIZE;
-            if (strcmp(value, "5") == 0) {
-                device_flags |= HS_SERIAL_CSIZE_5BITS;
-            } else if (strcmp(value, "6") == 0) {
-                device_flags |= HS_SERIAL_CSIZE_6BITS;
-            } else if (strcmp(value, "7") == 0) {
-                device_flags |= HS_SERIAL_CSIZE_7BITS;
-            } else if (strcmp(value, "8") != 0) {
+            serial_config.databits = (unsigned int)strtoul(value, NULL, 10);
+            if (serial_config.databits < 5 || serial_config.databits > 8) {
                 ty_log(TY_LOG_ERROR, "--databits must be one of: 5, 6, 7 or 8");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
@@ -406,10 +417,8 @@ int monitor(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            device_flags &= ~HS_SERIAL_MASK_STOP;
-            if (strcmp(value, "2") == 0) {
-                device_flags |= HS_SERIAL_STOP_2BITS;
-            } else if (strcmp(value, "1") != 0) {
+            serial_config.stopbits = (unsigned int)strtoul(value, NULL, 10);
+            if (serial_config.stopbits < 1 || serial_config.stopbits > 2) {
                 ty_log(TY_LOG_ERROR, "--stopbits must be one of: 1 or 2");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
@@ -441,11 +450,15 @@ int monitor(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            device_flags &= ~HS_SERIAL_MASK_FLOW;
-            if (strcmp(value, "rtscts") == 0) {
-                device_flags |= HS_SERIAL_FLOW_RTSCTS;
+            if (strcmp(value, "off") == 0) {
+                serial_config.rts = HS_SERIAL_CONFIG_RTS_OFF;
+                serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
             } else if (strcmp(value, "xonxoff") == 0) {
-                device_flags |= HS_SERIAL_FLOW_XONXOFF;
+                serial_config.rts = HS_SERIAL_CONFIG_RTS_OFF;
+                serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_INOUT;
+            } else if (strcmp(value, "rtscts") == 0) {
+                serial_config.rts = HS_SERIAL_CONFIG_RTS_FLOW;
+                serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
             } else if (strcmp(value, "off") != 0) {
                 ty_log(TY_LOG_ERROR, "--flow must be one of: off, rtscts or xonxoff");
                 print_monitor_usage(stderr);
@@ -459,13 +472,18 @@ int monitor(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            device_flags &= ~HS_SERIAL_MASK_PARITY;
-            if (strcmp(value, "even") == 0) {
-                device_flags |= HS_SERIAL_PARITY_EVEN;
+            if (strcmp(value, "off") == 0) {
+                serial_config.parity = HS_SERIAL_CONFIG_PARITY_OFF;
+            } else if (strcmp(value, "even") == 0) {
+                serial_config.parity = HS_SERIAL_CONFIG_PARITY_EVEN;
             } else if (strcmp(value, "odd") == 0) {
-                device_flags |= HS_SERIAL_PARITY_ODD;
-            } else if (strcmp(value, "off") != 0) {
-                ty_log(TY_LOG_ERROR, "--parity must be one of: off, even or odd");
+                serial_config.parity = HS_SERIAL_CONFIG_PARITY_ODD;
+            } else if (strcmp(value, "mark") == 0) {
+                serial_config.parity = HS_SERIAL_CONFIG_PARITY_MARK;
+            } else if (strcmp(value, "space") == 0) {
+                serial_config.parity = HS_SERIAL_CONFIG_PARITY_SPACE;
+            } else {
+                ty_log(TY_LOG_ERROR, "--parity must be one of: off, even, mark or space");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
