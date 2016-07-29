@@ -358,6 +358,14 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
     return 1;
 }
 
+static int change_baudrate(hs_handle *h, unsigned int baudrate)
+{
+    hs_serial_config config = {
+        .baudrate = baudrate
+    };
+    return ty_libhs_translate_error(hs_serial_set_config(h, &config));
+}
+
 int teensy_open_interface(ty_board_interface *iface)
 {
     int r;
@@ -370,7 +378,7 @@ int teensy_open_interface(ty_board_interface *iface)
        around and reuse them. The device will keep rebooting if 134 is what stays around,
        so try to break the loop here. */
     if (hs_device_get_type(iface->dev) == HS_DEVICE_TYPE_SERIAL)
-        hs_serial_set_attributes(iface->h, 115200, 0);
+        change_baudrate(iface->h, 115200);
 
     return 0;
 }
@@ -425,20 +433,6 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
     }
 
     return count;
-}
-
-static int teensy_serial_set_attributes(ty_board_interface *iface, uint32_t rate, int flags)
-{
-    int r;
-
-    if (hs_device_get_type(iface->dev) != HS_DEVICE_TYPE_SERIAL)
-        return 0;
-
-    r = hs_serial_set_attributes(iface->h, rate, flags);
-    if (r < 0)
-        return ty_libhs_translate_error(r);
-
-    return 0;
 }
 
 static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
@@ -630,22 +624,20 @@ static int teensy_reset(ty_board_interface *iface)
 
 static int teensy_reboot(ty_board_interface *iface)
 {
-    static unsigned char seremu_magic[] = {0, 0xA9, 0x45, 0xC2, 0x6B};
+    static const unsigned int serial_magic = 134;
+    static const unsigned char seremu_magic[] = {0, 0xA9, 0x45, 0xC2, 0x6B};
 
     int r;
 
     r = TY_ERROR_UNSUPPORTED;
     switch (hs_device_get_type(iface->dev)) {
     case HS_DEVICE_TYPE_SERIAL:
-        r = hs_serial_set_attributes(iface->h, 134, 0);
-        // FIXME: LIBHS ugly construct
-        if (r < 0) {
-            r = ty_libhs_translate_error(r);
-        } else {
+        r = change_baudrate(iface->h, serial_magic);
+        if (!r) {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
                the device will keep rebooting when opened. */
             ty_error_mask(TY_ERROR_SYSTEM);
-            hs_serial_set_attributes(iface->h, 115200, 0);
+            change_baudrate(iface->h, 115200);
             ty_error_unmask();
         }
         break;
@@ -678,7 +670,6 @@ static const struct _ty_board_interface_vtable teensy_vtable = {
     .open_interface = teensy_open_interface,
     .close_interface = teensy_close_interface,
 
-    .serial_set_attributes = teensy_serial_set_attributes,
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,
 

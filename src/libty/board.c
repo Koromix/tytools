@@ -437,25 +437,6 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
     return ty_monitor_wait(monitor, wait_for_callback, &ctx, timeout);
 }
 
-int ty_board_serial_set_attributes(ty_board *board, uint32_t rate, int flags)
-{
-    assert(board);
-
-    ty_board_interface *iface;
-    int r;
-
-    r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_SERIAL, &iface);
-    if (r < 0)
-        return r;
-    if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
-
-    r = (*iface->vtable->serial_set_attributes)(iface, rate, flags);
-
-    ty_board_interface_close(iface);
-    return r;
-}
-
 ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeout)
 {
     assert(board);

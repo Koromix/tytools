@@ -97,10 +97,44 @@ restart:
         goto error;
     }
 
-#ifdef __APPLE__
-    if (dev->type == HS_DEVICE_TYPE_SERIAL)
-        ioctl(h->fd, TIOCSDTR);
-#endif
+    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
+        struct termios tio;
+        int modem_bits;
+
+        r = tcgetattr(h->fd, &tio);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "tcgetattr() failed on '%s': %s", dev->path,
+                         strerror(errno));
+            goto error;
+        }
+
+        /* Use raw I/O and sane settings, set DTR by default even on platforms that don't
+           enforce that. */
+        cfmakeraw(&tio);
+        tio.c_cc[VMIN] = 0;
+        tio.c_cc[VTIME] = 0;
+        tio.c_cflag |= CLOCAL | CREAD | HUPCL;
+        modem_bits = TIOCM_DTR;
+
+        r = tcsetattr(h->fd, TCSANOW, &tio);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "tcsetattr() failed on '%s': %s", dev->path,
+                         strerror(errno));
+            goto error;
+        }
+        r = ioctl(h->fd, TIOCMBIS, &modem_bits);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "ioctl(TIOCMBIS, TIOCM_DTR) failed on '%s': %s",
+                         dev->path, strerror(errno));
+            goto error;
+        }
+        r = tcflush(h->fd, TCIFLUSH);
+        if (r < 0) {
+            r = hs_error(HS_ERROR_SYSTEM, "tcflush(TCIFLUSH) failed on '%s': %s",
+                         dev->path, strerror(errno));
+            goto error;
+        }
+    }
 
     *rh = h;
     return 0;

@@ -87,7 +87,26 @@ static int open_win32_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh
     }
 
     if (dev->type == HS_DEVICE_TYPE_SERIAL) {
+        DCB dcb;
         COMMTIMEOUTS timeouts;
+        BOOL success;
+
+        dcb.DCBlength = sizeof(dcb);
+        success = GetCommState(h->handle, &dcb);
+        if (!success) {
+            r = hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", h->dev->path,
+                         hs_win32_strerror(0));
+            goto error;
+        }
+
+        /* Sane config, inspired by libserialport, and with DTR pin on by default for
+           consistency with UNIX platforms. */
+        dcb.fBinary = TRUE;
+        dcb.fAbortOnError = FALSE;
+        dcb.fErrorChar = FALSE;
+        dcb.fNull = FALSE;
+        dcb.fDtrControl = DTR_CONTROL_ENABLE;
+        dcb.fDsrSensitivity = FALSE;
 
         /* See SERIAL_TIMEOUTS documentation on MSDN, this basically means "Terminate read request
            when there is at least one byte available". You still need a total timeout in that mode
@@ -98,9 +117,25 @@ static int open_win32_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh
         timeouts.ReadTotalTimeoutConstant = ULONG_MAX - 1;
         timeouts.WriteTotalTimeoutMultiplier = 0;
         timeouts.WriteTotalTimeoutConstant = 5000;
-        SetCommTimeouts(h->handle, &timeouts);
 
-        EscapeCommFunction(h->handle, SETDTR);
+        success = SetCommState(h->handle, &dcb);
+        if (!success) {
+            r = hs_error(HS_ERROR_SYSTEM, "SetCommState() failed on '%s': %s",
+                         h->dev->path, hs_win32_strerror(0));
+            goto error;
+        }
+        success = SetCommTimeouts(h->handle, &timeouts);
+        if (!success) {
+            r = hs_error(HS_ERROR_SYSTEM, "SetCommTimeouts() failed on '%s': %s",
+                         h->dev->path, hs_win32_strerror(0));
+            goto error;
+        }
+        success = PurgeComm(h->handle, PURGE_RXCLEAR);
+        if (!success) {
+            r = hs_error(HS_ERROR_SYSTEM, "PurgeComm(PURGE_RXCLEAR) failed on '%s': %s",
+                         h->dev->path, hs_win32_strerror(0));
+            goto error;
+        }
     }
 
     if (mode & HS_HANDLE_MODE_READ) {
