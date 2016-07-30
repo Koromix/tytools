@@ -139,7 +139,7 @@ static const ty_board_model teensy_32_model = {
 
 static const ty_board_model teensy_k64_model = {
     .family = &_ty_teensy_family,
-    .name = "Teensy 3.4",
+    .name = "Teensy 3.5",
     .mcu = "mk64fx512",
 
     .usage = 0x23,
@@ -151,7 +151,7 @@ static const ty_board_model teensy_k64_model = {
 
 static const ty_board_model teensy_k66_model = {
     .family = &_ty_teensy_family,
-    .name = "Teensy 3.5",
+    .name = "Teensy 3.6",
     .mcu = "mk66fx1m0",
 
     .usage = 0x22,
