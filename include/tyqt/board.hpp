@@ -55,6 +55,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     char serial_buf_[262144];
     size_t serial_buf_len_ = 0;
     QTextDocument serial_document_;
+    bool serial_clear_when_available_ = false;
 
     QTimer error_timer_;
 
@@ -179,6 +180,7 @@ private:
     void setThreadPool(ty_pool *pool) { pool_ = pool; }
 
     void refreshBoard();
+    void updateSerialInterface();
     bool openSerialInterface();
     void closeSerialInterface();
 

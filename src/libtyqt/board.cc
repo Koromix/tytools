@@ -94,15 +94,20 @@ void Board::loadSettings()
         }
     }
 
+    updateSerialInterface();
+
+    updateStatus();
+    emit infoChanged();
+    emit settingsChanged();
+}
+
+void Board::updateSerialInterface()
+{
     if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
         openSerialInterface();
     } else {
         closeSerialInterface();
     }
-
-    updateStatus();
-    emit infoChanged();
-    emit settingsChanged();
 }
 
 bool Board::matchesTag(const QString &id)
@@ -429,15 +434,16 @@ void Board::setEnableSerial(bool enable)
     if (enable == enable_serial_)
         return;
 
-    if (enable && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
-        enable = openSerialInterface();
-    } else {
-        closeSerialInterface();
-    }
-
     enable_serial_ = enable;
 
-    db_.put("enableSerial", enable);
+    updateSerialInterface();
+    if (enable && !serial_iface_) {
+        enable_serial_ = false;
+        enable = false;
+    } else {
+        db_.put("enableSerial", enable);
+    }
+
     updateStatus();
     emit settingsChanged();
 }
@@ -545,15 +551,21 @@ void Board::notifyFinished(bool success, std::shared_ptr<void> result)
 
 void Board::refreshBoard()
 {
-    if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
-        openSerialInterface();
-    } else {
-        closeSerialInterface();
-    }
+    updateSerialInterface();
 
     if (ty_board_get_state(board_) == TY_BOARD_STATE_DROPPED) {
         emit dropped();
         return;
+    }
+
+    if (clear_on_reset_) {
+        if (hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
+            if (serial_clear_when_available_)
+                serial_document_.clear();
+            serial_clear_when_available_ = false;
+        } else {
+            serial_clear_when_available_ = true;
+        }
     }
 
     auto model = this->model();
@@ -582,9 +594,6 @@ bool Board::openSerialInterface()
         return false;
     ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
-
-    if (clear_on_reset_)
-        serial_document_.clear();
 
     emit interfacesChanged();
     return true;
