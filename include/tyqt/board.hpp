@@ -44,7 +44,6 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     DatabaseInterface db_;
     DatabaseInterface cache_;
 
-    Monitor *monitor_;
     ty_board *board_;
 
     ty_board_interface *serial_iface_ = nullptr;
@@ -64,6 +63,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QString serial_codec_name_;
     bool clear_on_reset_;
     bool enable_serial_;
+    bool enable_serial_default_ = false;
 
     QString status_text_;
     QString status_icon_name_;
@@ -78,7 +78,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     TaskWatcher task_watcher_;
 
 public:
-    static std::shared_ptr<Board> createBoard(Monitor *monitor, ty_board *board);
+    static std::shared_ptr<Board> createBoard(ty_board *board);
     virtual ~Board();
 
     void setDatabase(DatabaseInterface db) { db_ = db; }
@@ -175,7 +175,7 @@ private slots:
     void notifyFinished(bool success, std::shared_ptr<void> result);
 
 private:
-    Board(Monitor *monitor, ty_board *board, QObject *parent = nullptr);
+    Board(ty_board *board, QObject *parent = nullptr);
 
     void setThreadPool(ty_pool *pool) { pool_ = pool; }
 

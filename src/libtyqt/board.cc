@@ -19,8 +19,8 @@ using namespace std;
 
 #define MAX_RECENT_FIRMWARES 4
 
-Board::Board(Monitor *monitor, ty_board *board, QObject *parent)
-    : QObject(parent), monitor_(monitor), board_(ty_board_ref(board))
+Board::Board(ty_board *board, QObject *parent)
+    : QObject(parent), board_(ty_board_ref(board))
 {
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setUndoRedoEnabled(false);
@@ -36,15 +36,15 @@ Board::Board(Monitor *monitor, ty_board *board, QObject *parent)
     loadSettings();
 }
 
-shared_ptr<Board> Board::createBoard(Monitor *monitor, ty_board *board)
+shared_ptr<Board> Board::createBoard(ty_board *board)
 {
     // Work around the private constructor for make_shared()
     struct BoardSharedEnabler : public Board {
-        BoardSharedEnabler(Monitor *monitor, ty_board *board)
-            : Board(monitor, board) {}
+        BoardSharedEnabler(ty_board *board)
+            : Board(board) {}
     };
 
-    return make_shared<BoardSharedEnabler>(monitor, board);
+    return make_shared<BoardSharedEnabler>(board);
 }
 
 Board::~Board()
@@ -80,7 +80,7 @@ void Board::loadSettings()
     serial_decoder_.reset(serial_codec_->makeDecoder());
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
-    enable_serial_ = db_.get("enableSerial", monitor_->serialByDefault()).toBool();
+    enable_serial_ = db_.get("enableSerial", enable_serial_default_).toBool();
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */

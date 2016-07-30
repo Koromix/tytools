@@ -77,6 +77,7 @@ void Monitor::setSerialByDefault(bool default_serial)
     for (auto &board: boards_) {
         auto db = board->database();
 
+        board->enable_serial_default_ = default_serial;
         if (!db.get("enableSerial").isValid()) {
             board->setEnableSerial(default_serial);
             db.remove("enableSerial");
@@ -312,13 +313,14 @@ Monitor::iterator Monitor::findBoardIterator(ty_board *board)
 
 void Monitor::handleAddedEvent(ty_board *board)
 {
-    auto ptr = Board::createBoard(this, board);
+    auto ptr = Board::createBoard(board);
 
+    ptr->enable_serial_default_ = default_serial_;
     if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         ptr->setDatabase(db_.subDatabase(ptr->id()));
         ptr->setCache(cache_.subDatabase(ptr->id()));
-        ptr->loadSettings();
     }
+    ptr->loadSettings();
 
     ptr->setThreadPool(pool_);
     ptr->serial_notifier_.moveToThread(&serial_thread_);
