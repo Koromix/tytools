@@ -95,6 +95,8 @@ void Board::loadSettings()
     }
 
     updateSerialInterface();
+    if (enable_serial_ && !serial_iface_)
+        enable_serial_ = false;
 
     updateStatus();
     emit infoChanged();
