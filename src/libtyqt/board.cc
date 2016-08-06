@@ -95,7 +95,7 @@ void Board::loadSettings()
     }
 
     updateSerialInterface();
-    if (enable_serial_ && !serial_iface_)
+    if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL) && !serial_iface_)
         enable_serial_ = false;
 
     updateStatus();
@@ -439,7 +439,7 @@ void Board::setEnableSerial(bool enable)
     enable_serial_ = enable;
 
     updateSerialInterface();
-    if (enable && !serial_iface_) {
+    if (enable && hasCapability(TY_BOARD_CAPABILITY_SERIAL) && !serial_iface_) {
         enable_serial_ = false;
         enable = false;
     } else {
