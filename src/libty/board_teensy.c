@@ -480,8 +480,10 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
         /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so no binary
            transfers. */
         for (size_t i = 0; i < size;) {
+            size_t block_size = TY_MIN(SEREMU_TX_SIZE, size - i);
+
             memset(report, 0, sizeof(report));
-            memcpy(report + 1, buf + i, TY_MIN(SEREMU_TX_SIZE, size - i));
+            memcpy(report + 1, buf + i, block_size);
 
             r = hs_hid_write(iface->h, report, sizeof(report));
             if (r < 0)
@@ -489,8 +491,8 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
             if (!r)
                 break;
 
-            i += (size_t)r - 1;
-            total += (size_t)r - 1;
+            i += block_size;
+            total += block_size;
         }
         return (ssize_t)total;
     }
