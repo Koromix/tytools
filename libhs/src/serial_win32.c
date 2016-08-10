@@ -281,32 +281,32 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    if (h->status < 0) {
+    if (h->read_status < 0) {
         // Could be a transient error, try to restart it
         _hs_win32_start_async_read(h);
-        if (h->status < 0)
-            return h->status;
+        if (h->read_status < 0)
+            return h->read_status;
     }
 
     /* Serial devices are stream-based. If we don't have any data yet, see if our asynchronous
        read request has returned anything. Then we can just give the user the data we have, until
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
-    if (!h->len) {
+    if (!h->read_len) {
         _hs_win32_finalize_async_read(h, timeout);
-        if (h->status <= 0)
-            return h->status;
+        if (h->read_status <= 0)
+            return h->read_status;
     }
 
-    if (size > h->len)
-        size = h->len;
-    memcpy(buf, h->ptr, size);
-    h->ptr += size;
-    h->len -= size;
+    if (size > h->read_len)
+        size = h->read_len;
+    memcpy(buf, h->read_ptr, size);
+    h->read_ptr += size;
+    h->read_len -= size;
 
     /* Our buffer has been fully read, start a new asynchonous request. I don't know how
        much latency this brings. Maybe double buffering would help, but not before any concrete
        benchmarking is done. */
-    if (!h->len) {
+    if (!h->read_len) {
         hs_error_mask(HS_ERROR_IO);
         _hs_win32_start_async_read(h);
         hs_error_unmask();
