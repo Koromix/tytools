@@ -95,21 +95,25 @@ void Board::loadSettings()
     }
 
     updateSerialInterface();
-    if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL) && !serial_iface_)
-        enable_serial_ = false;
 
     updateStatus();
     emit infoChanged();
     emit settingsChanged();
 }
 
-void Board::updateSerialInterface()
+bool Board::updateSerialInterface()
 {
     if (enable_serial_ && hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
         openSerialInterface();
+        if (!serial_iface_) {
+            enable_serial_ = false;
+            return false;
+        }
     } else {
         closeSerialInterface();
     }
+
+    return true;
 }
 
 bool Board::matchesTag(const QString &id)
@@ -437,14 +441,8 @@ void Board::setEnableSerial(bool enable)
         return;
 
     enable_serial_ = enable;
-
-    updateSerialInterface();
-    if (enable && hasCapability(TY_BOARD_CAPABILITY_SERIAL) && !serial_iface_) {
-        enable_serial_ = false;
-        enable = false;
-    } else {
+    if (updateSerialInterface())
         db_.put("enableSerial", enable);
-    }
 
     updateStatus();
     emit settingsChanged();

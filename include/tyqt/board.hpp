@@ -180,7 +180,7 @@ private:
     void setThreadPool(ty_pool *pool) { pool_ = pool; }
 
     void refreshBoard();
-    void updateSerialInterface();
+    bool updateSerialInterface();
     bool openSerialInterface();
     void closeSerialInterface();
 
