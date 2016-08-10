@@ -8,9 +8,9 @@
 #ifndef TASK_HH
 #define TASK_HH
 
-#include <QFuture>
-#include <QFutureInterface>
 #include <QMutex>
+#include <QObject>
+#include <QString>
 
 #include <functional>
 #include <memory>
@@ -23,8 +23,6 @@ class Task : public std::enable_shared_from_this<Task> {
     unsigned int progress_ = 0, progress_max_ = 0;
     bool success_ = false;
     std::shared_ptr<void> result_;
-
-    mutable QFutureInterface<bool> intf_;
 
     QMutex listeners_lock_{QMutex::Recursive};
     std::vector<class TaskListener *> listeners_;
@@ -45,8 +43,6 @@ public:
     unsigned int progressMaximum() const { return progress_max_; }
     bool success() const { return success_; }
     std::shared_ptr<void> result() const { return result_; }
-
-    QFuture<bool> future() const { return intf_.future(); }
 
     void reportLog(ty_log_level level, const QString &msg);
     void reportPending();
@@ -107,8 +103,6 @@ public:
     unsigned int progressMaximum() const;
     bool success() const;
     std::shared_ptr<void> result() const;
-
-    QFuture<bool> future() const;
 
     friend class TaskListener;
 };

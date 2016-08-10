@@ -31,7 +31,6 @@ void Task::reportStarted()
 {
     status_ = TY_TASK_STATUS_RUNNING;
 
-    intf_.reportStarted();
     QMutexLocker locker(&listeners_lock_);
     for (auto &l: listeners_)
         l->notifyStarted();
@@ -42,8 +41,6 @@ void Task::reportFinished(bool success, shared_ptr<void> result)
     status_ = TY_TASK_STATUS_FINISHED;
     success_ = success;
     result_ = result;
-
-    intf_.reportFinished(&success);
     QMutexLocker locker(&listeners_lock_);
     for (auto &l: listeners_)
         l->notifyFinished(success, result);
@@ -54,8 +51,6 @@ void Task::reportProgress(const QString &action, unsigned int value, unsigned in
     progress_ = value;
     progress_max_ = max;
 
-    intf_.setProgressRange(0, max);
-    intf_.setProgressValue(value);
     QMutexLocker locker(&listeners_lock_);
     for (auto &l: listeners_)
         l->notifyProgress(action, value, max);
@@ -223,11 +218,6 @@ bool TaskInterface::success() const
 shared_ptr<void> TaskInterface::result() const
 {
     return task_->result();
-}
-
-QFuture<bool> TaskInterface::future() const
-{
-    return task_->future();
 }
 
 TaskListener::~TaskListener()
