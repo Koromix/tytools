@@ -84,6 +84,7 @@ public slots:
     void openAboutDialog();
 
     void sendSerialInput();
+    void sendFileToSelection();
     void clearSerialDocument();
 
 private:

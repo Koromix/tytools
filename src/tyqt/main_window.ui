@@ -549,6 +549,7 @@
      <string>&amp;Serial</string>
     </property>
     <addaction name="actionEnableSerial"/>
+    <addaction name="actionSendFile"/>
     <addaction name="actionClearSerial"/>
    </widget>
    <addaction name="menuFile"/>
@@ -787,6 +788,11 @@
    </property>
    <property name="toolTip">
     <string>Rename board</string>
+   </property>
+  </action>
+  <action name="actionSendFile">
+   <property name="text">
+    <string>Send &amp;File</string>
    </property>
   </action>
  </widget>

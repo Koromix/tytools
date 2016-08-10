@@ -72,11 +72,13 @@ MainWindow::MainWindow(QWidget *parent)
     menuBoardContext->addAction(actionReboot);
     menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionEnableSerial);
+    menuBoardContext->addAction(actionSendFile);
     menuBoardContext->addAction(actionClearSerial);
     menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionRenameBoard);
 
     menuEnableSerial = new QMenu(this);
+    menuEnableSerial->addAction(actionSendFile);
     menuEnableSerial->addAction(actionClearSerial);
 
     auto serialButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionEnableSerial));
@@ -107,6 +109,7 @@ MainWindow::MainWindow(QWidget *parent)
             &MainWindow::dropAssociationForSelection);
     connect(actionReset, &QAction::triggered, this, &MainWindow::resetSelection);
     connect(actionReboot, &QAction::triggered, this, &MainWindow::rebootSelection);
+    connect(actionSendFile, &QAction::triggered, this, &MainWindow::sendFileToSelection);
     connect(actionQuit, &QAction::triggered, tyQt, &TyQt::quit);
 
     // View menu
@@ -198,6 +201,8 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
     menuSerialOptions = new QMenu(this);
+    menuSerialOptions->addAction(actionSendFile);
+    menuSerialOptions->addSeparator();
     actionSerialEOLGroup = new QActionGroup(this);
     add_eol_action(tr("No line ending"), "");
     add_eol_action(tr("Newline (LF)"), "\n")->setChecked(true);
@@ -434,6 +439,19 @@ void MainWindow::sendSerialInput()
     serialEdit->clear();
 }
 
+void MainWindow::sendFileToSelection()
+{
+    if (selected_boards_.empty())
+        return;
+
+    auto filename = QFileDialog::getOpenFileName(this, tr("Send File"));
+    if (filename.isEmpty())
+        return;
+
+    for (auto &board: selected_boards_)
+        board->startSendFile(filename);
+}
+
 void MainWindow::clearSerialDocument()
 {
     serialText->clear();
@@ -663,7 +681,7 @@ void MainWindow::openBoardListContextMenu(const QPoint &pos)
 
 void MainWindow::refreshActions()
 {
-    bool upload = false, reset = false, reboot = false;
+    bool upload = false, reset = false, reboot = false, send = false;
     for (auto &board: selected_boards_) {
         if (board->taskStatus() != TY_TASK_STATUS_READY)
             continue;
@@ -673,12 +691,19 @@ void MainWindow::refreshActions()
         reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
                  board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
         reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+        send |= current_board_->serialOpen();
     }
 
     actionUpload->setEnabled(upload);
     actionUploadNew->setEnabled(upload);
     actionReset->setEnabled(reset);
     actionReboot->setEnabled(reboot);
+
+    actionSendFile->setEnabled(send);
+    bool focus = !serialEdit->isEnabled() && sendButton->hasFocus();
+    serialEdit->setEnabled(send);
+    if (focus)
+        serialEdit->setFocus();
 }
 
 void MainWindow::refreshInfo()
