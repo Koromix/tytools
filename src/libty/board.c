@@ -472,9 +472,6 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     if (!r)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
 
-    if (!size)
-        size = strlen(buf);
-
     r = (*iface->vtable->serial_write)(iface, buf, size);
 
     ty_board_interface_close(iface);
