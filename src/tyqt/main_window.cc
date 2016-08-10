@@ -672,22 +672,18 @@ void MainWindow::refreshInterfaces()
 {
     interfaceTree->clear();
     for (auto &iface: current_board_->interfaces()) {
-        auto title = tr("%1 %2").arg(iface.name, iface.open ? tr("(open)") : "");
-
         auto item = new QTreeWidgetItem();
-        item->setText(0, title);
+        item->setText(0, iface.name);
         item->setText(1, iface.path);
 
         auto tooltip = tr("%1\n+ Location: %2\n+ Interface Number: %3\n+ Capabilities: %4")
-                       .arg(title).arg(iface.path).arg(iface.number)
+                       .arg(iface.name).arg(iface.path).arg(iface.number)
                        .arg(Board::makeCapabilityList(iface.capabilities).join(", "));
         item->setToolTip(0, tooltip);
         item->setToolTip(1, tooltip);
 
         interfaceTree->addTopLevelItem(item);
     }
-
-    serialEdit->setEnabled(current_board_->serialOpen());
 }
 
 void MainWindow::refreshStatus()

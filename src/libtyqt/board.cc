@@ -597,7 +597,6 @@ bool Board::openSerialInterface()
     ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
 
-    emit interfacesChanged();
     return true;
 }
 
@@ -609,8 +608,6 @@ void Board::closeSerialInterface()
     serial_notifier_.clear();
     ty_board_interface_close(serial_iface_);
     serial_iface_ = nullptr;
-
-    emit interfacesChanged();
 }
 
 TaskInterface Board::watchTask(TaskInterface task)
