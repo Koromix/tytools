@@ -207,8 +207,10 @@ static void close_win32_device(hs_handle *h)
         if (h->read_pending_thread) {
             if (hs_win32_version() >= HS_WIN32_VERSION_VISTA) {
                 CancelIoEx_(h->handle, NULL);
+                WaitForSingleObject(h->read_ov->hEvent, INFINITE);
             } else if (h->read_pending_thread == GetCurrentThreadId()) {
                 CancelIo(h->handle);
+                WaitForSingleObject(h->read_ov->hEvent, INFINITE);
             } else {
                 CloseHandle(h->handle);
                 h->handle = NULL;
