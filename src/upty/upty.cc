@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
+    qRegisterMetaType<uint64_t>("uint64_t");
 
     UpTy app(argc, argv);
     return app.exec();

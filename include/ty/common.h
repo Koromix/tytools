@@ -136,8 +136,8 @@ typedef struct ty_log_message {
 typedef struct ty_progress_message {
     const char *action;
 
-    unsigned int value;
-    unsigned int max;
+    uint64_t value;
+    uint64_t max;
 } ty_progress_message;
 
 typedef void ty_message_func(struct ty_task *task, ty_message_type type, const void *data, void *udata);
@@ -157,7 +157,7 @@ TY_PUBLIC const char *ty_error_last_message(void);
 
 TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
 TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
-TY_PUBLIC void ty_progress(const char *action, unsigned int value, unsigned int max);
+TY_PUBLIC void ty_progress(const char *action, uint64_t value, uint64_t max);
 
 TY_PUBLIC int ty_libhs_translate_error(int err);
 TY_PUBLIC void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);

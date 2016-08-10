@@ -46,7 +46,7 @@ void Task::reportFinished(bool success, shared_ptr<void> result)
         l->notifyFinished(success, result);
 }
 
-void Task::reportProgress(const QString &action, unsigned int value, unsigned int max)
+void Task::reportProgress(const QString &action, uint64_t value, uint64_t max)
 {
     progress_ = value;
     progress_max_ = max;
@@ -200,12 +200,12 @@ ty_task_status TaskInterface::status() const
     return task_->status();
 }
 
-unsigned int TaskInterface::progress() const
+uint64_t TaskInterface::progress() const
 {
     return task_->progress();
 }
 
-unsigned int TaskInterface::progressMaximum() const
+uint64_t TaskInterface::progressMaximum() const
 {
     return task_->progressMaximum();
 }
@@ -257,7 +257,7 @@ void TaskListener::notifyFinished(bool success, shared_ptr<void> result)
     Q_UNUSED(result);
 }
 
-void TaskListener::notifyProgress(const QString &action, unsigned int value, unsigned int max)
+void TaskListener::notifyProgress(const QString &action, uint64_t value, uint64_t max)
 {
     Q_UNUSED(action);
     Q_UNUSED(value);
@@ -284,7 +284,7 @@ void TaskWatcher::notifyFinished(bool success, shared_ptr<void> result)
     emit finished(success, result);
 }
 
-void TaskWatcher::notifyProgress(const QString &action, unsigned int value, unsigned int max)
+void TaskWatcher::notifyProgress(const QString &action, uint64_t value, uint64_t max)
 {
     emit progress(action, value, max);
 }

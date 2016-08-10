@@ -723,7 +723,7 @@ static int upload_progress_callback(const ty_board *board, const ty_firmware *fw
     TY_UNUSED(board);
     TY_UNUSED(udata);
 
-    ty_progress("Uploading", (unsigned int)uploaded, (unsigned int)ty_firmware_get_size(fw));
+    ty_progress("Uploading", uploaded, ty_firmware_get_size(fw));
     return 0;
 }
 

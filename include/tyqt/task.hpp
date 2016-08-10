@@ -20,7 +20,7 @@
 
 class Task : public std::enable_shared_from_this<Task> {
     ty_task_status status_ = TY_TASK_STATUS_READY;
-    unsigned int progress_ = 0, progress_max_ = 0;
+    uint64_t progress_ = 0, progress_max_ = 0;
     bool success_ = false;
     std::shared_ptr<void> result_;
 
@@ -39,8 +39,8 @@ public:
     virtual bool start() = 0;
 
     ty_task_status status() const { return status_; }
-    unsigned int progress() const { return progress_; }
-    unsigned int progressMaximum() const { return progress_max_; }
+    uint64_t progress() const { return progress_; }
+    uint64_t progressMaximum() const { return progress_max_; }
     bool success() const { return success_; }
     std::shared_ptr<void> result() const { return result_; }
 
@@ -48,7 +48,7 @@ public:
     void reportPending();
     void reportStarted();
     void reportFinished(bool success, std::shared_ptr<void> result);
-    void reportProgress(const QString &action, unsigned int value, unsigned int max);
+    void reportProgress(const QString &action, uint64_t value, uint64_t max);
 
     void addListener(TaskListener *listener);
     void removeListener(TaskListener *listener);
@@ -99,8 +99,8 @@ public:
     bool start();
 
     ty_task_status status() const;
-    unsigned int progress() const;
-    unsigned int progressMaximum() const;
+    uint64_t progress() const;
+    uint64_t progressMaximum() const;
     bool success() const;
     std::shared_ptr<void> result() const;
 
@@ -130,7 +130,7 @@ protected:
     virtual void notifyPending();
     virtual void notifyStarted();
     virtual void notifyFinished(bool success, std::shared_ptr<void> result);
-    virtual void notifyProgress(const QString &action, unsigned int value, unsigned int max);
+    virtual void notifyProgress(const QString &action, uint64_t value, uint64_t max);
 
     friend class Task;
 };
@@ -147,14 +147,14 @@ signals:
     void pending();
     void started();
     void finished(bool success, std::shared_ptr<void> result);
-    void progress(const QString &action, unsigned int value, unsigned int max);
+    void progress(const QString &action, uint64_t value, uint64_t max);
 
 protected:
     void notifyLog(ty_log_level level, const QString &msg) override;
     void notifyPending() override;
     void notifyStarted() override;
     void notifyFinished(bool success, std::shared_ptr<void> result) override;
-    void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
+    void notifyProgress(const QString &action, uint64_t value, uint64_t max) override;
 };
 
 #endif

@@ -44,7 +44,7 @@ public:
 private:
     void notifyLog(ty_log_level level, const QString &msg) override;
     void notifyFinished(bool success, shared_ptr<void> result) override;
-    void notifyProgress(const QString &action, unsigned int value, unsigned int max) override;
+    void notifyProgress(const QString &action, uint64_t value, uint64_t max) override;
 };
 
 bool BoardSelectorTask::start()
@@ -88,7 +88,7 @@ void BoardSelectorTask::notifyFinished(bool success, shared_ptr<void> result)
     reportFinished(success, result);
 }
 
-void BoardSelectorTask::notifyProgress(const QString &action, unsigned int value, unsigned int max)
+void BoardSelectorTask::notifyProgress(const QString &action, uint64_t value, uint64_t max)
 {
     reportProgress(action, value, max);
 }

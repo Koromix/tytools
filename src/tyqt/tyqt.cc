@@ -214,7 +214,7 @@ void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
     connect(watcher, &TaskWatcher::finished, &peer, [&peer](bool success) {
         peer.send({"exit", success ? "0" : "1"});
     });
-    connect(watcher, &TaskWatcher::progress, &peer, [&peer](const QString &action, unsigned int value, unsigned int max) {
+    connect(watcher, &TaskWatcher::progress, &peer, [&peer](const QString &action, uint64_t value, uint64_t max) {
         peer.send({"progress", action, QString::number(value), QString::number(max)});
     });
     watcher->setTask(&task);
@@ -249,8 +249,8 @@ void TyQt::readAnswer(const QStringList &arguments)
             goto error;
 
         QString action = parameters[0];
-        unsigned int progress = parameters[1].toUInt();
-        unsigned int total = parameters[2].toUInt();
+        uint64_t progress = parameters[1].toULongLong();
+        uint64_t total = parameters[2].toULongLong();
 
         ty_progress(action.toLocal8Bit().constData(), progress, total);
 #ifdef _WIN32

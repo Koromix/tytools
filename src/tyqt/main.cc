@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
     qRegisterMetaType<SessionPeer::CloseReason>("SessionPeer::CloseReason");
+    qRegisterMetaType<uint64_t>("uint64_t");
 
     TyQt app(argc, argv);
 #ifdef _WIN32

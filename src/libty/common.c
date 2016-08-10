@@ -72,7 +72,7 @@ static void print_progress(const void *data)
     }
 
     if (show_progress) {
-        printf("%s... %u%%%c", msg->action, 100 * msg->value / msg->max,
+        printf("%s... %"PRIu64"%%%c", msg->action, 100 * msg->value / msg->max,
                msg->value < msg->max ? '\r' : '\n');
 
         fflush(stdout);
@@ -231,7 +231,7 @@ int ty_error(ty_err err, const char *fmt, ...)
     return err;
 }
 
-void ty_progress(const char *action, unsigned int value, unsigned int max)
+void ty_progress(const char *action, uint64_t value, uint64_t max)
 {
     assert(value <= max);
     assert(max);
