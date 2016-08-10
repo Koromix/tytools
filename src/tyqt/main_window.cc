@@ -512,13 +512,18 @@ void MainWindow::updateFirmwareMenus()
         menuRecentFirmwares->setEnabled(true);
         menuBrowseFirmware->setEnabled(true);
 
-        auto action = new QAction(tr("&Clear recent firmwares"), this);
-        connect(action, &QAction::triggered, current_board_, &Board::clearRecentFirmwares);
+        if (!actionClearRecentFirmwares) {
+            actionClearRecentFirmwares = new QAction(tr("&Clear recent firmwares"), this);
+        } else {
+            actionClearRecentFirmwares->disconnect(SIGNAL(triggered()));
+        }
+        connect(actionClearRecentFirmwares, &QAction::triggered, current_board_,
+                &Board::clearRecentFirmwares);
 
         menuRecentFirmwares->addSeparator();
-        menuRecentFirmwares->addAction(action);
+        menuRecentFirmwares->addAction(actionClearRecentFirmwares);
         menuBrowseFirmware->addSeparator();
-        menuBrowseFirmware->addAction(action);
+        menuBrowseFirmware->addAction(actionClearRecentFirmwares);
     } else {
         menuRecentFirmwares->setEnabled(false);
         menuBrowseFirmware->setEnabled(false);

@@ -30,6 +30,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QMenu *menuUpload;
     QMenu *menuBrowseFirmware;
     QMenu *menuBoardContext;
+    QAction *actionClearRecentFirmwares = nullptr;
 
 #ifdef __APPLE__
     // See MainWindow::MainWindow() in main_window.cc for more information about that
