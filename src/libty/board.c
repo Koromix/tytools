@@ -418,7 +418,7 @@ static int wait_for_callback(ty_monitor *monitor, void *udata)
     return ty_board_has_capability(board, ctx->capability);
 }
 
-// FIXME: this function probably belongs to the monitor API
+// TODO: this function probably belongs to the monitor API
 int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeout)
 {
     assert(board);

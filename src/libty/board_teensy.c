@@ -389,7 +389,7 @@ void teensy_close_interface(ty_board_interface *iface)
     iface->h = NULL;
 }
 
-// FIXME: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
+// TODO: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
 static unsigned int teensy_guess_models(const ty_firmware *fw,
                                         const ty_board_model **rguesses, unsigned int max)
 {

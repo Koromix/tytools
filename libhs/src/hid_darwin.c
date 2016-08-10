@@ -456,7 +456,11 @@ static ssize_t send_report(hs_handle *h, IOHIDReportType type, const uint8_t *bu
         size--;
     }
 
-    // FIXME: detect various errors, here and elsewhere for common kIOReturn values
+    /* FIXME: find a way drop out of IOHIDDeviceSetReport() after a reasonable time, because
+       IOHIDDeviceSetReportWithCallback() is broken. Perhaps we can open the device twice and
+       close the write side to drop out of IOHIDDeviceSetReport() after a few seconds? Or maybe
+       we can call IOHIDDeviceSetReport() in another thread and kill it, but I don't trust OSX
+       to behave well in that case. The HID API does like to crash OSX for no reason. */
     kret = IOHIDDeviceSetReport(h->hid_ref, type, report, buf, (CFIndex)size);
     if (kret != kIOReturnSuccess)
         return hs_error(HS_ERROR_IO, "IOHIDDeviceSetReport() failed on '%s'", h->dev->path);

@@ -54,7 +54,6 @@ int ty_pool_new(ty_pool **rpool)
         goto error;
     }
 
-    // FIXME: expose these knobs
     pool->max_threads = 16;
     pool->unused_timeout = 10000;
 

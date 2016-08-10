@@ -210,7 +210,6 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
         r = (*family->load_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
-            // FIXME: propagate the errors when the initial enumeration abortion problem is fixed
             if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
                 r = 0;
             goto error;
@@ -379,7 +378,7 @@ static int device_callback(hs_device *dev, void *udata)
     return 0;
 }
 
-// FIXME: improve the sequential/parallel API
+// TODO: improve the sequential/parallel API
 int ty_monitor_new(int flags, ty_monitor **rmonitor)
 {
     assert(rmonitor);
