@@ -31,6 +31,17 @@ struct ty_task {
             unsigned int fws_count;
             int flags;
         } upload;
+
+        struct {
+            char *buf;
+            size_t size;
+        } send;
+
+        struct {
+            FILE *fp;
+            size_t size;
+            char *filename;
+        } send_file;
     };
 };
 
@@ -951,4 +962,187 @@ int ty_reboot(ty_board *board, ty_task **rtask)
     assert(rtask);
 
     return new_task(board, &reboot_task_vtable, rtask);
+}
+
+static int run_send(ty_task *task)
+{
+    ty_board *board = task->board;
+    const char *buf = task->send.buf;
+    size_t size = task->send.size;
+    size_t written;
+
+    written = 0;
+    while (written < size) {
+        size_t block_size;
+        ssize_t r;
+
+        ty_progress("Sending", written, size);
+
+        block_size = TY_MIN(1024, size - written);
+        r = ty_board_serial_write(board, buf + written, block_size);
+        if (r < 0)
+            return (int)r;
+        written += (size_t)r;
+    }
+
+    return 0;
+}
+
+static void cleanup_send(ty_task *task)
+{
+    free(task->send.buf);
+    cleanup_task(task);
+}
+
+static const struct _ty_task_vtable send_task_vtable = {
+    .run = run_send,
+    .cleanup = cleanup_send
+};
+
+int ty_send(ty_board *board, const char *buf, size_t size, ty_task **rtask)
+{
+    assert(board);
+    assert(buf);
+    assert(rtask);
+
+    ty_task *task = NULL;
+    int r;
+
+    r = new_task(board, &send_task_vtable, &task);
+    if (r < 0)
+        goto error;
+
+    task->send.buf = malloc(size);
+    if (!task->send.buf) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+    memcpy(task->send.buf, buf, size);
+    task->send.size = size;
+
+    *rtask = task;
+    return 0;
+
+error:
+    ty_task_unref(task);
+    return r;
+}
+
+static int run_send_file(ty_task *task)
+{
+    ty_board *board = task->board;
+    FILE *fp = task->send_file.fp;
+    size_t size = task->send_file.size;
+    const char *filename = task->send_file.filename;
+    size_t written;
+
+    written = 0;
+    while (written < size) {
+        char buf[1024];
+        size_t block_size;
+        size_t block_written;
+
+        ty_progress("Sending", written, size);
+
+        block_size = fread(buf, 1, sizeof(buf), fp);
+        if (!block_size) {
+            if (feof(fp)) {
+                break;
+            } else {
+                return ty_error(TY_ERROR_IO, "I/O error while reading '%s'", filename);
+            }
+        }
+
+        block_written = 0;
+        while (block_written < block_size) {
+            ssize_t r = ty_board_serial_write(board, buf + block_written,
+                                              block_size - block_written);
+            if (r < 0)
+                return (int)r;
+            block_written += (size_t)r;
+        }
+
+        written += block_size;
+    }
+    ty_progress("Sending", size, size);
+
+    return 0;
+}
+
+static void cleanup_send_file(ty_task *task)
+{
+    free(task->send_file.filename);
+    if (task->send_file.fp)
+        fclose(task->send_file.fp);
+    cleanup_task(task);
+}
+
+static const struct _ty_task_vtable send_file_task_vtable = {
+    .run = run_send_file,
+    .cleanup = cleanup_send_file
+};
+
+int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
+{
+    assert(board);
+    assert(filename);
+    assert(rtask);
+
+    ty_task *task = NULL;
+    int r;
+
+    r = new_task(board, &send_file_task_vtable, &task);
+    if (r < 0)
+        goto error;
+
+#ifdef _WIN32
+    task->send_file.fp = fopen(filename, "rb");
+#else
+    task->send_file.fp = fopen(filename, "rbe");
+#endif
+    if (!task->send_file.fp) {
+        switch (errno) {
+        case EACCES:
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
+            break;
+        case EIO:
+            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", filename);
+            break;
+        case ENOENT:
+        case ENOTDIR:
+            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", filename);
+            break;
+
+        default:
+            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", filename, strerror(errno));
+            break;
+        }
+        goto error;
+    }
+
+    fseek(task->send_file.fp, 0, SEEK_END);
+#ifdef _WIN32
+    task->send_file.size = (size_t)_ftelli64(task->send_file.fp);
+#else
+    task->send_file.size = (size_t)ftello(task->send_file.fp);
+#endif
+    rewind(task->send_file.fp);
+    if (!task->send_file.size) {
+        r = ty_error(TY_ERROR_UNSUPPORTED, "Failed to read size of '%s', is it a regular file?",
+                     filename);
+        goto error;
+    }
+
+    task->send_file.filename = strdup(filename);
+    if (!task->send_file.filename) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
+    *rtask = task;
+    return 0;
+
+error:
+    ty_task_unref(task);
+    return r;
 }

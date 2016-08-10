@@ -133,6 +133,8 @@ TY_PUBLIC int ty_upload(ty_board *board, struct ty_firmware **fws, unsigned int 
                          int flags, struct ty_task **rtask);
 TY_PUBLIC int ty_reset(ty_board *board, struct ty_task **rtask);
 TY_PUBLIC int ty_reboot(ty_board *board, struct ty_task **rtask);
+TY_PUBLIC int ty_send(ty_board *board, const char *buf, size_t size, struct ty_task **rtask);
+TY_PUBLIC int ty_send_file(ty_board *board, const char *filename, struct ty_task **rtask);
 
 TY_C_END
 
