@@ -511,6 +511,7 @@ void MainWindow::updateFirmwareMenus()
             action = menuRecentFirmwares->addAction(tr("Upload '%1'").arg(QFileInfo(firmware).fileName()));
             connect(action, &QAction::triggered, current_board_,
                     [=]() { current_board_->startUpload(firmware); });
+            action->setEnabled(actionUpload->isEnabled());
             action = menuBrowseFirmware->addAction(tr("Set to '%1'").arg(firmware));
             connect(action, &QAction::triggered, current_board_,
                     [=]() { current_board_->setFirmware(firmware); });
