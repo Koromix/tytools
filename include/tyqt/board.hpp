@@ -131,9 +131,9 @@ public:
     TaskInterface upload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface reset();
     TaskInterface reboot();
-
-    bool sendSerial(const QByteArray &buf);
-    bool sendSerial(const QString &s);
+    TaskInterface sendSerial(const QByteArray &buf);
+    TaskInterface sendSerial(const QString &s);
+    TaskInterface sendFile(const QString &filename);
 
     TaskInterface task() const { return task_; }
     ty_task_status taskStatus() const { return task_.status(); }
@@ -154,6 +154,9 @@ public slots:
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws, bool reset_after);
     TaskInterface startReset();
     TaskInterface startReboot();
+    TaskInterface startSendSerial(const QByteArray &buf);
+    TaskInterface startSendSerial(const QString &s);
+    TaskInterface startSendFile(const QString &filename);
 
     void notifyLog(ty_log_level level, const QString &msg);
 
