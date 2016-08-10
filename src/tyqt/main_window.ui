@@ -548,7 +548,13 @@
     <property name="title">
      <string>&amp;Serial</string>
     </property>
+    <widget class="QMenu" name="menuSendHistory">
+     <property name="title">
+      <string>Send &amp;Recent</string>
+     </property>
+    </widget>
     <addaction name="actionEnableSerial"/>
+    <addaction name="menuSendHistory"/>
     <addaction name="actionSendFile"/>
     <addaction name="actionClearSerial"/>
    </widget>
