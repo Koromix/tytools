@@ -173,6 +173,10 @@ MainWindow::MainWindow(QWidget *parent)
             this, [=](int index) { boardList->setCurrentIndex(monitor_->index(index)); });
 
     // Serial tab
+    connect(tabWidget, &QTabWidget::currentChanged, this, [=]() {
+        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled())
+            serialEdit->setFocus();
+    });
     serialText->setWordWrapMode(QTextOption::NoWrap);
     connect(serialText, &QPlainTextEdit::customContextMenuRequested, this,
             &MainWindow::openSerialContextMenu);
@@ -618,6 +622,9 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         refreshSettings();
         refreshInterfaces();
         refreshStatus();
+
+        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled())
+            serialEdit->setFocus();
     } else {
         boardComboBox->setCurrentIndex(-1);
 
