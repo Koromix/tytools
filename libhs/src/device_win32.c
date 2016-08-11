@@ -164,6 +164,31 @@ static int open_win32_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh
         }
     }
 
+    if (mode & HS_HANDLE_MODE_WRITE) {
+        h->write_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+        if (!h->write_event) {
+            r = hs_error(HS_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
+            goto error;
+        }
+
+        /* We need to cancel IO for writes without interfering with pending read requests,
+           we can use CancelIoEx() on Vista or CancelIo() on a duplicate handle on XP. */
+        if ((mode & HS_HANDLE_MODE_READ) && hs_win32_version() < HS_WIN32_VERSION_VISTA) {
+            BOOL success;
+
+            hs_log(HS_LOG_DEBUG, "Using duplicate handle to write to '%s'", dev->path);
+            success = DuplicateHandle(GetCurrentProcess(), h->handle, GetCurrentProcess(),
+                                      &h->write_handle, 0, TRUE, DUPLICATE_SAME_ACCESS);
+            if (!success) {
+                r = hs_error(HS_ERROR_SYSTEM, "DuplicateHandle() failed: %s", hs_win32_strerror(0));
+                h->write_handle = NULL;
+                goto error;
+            }
+        } else {
+            h->write_handle = h->handle;
+        }
+    }
+
     *rh = h;
     return 0;
 
@@ -228,9 +253,13 @@ static void close_win32_device(hs_handle *h)
             }
         }
 
+        if (h->write_handle && h->write_handle != h->handle)
+            CloseHandle(h->write_handle);
         if (h->handle)
             CloseHandle(h->handle);
 
+        if (h->write_event)
+            CloseHandle(h->write_event);
         free(h->read_buf);
         if (h->read_ov && h->read_ov->hEvent)
             CloseHandle(h->read_ov->hEvent);
@@ -293,5 +322,38 @@ void _hs_win32_finalize_async_read(hs_handle *h, int timeout)
 
     h->read_pending_thread = 0;
     h->read_status = 1;
+}
 
+ssize_t _hs_win32_write_sync(hs_handle *h, const uint8_t *buf, size_t size, int timeout)
+{
+    OVERLAPPED ov = {0};
+    DWORD len;
+    BOOL success;
+
+    ov.hEvent = h->write_event;
+    success = WriteFile(h->write_handle, buf, (DWORD)size, NULL, &ov);
+    if (!success && GetLastError() != ERROR_IO_PENDING)
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+
+    if (timeout > 0)
+        WaitForSingleObject(ov.hEvent, (DWORD)timeout);
+
+    success = GetOverlappedResult(h->write_handle, &ov, &len, timeout < 0);
+    if (!success) {
+        if (GetLastError() == ERROR_IO_INCOMPLETE) {
+            if (h->write_handle != h->handle) {
+                CancelIo(h->write_handle);
+            } else {
+                CancelIoEx_(h->write_handle, &ov);
+            }
+
+            success = GetOverlappedResult(h->write_handle, &ov, &len, TRUE);
+            if (!success)
+                len = 0;
+        } else {
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+        }
+    }
+
+    return (ssize_t)len;
 }

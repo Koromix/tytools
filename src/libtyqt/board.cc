@@ -332,20 +332,35 @@ TaskInterface Board::reboot()
     return watchTask(make_task<TyTask>(task));
 }
 
-bool Board::sendSerial(const QByteArray &buf)
+TaskInterface Board::sendSerial(const QByteArray &buf)
 {
-    ssize_t r = ty_board_serial_write(board_, buf.data(), buf.size());
-    if (r < 0) {
-        emit notifyLog(TY_LOG_ERROR, ty_error_last_message());
-        return false;
-    }
+    ty_task *task;
+    int r;
 
-    return true;
+    r = ty_send(board_, buf.data(), buf.size(), &task);
+    if (r < 0)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+    ty_task_set_pool(task, pool_);
+
+    return watchTask(make_task<TyTask>(task));
 }
 
-bool Board::sendSerial(const QString &s)
+TaskInterface Board::sendSerial(const QString &s)
 {
     return sendSerial(serial_codec_->fromUnicode(s));
+}
+
+TaskInterface Board::sendFile(const QString &filename)
+{
+    ty_task *task;
+    int r;
+
+    r = ty_send_file(board_, filename.toLocal8Bit().constData(), &task);
+    if (r < 0)
+        return watchTask(make_task<FailedTask>(ty_error_last_message()));
+    ty_task_set_pool(task, pool_);
+
+    return watchTask(make_task<TyTask>(task));
 }
 
 void Board::setTag(const QString &tag)
@@ -479,6 +494,27 @@ TaskInterface Board::startReset()
 TaskInterface Board::startReboot()
 {
     auto task = reboot();
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startSendSerial(const QByteArray &buf)
+{
+    auto task = sendSerial(buf);
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startSendSerial(const QString &s)
+{
+    auto task = sendSerial(s);
+    task.start();
+    return task;
+}
+
+TaskInterface Board::startSendFile(const QString &filename)
+{
+    auto task = sendFile(filename);
     task.start();
     return task;
 }

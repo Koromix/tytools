@@ -24,6 +24,8 @@
 
 using namespace std;
 
+#define MAX_SERIAL_HISTORY 10
+
 QStringList MainWindow::codecs_;
 QHash<QString, int> MainWindow::codec_indexes_;
 
@@ -39,6 +41,8 @@ MainWindow::MainWindow(QWidget *parent)
        in updateFirmwareMenus(). */
     menuRecentFirmwares2 = new QMenu(menuRecentFirmwares->title(), this);
     menuRecentFirmwares3 = new QMenu(menuRecentFirmwares->title(), this);
+    menuSendHistory2 = new QMenu(menuSendHistory->title(), this);
+    menuSendHistory3 = new QMenu(menuSendHistory->title(), this);
 #endif
 
     menuUpload = new QMenu(this);
@@ -72,11 +76,23 @@ MainWindow::MainWindow(QWidget *parent)
     menuBoardContext->addAction(actionReboot);
     menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionEnableSerial);
+#ifdef __APPLE__
+    menuBoardContext->addMenu(menuSendHistory2);
+#else
+    menuBoardContext->addMenu(menuSendHistory);
+#endif
+    menuBoardContext->addAction(actionSendFile);
     menuBoardContext->addAction(actionClearSerial);
     menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionRenameBoard);
 
     menuEnableSerial = new QMenu(this);
+#ifdef __APPLE__
+    menuEnableSerial->addMenu(menuSendHistory3);
+#else
+    menuEnableSerial->addMenu(menuSendHistory);
+#endif
+    menuEnableSerial->addAction(actionSendFile);
     menuEnableSerial->addAction(actionClearSerial);
 
     auto serialButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionEnableSerial));
@@ -107,6 +123,7 @@ MainWindow::MainWindow(QWidget *parent)
             &MainWindow::dropAssociationForSelection);
     connect(actionReset, &QAction::triggered, this, &MainWindow::resetSelection);
     connect(actionReboot, &QAction::triggered, this, &MainWindow::rebootSelection);
+    connect(actionSendFile, &QAction::triggered, this, &MainWindow::sendFileToSelection);
     connect(actionQuit, &QAction::triggered, tyQt, &TyQt::quit);
 
     // View menu
@@ -198,6 +215,10 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
     menuSerialOptions = new QMenu(this);
+    menuBrowseHistory = new QMenu(tr("Set &Recent"), this);
+    menuSerialOptions->addMenu(menuBrowseHistory);
+    menuSerialOptions->addAction(actionSendFile);
+    menuSerialOptions->addSeparator();
     actionSerialEOLGroup = new QActionGroup(this);
     add_eol_action(tr("No line ending"), "");
     add_eol_action(tr("Newline (LF)"), "\n")->setChecked(true);
@@ -421,17 +442,23 @@ void MainWindow::openAboutDialog()
 
 void MainWindow::sendSerialInput()
 {
-    auto s = serialEdit->text();
-    s += actionSerialEOLGroup->checkedAction()->property("EOL").toString();
-
-    auto echo = actionSerialEcho->isChecked();
-    for (auto &board: selected_boards_) {
-        if (echo)
-            board->appendToSerialDocument(s);
-        board->sendSerial(s);
-    }
-
+    sendToSelectedBoards(serialEdit->text());
     serialEdit->clear();
+}
+
+void MainWindow::sendFileToSelection()
+{
+    if (selected_boards_.empty())
+        return;
+
+    auto filename = QFileDialog::getOpenFileName(this, tr("Send File"));
+    if (filename.isEmpty())
+        return;
+
+    for (auto &board: selected_boards_)
+        board->startSendFile(filename);
+
+    appendToSerialHistory(QString("@%1").arg(filename));
 }
 
 void MainWindow::clearSerialDocument()
@@ -573,6 +600,94 @@ void MainWindow::updateFirmwareMenus()
 #endif
 }
 
+void MainWindow::sendToSelectedBoards(const QString &s)
+{
+    if (s.startsWith('@')) {
+        auto filename = s.mid(1);
+        for (auto &board: selected_boards_)
+            board->startSendFile(filename);
+    } else {
+        QString newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
+        bool echo = actionSerialEcho->isChecked();
+
+        auto s2 = s + newline;
+        for (auto &board: selected_boards_) {
+            if (echo)
+                board->appendToSerialDocument(s2);
+            board->startSendSerial(s2);
+        }
+    }
+
+    appendToSerialHistory(s);
+}
+
+void MainWindow::appendToSerialHistory(const QString &s)
+{
+    serial_history_.removeAll(s);
+    serial_history_.prepend(s);
+    if (serial_history_.count() > MAX_SERIAL_HISTORY)
+        serial_history_.erase(serial_history_.begin() + MAX_SERIAL_HISTORY, serial_history_.end());
+
+    menuSendHistory->clear();
+    menuBrowseHistory->clear();
+
+    if (!serial_history_.isEmpty()) {
+        for (auto &sent: serial_history_) {
+            QAction *action;
+
+            action = menuSendHistory->addAction(tr("Send '%1'").arg(sent));
+            connect(action, &QAction::triggered, this,
+                    [=]() { sendToSelectedBoards(sent); });
+            action = menuBrowseHistory->addAction(sent);
+            connect(action, &QAction::triggered, serialEdit,
+                    [=]() { serialEdit->setText(sent); });
+        }
+
+        if (!actionClearSerialHistory) {
+            actionClearSerialHistory = new QAction(tr("&Clear serial history"), this);
+            connect(actionClearSerialHistory, &QAction::triggered, this,
+                    &MainWindow::clearSerialHistory);
+        }
+
+        menuSendHistory->addSeparator();
+        menuSendHistory->addAction(actionClearSerialHistory);
+        menuBrowseHistory->addSeparator();
+        menuBrowseHistory->addAction(actionClearSerialHistory);
+
+        menuSendHistory->setEnabled(actionSendFile->isEnabled());
+        menuBrowseHistory->setEnabled(actionSendFile->isEnabled());
+    } else {
+        menuSendHistory->setEnabled(false);
+        menuBrowseHistory->setEnabled(false);
+    }
+
+#ifdef __APPLE__
+    menuSendHistory2->clear();
+    menuSendHistory2->addActions(menuSendHistory->actions());
+    menuSendHistory2->setEnabled(menuSendHistory->isEnabled());
+
+    menuSendHistory3->clear();
+    menuSendHistory3->addActions(menuSendHistory->actions());
+    menuSendHistory3->setEnabled(menuSendHistory->isEnabled());
+#endif
+}
+
+void MainWindow::clearSerialHistory()
+{
+    serial_history_.clear();
+
+    menuSendHistory->clear();
+    menuSendHistory->setEnabled(false);
+#ifdef __APPLE__
+    menuSendHistory2->clear();
+    menuSendHistory2->setEnabled(false);
+    menuSendHistory3->clear();
+    menuSendHistory3->setEnabled(false);
+#endif
+    menuBrowseHistory->clear();
+    menuBrowseHistory->setEnabled(false);
+}
+
 QString MainWindow::browseFirmwareDirectory() const
 {
     if (selected_boards_.empty())
@@ -663,7 +778,7 @@ void MainWindow::openBoardListContextMenu(const QPoint &pos)
 
 void MainWindow::refreshActions()
 {
-    bool upload = false, reset = false, reboot = false;
+    bool upload = false, reset = false, reboot = false, send = false;
     for (auto &board: selected_boards_) {
         if (board->taskStatus() != TY_TASK_STATUS_READY)
             continue;
@@ -673,12 +788,25 @@ void MainWindow::refreshActions()
         reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
                  board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
         reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+        send |= current_board_->serialOpen();
     }
 
     actionUpload->setEnabled(upload);
     actionUploadNew->setEnabled(upload);
     actionReset->setEnabled(reset);
     actionReboot->setEnabled(reboot);
+
+    actionSendFile->setEnabled(send);
+    menuSendHistory->setEnabled(send && !serial_history_.isEmpty());
+#ifdef __APPLE__
+    menuSendHistory2->setEnabled(menuSendHistory->isEnabled());
+    menuSendHistory3->setEnabled(menuSendHistory->isEnabled());
+#endif
+    menuBrowseHistory->setEnabled(send && !serial_history_.isEmpty());
+    bool focus = !serialEdit->isEnabled() && sendButton->hasFocus();
+    serialEdit->setEnabled(send);
+    if (focus)
+        serialEdit->setFocus();
 }
 
 void MainWindow::refreshInfo()

@@ -315,7 +315,7 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     return (ssize_t)size;
 }
 
-ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, ssize_t size)
+ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
@@ -325,19 +325,5 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, ssize_t size)
     if (!size)
         return 0;
 
-    OVERLAPPED ov = {0};
-    DWORD len;
-    BOOL success;
-
-    success = WriteFile(h->handle, buf, (DWORD)size, NULL, &ov);
-    if (!success && GetLastError() != ERROR_IO_PENDING) {
-        CancelIo(h->handle);
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
-    }
-
-    success = GetOverlappedResult(h->handle, &ov, &len, TRUE);
-    if (!success)
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
-
-    return (ssize_t)len;
+    return _hs_win32_write_sync(h, buf, size, timeout);
 }

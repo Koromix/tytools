@@ -39,11 +39,15 @@ struct hs_handle {
     size_t read_len;
     int read_status;
     unsigned long read_pending_thread; // DWORD
+
+    void *write_handle; // HANDLE
+    void *write_event; // HANDLE
 };
 
 #ifdef _WIN32
 void _hs_win32_start_async_read(hs_handle *h);
 void _hs_win32_finalize_async_read(hs_handle *h, int timeout);
+ssize_t _hs_win32_write_sync(hs_handle *h, const uint8_t *buf, size_t size, int timeout);
 #endif
 
 #endif

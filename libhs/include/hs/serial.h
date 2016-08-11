@@ -248,13 +248,14 @@ HS_PUBLIC ssize_t hs_serial_read(struct hs_handle *h, uint8_t *buf, size_t size,
  * Write up to @p size bytes to the device. This is a blocking function, but it may not write
  * all the data passed in.
  *
- * @param h    Device handle.
- * @param buf  Data buffer.
- * @param size Size of the buffer.
+ * @param h       Device handle.
+ * @param buf     Data buffer.
+ * @param size    Size of the buffer.
+ * @param timeout Timeout in milliseconds, or -1 to block indefinitely.
  * @return This function returns the number of bytes written, or a negative @ref hs_error_code
  *     value.
  */
-HS_PUBLIC ssize_t hs_serial_write(struct hs_handle *h, const uint8_t *buf, ssize_t size);
+HS_PUBLIC ssize_t hs_serial_write(struct hs_handle *h, const uint8_t *buf, size_t size, int timeout);
 
 HS_END_C
 
