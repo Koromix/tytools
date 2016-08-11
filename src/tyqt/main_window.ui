@@ -206,7 +206,7 @@
        </widget>
        <widget class="QWidget" name="serialTab">
         <attribute name="title">
-         <string>&amp;Serial</string>
+         <string>S&amp;erial</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
@@ -531,9 +531,6 @@
     </property>
     <addaction name="actionNewWindow"/>
     <addaction name="actionCompactMode"/>
-    <addaction name="separator"/>
-    <addaction name="actionEnableSerial"/>
-    <addaction name="actionClearSerial"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -547,7 +544,15 @@
     <addaction name="separator"/>
     <addaction name="actionPreferences"/>
    </widget>
+   <widget class="QMenu" name="menuSerial">
+    <property name="title">
+     <string>&amp;Serial</string>
+    </property>
+    <addaction name="actionEnableSerial"/>
+    <addaction name="actionClearSerial"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuSerial"/>
    <addaction name="menuView"/>
    <addaction name="menuTools"/>
    <addaction name="menuHelp"/>
