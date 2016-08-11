@@ -50,6 +50,12 @@ MainWindow::MainWindow(QWidget *parent)
     menuUpload->addMenu(menuRecentFirmwares);
 #endif
 
+    auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
+    if (uploadButton) {
+        uploadButton->setMenu(menuUpload);
+        uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
+    }
+
     menuBrowseFirmware = new QMenu(this);
 
     menuBoardContext = new QMenu(this);
@@ -69,12 +75,6 @@ MainWindow::MainWindow(QWidget *parent)
     menuBoardContext->addAction(actionClearSerial);
     menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionRenameBoard);
-
-    auto uploadButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionUpload));
-    if (uploadButton) {
-        uploadButton->setMenu(menuUpload);
-        uploadButton->setPopupMode(QToolButton::MenuButtonPopup);
-    }
 
     /* Only stretch the tab widget when resizing the window, I can't manage to replicate
        this with the Designer alone. */
@@ -97,7 +97,7 @@ MainWindow::MainWindow(QWidget *parent)
     // View menu
     connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openCloneWindow);
     connect(actionCompactMode, &QAction::triggered, this, &MainWindow::setCompactMode);
-    connect(actionClearSerial, &QAction::triggered, this, &MainWindow::clearSerial);
+    connect(actionClearSerial, &QAction::triggered, this, &MainWindow::clearSerialDocument);
 
     // Tools menu
     connect(actionArduinoTool, &QAction::triggered, this, &MainWindow::openArduinoTool);
@@ -150,9 +150,9 @@ MainWindow::MainWindow(QWidget *parent)
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     toolBar->addWidget(spacer);
 #ifdef __APPLE__
-    boardComboAction = nullptr;
+    actionBoardComboBox = nullptr;
 #else
-    boardComboAction = toolBar->addWidget(boardComboBox);
+    actionBoardComboBox = toolBar->addWidget(boardComboBox);
 #endif
     connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated),
             this, [=](int index) { boardList->setCurrentIndex(monitor_->index(index)); });
@@ -302,9 +302,9 @@ void MainWindow::setCompactMode(bool enable)
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
 
         bool focus = boardList->hasFocus();
-        if (boardComboAction) {
+        if (actionBoardComboBox) {
             tabWidget->setTabPosition(QTabWidget::West);
-            boardComboAction->setVisible(true);
+            actionBoardComboBox->setVisible(true);
         } else {
             tabWidget->setCornerWidget(boardComboBox, Qt::TopRightCorner);
             boardComboBox->setVisible(true);
@@ -320,9 +320,9 @@ void MainWindow::setCompactMode(bool enable)
         toolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
 
         bool focus = boardComboBox->hasFocus();
-        if (boardComboAction) {
+        if (actionBoardComboBox) {
             tabWidget->setTabPosition(QTabWidget::North);
-            boardComboAction->setVisible(false);
+            actionBoardComboBox->setVisible(false);
         } else {
             boardComboBox->setVisible(false);
             tabWidget->setCornerWidget(nullptr, Qt::TopRightCorner);
@@ -402,7 +402,7 @@ void MainWindow::sendSerialInput()
     serialEdit->clear();
 }
 
-void MainWindow::clearSerial()
+void MainWindow::clearSerialDocument()
 {
     serialText->clear();
 }

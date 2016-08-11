@@ -44,7 +44,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 
     QComboBox *boardComboBox;
     // We need to keep this around to show/hide the board QComboBox
-    QAction *boardComboAction;
+    QAction *actionBoardComboBox;
 
     Monitor *monitor_;
     std::vector<std::shared_ptr<Board>> selected_boards_;
@@ -80,7 +80,7 @@ public slots:
     void openAboutDialog();
 
     void sendSerialInput();
-    void clearSerial();
+    void clearSerialDocument();
 
 private:
     static void initCodecList();
