@@ -40,6 +40,7 @@ struct hs_handle {
     int read_status;
     unsigned long read_pending_thread; // DWORD
 
+    void *write_handle; // HANDLE
     void *write_event; // HANDLE
 };
 
