@@ -471,7 +471,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
 
     switch (hs_device_get_type(iface->dev)) {
     case HS_DEVICE_TYPE_SERIAL:
-        r = hs_serial_write(iface->h, (uint8_t *)buf, size);
+        r = hs_serial_write(iface->h, (uint8_t *)buf, size, 5000);
         if (r < 0)
             return ty_libhs_translate_error((int)r);
         return r;

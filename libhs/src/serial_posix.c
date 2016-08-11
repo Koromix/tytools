@@ -433,37 +433,51 @@ restart:
     return r;
 }
 
-ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size)
+ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeout)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
     assert(h->mode & HS_HANDLE_MODE_WRITE);
     assert(buf);
 
-    if (!size)
-        return 0;
-
     struct pollfd pfd;
-    ssize_t r;
+    uint64_t start;
+    int adjusted_timeout;
+    size_t written;
 
     pfd.events = POLLOUT;
     pfd.fd = h->fd;
 
-restart:
-    r = poll(&pfd, 1, -1);
-    if (r < 0) {
-        if (errno == EINTR)
-            goto restart;
+    start = hs_millis();
+    adjusted_timeout = timeout;
 
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
-                        strerror(errno));
-    }
-    assert(r == 1);
+    written = 0;
+    do {
+        ssize_t r;
 
-    r = write(h->fd, buf, (size_t)size);
-    if (r < 0)
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
-                        strerror(errno));
+        r = poll(&pfd, 1, adjusted_timeout);
+        if (r < 0) {
+            if (errno == EINTR)
+                continue;
 
-    return r;
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+                            strerror(errno));
+        }
+        if (!r)
+            break;
+
+        r = write(h->fd, buf + written, size - written);
+        if (r < 0) {
+            if (errno == EINTR)
+                continue;
+
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+                            strerror(errno));
+        }
+        written += (size_t)r;
+
+        adjusted_timeout = hs_adjust_timeout(timeout, start);
+    } while (written < size && adjusted_timeout);
+
+    return (ssize_t)written;
 }
