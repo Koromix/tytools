@@ -172,6 +172,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated),
             this, [=](int index) { boardList->setCurrentIndex(monitor_->index(index)); });
 
+    // Task progress bar (compact mode)
+    statusProgressBar = new QProgressBar();
+    statusProgressBar->setTextVisible(false);
+    statusProgressBar->setFixedWidth(150);
+    statusbar->addPermanentWidget(statusProgressBar);
+    statusProgressBar->hide();
+
     // Serial tab
     connect(tabWidget, &QTabWidget::currentChanged, this, [=]() {
         if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled())
@@ -329,6 +336,9 @@ void MainWindow::setCompactMode(bool enable)
             boardComboBox->setVisible(true);
         }
 
+        if (current_board_ && current_board_->taskStatus() != TY_TASK_STATUS_READY)
+            statusProgressBar->show();
+
         saved_splitter_pos_ = splitter->sizes().first();
         splitter->setSizes({0, 1});
         if (focus)
@@ -347,6 +357,8 @@ void MainWindow::setCompactMode(bool enable)
             boardComboBox->setVisible(false);
             tabWidget->setCornerWidget(nullptr, Qt::TopRightCorner);
         }
+
+        statusProgressBar->hide();
 
         splitter->setSizes({saved_splitter_pos_, 1});
         if (focus)
@@ -615,6 +627,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         connect(current_board_, &Board::settingsChanged, this, &MainWindow::refreshSettings);
         connect(current_board_, &Board::interfacesChanged, this, &MainWindow::refreshInterfaces);
         connect(current_board_, &Board::statusChanged, this, &MainWindow::refreshStatus);
+        connect(current_board_, &Board::progressChanged, this, &MainWindow::refreshProgress);
 
         enableBoardWidgets();
         refreshActions();
@@ -718,6 +731,22 @@ void MainWindow::refreshInterfaces()
 void MainWindow::refreshStatus()
 {
     statusText->setText(current_board_->statusText());
+
+    if (actionCompactMode->isChecked() && current_board_->taskStatus() != TY_TASK_STATUS_READY) {
+        // Set both to 0 to show busy indicator
+        statusProgressBar->setValue(0);
+        statusProgressBar->setMaximum(0);
+        statusProgressBar->show();
+    } else {
+        statusProgressBar->hide();
+    }
+}
+
+void MainWindow::refreshProgress()
+{
+    auto task = current_board_->task();
+    statusProgressBar->setMaximum(task.progressMaximum());
+    statusProgressBar->setValue(task.progress());
 }
 
 void MainWindow::openSerialContextMenu(const QPoint &pos)

@@ -9,6 +9,7 @@
 #define MAIN_WINDOW_HH
 
 #include <QHash>
+#include <QProgressBar>
 #include <QStringList>
 
 #include <memory>
@@ -46,6 +47,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QComboBox *boardComboBox;
     // We need to keep this around to show/hide the board QComboBox
     QAction *actionBoardComboBox;
+    QProgressBar *statusProgressBar;
     int saved_splitter_pos_ = 1;
 
     Monitor *monitor_;
@@ -104,6 +106,7 @@ private slots:
     void refreshSettings();
     void refreshInterfaces();
     void refreshStatus();
+    void refreshProgress();
 
     void openSerialContextMenu(const QPoint &pos);
 
