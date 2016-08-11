@@ -76,6 +76,15 @@ MainWindow::MainWindow(QWidget *parent)
     menuBoardContext->addSeparator();
     menuBoardContext->addAction(actionRenameBoard);
 
+    menuEnableSerial = new QMenu(this);
+    menuEnableSerial->addAction(actionClearSerial);
+
+    auto serialButton = qobject_cast<QToolButton *>(toolBar->widgetForAction(actionEnableSerial));
+    if (serialButton) {
+        serialButton->setMenu(menuEnableSerial);
+        serialButton->setPopupMode(QToolButton::MenuButtonPopup);
+    }
+
     /* Only stretch the tab widget when resizing the window, I can't manage to replicate
        this with the Designer alone. */
     splitter->setStretchFactor(0, 0);
