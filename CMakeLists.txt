@@ -124,6 +124,7 @@ if(TY_CONFIG_VERSION_AUTO)
         endif()
         execute_process(
             COMMAND ${GIT_EXECUTABLE} describe --tags
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             OUTPUT_VARIABLE TY_CONFIG_VERSION
             OUTPUT_STRIP_TRAILING_WHITESPACE)
         string(SUBSTRING ${TY_CONFIG_VERSION} 1 -1 TY_CONFIG_VERSION)
