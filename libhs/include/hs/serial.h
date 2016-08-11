@@ -254,7 +254,7 @@ HS_PUBLIC ssize_t hs_serial_read(struct hs_handle *h, uint8_t *buf, size_t size,
  * @return This function returns the number of bytes written, or a negative @ref hs_error_code
  *     value.
  */
-HS_PUBLIC ssize_t hs_serial_write(struct hs_handle *h, const uint8_t *buf, ssize_t size);
+HS_PUBLIC ssize_t hs_serial_write(struct hs_handle *h, const uint8_t *buf, size_t size);
 
 HS_END_C
 

@@ -315,7 +315,7 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     return (ssize_t)size;
 }
 
-ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, ssize_t size)
+ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size)
 {
     assert(h);
     assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
@@ -325,5 +325,5 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, ssize_t size)
     if (!size)
         return 0;
 
-    return _hs_win32_write_sync(h, buf, (size_t)size, -1);
+    return _hs_win32_write_sync(h, buf, size, -1);
 }
