@@ -361,6 +361,8 @@ void MainWindow::setCompactMode(bool enable)
             statusProgressBar->show();
 
         saved_splitter_pos_ = splitter->sizes().first();
+        if (!saved_splitter_pos_)
+            saved_splitter_pos_ = 1;
         splitter->setSizes({0, 1});
         if (focus)
             boardComboBox->setFocus(Qt::OtherFocusReason);
