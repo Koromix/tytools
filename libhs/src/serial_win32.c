@@ -325,5 +325,5 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, ssize_t size)
     if (!size)
         return 0;
 
-    return _hs_win32_write_sync(h, buf, (size_t)size);
+    return _hs_win32_write_sync(h, buf, (size_t)size, -1);
 }

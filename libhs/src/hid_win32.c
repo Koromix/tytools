@@ -82,7 +82,11 @@ ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
     if (size < 2)
         return 0;
 
-    return _hs_win32_write_sync(h, buf, size);
+    ssize_t r = _hs_win32_write_sync(h, buf, size, 5000);
+    if (!r)
+        return hs_error(HS_ERROR_IO, "Timed out while writing to '%s'", h->dev->path);
+
+    return r;
 }
 
 ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf, size_t size)
