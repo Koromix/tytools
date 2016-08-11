@@ -502,7 +502,7 @@
     </property>
     <widget class="QMenu" name="menuRecentFirmwares">
      <property name="title">
-      <string>Upload recent &amp;firmware</string>
+      <string>Upload r&amp;ecent firmware</string>
      </property>
     </widget>
     <addaction name="separator"/>
@@ -710,7 +710,7 @@
   </action>
   <action name="actionClearSerial">
    <property name="text">
-    <string>C&amp;lear Serial</string>
+    <string>&amp;Clear Serial</string>
    </property>
    <property name="toolTip">
     <string>Clear Serial</string>
@@ -733,7 +733,7 @@
      <normaloff>:/monitor</normaloff>:/monitor</iconset>
    </property>
    <property name="text">
-    <string>Enable &amp;Serial</string>
+    <string>&amp;Enable Serial</string>
    </property>
    <property name="iconText">
     <string>Serial</string>
@@ -778,7 +778,7 @@
   </action>
   <action name="actionRenameBoard">
    <property name="text">
-    <string>R&amp;ename board</string>
+    <string>Ren&amp;ame board</string>
    </property>
    <property name="toolTip">
     <string>Rename board</string>
