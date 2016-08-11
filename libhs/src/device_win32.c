@@ -293,5 +293,21 @@ void _hs_win32_finalize_async_read(hs_handle *h, int timeout)
 
     h->read_pending_thread = 0;
     h->read_status = 1;
+}
 
+ssize_t _hs_win32_write_sync(hs_handle *h, const uint8_t *buf, size_t size)
+{
+    OVERLAPPED ov = {0};
+    DWORD len;
+    BOOL success;
+
+    success = WriteFile(h->handle, buf, (DWORD)size, NULL, &ov);
+    if (!success && GetLastError() != ERROR_IO_PENDING)
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+
+    success = GetOverlappedResult(h->handle, &ov, &len, TRUE);
+    if (!success)
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+
+    return (ssize_t)len;
 }
