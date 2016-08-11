@@ -89,6 +89,12 @@ MainWindow::MainWindow(QWidget *parent)
        this with the Designer alone. */
     splitter->setStretchFactor(0, 0);
     splitter->setStretchFactor(1, 1);
+    splitter->setCollapsible(1, false);
+    connect(splitter, &QSplitter::splitterMoved, this, [=](int pos) {
+        bool collapsed = !pos;
+        if (collapsed != actionCompactMode->isChecked())
+            setCompactMode(collapsed);
+    });
     splitter->setSizes({1, 1});
 
     // We want all action shortcuts to remain available when the menu bar is hidden
@@ -319,7 +325,8 @@ void MainWindow::setCompactMode(bool enable)
             boardComboBox->setVisible(true);
         }
 
-        boardList->setVisible(false);
+        saved_splitter_pos_ = splitter->sizes().first();
+        splitter->setSizes({0, 1});
         if (focus)
             boardComboBox->setFocus(Qt::OtherFocusReason);
 
@@ -337,7 +344,7 @@ void MainWindow::setCompactMode(bool enable)
             tabWidget->setCornerWidget(nullptr, Qt::TopRightCorner);
         }
 
-        boardList->setVisible(true);
+        splitter->setSizes({saved_splitter_pos_, 1});
         if (focus)
             boardList->setFocus(Qt::OtherFocusReason);
 

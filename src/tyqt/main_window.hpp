@@ -46,6 +46,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QComboBox *boardComboBox;
     // We need to keep this around to show/hide the board QComboBox
     QAction *actionBoardComboBox;
+    int saved_splitter_pos_ = 1;
 
     Monitor *monitor_;
     std::vector<std::shared_ptr<Board>> selected_boards_;
