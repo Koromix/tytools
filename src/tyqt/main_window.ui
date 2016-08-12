@@ -321,7 +321,7 @@
          <item>
           <widget class="QGroupBox" name="groupBox_2">
            <property name="title">
-            <string>Monitor</string>
+            <string>Serial</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6">
             <item>
