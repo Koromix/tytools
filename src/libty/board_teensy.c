@@ -474,6 +474,10 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
         r = hs_serial_write(iface->h, (uint8_t *)buf, size, 5000);
         if (r < 0)
             return ty_libhs_translate_error((int)r);
+        if (!r)
+            return ty_error(TY_ERROR_IO, "Timed out while writing to '%s'",
+                            hs_device_get_path(iface->dev));
+
         return r;
 
     case HS_DEVICE_TYPE_HID:
