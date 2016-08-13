@@ -198,7 +198,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Serial tab
     connect(tabWidget, &QTabWidget::currentChanged, this, [=]() {
-        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled())
+        /* Focus the serial input widget if we can, but don't be a jerk to the user. */
+        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled() &&
+                !tabWidget->hasFocus())
             serialEdit->setFocus();
     });
     serialText->setWordWrapMode(QTextOption::NoWrap);
@@ -753,7 +755,9 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         refreshInterfaces();
         refreshStatus();
 
-        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled())
+        /* Focus the serial input widget if we can, but don't be a jerk to the user. */
+        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled() &&
+                !boardList->hasFocus() && !boardComboBox->hasFocus())
             serialEdit->setFocus();
     } else {
         boardComboBox->setCurrentIndex(-1);
