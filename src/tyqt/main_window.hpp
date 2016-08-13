@@ -53,6 +53,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     // We need to keep this around to show/hide the board QComboBox
     QAction *actionBoardComboBox;
     QProgressBar *statusProgressBar;
+    EnhancedGroupBox *lastOpenOptionBox = nullptr;
     int saved_splitter_pos_ = 1;
 
     Monitor *monitor_;

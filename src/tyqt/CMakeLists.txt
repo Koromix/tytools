@@ -9,6 +9,7 @@ set(TYQT_SOURCES about_dialog.cc
                  arduino_dialog.cc
                  arduino_install.cc
                  commands.cc
+                 enhanced_group_box.cc
                  enhanced_plain_text.cc
                  main.cc
                  main_window.cc

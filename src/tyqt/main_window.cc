@@ -248,6 +248,25 @@ MainWindow::MainWindow(QWidget *parent)
     for (auto codec: codecs_)
         codecComboBox->addItem(codec);
 
+    // Toggle collapsed option groups in Compact Mode
+    for (auto &object: optionsTab->children()) {
+        auto group_box = qobject_cast<EnhancedGroupBox *>(object);
+        if (group_box) {
+            if (!lastOpenOptionBox)
+                lastOpenOptionBox = group_box;
+
+            /* We set StrongFocus in the Designer to put them in the correct tab position. The
+               policy is set to StrongFocus when the group is made collapsible in Compact Mode. */
+            group_box->setFocusPolicy(Qt::NoFocus);
+            connect(group_box, &EnhancedGroupBox::clicked, this, [=](bool checked) {
+                if (checked && group_box != lastOpenOptionBox) {
+                    lastOpenOptionBox->collapse();
+                    lastOpenOptionBox = group_box;
+                }
+            });
+        }
+    }
+
     // TyQt errors
     connect(tyQt, &TyQt::globalError, this, &MainWindow::showErrorMessage);
 
@@ -382,6 +401,14 @@ void MainWindow::setCompactMode(bool enable)
         if (focus)
             boardComboBox->setFocus(Qt::OtherFocusReason);
 
+        for (auto &object: optionsTab->children()) {
+            auto group_box = qobject_cast<EnhancedGroupBox *>(object);
+            if (group_box) {
+                group_box->setCollapsible(true);
+                group_box->setExpanded(lastOpenOptionBox == group_box);
+            }
+        }
+
         setContextMenuPolicy(Qt::ActionsContextMenu);
     } else {
         menubar->setVisible(true);
@@ -405,6 +432,12 @@ void MainWindow::setCompactMode(bool enable)
         splitter->setSizes({saved_splitter_pos_, 1});
         if (focus)
             boardList->setFocus(Qt::OtherFocusReason);
+
+        for (auto &object: optionsTab->children()) {
+            auto group_box = qobject_cast<EnhancedGroupBox *>(object);
+            if (group_box)
+                group_box->setCollapsible(false);
+        }
 
         setContextMenuPolicy(Qt::NoContextMenu);
     }

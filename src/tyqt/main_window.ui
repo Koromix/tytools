@@ -275,7 +275,10 @@
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QGroupBox" name="groupBox">
+          <widget class="EnhancedGroupBox" name="groupBox">
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="title">
             <string>Upload</string>
            </property>
@@ -325,7 +328,10 @@
           </widget>
          </item>
          <item>
-          <widget class="QGroupBox" name="groupBox_2">
+          <widget class="EnhancedGroupBox" name="groupBox_2">
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="title">
             <string>Serial</string>
            </property>
@@ -814,6 +820,12 @@
    <extends>QPlainTextEdit</extends>
    <header>enhanced_plain_text.hpp</header>
   </customwidget>
+  <customwidget>
+   <class>EnhancedGroupBox</class>
+   <extends>QGroupBox</extends>
+   <header>enhanced_group_box.hpp</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>boardList</tabstop>
@@ -828,9 +840,11 @@
   <tabstop>serialText</tabstop>
   <tabstop>serialEdit</tabstop>
   <tabstop>sendButton</tabstop>
+  <tabstop>groupBox</tabstop>
   <tabstop>firmwarePath</tabstop>
   <tabstop>firmwareBrowseButton</tabstop>
   <tabstop>resetAfterCheck</tabstop>
+  <tabstop>groupBox_2</tabstop>
   <tabstop>codecComboBox</tabstop>
   <tabstop>clearOnResetCheck</tabstop>
   <tabstop>scrollBackLimitSpin</tabstop>
