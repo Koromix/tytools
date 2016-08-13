@@ -157,8 +157,18 @@ MainWindow::MainWindow(QWidget *parent)
     // Ctrl+Tab board nagivation
     connect(new QShortcut(QKeySequence::NextChild, this),
             &QShortcut::activated, this, &MainWindow::selectNextBoard);
-    connect(new QShortcut(QKeySequence::PreviousChild, this),
+    /* Work around broken QKeySequence::PreviousChild, see (old) Qt bug report at
+       https://bugreports.qt.io/browse/QTBUG-15746 */
+    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Tab, this),
             &QShortcut::activated, this, &MainWindow::selectPreviousBoard);
+#ifdef _WIN32
+    connect(new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_F6, this),
+            &QShortcut::activated, this, &MainWindow::selectPreviousBoard);
+#endif
+#ifdef __APPLE__
+    connect(new QShortcut(Qt::CTRL | Qt::Key_BraceLeft, this),
+            &QShortcut::activated, this, &MainWindow::selectPreviousBoard);
+#endif
 
     // Board list
     boardList->setModel(monitor_);
