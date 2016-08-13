@@ -48,6 +48,7 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QAction *actionSerialEcho;
     QActionGroup *actionSerialEOLGroup;
 
+    bool compact_mode_ = false;
     QComboBox *boardComboBox;
     // We need to keep this around to show/hide the board QComboBox
     QAction *actionBoardComboBox;
@@ -71,7 +72,7 @@ public:
     std::vector<std::shared_ptr<Board>> selectedBoards() const { return selected_boards_; }
     Board *currentBoard() const { return current_board_; }
 
-    bool compactMode() const { return !boardList->isVisible(); }
+    bool compactMode() const { return compact_mode_; }
 
 public slots:
     void showErrorMessage(const QString &msg);

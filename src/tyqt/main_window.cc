@@ -108,7 +108,7 @@ MainWindow::MainWindow(QWidget *parent)
     splitter->setCollapsible(1, false);
     connect(splitter, &QSplitter::splitterMoved, this, [=](int pos) {
         bool collapsed = !pos;
-        if (collapsed != actionCompactMode->isChecked())
+        if (collapsed != compact_mode_)
             setCompactMode(collapsed);
     });
     splitter->setSizes({1, 1});
@@ -346,6 +346,10 @@ void MainWindow::setCompactMode(bool enable)
 {
     actionCompactMode->setChecked(enable);
 
+    if (enable == compact_mode_)
+        return;
+    compact_mode_ = enable;
+
     if (enable) {
         menubar->setVisible(false);
         toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -399,7 +403,7 @@ void MainWindow::openCloneWindow()
     win->setAttribute(Qt::WA_DeleteOnClose);
 
     win->resize(size());
-    win->setCompactMode(compactMode());
+    win->setCompactMode(compact_mode_);
     win->boardList->selectionModel()->select(boardList->selectionModel()->selection(),
                                              QItemSelectionModel::SelectCurrent);
     win->tabWidget->setCurrentIndex(tabWidget->currentIndex());
@@ -866,7 +870,7 @@ void MainWindow::refreshStatus()
 {
     statusText->setText(current_board_->statusText());
 
-    if (actionCompactMode->isChecked() && current_board_->taskStatus() != TY_TASK_STATUS_READY) {
+    if (compact_mode_ && current_board_->taskStatus() != TY_TASK_STATUS_READY) {
         // Set both to 0 to show busy indicator
         statusProgressBar->setValue(0);
         statusProgressBar->setMaximum(0);
