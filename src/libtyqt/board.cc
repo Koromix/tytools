@@ -32,19 +32,6 @@ Board::Board(ty_board *board, QObject *parent)
     error_timer_.setInterval(TY_SHOW_ERROR_TIMEOUT);
     error_timer_.setSingleShot(true);
     connect(&error_timer_, &QTimer::timeout, this, &Board::updateStatus);
-
-    loadSettings();
-}
-
-shared_ptr<Board> Board::createBoard(ty_board *board)
-{
-    // Work around the private constructor for make_shared()
-    struct BoardSharedEnabler : public Board {
-        BoardSharedEnabler(ty_board *board)
-            : Board(board) {}
-    };
-
-    return make_shared<BoardSharedEnabler>(board);
 }
 
 Board::~Board()
@@ -53,7 +40,7 @@ Board::~Board()
     ty_board_unref(board_);
 }
 
-void Board::loadSettings()
+void Board::loadSettings(Monitor *monitor)
 {
     auto tag = db_.get("tag", "").toString();
     int r = ty_board_set_tag(board_, tag.isEmpty() ? nullptr : tag.toLocal8Bit().constData());
@@ -80,7 +67,7 @@ void Board::loadSettings()
     serial_decoder_.reset(serial_codec_->makeDecoder());
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
-    enable_serial_ = db_.get("enableSerial", enable_serial_default_).toBool();
+    enable_serial_ = db_.get("enableSerial", monitor ? monitor->serialByDefault() : false).toBool();
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */
