@@ -399,7 +399,7 @@ void MainWindow::openCloneWindow()
     win->resize(size());
     win->setCompactMode(compactMode());
     win->boardList->selectionModel()->select(boardList->selectionModel()->selection(),
-                                           QItemSelectionModel::SelectCurrent);
+                                             QItemSelectionModel::SelectCurrent);
     win->tabWidget->setCurrentIndex(tabWidget->currentIndex());
 
     win->show();

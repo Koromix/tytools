@@ -546,7 +546,7 @@ void Board::serialReceived(ty_descriptor desc)
             break;
 
         int r = ty_board_serial_read(board_, serial_buf_ + serial_buf_len_,
-                                      sizeof(serial_buf_) - serial_buf_len_, 0);
+                                     sizeof(serial_buf_) - serial_buf_len_, 0);
         if (r < 0) {
             serial_notifier_.clear();
             break;

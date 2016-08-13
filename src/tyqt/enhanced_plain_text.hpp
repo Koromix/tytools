@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#ifndef SERIAL_TEXT_HH
-#define SERIAL_TEXT_HH
+#ifndef ENHANCED_PLAIN_TEXT_HH
+#define ENHANCED_PLAIN_TEXT_HH
 
 #include <QPlainTextEdit>
 
