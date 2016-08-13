@@ -790,7 +790,7 @@ void MainWindow::refreshActions()
         reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
                  board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
         reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
-        send |= current_board_->serialOpen();
+        send |= board->serialOpen();
     }
 
     actionUpload->setEnabled(upload);
