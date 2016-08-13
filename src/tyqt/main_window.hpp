@@ -78,6 +78,9 @@ public:
 public slots:
     void showErrorMessage(const QString &msg);
 
+    void selectNextBoard();
+    void selectPreviousBoard();
+
     void uploadToSelection();
     void uploadNewToSelection();
     void dropAssociationForSelection();

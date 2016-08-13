@@ -8,6 +8,7 @@
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QScrollBar>
+#include <QShortcut>
 #include <QTextCodec>
 #include <QToolButton>
 #include <QUrl>
@@ -153,6 +154,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(actionAbout, &QAction::triggered, this, &MainWindow::openAboutDialog);
 
+    // Ctrl+Tab board nagivation
+    connect(new QShortcut(QKeySequence::NextChild, this),
+            &QShortcut::activated, this, &MainWindow::selectNextBoard);
+    connect(new QShortcut(QKeySequence::PreviousChild, this),
+            &QShortcut::activated, this, &MainWindow::selectPreviousBoard);
+
     // Board list
     boardList->setModel(monitor_);
     boardList->setItemDelegate(new BoardItemDelegate(monitor_));
@@ -290,6 +297,60 @@ bool MainWindow::event(QEvent *ev)
 void MainWindow::showErrorMessage(const QString &msg)
 {
     statusBar()->showMessage(msg, TY_SHOW_ERROR_TIMEOUT);
+}
+
+void MainWindow::selectNextBoard()
+{
+    if (!monitor_->rowCount())
+        return;
+
+    auto indexes = boardList->selectionModel()->selectedIndexes();
+    qSort(indexes);
+
+    QModelIndex new_index;
+    if (indexes.isEmpty()) {
+        new_index = monitor_->index(0, 0);
+    } else if (indexes.count() == 1) {
+        auto row = indexes.first().row();
+
+        if (row + 1 < monitor_->rowCount()) {
+            new_index = monitor_->index(row + 1, 0);
+        } else {
+            new_index = monitor_->index(0, 0);
+        }
+    } else {
+        new_index = indexes.first();
+    }
+
+    if (new_index.isValid())
+        boardList->selectionModel()->select(new_index, QItemSelectionModel::ClearAndSelect);
+}
+
+void MainWindow::selectPreviousBoard()
+{
+    if (!monitor_->rowCount())
+        return;
+
+    auto indexes = boardList->selectionModel()->selectedIndexes();
+    qSort(indexes);
+
+    QModelIndex new_index;
+    if (indexes.isEmpty()) {
+        new_index = monitor_->index(monitor_->rowCount() - 1, 0);
+    } else if (indexes.count() == 1) {
+        auto row = indexes.first().row();
+
+        if (row > 0) {
+            new_index = monitor_->index(row - 1, 0);
+        } else {
+            new_index = monitor_->index(monitor_->rowCount() - 1, 0);
+        }
+    } else {
+        new_index = indexes.last();
+    }
+
+    if (new_index.isValid())
+        boardList->selectionModel()->select(new_index, QItemSelectionModel::ClearAndSelect);
 }
 
 void MainWindow::uploadToSelection()
