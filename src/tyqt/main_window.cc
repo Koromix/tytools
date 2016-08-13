@@ -369,6 +369,15 @@ void MainWindow::setCompactMode(bool enable)
         saved_splitter_pos_ = splitter->sizes().first();
         if (!saved_splitter_pos_)
             saved_splitter_pos_ = 1;
+
+        /* Unfortunately, even collapsed the board list still constrains the minimum
+           width of the splitter. This is the simplest jerk-free way I know to work
+           around this behaviour. */
+        int list_width = boardList->minimumSize().width();
+        int splitter_width = splitter->minimumSizeHint().width();
+        splitter->setMinimumWidth(splitter_width - list_width);
+        splitter->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+
         splitter->setSizes({0, 1});
         if (focus)
             boardComboBox->setFocus(Qt::OtherFocusReason);
@@ -388,6 +397,10 @@ void MainWindow::setCompactMode(bool enable)
         }
 
         statusProgressBar->hide();
+
+        /* Remove the splitter layout hack used for compact mode. */
+        splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        splitter->setMinimumWidth(0);
 
         splitter->setSizes({saved_splitter_pos_, 1});
         if (focus)
