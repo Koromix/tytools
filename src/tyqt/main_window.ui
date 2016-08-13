@@ -383,7 +383,7 @@
               <item>
                <widget class="QLabel" name="label_8">
                 <property name="text">
-                 <string>Keep:</string>
+                 <string>Show:</string>
                 </property>
                </widget>
               </item>
