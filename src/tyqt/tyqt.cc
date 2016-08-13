@@ -566,8 +566,8 @@ int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
 void TyQt::resetMonitor()
 {
     monitor_cache_.clear();
-    monitor_.loadSettings();
     monitor_.stop();
+    monitor_.loadSettings();
     monitor_.start();
 }
 
@@ -578,8 +578,8 @@ void TyQt::clearSettingsAndReset()
 
     monitor_db_.clear();
     monitor_cache_.clear();
-    monitor_.loadSettings();
     monitor_.stop();
+    monitor_.loadSettings();
     monitor_.start();
 }
 

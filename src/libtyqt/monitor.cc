@@ -55,6 +55,9 @@ void Monitor::loadSettings()
     default_serial_ = db_.get("serialByDefault", true).toBool();
 
     emit settingsChanged();
+
+    for (auto &board: boards_)
+        board->loadSettings(this);
 }
 
 void Monitor::setMaxTasks(unsigned int max_tasks)
