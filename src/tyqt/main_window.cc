@@ -860,6 +860,7 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     current_board_ = nullptr;
 
     auto indexes = boardList->selectionModel()->selectedIndexes();
+    qSort(indexes);
     for (auto &idx: indexes) {
         if (idx.column() == 0)
             selected_boards_.push_back(Monitor::boardFromModel(monitor_, idx));
