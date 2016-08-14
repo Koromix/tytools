@@ -64,6 +64,6 @@ void EnhancedGroupBox::changeExpanded(bool checked)
         initStyleOption(&option);
         auto label_rect = style()->subControlRect(QStyle::CC_GroupBox, &option,
                                                   QStyle::SC_GroupBoxLabel, this);
-        setMaximumHeight(label_rect.height());
+        setMaximumHeight(label_rect.bottom());
     }
 }
