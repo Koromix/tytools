@@ -182,6 +182,9 @@ MainWindow::MainWindow(QWidget *parent)
         if (monitor_->rowCount() == 1)
             boardList->setCurrentIndex(monitor_->index(0, 0));
     });
+    /* serialEdit->setFocus() is not called in selectionChanged() if the board list
+       has the focus to prevent stealing keyboard focus. We need to do it here. */
+    connect(boardList, &QListView::clicked, this, &MainWindow::autoFocusBoardWidgets);
     // The blue selection frame displayed on OSX looks awful
     boardList->setAttribute(Qt::WA_MacShowFocusRect, false);
     connect(actionRenameBoard, &QAction::triggered, this, [=]() {
@@ -193,6 +196,7 @@ MainWindow::MainWindow(QWidget *parent)
     setTabOrder(boardList, boardComboBox);
     boardComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     boardComboBox->setMinimumContentsLength(12);
+    boardComboBox->setFocusPolicy(Qt::TabFocus);
     boardComboBox->setModel(monitor_);
     boardComboBox->setVisible(false);
     auto spacer = new QWidget();
@@ -215,10 +219,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Serial tab
     connect(tabWidget, &QTabWidget::currentChanged, this, [=]() {
-        /* Focus the serial input widget if we can, but don't be a jerk to the user. */
-        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled() &&
-                !tabWidget->hasFocus())
-            serialEdit->setFocus();
+        // Focus the serial input widget if we can, but don't be a jerk to keyboard users
+        if (!tabWidget->hasFocus())
+            autoFocusBoardWidgets();
     });
     serialText->setWordWrapMode(QTextOption::NoWrap);
     connect(serialText, &QPlainTextEdit::customContextMenuRequested, this,
@@ -321,8 +324,10 @@ void MainWindow::selectNextBoard()
     if (indexes.isEmpty()) {
         new_index = monitor_->index(0, 0);
     } else if (indexes.count() == 1) {
-        auto row = indexes.first().row();
+        if (monitor_->rowCount() == 1)
+            return;
 
+        auto row = indexes.first().row();
         if (row + 1 < monitor_->rowCount()) {
             new_index = monitor_->index(row + 1, 0);
         } else {
@@ -332,8 +337,10 @@ void MainWindow::selectNextBoard()
         new_index = indexes.first();
     }
 
-    if (new_index.isValid())
+    if (new_index.isValid()) {
         boardList->selectionModel()->select(new_index, QItemSelectionModel::ClearAndSelect);
+        autoFocusBoardWidgets();
+    }
 }
 
 void MainWindow::selectPreviousBoard()
@@ -348,8 +355,10 @@ void MainWindow::selectPreviousBoard()
     if (indexes.isEmpty()) {
         new_index = monitor_->index(monitor_->rowCount() - 1, 0);
     } else if (indexes.count() == 1) {
-        auto row = indexes.first().row();
+        if (monitor_->rowCount() == 1)
+            return;
 
+        auto row = indexes.first().row();
         if (row > 0) {
             new_index = monitor_->index(row - 1, 0);
         } else {
@@ -359,8 +368,10 @@ void MainWindow::selectPreviousBoard()
         new_index = indexes.last();
     }
 
-    if (new_index.isValid())
+    if (new_index.isValid()) {
         boardList->selectionModel()->select(new_index, QItemSelectionModel::ClearAndSelect);
+        autoFocusBoardWidgets();
+    }
 }
 
 void MainWindow::uploadToSelection()
@@ -876,10 +887,11 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
         refreshInterfaces();
         refreshStatus();
 
-        /* Focus the serial input widget if we can, but don't be a jerk to the user. */
-        if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled() &&
-                !boardList->hasFocus() && !boardComboBox->hasFocus())
-            serialEdit->setFocus();
+        /* Focus the serial input widget if we can, but don't be a jerk. Unfortunately
+           this also prevents proper edit focus when the user clicks a board in the
+           list, we fix that by handling boardList::clicked() in the constructor. */
+        if (!boardList->hasFocus() && !boardComboBox->hasFocus())
+            autoFocusBoardWidgets();
     } else {
         boardComboBox->setCurrentIndex(-1);
 
@@ -901,6 +913,12 @@ void MainWindow::openBoardListContextMenu(const QPoint &pos)
         return;
 
     menuBoardContext->exec(boardList->viewport()->mapToGlobal(pos));
+}
+
+void MainWindow::autoFocusBoardWidgets()
+{
+    if (tabWidget->currentWidget() == serialTab && serialEdit->isEnabled())
+        serialEdit->setFocus();
 }
 
 void MainWindow::refreshActions()

@@ -117,6 +117,8 @@ private slots:
     void selectionChanged(const QItemSelection &selected, const QItemSelection &previous);
     void openBoardListContextMenu(const QPoint &pos);
 
+    void autoFocusBoardWidgets();
+
     void refreshActions();
     void refreshInfo();
     void refreshSettings();
