@@ -263,6 +263,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setScrollBackLimitForSelection);
+    connect(serialLogSizeSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+            this, &MainWindow::setSerialLogSizeForSelection);
 
     initCodecList();
     for (auto codec: codecs_)
@@ -656,6 +658,7 @@ void MainWindow::disableBoardWidgets()
     actionClearSerial->setEnabled(false);
     optionsTab->setEnabled(false);
     actionEnableSerial->setEnabled(false);
+    serialLogFileLabel->clear();
 
     actionRenameBoard->setEnabled(false);
     ambiguousBoardLabel->setVisible(false);
@@ -971,6 +974,13 @@ void MainWindow::refreshSettings()
     actionEnableSerial->setChecked(current_board_->enableSerial());
     serialEdit->setEnabled(current_board_->serialOpen());
 
+    auto log_filename = current_board_->serialLogFilename();
+    if (!log_filename.isEmpty()) {
+        serialLogFileLabel->setText(log_filename);
+    } else {
+        serialLogFileLabel->setText(tr("No serial log available"));
+    }
+
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
     codecComboBox->blockSignals(true);
@@ -980,6 +990,9 @@ void MainWindow::refreshSettings()
     scrollBackLimitSpin->blockSignals(true);
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
     scrollBackLimitSpin->blockSignals(false);
+    serialLogSizeSpin->blockSignals(true);
+    serialLogSizeSpin->setValue(current_board_->serialLogSize() / 1000);
+    serialLogSizeSpin->blockSignals(false);
 
     updateFirmwareMenus();
 }
@@ -1093,4 +1106,10 @@ void MainWindow::setEnableSerialForSelection(bool enable)
 {
     for (auto &board: selected_boards_)
         board->setEnableSerial(enable);
+}
+
+void MainWindow::setSerialLogSizeForSelection(int size)
+{
+    for (auto &board: selected_boards_)
+        board->setSerialLogSize(size * 1000);
 }
