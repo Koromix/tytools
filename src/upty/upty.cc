@@ -83,6 +83,7 @@ int UpTy::run()
 {
     monitor_.reset(new Monitor());
     monitor_->setSerialByDefault(false);
+    monitor_->setSerialLogSize(0);
     if (!monitor_->start()) {
         QMessageBox::critical(nullptr, tr("%1 (error)").arg(applicationName()),
                               ty_error_last_message());

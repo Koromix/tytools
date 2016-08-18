@@ -263,6 +263,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setScrollBackLimitForSelection);
+    connect(serialLogSizeSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+            this, &MainWindow::setSerialLogSizeForSelection);
 
     initCodecList();
     for (auto codec: codecs_)
@@ -594,6 +596,7 @@ void MainWindow::sendFileToSelection()
     for (auto &board: selected_boards_)
         board->startSendFile(filename);
 
+    // NOTE: should we echo "@%1" to the serial document too?
     appendToSerialHistory(QString("@%1").arg(filename));
 }
 
@@ -656,6 +659,7 @@ void MainWindow::disableBoardWidgets()
     actionClearSerial->setEnabled(false);
     optionsTab->setEnabled(false);
     actionEnableSerial->setEnabled(false);
+    serialLogFileLabel->clear();
 
     actionRenameBoard->setEnabled(false);
     ambiguousBoardLabel->setVisible(false);
@@ -738,20 +742,21 @@ void MainWindow::updateFirmwareMenus()
 
 void MainWindow::sendToSelectedBoards(const QString &s)
 {
+    auto newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
+    auto s2 = s + newline;
+
     if (s.startsWith('@')) {
         auto filename = s.mid(1);
         for (auto &board: selected_boards_)
             board->startSendFile(filename);
     } else {
-        QString newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
-        bool echo = actionSerialEcho->isChecked();
-
-        auto s2 = s + newline;
-        for (auto &board: selected_boards_) {
-            if (echo)
-                board->appendToSerialDocument(s2);
+        for (auto &board: selected_boards_)
             board->startSendSerial(s2);
-        }
+    }
+
+    if (actionSerialEcho->isChecked()) {
+        for (auto &board: selected_boards_)
+            board->appendFakeSerialRead(s2);
     }
 
     appendToSerialHistory(s);
@@ -971,6 +976,13 @@ void MainWindow::refreshSettings()
     actionEnableSerial->setChecked(current_board_->enableSerial());
     serialEdit->setEnabled(current_board_->serialOpen());
 
+    auto log_filename = current_board_->serialLogFilename();
+    if (!log_filename.isEmpty()) {
+        serialLogFileLabel->setText(log_filename);
+    } else {
+        serialLogFileLabel->setText(tr("No serial log available"));
+    }
+
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
     codecComboBox->blockSignals(true);
@@ -980,6 +992,9 @@ void MainWindow::refreshSettings()
     scrollBackLimitSpin->blockSignals(true);
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
     scrollBackLimitSpin->blockSignals(false);
+    serialLogSizeSpin->blockSignals(true);
+    serialLogSizeSpin->setValue(current_board_->serialLogSize() / 1000);
+    serialLogSizeSpin->blockSignals(false);
 
     updateFirmwareMenus();
 }
@@ -1093,4 +1108,10 @@ void MainWindow::setEnableSerialForSelection(bool enable)
 {
     for (auto &board: selected_boards_)
         board->setEnableSerial(enable);
+}
+
+void MainWindow::setSerialLogSizeForSelection(int size)
+{
+    for (auto &board: selected_boards_)
+        board->setSerialLogSize(size * 1000);
 }

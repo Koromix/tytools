@@ -8,6 +8,7 @@
 #ifndef BOARD_HH
 #define BOARD_HH
 
+#include <QFile>
 #include <QIcon>
 #include <QMutex>
 #include <QStringList>
@@ -54,6 +55,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     char serial_buf_[262144];
     size_t serial_buf_len_ = 0;
     QTextDocument serial_document_;
+    QFile serial_log_file_;
     bool serial_clear_when_available_ = false;
 
     QTimer error_timer_;
@@ -63,6 +65,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QString serial_codec_name_;
     bool clear_on_reset_;
     bool enable_serial_;
+    size_t serial_log_size_;
 
     QString status_text_;
     QString status_icon_name_;
@@ -115,10 +118,11 @@ public:
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
     bool enableSerial() const { return enable_serial_; }
+    size_t serialLogSize() const { return serial_log_size_; }
+    QString serialLogFilename() const { return serial_log_file_.isOpen() ? serial_log_file_.fileName() : ""; }
 
     bool serialOpen() const { return serial_iface_; }
     QTextDocument &serialDocument() { return serial_document_; }
-    void appendToSerialDocument(const QString& s);
 
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
@@ -131,6 +135,8 @@ public:
     TaskInterface sendSerial(const QByteArray &buf);
     TaskInterface sendSerial(const QString &s);
     TaskInterface sendFile(const QString &filename);
+
+    void appendFakeSerialRead(const QString &s);
 
     TaskInterface task() const { return task_; }
     ty_task_status taskStatus() const { return task_.status(); }
@@ -145,6 +151,7 @@ public slots:
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
     void setEnableSerial(bool enable);
+    void setSerialLogSize(size_t size);
 
     TaskInterface startUpload(const QString &filename = QString());
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);
@@ -170,7 +177,7 @@ private slots:
     void updateStatus();
 
     void serialReceived(ty_descriptor desc);
-    void updateSerialDocument();
+    void appendBufferToSerialDocument();
 
     void notifyFinished(bool success, std::shared_ptr<void> result);
 
@@ -180,10 +187,13 @@ private:
 
     void setThreadPool(ty_pool *pool) { pool_ = pool; }
 
+    void writeToSerialLog(const char *buf, size_t len);
+
     void refreshBoard();
     bool updateSerialInterface();
     bool openSerialInterface();
     void closeSerialInterface();
+    void updateSerialLogState();
 
     void addUploadedFirmware(ty_firmware *fw);
 

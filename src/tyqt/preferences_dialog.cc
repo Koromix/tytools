@@ -43,6 +43,7 @@ void PreferencesDialog::apply()
 
     auto monitor = tyQt->monitor();
     monitor->setSerialByDefault(serialByDefaultCheck->isChecked());
+    monitor->setSerialLogSize(serialLogSizeDefaultSpin->value() * 1000);
     monitor->setMaxTasks(maxTasksSpin->value());
 }
 
@@ -65,5 +66,6 @@ void PreferencesDialog::refresh()
 
     auto monitor = tyQt->monitor();
     serialByDefaultCheck->setChecked(monitor->serialByDefault());
+    serialLogSizeDefaultSpin->setValue(monitor->serialLogSize() / 1000);
     maxTasksSpin->setValue(monitor->maxTasks());
 }

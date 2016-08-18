@@ -6,6 +6,9 @@
  */
 
 #include <QBrush>
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QDir>
 #include <QIcon>
 
 #include "tyqt/board.hpp"
@@ -53,6 +56,7 @@ void Monitor::loadSettings()
     }
     ty_pool_set_max_threads(pool_, max_tasks);
     default_serial_ = db_.get("serialByDefault", true).toBool();
+    serial_log_size_ = db_.get("serialLogSize", 20000000ull).toULongLong();
 
     emit settingsChanged();
 
@@ -87,6 +91,23 @@ void Monitor::setSerialByDefault(bool default_serial)
     }
 
     db_.put("serialByDefault", default_serial);
+    emit settingsChanged();
+}
+
+void Monitor::setSerialLogSize(size_t default_size)
+{
+    serial_log_size_ = default_size;
+
+    for (auto &board: boards_) {
+        auto db = board->database();
+
+        if (!db.get("serialLogSize").isValid()) {
+            board->setSerialLogSize(default_size);
+            db.remove("serialLogSize");
+        }
+    }
+
+    db_.put("serialLogSize", static_cast<qulonglong>(default_size));
     emit settingsChanged();
 }
 
@@ -325,6 +346,9 @@ void Monitor::handleAddedEvent(ty_board *board)
     if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         ptr->setDatabase(db_.subDatabase(ptr->id()));
         ptr->setCache(cache_.subDatabase(ptr->id()));
+        ptr->serial_log_file_.setFileName(findLogFilename(ptr->id(), 3));
+    } else {
+        ptr->serial_log_file_.setFileName(findLogFilename("UNKNOWN", 6));
     }
     ptr->loadSettings(this);
 
@@ -375,4 +399,26 @@ void Monitor::removeBoardItem(iterator it)
     beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
     boards_.erase(it);
     endRemoveRows();
+}
+
+QString Monitor::findLogFilename(const QString &id, unsigned int max)
+{
+    QDateTime oldest_mtime;
+    QString oldest_filename;
+
+    auto prefix = QString("%1/%2-%3")
+                  .arg(QDir::tempPath(), QCoreApplication::applicationName(), id);
+    for (unsigned int i = 1; i <= max; i++) {
+        auto filename = QString("%1-%2.txt").arg(prefix).arg(i);
+        QFileInfo info(filename);
+
+        if (!info.exists())
+            return filename;
+        if (oldest_filename.isEmpty() || info.lastModified() < oldest_mtime) {
+            oldest_filename = filename;
+            oldest_mtime = info.lastModified();
+        }
+    }
+
+    return oldest_filename;
 }

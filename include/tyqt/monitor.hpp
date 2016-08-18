@@ -36,6 +36,7 @@ class Monitor : public QAbstractListModel {
     QThread serial_thread_;
 
     bool default_serial_;
+    size_t serial_log_size_;
 
     std::vector<std::shared_ptr<Board>> boards_;
 
@@ -71,6 +72,8 @@ public:
     unsigned int maxTasks() const;
     void setSerialByDefault(bool default_serial);
     bool serialByDefault() const { return default_serial_; }
+    void setSerialLogSize(size_t default_size);
+    size_t serialLogSize() const { return serial_log_size_; }
 
     bool start();
     void stop();
@@ -120,6 +123,8 @@ private:
 
     void refreshBoardItem(iterator it);
     void removeBoardItem(iterator it);
+
+    QString findLogFilename(const QString &tpl, unsigned int max);
 };
 
 #endif
