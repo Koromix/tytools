@@ -18,6 +18,7 @@
 using namespace std;
 
 #define MAX_RECENT_FIRMWARES 4
+#define SERIAL_LOG_DELIMITER "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
 
 Board::Board(ty_board *board, QObject *parent)
     : QObject(parent), board_(ty_board_ref(board))
@@ -68,6 +69,9 @@ void Board::loadSettings(Monitor *monitor)
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
     enable_serial_ = db_.get("enableSerial", monitor ? monitor->serialByDefault() : false).toBool();
+    serial_log_size_ = db_.get(
+        "serialLogSize",
+        static_cast<quint64>(monitor ? monitor->serialLogSize() : 0)).toULongLong();
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */
@@ -82,6 +86,8 @@ void Board::loadSettings(Monitor *monitor)
     }
 
     updateSerialInterface();
+    serial_log_file_.close();
+    updateSerialLogState();
 
     updateStatus();
     emit infoChanged();
@@ -450,6 +456,18 @@ void Board::setEnableSerial(bool enable)
     emit settingsChanged();
 }
 
+void Board::setSerialLogSize(size_t size)
+{
+    if (size == serial_log_size_)
+        return;
+
+    serial_log_size_ = size;
+    updateSerialLogState();
+
+    db_.put("serialLogSize", static_cast<quint64>(size));
+    emit settingsChanged();
+}
+
 TaskInterface Board::startUpload(const QString &filename)
 {
     auto task = upload(filename);
@@ -521,10 +539,11 @@ void Board::serialReceived(ty_descriptor desc)
     Q_UNUSED(desc);
 
     QMutexLocker locker(&serial_lock_);
+
     ty_error_mask(TY_ERROR_MODE);
     ty_error_mask(TY_ERROR_IO);
 
-    bool was_empty = !serial_buf_len_;
+    size_t previous_len = serial_buf_len_;
     /* On OSX El Capitan (at least), serial device reads are often partial (512 and 1020 bytes
        reads happen pretty often), so try hard to empty the OS buffer. The Qt event loop may not
        give us back control before some time, and we want to avoid buffer overruns. */
@@ -545,10 +564,52 @@ void Board::serialReceived(ty_descriptor desc)
 
     ty_error_unmask();
     ty_error_unmask();
+
+    if (serial_log_file_.isOpen())
+        writeToSerialLog(serial_buf_ + previous_len, serial_buf_len_ - previous_len);
+
     locker.unlock();
 
-    if (was_empty && serial_buf_len_)
+    if (!previous_len && serial_buf_len_)
         QMetaObject::invokeMethod(this, "updateSerialDocument", Qt::QueuedConnection);
+}
+
+// You need to lock serial_lock_ before you call this
+void Board::writeToSerialLog(const char *buf, size_t len)
+{
+    serial_log_file_.unsetError();
+
+    qint64 pos = serial_log_file_.pos();
+    if (pos + len > serial_log_size_) {
+        auto part_len = serial_log_size_ - pos;
+        serial_log_file_.write(buf, part_len);
+        serial_log_file_.seek(0);
+        serial_log_file_.write(buf + part_len, len - part_len);
+    } else {
+        serial_log_file_.write(buf, len);
+    }
+
+    if (!serial_log_file_.atEnd()) {
+        pos = serial_log_file_.pos();
+        if (pos + sizeof(SERIAL_LOG_DELIMITER) >= serial_log_size_) {
+            serial_log_file_.resize(pos);
+            serial_log_file_.seek(0);
+        } else {
+            serial_log_file_.write(SERIAL_LOG_DELIMITER);
+            serial_log_file_.seek(pos);
+        }
+    }
+
+    if (serial_log_file_.error() != QFileDevice::NoError) {
+        auto error_msg = QString("Closed serial log file after error: %1")
+                         .arg(serial_log_file_.errorString());
+        ty_log(TY_LOG_ERROR, "%s", error_msg.toUtf8().constData());
+        QMetaObject::invokeMethod(this, "notifyLog", Qt::QueuedConnection,
+                                  Q_ARG(ty_log_level, TY_LOG_ERROR), Q_ARG(QString, error_msg));
+
+        serial_log_file_.close();
+        emit settingsChanged();
+    }
 }
 
 void Board::updateSerialDocument()
@@ -629,6 +690,22 @@ void Board::closeSerialInterface()
     serial_notifier_.clear();
     ty_board_interface_close(serial_iface_);
     serial_iface_ = nullptr;
+}
+
+void Board::updateSerialLogState()
+{
+    if (serial_log_file_.fileName().isEmpty())
+        return;
+
+    if (serial_log_size_) {
+        if (!serial_log_file_.isOpen())
+            serial_log_file_.open(QIODevice::WriteOnly);
+        if (serial_log_file_.isOpen() && static_cast<size_t>(serial_log_file_.size()) > serial_log_size_)
+            serial_log_file_.resize(serial_log_size_);
+    } else {
+        serial_log_file_.close();
+        serial_log_file_.remove();
+    }
 }
 
 TaskInterface Board::watchTask(TaskInterface task)
