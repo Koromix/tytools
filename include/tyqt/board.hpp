@@ -123,7 +123,6 @@ public:
 
     bool serialOpen() const { return serial_iface_; }
     QTextDocument &serialDocument() { return serial_document_; }
-    void appendToSerialDocument(const QString& s);
 
     static QStringList makeCapabilityList(uint16_t capabilities);
     static QString makeCapabilityString(uint16_t capabilities, QString empty_str = QString());
@@ -136,6 +135,8 @@ public:
     TaskInterface sendSerial(const QByteArray &buf);
     TaskInterface sendSerial(const QString &s);
     TaskInterface sendFile(const QString &filename);
+
+    void appendFakeSerialRead(const QString &s);
 
     TaskInterface task() const { return task_; }
     ty_task_status taskStatus() const { return task_.status(); }
@@ -176,7 +177,7 @@ private slots:
     void updateStatus();
 
     void serialReceived(ty_descriptor desc);
-    void updateSerialDocument();
+    void appendBufferToSerialDocument();
 
     void notifyFinished(bool success, std::shared_ptr<void> result);
 

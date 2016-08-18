@@ -221,14 +221,6 @@ void Board::updateStatus()
     emit statusChanged();
 }
 
-void Board::appendToSerialDocument(const QString &s)
-{
-    QTextCursor cursor(&serial_document_);
-    cursor.movePosition(QTextCursor::End);
-
-    cursor.insertText(s);
-}
-
 QStringList Board::makeCapabilityList(uint16_t capabilities)
 {
     QStringList list;
@@ -354,6 +346,18 @@ TaskInterface Board::sendFile(const QString &filename)
     ty_task_set_pool(task, pool_);
 
     return watchTask(make_task<TyTask>(task));
+}
+
+void Board::appendFakeSerialRead(const QString &s)
+{
+    auto buf = serial_codec_->fromUnicode(s);
+    QMutexLocker locker(&serial_lock_);
+    writeToSerialLog(buf.constData(), buf.size());
+    locker.unlock();
+
+    QTextCursor cursor(&serial_document_);
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(s);
 }
 
 void Board::setTag(const QString &tag)
@@ -571,7 +575,7 @@ void Board::serialReceived(ty_descriptor desc)
     locker.unlock();
 
     if (!previous_len && serial_buf_len_)
-        QMetaObject::invokeMethod(this, "updateSerialDocument", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, "appendBufferToSerialDocument", Qt::QueuedConnection);
 }
 
 // You need to lock serial_lock_ before you call this
@@ -612,14 +616,16 @@ void Board::writeToSerialLog(const char *buf, size_t len)
     }
 }
 
-void Board::updateSerialDocument()
+void Board::appendBufferToSerialDocument()
 {
     QMutexLocker locker(&serial_lock_);
     auto str = serial_decoder_->toUnicode(serial_buf_, serial_buf_len_);
     serial_buf_len_ = 0;
     locker.unlock();
 
-    appendToSerialDocument(str);
+    QTextCursor cursor(&serial_document_);
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText(str);
 }
 
 void Board::notifyFinished(bool success, std::shared_ptr<void> result)

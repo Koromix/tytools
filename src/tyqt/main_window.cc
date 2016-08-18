@@ -596,6 +596,7 @@ void MainWindow::sendFileToSelection()
     for (auto &board: selected_boards_)
         board->startSendFile(filename);
 
+    // NOTE: should we echo "@%1" to the serial document too?
     appendToSerialHistory(QString("@%1").arg(filename));
 }
 
@@ -741,20 +742,21 @@ void MainWindow::updateFirmwareMenus()
 
 void MainWindow::sendToSelectedBoards(const QString &s)
 {
+    auto newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
+    auto s2 = s + newline;
+
     if (s.startsWith('@')) {
         auto filename = s.mid(1);
         for (auto &board: selected_boards_)
             board->startSendFile(filename);
     } else {
-        QString newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
-        bool echo = actionSerialEcho->isChecked();
-
-        auto s2 = s + newline;
-        for (auto &board: selected_boards_) {
-            if (echo)
-                board->appendToSerialDocument(s2);
+        for (auto &board: selected_boards_)
             board->startSendSerial(s2);
-        }
+    }
+
+    if (actionSerialEcho->isChecked()) {
+        for (auto &board: selected_boards_)
+            board->appendFakeSerialRead(s2);
     }
 
     appendToSerialHistory(s);
