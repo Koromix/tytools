@@ -101,10 +101,12 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     if (r <= 0)
         goto error;
 
-    r = asprintf(&board->id, "%"PRIu64"-%s", board->serial, board->model->family->name);
-    if (r < 0) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto error;
+    if (!board->id) {
+        board->id = strdup("Unknown");
+        if (!board->id) {
+            r = ty_error(TY_ERROR_MEMORY, NULL);
+            goto error;
+        }
     }
     board->tag = board->id;
 
@@ -252,9 +254,14 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
     board = find_board(monitor, hs_device_get_location(dev));
 
     if (board) {
+        bool update_tag_pointer = false;
+        if (board->tag == board->id)
+            update_tag_pointer = true;
         r = (*iface->model->family->update_board)(iface, board);
         if (r < 0)
             goto error;
+        if (update_tag_pointer)
+            board->tag = board->id;
 
         /* The family function update_board() returns 1 if the interface is compatible with
            this board, or 0 if not. In the latter case, the old board is dropped and a new
