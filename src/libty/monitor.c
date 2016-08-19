@@ -496,6 +496,7 @@ void ty_monitor_stop(ty_monitor *monitor)
         ty_board_unref(board);
     }
     ty_list_init(&monitor->boards);
+    ty_list_init(&monitor->missing_boards);
 
     ty_htable_foreach(cur, &monitor->interfaces) {
         ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
