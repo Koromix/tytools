@@ -129,7 +129,7 @@ static void close_board(ty_board *board)
 
     ty_list_replace(&board->interfaces, &ifaces);
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
-    board->capabilities = 0;
+    board->capabilities &= 1 << TY_BOARD_CAPABILITY_UNIQUE;
 
     ty_mutex_unlock(&board->interfaces_lock);
 
@@ -343,7 +343,7 @@ static int remove_interface(ty_monitor *monitor, hs_device *dev)
     ty_board_interface_unref(iface);
 
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
-    board->capabilities = 0;
+    board->capabilities &= 1 << TY_BOARD_CAPABILITY_UNIQUE;
 
     ty_list_foreach(cur, &board->interfaces) {
         iface = ty_container_of(cur, ty_board_interface, board_node);
