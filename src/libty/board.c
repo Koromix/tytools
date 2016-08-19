@@ -334,6 +334,14 @@ const char *ty_board_get_description(const ty_board *board)
 void ty_board_set_model(ty_board *board, const ty_board_model *model)
 {
     assert(board);
+    assert(board->model);
+
+    if (board->model && board->model->code_size && board->model != model) {
+        ty_log(TY_LOG_WARNING, "Cannot set model '%s' for incompatible board '%s'",
+               model->name, board->tag);
+        return;
+    }
+
     board->model = model;
 }
 

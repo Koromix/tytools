@@ -75,8 +75,7 @@ void Board::loadSettings(Monitor *monitor)
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */
-    if (!ty_board_model_get_code_size(ty_board_get_model(board_)) &&
-            hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
+    if (hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         auto model_name = cache_.get("model");
         if (model_name.isValid()) {
             auto model = ty_board_model_find(model_name.toString().toUtf8().constData());
