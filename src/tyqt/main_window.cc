@@ -637,7 +637,6 @@ void MainWindow::enableBoardWidgets()
     serialText->verticalScrollBar()->setValue(serialText->verticalScrollBar()->maximum());
 
     actionRenameBoard->setEnabled(true);
-    ambiguousBoardLabel->setVisible(!current_board_->hasCapability(TY_BOARD_CAPABILITY_UNIQUE));
 }
 
 void MainWindow::disableBoardWidgets()
@@ -660,9 +659,9 @@ void MainWindow::disableBoardWidgets()
     optionsTab->setEnabled(false);
     actionEnableSerial->setEnabled(false);
     serialLogFileLabel->clear();
+    ambiguousBoardLabel->setVisible(false);
 
     actionRenameBoard->setEnabled(false);
-    ambiguousBoardLabel->setVisible(false);
 }
 
 void MainWindow::updateWindowTitle()
@@ -1015,6 +1014,8 @@ void MainWindow::refreshInterfaces()
 
         interfaceTree->addTopLevelItem(item);
     }
+
+    ambiguousBoardLabel->setVisible(!current_board_->hasCapability(TY_BOARD_CAPABILITY_UNIQUE));
 }
 
 void MainWindow::refreshStatus()
