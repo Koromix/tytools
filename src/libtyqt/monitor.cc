@@ -343,13 +343,8 @@ void Monitor::handleAddedEvent(ty_board *board)
     };
     auto ptr = make_shared<BoardSharedEnabler>(board);
 
-    if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
-        ptr->setDatabase(db_.subDatabase(ptr->id()));
-        ptr->setCache(cache_.subDatabase(ptr->id()));
-        ptr->serial_log_file_.setFileName(findLogFilename(ptr->id(), 3));
-    } else {
-        ptr->serial_log_file_.setFileName(findLogFilename("UNKNOWN", 6));
-    }
+    if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE))
+        configureBoardDatabase(*ptr);
     ptr->loadSettings(this);
 
     ptr->setThreadPool(pool_);
@@ -359,6 +354,11 @@ void Monitor::handleAddedEvent(ty_board *board)
         refreshBoardItem(findBoardIterator(board));
     });
     connect(ptr.get(), &Board::interfacesChanged, this, [=]() {
+        if (db_.isValid() && !ptr->database().isValid() &&
+                ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
+            configureBoardDatabase(*ptr);
+            ptr->loadSettings(this);
+        }
         refreshBoardItem(findBoardIterator(board));
     });
     connect(ptr.get(), &Board::statusChanged, this, [=]() {
@@ -399,6 +399,13 @@ void Monitor::removeBoardItem(iterator it)
     beginRemoveRows(QModelIndex(), it - boards_.begin(), it - boards_.begin());
     boards_.erase(it);
     endRemoveRows();
+}
+
+void Monitor::configureBoardDatabase(Board &board)
+{
+    board.setDatabase(db_.subDatabase(board.id()));
+    board.setCache(cache_.subDatabase(board.id()));
+    board.serial_log_file_.setFileName(findLogFilename(board.id(), 3));
 }
 
 QString Monitor::findLogFilename(const QString &id, unsigned int max)

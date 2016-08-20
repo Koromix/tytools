@@ -52,6 +52,8 @@ public:
     void setDatabase(Database *db) { db_ = db; }
     Database *database() const { return db_; }
 
+    bool isValid() const { return db_; }
+
     void setGroup(const QString &group);
     QString group() const { return group_; }
 

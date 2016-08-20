@@ -124,6 +124,7 @@ private:
     void refreshBoardItem(iterator it);
     void removeBoardItem(iterator it);
 
+    void configureBoardDatabase(Board &board);
     QString findLogFilename(const QString &tpl, unsigned int max);
 };
 
