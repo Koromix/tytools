@@ -115,7 +115,7 @@ elseif(APPLE)
 endif()
 
 set(TY_CONFIG_VERSION ${TY_CONFIG_VERSION_DEFAULT})
-if(TY_CONFIG_VERSION_AUTO)
+if(TY_CONFIG_VERSION_AUTO AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
     find_package(Git)
     if(GIT_FOUND)
         # Recompute the version string after each commit, does not work for tags though
