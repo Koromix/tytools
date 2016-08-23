@@ -4,8 +4,9 @@
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.7z
 
-Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "i686-win32-msvc2015-mt". Open
-the "VS2015 x86 Native Tools Command Prompt" and cd to that directory.
+Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.6.1" to
+"i686-win32-msvc2015-mt". Open the "VS2015 x86 Native Tools Command Prompt" and cd to
+this directory.
 
 ```batch
 cd i686-win32-msvc2015-mt
@@ -28,15 +29,16 @@ configure -platform win32-msvc2015 \
 nmake
 ```
 
-Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
-you move your project.
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt
+if you move your project.
 
 ## MSVC 2015 64-bit with static MSVCRT
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.7z
 
-Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-win32-msvc2015-mt". Open
-the "VS2015 x64 Native Tools Command Prompt" and cd to that directory.
+Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.6.1" to
+"x86_64-win32-msvc2015-mt". Open the "VS2015 x64 Native Tools Command Prompt" and cd to
+this directory.
 
 ```batch
 cd x86_64-win32-msvc2015-mt
@@ -59,8 +61,8 @@ configure -platform win32-msvc2015 \
 nmake
 ```
 
-Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
-you move your project.
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt
+if you move your project.
 
 # Mac OS X / Clang 64-bit
 
@@ -68,8 +70,8 @@ A recent version of XCode must be installed.
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.tar.xz
 
-Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-darwin-clang". Open
-a command prompt and go to that directory.
+Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.6.1" to
+"x86_64-darwin-clang". Open a command prompt and go to that directory.
 
 ```sh
 cd x86_64-darwin-clang
@@ -90,8 +92,8 @@ cd x86_64-darwin-clang
 make
 ```
 
-Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
-you move your project.
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt
+if you move your project.
 
 # Cross-compiling for Windows from Linux with MinGW-w64
 
@@ -99,8 +101,8 @@ you move your project.
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.tar.xz
 
-Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "i686-w64-mingw32". Open
-a terminal and go to that directory.
+Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.6.1" to
+"i686-w64-mingw32". Open a terminal and go to that directory.
 
 ```sh
 cd i686-w64-mingw32
@@ -124,15 +126,15 @@ configure -xplatform win32-g++ \
 make
 ```
 
-Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
-you move your project.
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt
+if you move your project.
 
 ## 64-bit build with MinGW-w64
 
 Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.tar.xz
 
-Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-w64-mingw32". Open
-a terminal and go to that directory.
+Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.6.1" to
+"x86_64-w64-mingw32". Open a terminal and go to that directory.
 
 ```sh
 cd x86_64-w64-mingw32
@@ -156,5 +158,5 @@ configure -xplatform win32-g++ \
 make
 ```
 
-Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt if
-you move your project.
+Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt
+if you move your project.
