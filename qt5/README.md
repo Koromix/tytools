@@ -2,7 +2,7 @@
 
 ## MSVC 2015 32-bit with static MSVCRT
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.7z
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.7z
 
 Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "i686-win32-msvc2015-mt". Open
 the "VS2015 x86 Native Tools Command Prompt" and cd to that directory.
@@ -33,7 +33,7 @@ you move your project.
 
 ## MSVC 2015 64-bit with static MSVCRT
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.7z
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.7z
 
 Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-win32-msvc2015-mt". Open
 the "VS2015 x64 Native Tools Command Prompt" and cd to that directory.
@@ -66,7 +66,7 @@ you move your project.
 
 A recent version of XCode must be installed.
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.tar.xz
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.tar.xz
 
 Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-darwin-clang". Open
 a command prompt and go to that directory.
@@ -97,7 +97,7 @@ you move your project.
 
 ## 32-bit build with MinGW-w64
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.tar.xz
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.tar.xz
 
 Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "i686-w64-mingw32". Open
 a terminal and go to that directory.
@@ -129,7 +129,7 @@ you move your project.
 
 ## 64-bit build with MinGW-w64
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.0/submodules/qtbase-opensource-src-5.6.0.tar.xz
+Download qtbase source from http://download.qt.io/official_releases/qt/5.6/5.6.1/submodules/qtbase-opensource-src-5.6.1.tar.xz
 
 Extract it in this subdirectory and rename "qtbase-opensource-src-5.6.0" to "x86_64-w64-mingw32". Open
 a terminal and go to that directory.
