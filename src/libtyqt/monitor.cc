@@ -341,41 +341,43 @@ void Monitor::handleAddedEvent(ty_board *board)
         BoardSharedEnabler(ty_board *board)
             : Board(board) {}
     };
-    auto ptr = make_shared<BoardSharedEnabler>(board);
+    auto board_wrapper_ptr = make_shared<BoardSharedEnabler>(board);
+    auto board_wrapper = board_wrapper_ptr.get();
 
-    if (ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE))
-        configureBoardDatabase(*ptr);
-    ptr->loadSettings(this);
+    if (board_wrapper->hasCapability(TY_BOARD_CAPABILITY_UNIQUE))
+        configureBoardDatabase(*board_wrapper);
+    board_wrapper->loadSettings(this);
 
-    ptr->setThreadPool(pool_);
-    ptr->serial_notifier_.moveToThread(&serial_thread_);
+    board_wrapper->setThreadPool(pool_);
+    board_wrapper->serial_notifier_.moveToThread(&serial_thread_);
 
-    connect(ptr.get(), &Board::infoChanged, this, [=]() {
+    connect(board_wrapper, &Board::infoChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::interfacesChanged, this, [=]() {
-        if (db_.isValid() && !ptr->database().isValid() &&
-                ptr->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
-            configureBoardDatabase(*ptr);
-            ptr->loadSettings(this);
+    // Don't capture board_wrapper_ptr, this should be obvious but I made the mistake once
+    connect(board_wrapper, &Board::interfacesChanged, this, [=]() {
+        if (db_.isValid() && !board_wrapper->database().isValid() &&
+                board_wrapper->hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
+            configureBoardDatabase(*board_wrapper);
+            board_wrapper->loadSettings(this);
         }
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::statusChanged, this, [=]() {
+    connect(board_wrapper, &Board::statusChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::progressChanged, this, [=]() {
+    connect(board_wrapper, &Board::progressChanged, this, [=]() {
         refreshBoardItem(findBoardIterator(board));
     });
-    connect(ptr.get(), &Board::dropped, this, [=]() {
+    connect(board_wrapper, &Board::dropped, this, [=]() {
         removeBoardItem(findBoardIterator(board));
     });
 
     beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
-    boards_.push_back(ptr);
+    boards_.push_back(board_wrapper_ptr);
     endInsertRows();
 
-    emit boardAdded(ptr.get());
+    emit boardAdded(board_wrapper);
 }
 
 void Monitor::handleChangedEvent(ty_board *board)
