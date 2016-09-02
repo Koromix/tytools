@@ -142,7 +142,7 @@ static const ty_board_model teensy_k64_model = {
     .name = "Teensy 3.5",
     .mcu = "mk64fx512",
 
-    .usage = 0x23,
+    .usage = 0x1F,
 
     .code_size = 524288,
     .halfkay_version = 3,
