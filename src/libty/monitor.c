@@ -100,14 +100,6 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     r = (*iface->model->family->update_board)(iface, board);
     if (r <= 0)
         goto error;
-
-    if (!board->id) {
-        board->id = strdup("Unknown");
-        if (!board->id) {
-            r = ty_error(TY_ERROR_MEMORY, NULL);
-            goto error;
-        }
-    }
     board->tag = board->id;
 
     board->monitor = monitor;

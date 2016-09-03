@@ -328,17 +328,13 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
             return ty_error(TY_ERROR_MEMORY, NULL);
     }
 
-    if (serial && serial != 12345 && serial != UINT32_MAX) {
+    if (serial && serial != UINT32_MAX) {
         if (!board->serial) {
             board->serial = serial;
 
-            if (board->id) {
-                free(board->id);
-                board->id = NULL;
-            }
-            r = asprintf(&board->id, "%"PRIu64"-%s", serial, iface->model->family->name);
-            if (r < 0)
-                return ty_error(TY_ERROR_MEMORY, NULL);
+            /* Update the board ID with a real serial number */
+            free(board->id);
+            board->id = NULL;
         } else if (serial != board->serial) {
             /* Let boards using an old Teensyduino (before 1.19) firmware pass with a warning
                because there is no way to interpret the serial number correctly, and the board
@@ -354,7 +350,16 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 
         /* We cannot uniquely identify AVR Teensy boards because the S/N is always 12345,
            or custom ARM Teensy boards without a valid MAC address. */
-        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
+        if (serial != 12345)
+            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
+    }
+
+    if (!board->id) {
+        r = asprintf(&board->id, "%"PRIu64"-%s", serial, iface->model->family->name);
+        if (r < 0) {
+            board->id = NULL;
+            return ty_error(TY_ERROR_MEMORY, NULL);
+        }
     }
 
     return 1;
