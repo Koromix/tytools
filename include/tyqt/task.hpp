@@ -64,10 +64,10 @@ public:
     bool start() override;
 
 private:
-    void notifyMessage(ty_message_type type, const void *data);
-    void notifyLog(const void *data);
-    void notifyStatus(const void *data);
-    void notifyProgress(const void *data);
+    void notifyMessage(const ty_message_data *msg);
+    void notifyLog(const ty_message_data *msg);
+    void notifyStatus(const ty_message_data *msg);
+    void notifyProgress(const ty_message_data *msg);
 };
 
 class ImmediateTask : public Task {

@@ -34,15 +34,14 @@ UpTy::UpTy(int &argc, char *argv[])
     setApplicationName(TY_CONFIG_UPTY_NAME);
     setApplicationVersion(ty_version_string());
 
-    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
-        ty_message_default_handler(task, type, data, udata);
+    ty_message_redirect([](const ty_message_data *msg, void *) {
+        ty_message_default_handler(msg, nullptr);
 
-        if (type == TY_MESSAGE_LOG) {
-            auto print = static_cast<const ty_log_message *>(data);
-            if (print->level <= TY_LOG_WARNING) {
-                upTy->reportError(print->msg);
+        if (msg->type == TY_MESSAGE_LOG) {
+            if (msg->u.log.level <= TY_LOG_WARNING) {
+                upTy->reportError(msg->u.log.msg);
             } else {
-                upTy->reportDebug(print->msg);
+                upTy->reportDebug(msg->u.log.msg);
             }
         }
     }, nullptr);

@@ -11,8 +11,6 @@
 #include "ty/common.h"
 #include "compat.h"
 
-void _ty_message(struct ty_task *task, ty_message_type type, const void *data);
-
 void _ty_refcount_increase(unsigned int *rrefcount);
 unsigned int _ty_refcount_decrease(unsigned int *rrefcount);
 

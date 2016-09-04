@@ -74,11 +74,9 @@ void Task::removeListener(TaskListener *listener)
 TyTask::TyTask(ty_task *task)
     : task_(task)
 {
-    ty_task_set_callback(task, [](struct ty_task *task, ty_message_type type, const void *data, void *udata) {
-        Q_UNUSED(task);
-
-        auto task2 = static_cast<TyTask *>(udata);
-        task2->notifyMessage(type, data);
+    ty_task_set_callback(task, [](const ty_message_data *msg, void *udata) {
+        auto task = static_cast<TyTask *>(udata);
+        task->notifyMessage(msg);
     }, this);
 }
 
@@ -95,11 +93,11 @@ bool TyTask::start()
     return status() >= TY_TASK_STATUS_PENDING;
 }
 
-void TyTask::notifyMessage(ty_message_type type, const void *data)
+void TyTask::notifyMessage(const ty_message_data *msg)
 {
     /* The task is doing something, we don't need to keep it alive anymore... it'll keep this
        object alive instead. */
-    if (task_ && type == TY_MESSAGE_STATUS) {
+    if (task_ && msg->type == TY_MESSAGE_STATUS) {
         ty_task_set_cleanup(task_, [](void *ptr) {
             auto task_ptr = static_cast<shared_ptr<Task> *>(ptr);
             delete task_ptr;
@@ -109,30 +107,27 @@ void TyTask::notifyMessage(ty_message_type type, const void *data)
         task_ = NULL;
     }
 
-    switch (type) {
+    switch (msg->type) {
     case TY_MESSAGE_LOG:
-        notifyLog(data);
+        notifyLog(msg);
         break;
     case TY_MESSAGE_STATUS:
-        notifyStatus(data);
+        notifyStatus(msg);
         break;
     case TY_MESSAGE_PROGRESS:
-        notifyProgress(data);
+        notifyProgress(msg);
         break;
     }
 }
 
-void TyTask::notifyLog(const void *data)
+void TyTask::notifyLog(const ty_message_data *msg)
 {
-    auto msg = static_cast<const ty_log_message *>(data);
-    reportLog(msg->level, msg->msg);
+    reportLog(msg->u.log.level, msg->u.log.msg);
 }
 
-void TyTask::notifyStatus(const void *data)
+void TyTask::notifyStatus(const ty_message_data *msg)
 {
-    auto msg = static_cast<const ty_status_message *>(data);
-
-    switch (msg->status) {
+    switch (msg->u.task.status) {
     case TY_TASK_STATUS_PENDING:
         reportPending();
         break;
@@ -153,10 +148,9 @@ void TyTask::notifyStatus(const void *data)
     }
 }
 
-void TyTask::notifyProgress(const void *data)
+void TyTask::notifyProgress(const ty_message_data *msg)
 {
-    auto msg = static_cast<const ty_progress_message *>(data);
-    reportProgress(msg->action, msg->value, msg->max);
+    reportProgress(msg->u.progress.action, msg->u.progress.value, msg->u.progress.max);
 }
 
 bool ImmediateTask::start()

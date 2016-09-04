@@ -271,7 +271,7 @@ void ty_task_set_pool(ty_task *task, ty_pool *pool)
 
 static void change_status(ty_task *task, ty_task_status status)
 {
-    ty_status_message msg;
+    ty_message_data msg = {0};
 
     task->status = status;
 
@@ -280,9 +280,10 @@ static void change_status(ty_task *task, ty_task_status status)
     ty_mutex_unlock(&task->mutex);
 
     msg.task = task;
-    msg.status = status;
+    msg.type = TY_MESSAGE_STATUS;
+    msg.u.task.status = status;
 
-    _ty_message(task, TY_MESSAGE_STATUS, &msg);
+    ty_message(&msg);
 }
 
 static void run_task(ty_task *task)

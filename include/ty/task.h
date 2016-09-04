@@ -15,18 +15,6 @@ TY_C_BEGIN
 typedef struct ty_pool ty_pool;
 typedef struct ty_task ty_task;
 
-typedef enum ty_task_status {
-    TY_TASK_STATUS_READY,
-    TY_TASK_STATUS_PENDING,
-    TY_TASK_STATUS_RUNNING,
-    TY_TASK_STATUS_FINISHED
-} ty_task_status;
-
-typedef struct ty_status_message {
-    ty_task *task;
-    ty_task_status status;
-} ty_status_message;
-
 typedef void ty_task_cleanup_func(void *ptr);
 
 TY_PUBLIC int ty_pool_new(ty_pool **rpool);
