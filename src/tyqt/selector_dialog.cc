@@ -24,10 +24,10 @@ QVariant SelectorDialogModelFilter::data(const QModelIndex &index, int role) con
 {
     if (index.column() == Monitor::COLUMN_STATUS) {
         switch (role) {
-            case Qt::ForegroundRole:
-                return QBrush(Qt::darkGray);
-            case Qt::TextAlignmentRole:
-                return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+        case Qt::ForegroundRole:
+            return QBrush(Qt::darkGray);
+        case Qt::TextAlignmentRole:
+            return QVariant(Qt::AlignRight | Qt::AlignVCenter);
         }
     }
 

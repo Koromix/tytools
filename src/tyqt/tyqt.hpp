@@ -123,7 +123,7 @@ private slots:
     void trayActivated(QSystemTrayIcon::ActivationReason reason);
 
     void acceptClient();
-    void readAnswer(const QStringList &arguments);
+    void processServerAnswer(const QStringList &arguments);
 };
 
 #endif

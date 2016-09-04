@@ -167,118 +167,6 @@ void TyQt::setVisible(bool visible)
     action_visible_->setChecked(visible);
 }
 
-void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
-{
-#ifndef __APPLE__
-    if (reason == QSystemTrayIcon::Trigger)
-        setVisible(!visible());
-#else
-    Q_UNUSED(reason);
-#endif
-}
-
-void TyQt::acceptClient()
-{
-    auto peer = channel_.nextPendingConnection().release();
-
-    connect(peer, &SessionPeer::closed, peer, &SessionPeer::deleteLater);
-    connect(peer, &SessionPeer::received, this, [=](const QStringList &arguments) {
-        executeAction(*peer, arguments);
-    });
-
-#ifdef _WIN32
-    peer->send({"allowsetforegroundwindow", QString::number(GetCurrentProcessId())});
-#endif
-}
-
-void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
-{
-    if (arguments.isEmpty()) {
-        peer.send({"log", QString::number(TY_LOG_ERROR), tr("Command not specified")});
-        peer.send({"exit", "1"});
-        return;
-    }
-
-    QStringList parameters = arguments;
-    QString cmd = parameters.takeFirst();
-
-    auto task = Commands::execute(cmd, parameters);
-    auto watcher = new TaskWatcher(&peer);
-
-    connect(watcher, &TaskWatcher::log, &peer, [&peer](int level, const QString &msg) {
-        peer.send({"log", QString::number(level), msg});
-    });
-    connect(watcher, &TaskWatcher::started, &peer, [&peer]() {
-        peer.send("start");
-    });
-    connect(watcher, &TaskWatcher::finished, &peer, [&peer](bool success) {
-        peer.send({"exit", success ? "0" : "1"});
-    });
-    connect(watcher, &TaskWatcher::progress, &peer, [&peer](const QString &action, uint64_t value, uint64_t max) {
-        peer.send({"progress", action, QString::number(value), QString::number(max)});
-    });
-    watcher->setTask(&task);
-
-    task.start();
-}
-
-void TyQt::readAnswer(const QStringList &arguments)
-{
-    QStringList parameters = arguments;
-    QString cmd;
-
-    if (!arguments.count())
-        goto error;
-    cmd = parameters.takeFirst();
-
-    if (cmd == "log") {
-        if (parameters.count() < 2)
-            goto error;
-
-        int level = QString(parameters[0]).toInt();
-        QString msg = parameters[1];
-
-        ty_log(static_cast<ty_log_level>(level), "%s", msg.toLocal8Bit().constData());
-    } else if (cmd == "start") {
-        if (!wait_)
-            exit(0);
-    } else if (cmd == "exit") {
-        exit(parameters.value(0, "0").toInt());
-    } else if (cmd == "progress") {
-        if (parameters.count() < 3)
-            goto error;
-
-        QString action = parameters[0];
-        uint64_t progress = parameters[1].toULongLong();
-        uint64_t total = parameters[2].toULongLong();
-
-        ty_progress(action.toLocal8Bit().constData(), progress, total);
-#ifdef _WIN32
-    } else if (cmd == "allowsetforegroundwindow") {
-        if (parameters.count() < 1)
-            goto error;
-
-        /* The server may show a window for some commands, such as the board dialog. Executables
-           launched from an application with focus can pop on top, so this instance can probably
-           do it but the TyQt main instance cannot unless we call AllowSetForegroundWindow(). It
-           also works if this instance is run through tyqtc (to provide console I/O) because
-           tyqtc calls AllowSetForegroundWindow() for this process too.
-
-           We could use GetNamedPipeServerProcessId() instead of sending the PID through the
-           channel, but it is not available on XP. */
-        AllowSetForegroundWindow(parameters[0].toUInt());
-#endif
-    } else {
-        goto error;
-    }
-
-    return;
-
-error:
-    showClientError(tr("Received incorrect data from main instance"));
-    exit(1);
-}
-
 void TyQt::setShowTrayIcon(bool show_tray_icon)
 {
     show_tray_icon_ = show_tray_icon;
@@ -469,7 +357,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
         }
     }
 
-    connect(client.get(), &SessionPeer::received, this, &TyQt::readAnswer);
+    connect(client.get(), &SessionPeer::received, this, &TyQt::processServerAnswer);
 
     // Hack for Arduino integration, see option loop in TyQt::run()
     if (!usbtype.isEmpty() && !usbtype.contains("_SERIAL"))
@@ -656,7 +544,7 @@ QString TyQt::helpText()
 void TyQt::showClientMessage(const QString &msg)
 {
     if (client_console_) {
-        printf("%s\n", qPrintable(msg));
+        printf("%s\n", msg.toLocal8Bit().constData());
     } else {
         QMessageBox::information(nullptr, QApplication::applicationName(), msg);
     }
@@ -665,8 +553,120 @@ void TyQt::showClientMessage(const QString &msg)
 void TyQt::showClientError(const QString &msg)
 {
     if (client_console_) {
-        fprintf(stderr, "%s\n", qPrintable(msg));
+        fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
     } else {
         QMessageBox::critical(nullptr, tr("%1 (error)").arg(QApplication::applicationName()), msg);
     }
+}
+
+void TyQt::executeAction(SessionPeer &peer, const QStringList &arguments)
+{
+    if (arguments.isEmpty()) {
+        peer.send({"log", QString::number(TY_LOG_ERROR), tr("Command not specified")});
+        peer.send({"exit", "1"});
+        return;
+    }
+
+    QStringList parameters = arguments;
+    QString cmd = parameters.takeFirst();
+
+    auto task = Commands::execute(cmd, parameters);
+    auto watcher = new TaskWatcher(&peer);
+
+    connect(watcher, &TaskWatcher::log, &peer, [&peer](int level, const QString &msg) {
+        peer.send({"log", QString::number(level), msg});
+    });
+    connect(watcher, &TaskWatcher::started, &peer, [&peer]() {
+        peer.send("start");
+    });
+    connect(watcher, &TaskWatcher::finished, &peer, [&peer](bool success) {
+        peer.send({"exit", success ? "0" : "1"});
+    });
+    connect(watcher, &TaskWatcher::progress, &peer, [&peer](const QString &action, uint64_t value, uint64_t max) {
+        peer.send({"progress", action, QString::number(value), QString::number(max)});
+    });
+    watcher->setTask(&task);
+
+    task.start();
+}
+
+void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
+{
+#ifndef __APPLE__
+    if (reason == QSystemTrayIcon::Trigger)
+        setVisible(!visible());
+#else
+    Q_UNUSED(reason);
+#endif
+}
+
+void TyQt::acceptClient()
+{
+    auto peer = channel_.nextPendingConnection().release();
+
+    connect(peer, &SessionPeer::closed, peer, &SessionPeer::deleteLater);
+    connect(peer, &SessionPeer::received, this, [=](const QStringList &arguments) {
+        executeAction(*peer, arguments);
+    });
+
+#ifdef _WIN32
+    peer->send({"allowsetforegroundwindow", QString::number(GetCurrentProcessId())});
+#endif
+}
+
+void TyQt::processServerAnswer(const QStringList &arguments)
+{
+    QStringList parameters = arguments;
+    QString cmd;
+
+    if (!arguments.count())
+        goto error;
+    cmd = parameters.takeFirst();
+
+    if (cmd == "log") {
+        if (parameters.count() < 2)
+            goto error;
+
+        int level = QString(parameters[0]).toInt();
+        QString msg = parameters[1];
+
+        ty_log(static_cast<ty_log_level>(level), "%s", msg.toLocal8Bit().constData());
+    } else if (cmd == "start") {
+        if (!wait_)
+            exit(0);
+    } else if (cmd == "exit") {
+        exit(parameters.value(0, "0").toInt());
+    } else if (cmd == "progress") {
+        if (parameters.count() < 3)
+            goto error;
+
+        QString action = parameters[0];
+        uint64_t progress = parameters[1].toULongLong();
+        uint64_t total = parameters[2].toULongLong();
+
+        ty_progress(action.toLocal8Bit().constData(), progress, total);
+#ifdef _WIN32
+    } else if (cmd == "allowsetforegroundwindow") {
+        if (parameters.count() < 1)
+            goto error;
+
+        /* The server may show a window for some commands, such as the board dialog. Executables
+           launched from an application with focus can pop on top, so this instance can probably
+           do it but the TyQt main instance cannot unless we call AllowSetForegroundWindow(). It
+           also works if this instance is run through tyqtc (to provide console I/O) because
+           tyqtc calls AllowSetForegroundWindow() for this process too.
+
+           We could use GetNamedPipeServerProcessId() instead of sending the PID through the
+           channel, but it is not available on XP. */
+        AllowSetForegroundWindow(parameters[0].toUInt());
+#endif
+    } else {
+        goto error;
+    }
+
+    return;
+
+error:
+    showClientError(tr("Received incorrect data from main instance"));
+    exit(1);
 }
