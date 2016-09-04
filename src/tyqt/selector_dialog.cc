@@ -47,17 +47,24 @@ SelectorDialog::SelectorDialog(QWidget *parent)
     monitor_model_.setSourceModel(monitor_);
     tree->setModel(&monitor_model_);
     connect(tree->selectionModel(), &QItemSelectionModel::selectionChanged, this,
-            &SelectorDialog::selectionChanged);
+            &SelectorDialog::updateSelection);
     tree->header()->setStretchLastSection(false);
     tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
-    current_board_ = Monitor::boardFromModel(&monitor_model_, 0);
-    if (current_board_) {
+    auto first_board = Monitor::boardFromModel(&monitor_model_, 0);
+    if (first_board) {
         tree->setCurrentIndex(monitor_->index(0, 0));
     } else {
         buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
     }
+}
+
+void SelectorDialog::setExtendedSelection(bool extended)
+{
+    tree->setSelectionMode(extended
+                           ? QAbstractItemView::ExtendedSelection
+                           : QAbstractItemView::SingleSelection);
 }
 
 void SelectorDialog::setAction(const QString &action)
@@ -66,28 +73,15 @@ void SelectorDialog::setAction(const QString &action)
     setWindowTitle(QString("%1 | %2").arg(action, QCoreApplication::applicationName()));
 }
 
-shared_ptr<Board> SelectorDialog::selectedBoard() const
+void SelectorDialog::updateSelection()
 {
-    return result() ? current_board_ : nullptr;
-}
-
-void SelectorDialog::selectionChanged(const QItemSelection &selected, const QItemSelection &previous)
-{
-    Q_UNUSED(previous);
-
-    if (!selected.indexes().isEmpty()) {
-        current_board_ = Monitor::boardFromModel(&monitor_model_, selected.indexes().front());
-        buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
-    } else {
-        current_board_ = nullptr;
-        buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
+    selected_boards_.clear();
+    auto indexes = tree->selectionModel()->selectedIndexes();
+    qSort(indexes);
+    for (auto &idx: indexes) {
+        if (idx.column() == 0)
+            selected_boards_.push_back(Monitor::boardFromModel(&monitor_model_, idx));
     }
 
-    emit currentChanged(current_board_.get());
-}
-
-void SelectorDialog::done(int result)
-{
-    QDialog::done(result);
-    emit boardSelected(result ? current_board_.get() : nullptr);
+    emit selectionChanged();
 }

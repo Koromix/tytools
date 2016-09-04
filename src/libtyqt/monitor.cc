@@ -194,14 +194,18 @@ shared_ptr<Board> Monitor::boardFromModel(const QAbstractItemModel *model,
     return board ? board->shared_from_this() : nullptr;
 }
 
-shared_ptr<Board> Monitor::find(function<bool(Board &board)> filter)
+vector<shared_ptr<Board>> Monitor::find(function<bool(Board &board)> filter)
 {
-    auto board = find_if(boards_.begin(), boards_.end(), [&](shared_ptr<Board> &ptr) { return filter(*ptr); });
+    auto boards = boards_;
 
-    if (board == boards_.end())
-        return nullptr;
+    vector<shared_ptr<Board>> matches;
+    matches.reserve(boards_.size());
+    for (auto &board: boards_) {
+        if (filter(*board))
+            matches.push_back(board);
+    }
 
-    return *board;
+    return matches;
 }
 
 int Monitor::rowCount(const QModelIndex &parent) const

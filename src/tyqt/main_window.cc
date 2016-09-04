@@ -17,7 +17,6 @@
 #include "arduino_dialog.hpp"
 #include "tyqt/board.hpp"
 #include "tyqt/board_widget.hpp"
-#include "commands.hpp"
 #include "main_window.hpp"
 #include "tyqt/monitor.hpp"
 #include "preferences_dialog.hpp"

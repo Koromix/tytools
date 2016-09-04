@@ -96,7 +96,7 @@ public:
         return boardFromModel(model, model->index(index, 0));
     }
 
-    std::shared_ptr<Board> find(std::function<bool(Board &board)> filter);
+    std::vector<std::shared_ptr<Board>> find(std::function<bool(Board &board)> filter);
 
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;

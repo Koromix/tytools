@@ -117,8 +117,6 @@ private:
     void showClientMessage(const QString &msg);
     void showClientError(const QString &msg);
 
-    void executeAction(SessionPeer &peer, const QStringList &arguments);
-
 private slots:
     void trayActivated(QSystemTrayIcon::ActivationReason reason);
 

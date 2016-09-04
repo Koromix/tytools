@@ -75,7 +75,7 @@ bool ArduinoInstallation::integrate()
                            "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(TyQt::clientFilePath()));
             out << "tools.teensyloader.upload.params.quiet=--quiet\n"
                    "tools.teensyloader.upload.params.verbose=\n"
-                   "tools.teensyloader.upload.pattern=\"{cmd.path}\" upload --autostart --wait"
+                   "tools.teensyloader.upload.pattern=\"{cmd.path}\" upload --autostart --wait --multi"
                    " {upload.verbose} \"{build.path}/{build.project_name}.hex\"\n";
             integrated = true;
         }
