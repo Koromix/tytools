@@ -135,6 +135,7 @@ typedef enum ty_task_status {
 } ty_task_status;
 
 typedef struct ty_message_data {
+    const char *ctx;
     struct ty_task *task;
 
     ty_message_type type;

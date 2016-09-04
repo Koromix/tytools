@@ -39,9 +39,9 @@ UpTy::UpTy(int &argc, char *argv[])
 
         if (msg->type == TY_MESSAGE_LOG) {
             if (msg->u.log.level <= TY_LOG_WARNING) {
-                upTy->reportError(msg->u.log.msg);
+                upTy->reportError(msg->u.log.msg, msg->ctx);
             } else {
-                upTy->reportDebug(msg->u.log.msg);
+                upTy->reportDebug(msg->u.log.msg, msg->ctx);
             }
         }
     }, nullptr);
@@ -63,14 +63,14 @@ void UpTy::showLogWindow()
     log_dialog_->show();
 }
 
-void UpTy::reportError(const QString &msg)
+void UpTy::reportError(const QString &msg, const QString &ctx)
 {
-    emit globalError(msg);
+    emit globalError(msg, ctx);
 }
 
-void UpTy::reportDebug(const QString &msg)
+void UpTy::reportDebug(const QString &msg, const QString &ctx)
 {
-    emit globalDebug(msg);
+    emit globalDebug(msg, ctx);
 }
 
 int UpTy::exec()

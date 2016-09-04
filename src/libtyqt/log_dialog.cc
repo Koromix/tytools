@@ -27,15 +27,26 @@ LogDialog::LogDialog(QWidget *parent, Qt::WindowFlags f)
             &LogDialog::showLogContextMenu);
 }
 
-void LogDialog::appendError(const QString &msg)
+void LogDialog::appendError(const QString &msg, const QString &ctx)
 {
-    errorLogText->appendPlainText(msg);
-    fullLogText->appendPlainText(msg);
+    if (!ctx.isEmpty()) {
+        auto full_msg = QString("[%1] %2").arg(ctx, msg);
+        errorLogText->appendPlainText(full_msg);
+        fullLogText->appendPlainText(full_msg);
+    } else {
+        errorLogText->appendPlainText(msg);
+        fullLogText->appendPlainText(msg);
+    }
 }
 
-void LogDialog::appendDebug(const QString &msg)
+void LogDialog::appendDebug(const QString &msg, const QString &ctx)
 {
-    fullLogText->appendPlainText(msg);
+    if (!ctx.isEmpty()) {
+        auto full_msg = QString("[%1] %2").arg(ctx, msg);
+        fullLogText->appendPlainText(full_msg);
+    } else {
+        fullLogText->appendPlainText(msg);
+    }
 }
 
 void LogDialog::clearAll()

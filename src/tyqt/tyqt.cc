@@ -65,9 +65,9 @@ TyQt::TyQt(int &argc, char *argv[])
 
         if (msg->type == TY_MESSAGE_LOG) {
             if (msg->u.log.level <= TY_LOG_WARNING) {
-                tyQt->reportError(msg->u.log.msg);
+                tyQt->reportError(msg->u.log.msg, msg->ctx);
             } else {
-                tyQt->reportDebug(msg->u.log.msg);
+                tyQt->reportDebug(msg->u.log.msg, msg->ctx);
             }
         }
     }, nullptr);
@@ -135,14 +135,14 @@ void TyQt::showLogWindow()
     log_dialog_->show();
 }
 
-void TyQt::reportError(const QString &msg)
+void TyQt::reportError(const QString &msg, const QString &ctx)
 {
-    emit globalError(msg);
+    emit globalError(msg, ctx);
 }
 
-void TyQt::reportDebug(const QString &msg)
+void TyQt::reportDebug(const QString &msg, const QString &ctx)
 {
-    emit globalDebug(msg);
+    emit globalDebug(msg, ctx);
 }
 
 void TyQt::setVisible(bool visible)

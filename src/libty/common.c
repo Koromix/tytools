@@ -49,9 +49,13 @@ static void print_log(const ty_message_data *msg)
         return;
 
     if (msg->u.log.level == TY_LOG_INFO) {
+        if (msg->ctx)
+            printf("%28s  ", msg->ctx);
         printf("%s\n", msg->u.log.msg);
         fflush(stdout);
     } else {
+        if (msg->ctx)
+            fprintf(stderr, "%28s  ", msg->ctx);
         fprintf(stderr, "%s\n", msg->u.log.msg);
     }
 }
@@ -69,11 +73,15 @@ static void print_progress(const ty_message_data *msg)
     }
 
     if (show_progress) {
+        if (msg->ctx)
+            printf("%28s  ", msg->ctx);
         printf("%s... %"PRIu64"%%%c", msg->u.progress.action,
                100 * msg->u.progress.value / msg->u.progress.max,
                msg->u.progress.value < msg->u.progress.max ? '\r' : '\n');
         fflush(stdout);
     } else if (!msg->u.progress.value) {
+        if (msg->ctx)
+            printf("%28s  ", msg->ctx);
         printf("%s...\n", msg->u.progress.action);
     }
     fflush(stdout);
@@ -249,6 +257,8 @@ void ty_message(ty_message_data *msg)
         task = _ty_task_get_current();
         msg->task = task;
     }
+    if (!msg->ctx && task)
+        msg->ctx = ty_task_get_name(task);
 
     (*handler)(msg, handler_udata);
     if (task && task->callback)
