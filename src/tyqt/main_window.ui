@@ -81,20 +81,6 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Status:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QLineEdit" name="statusText">
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="1">
             <widget class="QLineEdit" name="modelText">
              <property name="readOnly">
@@ -113,13 +99,6 @@
          </item>
          <item>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="1" column="2">
-            <widget class="QLineEdit" name="locationText">
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="2">
             <widget class="QLabel" name="label_3">
              <property name="text">
@@ -134,6 +113,13 @@
              </property>
             </widget>
            </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="locationText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
            <item row="1" column="1">
             <widget class="QLineEdit" name="serialNumberText">
              <property name="readOnly">
@@ -141,14 +127,32 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="3">
+          </layout>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="statusText">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
             <widget class="QLineEdit" name="descriptionText">
              <property name="readOnly">
               <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="0" column="3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Status:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
             <widget class="QLabel" name="label_10">
              <property name="text">
               <string>Description:</string>
@@ -175,7 +179,7 @@
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>60</height>
+             <height>40</height>
             </size>
            </property>
            <property name="indentation">
@@ -891,9 +895,9 @@
   <tabstop>tabWidget</tabstop>
   <tabstop>idText</tabstop>
   <tabstop>modelText</tabstop>
-  <tabstop>statusText</tabstop>
   <tabstop>serialNumberText</tabstop>
   <tabstop>locationText</tabstop>
+  <tabstop>statusText</tabstop>
   <tabstop>descriptionText</tabstop>
   <tabstop>interfaceTree</tabstop>
   <tabstop>serialText</tabstop>
@@ -910,8 +914,8 @@
   <tabstop>serialLogSizeSpin</tabstop>
  </tabstops>
  <resources>
-  <include location="../libtyqt/libtyqt.qrc"/>
   <include location="tyqt.qrc"/>
+  <include location="../libtyqt/libtyqt.qrc"/>
  </resources>
  <connections/>
 </ui>
