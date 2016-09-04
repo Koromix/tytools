@@ -38,6 +38,7 @@ TY_PUBLIC int ty_task_start(ty_task *task);
 TY_PUBLIC int ty_task_wait(ty_task *task, ty_task_status status, int timeout);
 TY_PUBLIC int ty_task_join(ty_task *task);
 
+TY_PUBLIC const char *ty_task_get_name(ty_task *task);
 TY_PUBLIC ty_task_status ty_task_get_status(ty_task *task);
 
 TY_PUBLIC int ty_task_get_return_value(ty_task *task);

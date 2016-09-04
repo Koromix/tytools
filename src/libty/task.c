@@ -187,7 +187,8 @@ int ty_pool_get_default(ty_pool **rpool)
     return 0;
 }
 
-int _ty_task_new(size_t size, const struct _ty_task_vtable *vtable, ty_task **rtask)
+int _ty_task_new(const char *name, size_t size, const struct _ty_task_vtable *vtable,
+                 ty_task **rtask)
 {
     ty_task * task;
     int r;
@@ -198,7 +199,13 @@ int _ty_task_new(size_t size, const struct _ty_task_vtable *vtable, ty_task **rt
         goto error;
     }
     task->refcount = 1;
+
     task->vtable = vtable;
+    task->name = strdup(name);
+    if (!task->name) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
 
     r = ty_mutex_init(&task->mutex, TY_MUTEX_FAST);
     if (r < 0)
@@ -237,6 +244,7 @@ void ty_task_unref(ty_task *task)
         if (task->vtable->cleanup)
             (*task->vtable->cleanup)(task);
 
+        free(task->name);
         ty_cond_release(&task->cond);
         ty_mutex_release(&task->mutex);
     }
@@ -468,6 +476,12 @@ int ty_task_join(ty_task *task)
         return r;
 
     return task->ret;
+}
+
+const char *ty_task_get_name(ty_task *task)
+{
+    assert(task);
+    return task->name;
 }
 
 ty_task_status ty_task_get_status(ty_task *task)

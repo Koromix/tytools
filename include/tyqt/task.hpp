@@ -27,6 +27,9 @@ class Task : public std::enable_shared_from_this<Task> {
     QMutex listeners_lock_{QMutex::Recursive};
     std::vector<class TaskListener *> listeners_;
 
+protected:
+    QString name_;
+
 public:
     Task() {}
     virtual ~Task() {}
@@ -38,6 +41,7 @@ public:
 
     virtual bool start() = 0;
 
+    QString name() const { return name_; }
     ty_task_status status() const { return status_; }
     uint64_t progress() const { return progress_; }
     uint64_t progressMaximum() const { return progress_max_; }
@@ -98,6 +102,7 @@ public:
 
     bool start();
 
+    QString name() const;
     ty_task_status status() const;
     uint64_t progress() const;
     uint64_t progressMaximum() const;

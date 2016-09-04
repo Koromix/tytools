@@ -74,6 +74,8 @@ void Task::removeListener(TaskListener *listener)
 TyTask::TyTask(ty_task *task)
     : task_(task)
 {
+    name_ = ty_task_get_name(task);
+
     ty_task_set_callback(task, [](const ty_message_data *msg, void *udata) {
         auto task = static_cast<TyTask *>(udata);
         task->notifyMessage(msg);
@@ -187,6 +189,11 @@ TaskInterface::TaskInterface(std::shared_ptr<Task> task)
 bool TaskInterface::start()
 {
     return task_->start();
+}
+
+QString TaskInterface::name() const
+{
+    return task_->name();
 }
 
 ty_task_status TaskInterface::status() const
