@@ -394,7 +394,7 @@ void MainWindow::uploadToSelection()
         }
     }
     if (!fws_count)
-        tyQt->reportError("No board has a set firmware, try using 'Upload New Firmware'");
+        tyQt->reportError(tr("No board has a set firmware, try using 'Upload New Firmware'"));
 }
 
 void MainWindow::uploadNewToSelection()
