@@ -187,7 +187,8 @@ int ty_pool_get_default(ty_pool **rpool)
     return 0;
 }
 
-int _ty_task_new(size_t size, const struct _ty_task_vtable *vtable, ty_task **rtask)
+int _ty_task_new(const char *name, size_t size, const struct _ty_task_vtable *vtable,
+                 ty_task **rtask)
 {
     ty_task * task;
     int r;
@@ -198,7 +199,13 @@ int _ty_task_new(size_t size, const struct _ty_task_vtable *vtable, ty_task **rt
         goto error;
     }
     task->refcount = 1;
+
     task->vtable = vtable;
+    task->name = strdup(name);
+    if (!task->name) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
 
     r = ty_mutex_init(&task->mutex, TY_MUTEX_FAST);
     if (r < 0)
@@ -237,6 +244,7 @@ void ty_task_unref(ty_task *task)
         if (task->vtable->cleanup)
             (*task->vtable->cleanup)(task);
 
+        free(task->name);
         ty_cond_release(&task->cond);
         ty_mutex_release(&task->mutex);
     }
@@ -271,7 +279,7 @@ void ty_task_set_pool(ty_task *task, ty_pool *pool)
 
 static void change_status(ty_task *task, ty_task_status status)
 {
-    ty_status_message msg;
+    ty_message_data msg = {0};
 
     task->status = status;
 
@@ -280,9 +288,10 @@ static void change_status(ty_task *task, ty_task_status status)
     ty_mutex_unlock(&task->mutex);
 
     msg.task = task;
-    msg.status = status;
+    msg.type = TY_MESSAGE_STATUS;
+    msg.u.task.status = status;
 
-    _ty_message(task, TY_MESSAGE_STATUS, &msg);
+    ty_message(&msg);
 }
 
 static void run_task(ty_task *task)
@@ -467,6 +476,12 @@ int ty_task_join(ty_task *task)
         return r;
 
     return task->ret;
+}
+
+const char *ty_task_get_name(ty_task *task)
+{
+    assert(task);
+    return task->name;
 }
 
 ty_task_status ty_task_get_status(ty_task *task)

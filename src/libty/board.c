@@ -668,15 +668,19 @@ void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct 
         ty_descriptor_set_add(set, hs_handle_get_descriptor(iface->h), id);
 }
 
-static int new_task(ty_board *board, const struct _ty_task_vtable *vtable, ty_task **rtask)
+static int new_task(ty_board *board, const char *action, const struct _ty_task_vtable *vtable,
+                    ty_task **rtask)
 {
+    char task_name_buf[64];
     ty_task *task = NULL;
     int r;
 
     if (board->current_task)
-        return ty_error(TY_ERROR_BUSY, "Board '%s' is busy with another task", board->tag);
+        return ty_error(TY_ERROR_BUSY, "Board '%s' is busy on task '%s'", board->tag,
+                        ty_task_get_name(board->current_task));
 
-    r = _ty_task_new(sizeof(*task), vtable, &task);
+    snprintf(task_name_buf, sizeof(task_name_buf), "%s@%s", action, board->tag);
+    r = _ty_task_new(task_name_buf, sizeof(*task), vtable, &task);
     if (r < 0)
         return r;
 
@@ -858,7 +862,7 @@ int ty_upload(ty_board *board, ty_firmware **fws, unsigned int fws_count, int fl
     ty_task *task = NULL;
     int r;
 
-    r = new_task(board, &upload_task_vtable, &task);
+    r = new_task(board, "upload", &upload_task_vtable, &task);
     if (r < 0)
         goto error;
 
@@ -930,7 +934,7 @@ int ty_reset(ty_board *board, ty_task **rtask)
     assert(board);
     assert(rtask);
 
-    return new_task(board, &reset_task_vtable, rtask);
+    return new_task(board, "reset", &reset_task_vtable, rtask);
 }
 
 static int run_reboot(ty_task *task)
@@ -969,7 +973,7 @@ int ty_reboot(ty_board *board, ty_task **rtask)
     assert(board);
     assert(rtask);
 
-    return new_task(board, &reboot_task_vtable, rtask);
+    return new_task(board, "reboot", &reboot_task_vtable, rtask);
 }
 
 static int run_send(ty_task *task)
@@ -1016,7 +1020,7 @@ int ty_send(ty_board *board, const char *buf, size_t size, ty_task **rtask)
     ty_task *task = NULL;
     int r;
 
-    r = new_task(board, &send_task_vtable, &task);
+    r = new_task(board, "send", &send_task_vtable, &task);
     if (r < 0)
         goto error;
 
@@ -1099,7 +1103,7 @@ int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
     ty_task *task = NULL;
     int r;
 
-    r = new_task(board, &send_file_task_vtable, &task);
+    r = new_task(board, "send", &send_file_task_vtable, &task);
     if (r < 0)
         goto error;
 

@@ -17,8 +17,8 @@ public:
     LogDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
 
 public slots:
-    void appendError(const QString &msg);
-    void appendDebug(const QString &msg);
+    void appendError(const QString &msg, const QString &ctx);
+    void appendDebug(const QString &msg, const QString &ctx);
     void clearAll();
 
 private:

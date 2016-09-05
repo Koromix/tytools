@@ -43,25 +43,26 @@ static bool log_level_is_enabled(ty_log_level level)
     return ty_config_verbosity >= (int)level || debug;
 }
 
-static void print_log(const void *data)
+static void print_log(const ty_message_data *msg)
 {
-    const ty_log_message *msg = data;
-
-    if (!log_level_is_enabled(msg->level))
+    if (!log_level_is_enabled(msg->u.log.level))
         return;
 
-    if (msg->level == TY_LOG_INFO) {
-        printf("%s\n", msg->msg);
+    if (msg->u.log.level == TY_LOG_INFO) {
+        if (msg->ctx)
+            printf("%28s  ", msg->ctx);
+        printf("%s\n", msg->u.log.msg);
         fflush(stdout);
     } else {
-        fprintf(stderr, "%s\n", msg->msg);
+        if (msg->ctx)
+            fprintf(stderr, "%28s  ", msg->ctx);
+        fprintf(stderr, "%s\n", msg->u.log.msg);
     }
 }
 
-static void print_progress(const void *data)
+static void print_progress(const ty_message_data *msg)
 {
     static bool init = false, show_progress;
-    const ty_progress_message *msg = data;
 
     if (!log_level_is_enabled(TY_LOG_INFO))
         return;
@@ -72,30 +73,32 @@ static void print_progress(const void *data)
     }
 
     if (show_progress) {
-        printf("%s... %"PRIu64"%%%c", msg->action, 100 * msg->value / msg->max,
-               msg->value < msg->max ? '\r' : '\n');
-
+        if (msg->ctx)
+            printf("%28s  ", msg->ctx);
+        printf("%s... %"PRIu64"%%%c", msg->u.progress.action,
+               100 * msg->u.progress.value / msg->u.progress.max,
+               msg->u.progress.value < msg->u.progress.max ? '\r' : '\n');
         fflush(stdout);
-    } else if (!msg->value) {
-        printf("%s...\n", msg->action);
+    } else if (!msg->u.progress.value) {
+        if (msg->ctx)
+            printf("%28s  ", msg->ctx);
+        printf("%s...\n", msg->u.progress.action);
     }
     fflush(stdout);
 }
 
-void ty_message_default_handler(ty_task *task, ty_message_type type, const void *data, void *udata)
+void ty_message_default_handler(const ty_message_data *msg, void *udata)
 {
-    TY_UNUSED(task);
     TY_UNUSED(udata);
 
-    switch (type) {
+    switch (msg->type) {
     case TY_MESSAGE_LOG:
-        print_log(data);
+        print_log(msg);
         break;
     case TY_MESSAGE_PROGRESS:
-        print_progress(data);
+        print_progress(msg);
         break;
-
-    default:
+    case TY_MESSAGE_STATUS:
         break;
     }
 }
@@ -115,17 +118,17 @@ void ty_log(ty_log_level level, const char *fmt, ...)
 
     va_list ap;
     char buf[sizeof(last_error_msg)];
-    ty_log_message msg;
+    ty_message_data msg = {0};
 
     va_start(ap, fmt);
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
 
-    msg.level = level;
-    msg.err = 0;
-    msg.msg = buf;
+    msg.type = TY_MESSAGE_LOG;
+    msg.u.log.level = level;
+    msg.u.log.msg = buf;
 
-    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+    ty_message(&msg);
 }
 
 static const char *generic_error(int err)
@@ -206,7 +209,7 @@ int ty_error(ty_err err, const char *fmt, ...)
 {
     va_list ap;
     char buf[sizeof(last_error_msg)];
-    ty_log_message msg;
+    ty_message_data msg = {0};
 
     /* Don't copy directly to last_error_message because we need to support
        ty_error(err, "%s", ty_error_last_message()). */
@@ -221,11 +224,12 @@ int ty_error(ty_err err, const char *fmt, ...)
     strcpy(last_error_msg, buf);
 
     if (!ty_error_is_masked(err)) {
-        msg.level = TY_LOG_ERROR;
-        msg.err = err;
-        msg.msg = buf;
+        msg.type = TY_MESSAGE_LOG;
+        msg.u.log.level = TY_LOG_ERROR;
+        msg.u.log.err = err;
+        msg.u.log.msg = buf;
 
-        _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+        ty_message(&msg);
     }
 
     return err;
@@ -236,23 +240,29 @@ void ty_progress(const char *action, uint64_t value, uint64_t max)
     assert(value <= max);
     assert(max);
 
-    ty_progress_message msg;
+    ty_message_data msg = {0};
 
-    msg.action = action ? action : "Processing";
-    msg.value = value;
-    msg.max = max;
+    msg.type = TY_MESSAGE_PROGRESS;
+    msg.u.progress.action = action ? action : "Processing";
+    msg.u.progress.value = value;
+    msg.u.progress.max = max;
 
-    _ty_message(NULL, TY_MESSAGE_PROGRESS, &msg);
+    ty_message(&msg);
 }
 
-void _ty_message(ty_task *task, ty_message_type type, const void *data)
+void ty_message(ty_message_data *msg)
 {
-    if (!task)
+    ty_task *task = msg->task;
+    if (!task) {
         task = _ty_task_get_current();
+        msg->task = task;
+    }
+    if (!msg->ctx && task)
+        msg->ctx = ty_task_get_name(task);
 
-    (*handler)(task, type, data, handler_udata);
+    (*handler)(msg, handler_udata);
     if (task && task->callback)
-        (*task->callback)(task, type, data, task->callback_udata);
+        (*task->callback)(msg, task->callback_udata);
 }
 
 int ty_libhs_translate_error(int err)
@@ -281,29 +291,28 @@ void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *ud
 {
     TY_UNUSED(udata);
 
-    ty_log_message msg;
+    ty_message_data msg = {0};
 
+    msg.type = TY_MESSAGE_LOG;
     switch (level) {
     case HS_LOG_DEBUG:
-        msg.level = TY_LOG_DEBUG;
-        msg.err = 0;
+        msg.u.log.level = TY_LOG_DEBUG;
         break;
     case HS_LOG_WARNING:
-        msg.level = TY_LOG_WARNING;
-        msg.err = 0;
+        msg.u.log.level = TY_LOG_WARNING;
         break;
     case HS_LOG_ERROR:
-        msg.level = TY_LOG_ERROR;
-        msg.err = ty_libhs_translate_error(err);
+        msg.u.log.level = TY_LOG_ERROR;
+        msg.u.log.err = ty_libhs_translate_error(err);
         strncpy(last_error_msg, log, sizeof(last_error_msg));
         last_error_msg[sizeof(last_error_msg) - 1] = 0;
-        if (ty_error_is_masked(msg.err))
+        if (ty_error_is_masked(msg.u.log.err))
             return;
         break;
     }
-    msg.msg = log;
+    msg.u.log.msg = log;
 
-    _ty_message(NULL, TY_MESSAGE_LOG, &msg);
+    ty_message(&msg);
 }
 
 void _ty_refcount_increase(unsigned int *rrefcount)

@@ -37,12 +37,12 @@ public:
 public slots:
     void showLogWindow();
 
-    void reportError(const QString &msg);
-    void reportDebug(const QString &msg);
+    void reportError(const QString &msg, const QString &ctx = QString());
+    void reportDebug(const QString &msg, const QString &ctx = QString());
 
 signals:
-    void globalError(const QString &msg);
-    void globalDebug(const QString &msg);
+    void globalError(const QString &msg, const QString &ctx);
+    void globalDebug(const QString &msg, const QString &ctx);
 };
 
 #endif

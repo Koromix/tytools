@@ -60,15 +60,14 @@ TyQt::TyQt(int &argc, char *argv[])
     setApplicationVersion(ty_version_string());
 
     // This can be triggered from multiple threads, but Qt can queue signals appropriately
-    ty_message_redirect([](ty_task *task, ty_message_type type, const void *data, void *udata) {
-        ty_message_default_handler(task, type, data, udata);
+    ty_message_redirect([](const ty_message_data *msg, void *) {
+        ty_message_default_handler(msg, nullptr);
 
-        if (type == TY_MESSAGE_LOG) {
-            auto print = static_cast<const ty_log_message *>(data);
-            if (print->level <= TY_LOG_WARNING) {
-                tyQt->reportError(print->msg);
+        if (msg->type == TY_MESSAGE_LOG) {
+            if (msg->u.log.level <= TY_LOG_WARNING) {
+                tyQt->reportError(msg->u.log.msg, msg->ctx);
             } else {
-                tyQt->reportDebug(print->msg);
+                tyQt->reportDebug(msg->u.log.msg, msg->ctx);
             }
         }
     }, nullptr);
@@ -136,14 +135,14 @@ void TyQt::showLogWindow()
     log_dialog_->show();
 }
 
-void TyQt::reportError(const QString &msg)
+void TyQt::reportError(const QString &msg, const QString &ctx)
 {
-    emit globalError(msg);
+    emit globalError(msg, ctx);
 }
 
-void TyQt::reportDebug(const QString &msg)
+void TyQt::reportDebug(const QString &msg, const QString &ctx)
 {
-    emit globalDebug(msg);
+    emit globalDebug(msg, ctx);
 }
 
 void TyQt::setVisible(bool visible)
