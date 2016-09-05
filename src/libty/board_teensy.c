@@ -648,7 +648,9 @@ static int teensy_reboot(ty_board_interface *iface)
         r = change_baudrate(iface->h, serial_magic);
         if (!r) {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
-               the device will keep rebooting when opened. */
+               the device will keep rebooting when opened. Don't do it too fast or the reboot
+               may not occur. Maybe? */
+            ty_delay(20);
             ty_error_mask(TY_ERROR_SYSTEM);
             change_baudrate(iface->h, 115200);
             ty_error_unmask();
