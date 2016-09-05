@@ -149,6 +149,12 @@ void ClientHandler::upload(const QStringList &filenames)
         return;
     }
 
+    if (!monitor->boardCount()) {
+        notifyLog(TY_LOG_ERROR, tr("No board available"));
+        notifyFinished(false);
+        return;
+    }
+
     vector<shared_ptr<Board>> boards;
     if (filters_.isEmpty() && !filenames2.isEmpty()) {
         if (filenames2.count() == 1) {
