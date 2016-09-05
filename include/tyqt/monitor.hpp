@@ -46,6 +46,7 @@ public:
 
     enum Column {
         COLUMN_BOARD,
+        COLUMN_MODEL,
         COLUMN_STATUS,
         COLUMN_IDENTITY,
         COLUMN_LOCATION,

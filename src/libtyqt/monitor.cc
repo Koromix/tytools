@@ -265,8 +265,6 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
                 return board->statusIcon();
             case Qt::EditRole:
                 return board->tag();
-            case Qt::SizeHintRole:
-                return QSize(0, 24);
         }
     }
 
@@ -274,6 +272,8 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
         switch (index.column()) {
         case COLUMN_BOARD:
             return board->tag();
+        case COLUMN_MODEL:
+            return board->modelName();
         case COLUMN_STATUS:
             return board->statusText();
         case COLUMN_IDENTITY:
