@@ -82,6 +82,7 @@ void SelectorDialog::updateSelection()
         if (idx.column() == 0)
             selected_boards_.push_back(Monitor::boardFromModel(&monitor_model_, idx));
     }
+    buttonBox->button(QDialogButtonBox::Ok)->setEnabled(!selected_boards_.empty());
 
     emit selectionChanged();
 }
