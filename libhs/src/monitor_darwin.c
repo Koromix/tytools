@@ -162,15 +162,17 @@ static int get_ioregistry_entry_path(io_service_t service, char **rpath)
     kern_return_t kret;
 
     kret = IORegistryEntryGetPath(service, kIOServicePlane, buf);
-    if (kret != kIOReturnSuccess)
-        return hs_error(HS_ERROR_SYSTEM, "IORegistryEntryGetPath() failed");
+    if (kret != kIOReturnSuccess) {
+        hs_log(HS_LOG_DEBUG, "IORegistryEntryGetPath() failed with code %d", kret);
+        return 0;
+    }
 
     path = strdup(buf);
     if (!path)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
     *rpath = path;
-    return 0;
+    return 1;
 }
 
 static void clear_iterator(io_iterator_t it)
@@ -196,8 +198,6 @@ static int find_device_node(struct service_aggregate *agg, hs_device *dev)
         dev->vtable = &_hs_darwin_hid_vtable;
 
         r = get_ioregistry_entry_path(agg->dev_service, &dev->path);
-        if (!r)
-            r = 1;
     } else {
         hs_log(HS_LOG_WARNING, "Cannot find device node for unknown device entry class");
         r = 0;
