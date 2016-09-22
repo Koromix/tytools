@@ -5,6 +5,7 @@ branches:
   only:
     - master
     - /^test-.*$/
+    - /^variant-.*$/
 
 language: cpp
 
