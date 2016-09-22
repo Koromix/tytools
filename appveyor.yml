@@ -35,8 +35,8 @@ after_build:
 test: off
 
 artifacts:
-  - path: TyQt-*.msi
-  - path: TyQt-*.zip
+  - path: "*.msi"
+  - path: "*.zip"
 
 deploy:
   - provider: BinTray
