@@ -8,7 +8,7 @@
         "name": "__VERSION__"
     },
     "files": [
-        {"includePattern": "\./([ a-z0-9\.\-]*\\.(zip|dmg))", "excludePattern": "_CPack_Packages", "uploadPattern": "$1"}
+        {"includePattern": "\./(.*\.(zip|dmg))", "excludePattern": "_CPack_Packages", "uploadPattern": "$1"}
     ],
     "publish": true
 }
