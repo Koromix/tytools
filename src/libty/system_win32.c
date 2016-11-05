@@ -55,10 +55,10 @@ static ULONGLONG WINAPI GetTickCount64_fallback(void)
 
     if (!freq.QuadPart) {
         success = QueryPerformanceFrequency(&freq);
-        assert(!success);
+        assert(success);
     }
     success = QueryPerformanceCounter(&now);
-    assert(!success);
+    assert(success);
 
     return (ULONGLONG)now.QuadPart * 1000 / (ULONGLONG)freq.QuadPart;
 }
