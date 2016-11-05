@@ -348,6 +348,20 @@ cleanup:
     return r;
 }
 
+static bool is_root_usb_controller(const char *id)
+{
+    static const char *const root_needles[] = {
+        "\\ROOT_HUB",
+        "VMUSB\\HUB" // Microsoft Virtual PC
+    };
+
+    for (size_t i = 0; i < _HS_COUNTOF(root_needles); i++) {
+        if (strstr(id, root_needles[i]))
+            return true;
+    }
+    return false;
+}
+
 static int resolve_device_location(DEVINST inst, uint8_t ports[])
 {
     DEVINST parent;
@@ -411,7 +425,7 @@ static int resolve_device_location(DEVINST inst, uint8_t ports[])
             hs_log(HS_LOG_DEBUG, "Found port number: %d", r);
         }
 
-        if (strstr(id, "\\ROOT_HUB")) {
+        if (is_root_usb_controller(id)) {
             if (!depth)
                 return 0;
 
@@ -884,7 +898,7 @@ static int populate_controllers(void)
             hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed: 0x%lx", cret);
             continue;
         }
-        if (!strstr(roothub_id, "\\ROOT_HUB")) {
+        if (!is_root_usb_controller(roothub_id)) {
             hs_log(HS_LOG_WARNING, "Expected root hub device at '%s'", roothub_id);
             continue;
         }
