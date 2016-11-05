@@ -348,6 +348,12 @@ cleanup:
     return r;
 }
 
+static bool use_xp_location_code(void)
+{
+    return hs_win32_version() < HS_WIN32_VERSION_VISTA ||
+           getenv("LIBHS_WIN32_FORCE_XP_LOCATION_CODE");
+}
+
 static bool is_root_usb_controller(const char *id)
 {
     static const char *const root_needles[] = {
@@ -403,9 +409,7 @@ static int resolve_device_location(DEVINST inst, uint8_t ports[])
         }
 
         // Test for Vista, CancelIoEx() is needed elsewhere so no need for VerifyVersionInfo()
-        if (hs_win32_version() >= HS_WIN32_VERSION_VISTA) {
-            r = find_device_port_vista(inst);
-        } else {
+        if (use_xp_location_code()) {
             char child_key[256];
             DWORD len;
 
@@ -417,6 +421,8 @@ static int resolve_device_location(DEVINST inst, uint8_t ports[])
             }
 
             r = find_device_port_xp(id, child_key);
+        } else {
+            r = find_device_port_vista(inst);
         }
         if (r < 0)
             return r;
