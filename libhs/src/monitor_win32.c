@@ -519,7 +519,7 @@ static int find_device_location(DEVINST inst, uint8_t ports[])
     } else {
         depth = resolve_usb_location_cfgmgr(&usb_cursor, ports);
     }
-    if (depth <= 0)
+    if (depth < 0)
         return depth;
     if (!depth) {
         hs_log(HS_LOG_DEBUG, "Cannot resolve USB location for '%s'", dev_cursor.id);
