@@ -1075,7 +1075,7 @@ static int post_notification(hs_monitor *monitor, enum notification_type event,
 
     _hs_list_add_tail(&monitor->pending_notifications, &notif->node);
 
-    timer = SetTimer(monitor->thread_hwnd, 1, 500, NULL);
+    timer = SetTimer(monitor->thread_hwnd, 1, 100, NULL);
     if (!timer)
         return hs_error(HS_ERROR_SYSTEM, "SetTimer() failed: %s", hs_win32_strerror(0));
 
