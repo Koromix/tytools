@@ -73,6 +73,17 @@ struct notification {
     char device_key[];
 };
 
+struct device_cursor {
+    DEVINST inst;
+    char id[256];
+};
+
+enum device_cursor_relative {
+    DEVINST_RELATIVE_PARENT,
+    DEVINST_RELATIVE_SIBLING,
+    DEVINST_RELATIVE_CHILD
+};
+
 #if defined(__MINGW64_VERSION_MAJOR) && __MINGW64_VERSION_MAJOR < 4
 __declspec(dllimport) BOOLEAN NTAPI HidD_GetSerialNumberString(HANDLE HidDeviceObject,
                                                                PVOID Buffer, ULONG BufferLength);
@@ -95,6 +106,62 @@ static volatile LONG controllers_lock_setup;
 static CRITICAL_SECTION controllers_lock;
 static char *controllers[32];
 static unsigned int controllers_count;
+
+static bool get_device_cursor(DEVINST inst, struct device_cursor *new_cursor)
+{
+    CONFIGRET cret;
+
+    new_cursor->inst = inst;
+    cret = CM_Get_Device_ID(inst, new_cursor->id, sizeof(new_cursor->id), 0);
+    if (cret != CR_SUCCESS) {
+        hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed for instance 0x%lx: 0x%lx", inst, cret);
+        return false;
+    }
+
+    return true;
+}
+
+static bool get_device_cursor_relative(struct device_cursor *cursor,
+                                       enum device_cursor_relative relative,
+                                       struct device_cursor *new_cursor)
+{
+    DEVINST new_inst;
+    CONFIGRET cret = 0xFFFFFFFF;
+
+    switch (relative) {
+    case DEVINST_RELATIVE_PARENT:
+        cret = CM_Get_Parent(&new_inst, cursor->inst, 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_DEBUG, "Cannot get parent of device '%s': 0x%lx", cursor->id, cret);
+            return false;
+        }
+        break;
+
+    case DEVINST_RELATIVE_CHILD:
+        cret = CM_Get_Child(&new_inst, cursor->inst, 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_DEBUG, "Cannot get child of device '%s': 0x%lx", cursor->id, cret);
+            return false;
+        }
+        break;
+
+    case DEVINST_RELATIVE_SIBLING:
+        cret = CM_Get_Sibling(&new_inst, cursor->inst, 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_DEBUG, "Cannot get sibling of device '%s': 0x%lx", cursor->id, cret);
+            return false;
+        }
+        break;
+    }
+    assert(cret != 0xFFFFFFFF);
+
+    return get_device_cursor(new_inst, new_cursor);
+}
+
+static bool move_device_cursor(struct device_cursor *cursor, enum device_cursor_relative relative)
+{
+    return get_device_cursor_relative(cursor, relative, cursor);
+}
 
 static uint8_t find_controller(const char *id)
 {
@@ -130,26 +197,6 @@ static int build_device_path(const char *id, const GUID *guid, char **rpath)
 
     *rpath = path;
     return 0;
-}
-
-static uint8_t find_device_port_vista(DEVINST inst)
-{
-    char buf[256];
-    DWORD len;
-    CONFIGRET cret;
-    uint8_t port;
-
-    len = sizeof(buf);
-    cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_LOCATION_INFORMATION, NULL, buf, &len, 0);
-    if (cret != CR_SUCCESS) {
-        hs_log(HS_LOG_DEBUG, "No location information on this device node");
-        return 0;
-    }
-
-    port = 0;
-    sscanf(buf, "Port_#%04hhu", &port);
-
-    return port;
 }
 
 static int build_location_string(uint8_t ports[], unsigned int depth, char **rpath)
@@ -294,7 +341,7 @@ cleanup:
     return r;
 }
 
-static int find_device_port_xp(const char *hub_id, const char *child_key)
+static int find_device_port_ioctl(const char *hub_id, const char *child_key)
 {
     char *path = NULL;
     HANDLE h = NULL;
@@ -368,97 +415,134 @@ static bool is_root_usb_controller(const char *id)
     return false;
 }
 
-static int resolve_device_location(DEVINST inst, uint8_t ports[])
+static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t ports[])
 {
-    DEVINST parent;
-    char id[256];
     unsigned int depth;
-    CONFIGRET cret;
-    int r;
-
-    // skip nodes until we get to the USB ones
-    parent = inst;
-    do {
-        inst = parent;
-
-        cret = CM_Get_Device_ID(inst, id, sizeof(id), 0);
-        if (cret != CR_SUCCESS) {
-            hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed: 0x%lx", cret);
-            return 0;
-        }
-        hs_log(HS_LOG_DEBUG, "Going through device parents to find USB node: '%s'", id);
-
-        cret = CM_Get_Parent(&parent, inst, 0);
-    } while (cret == CR_SUCCESS && strncmp(id, "USB\\", 4) != 0);
-    if (cret != CR_SUCCESS)
-        return 0;
 
     depth = 0;
     do {
-        hs_log(HS_LOG_DEBUG, "Going through device parents to resolve USB location: '%s'", id);
+        struct device_cursor parent_cursor;
+        char child_key[256];
+        DWORD child_key_len;
+        CONFIGRET cret;
+        int r;
+
+        if (!get_device_cursor_relative(usb_cursor, DEVINST_RELATIVE_PARENT, &parent_cursor)) {
+            return 0;
+        }
 
         if (depth == MAX_USB_DEPTH) {
             hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
             return 0;
         }
 
-        cret = CM_Get_Device_ID(parent, id, sizeof(id), 0);
+        child_key_len = sizeof(child_key);
+        cret = CM_Get_DevNode_Registry_Property(usb_cursor->inst, CM_DRP_DRIVER, NULL,
+                                                child_key, &child_key_len, 0);
         if (cret != CR_SUCCESS) {
-            hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed: 0x%lx", cret);
+            hs_log(HS_LOG_WARNING, "Failed to get device driver key: 0x%lx", cret);
             return 0;
         }
-
-        // Test for Vista, CancelIoEx() is needed elsewhere so no need for VerifyVersionInfo()
-        if (use_xp_location_code()) {
-            char child_key[256];
-            DWORD len;
-
-            len = sizeof(child_key);
-            cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_DRIVER, NULL, child_key, &len, 0);
-            if (cret != CR_SUCCESS) {
-                hs_log(HS_LOG_WARNING, "Failed to get device driver key: 0x%lx", cret);
-                return 0;
-            }
-
-            r = find_device_port_xp(id, child_key);
-        } else {
-            r = find_device_port_vista(inst);
-        }
+        r = find_device_port_ioctl(parent_cursor.id, child_key);
         if (r < 0)
             return r;
         if (r) {
             ports[depth++] = (uint8_t)r;
-            hs_log(HS_LOG_DEBUG, "Found port number: %d", r);
+            hs_log(HS_LOG_DEBUG, "Found port number of '%s': %d", usb_cursor->id, r);
         }
 
-        if (is_root_usb_controller(id)) {
-            if (!depth) {
-                hs_log(HS_LOG_DEBUG, "Cannot resolve USB location");
-                return 0;
-            }
+        *usb_cursor = parent_cursor;
+    } while (!is_root_usb_controller(usb_cursor->id));
 
-            ports[depth] = find_controller(id);
-            if (!ports[depth]) {
-                hs_log(HS_LOG_WARNING, "Unknown USB host controller '%s'", id);
-                return 0;
-            }
+    return (int)depth;
+}
+
+static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t ports[])
+{
+    unsigned int depth;
+
+    depth = 0;
+    do {
+        char location_buf[256];
+        DWORD location_len;
+        CONFIGRET cret;
+
+        if (depth == MAX_USB_DEPTH) {
+            hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
+            return 0;
+        }
+
+        // Extract port from CM_DRP_LOCATION_INFORMATION (Vista and later versions)
+        location_len = sizeof(location_buf);
+        cret = CM_Get_DevNode_Registry_Property(usb_cursor->inst, CM_DRP_LOCATION_INFORMATION,
+                                                NULL, location_buf, &location_len, 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_DEBUG, "No location information on this device node");
+            return 0;
+        }
+        ports[depth] = 0;
+        sscanf(location_buf, "Port_#%04"SCNu8, &ports[depth]);
+        if (ports[depth]) {
+            hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor->id, ports[depth]);
             depth++;
-
-            break;
         }
 
-        inst = parent;
-        cret = CM_Get_Parent(&parent, parent, 0);
-    } while (cret == CR_SUCCESS);
+        if (!move_device_cursor(usb_cursor, DEVINST_RELATIVE_PARENT)) {
+            return 0;
+        }
+    } while (!is_root_usb_controller(usb_cursor->id));
+
+    return (int)depth;
+}
+
+static int find_device_location(DEVINST inst, uint8_t ports[])
+{
+    struct device_cursor dev_cursor, usb_cursor;
+    int depth;
+
+    if (!get_device_cursor(inst, &dev_cursor)) {
+        return 0;
+    }
+
+    // Find the USB device instance
+    usb_cursor = dev_cursor;
+    while (strncmp(usb_cursor.id, "USB\\", 4) != 0) {
+        if (!move_device_cursor(&usb_cursor, DEVINST_RELATIVE_PARENT)) {
+            return 0;
+        }
+    }
+
+    // Browse the USB tree to resolve USB ports
+    if (use_xp_location_code()) {
+        hs_log(HS_LOG_DEBUG, "Using legacy XP code for location of '%s'", dev_cursor.id);
+        depth = resolve_usb_location_ioctl(&usb_cursor, ports);
+    } else {
+        depth = resolve_usb_location_cfgmgr(&usb_cursor, ports);
+    }
+    if (depth <= 0)
+        return depth;
+    if (!depth) {
+        hs_log(HS_LOG_DEBUG, "Cannot resolve USB location for '%s'", dev_cursor.id);
+        return 0;
+    }
+
+    // Resolve the USB controller ID
+    ports[depth] = find_controller(usb_cursor.id);
+    if (!ports[depth]) {
+        hs_log(HS_LOG_WARNING, "Unknown USB host controller '%s'", usb_cursor.id);
+        return 0;
+    }
+    hs_log(HS_LOG_DEBUG, "Found controller ID for '%s': %"PRIu8, usb_cursor.id, ports[depth]);
+    depth++;
 
     // The ports are in the wrong order
-    for (unsigned int i = 0; i < depth / 2; i++) {
+    for (int i = 0; i < depth / 2; i++) {
         uint8_t tmp = ports[i];
         ports[i] = ports[depth - i - 1];
         ports[depth - i - 1] = tmp;
     }
 
-    return (int)depth;
+    return depth;
 }
 
 static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc)
@@ -821,7 +905,7 @@ static int process_win32_device(DEVINST inst, const char *id, hs_device **rdev)
     if (r <= 0)
         goto cleanup;
 
-    r = resolve_device_location(inst, ports);
+    r = find_device_location(inst, ports);
     if (r <= 0)
         goto cleanup;
     depth = (unsigned int)r;
@@ -877,6 +961,8 @@ static int populate_controllers(void)
         goto cleanup;
     }
 
+    hs_log(HS_LOG_DEBUG, "Listing USB host controllers and root hubs");
+
     set = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_HOST_CONTROLLER, NULL, NULL,
                               DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     if (!set) {
@@ -916,6 +1002,7 @@ static int populate_controllers(void)
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
         }
+        hs_log(HS_LOG_DEBUG, "Found root USB hub '%s' with ID %lu", roothub_id, i);
     }
     controllers_count = i;
 
