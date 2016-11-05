@@ -19,7 +19,7 @@ if(TY_CONFIG_VARIANT)
     endif()
 endif()
 
-set(TY_CONFIG_VERSION_DEFAULT "0.7.5" CACHE STRING "Default version number")
+set(TY_CONFIG_VERSION_DEFAULT "0.8.0" CACHE STRING "Default version number")
 set(TY_CONFIG_VERSION_AUTO ON CACHE BOOL "Compute version using git tags (fallback)")
 
 set(TY_CONFIG_TYC_BUILD ON CACHE BOOL "Build tyc (Teensy command-line manager)")
