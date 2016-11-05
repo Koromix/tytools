@@ -395,12 +395,6 @@ cleanup:
     return r;
 }
 
-static bool use_xp_location_code(void)
-{
-    return hs_win32_version() < HS_WIN32_VERSION_VISTA ||
-           getenv("LIBHS_WIN32_FORCE_XP_LOCATION_CODE");
-}
-
 static bool is_root_usb_controller(const char *id)
 {
     static const char *const root_needles[] = {
@@ -415,7 +409,8 @@ static bool is_root_usb_controller(const char *id)
     return false;
 }
 
-static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t ports[])
+static int resolve_usb_location_ioctl(struct device_cursor usb_cursor, uint8_t ports[],
+                                      struct device_cursor *roothub_cursor)
 {
     unsigned int depth;
 
@@ -427,12 +422,12 @@ static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t 
         CONFIGRET cret;
         int r;
 
-        if (!get_device_cursor_relative(usb_cursor, DEVINST_RELATIVE_PARENT, &parent_cursor)) {
+        if (!get_device_cursor_relative(&usb_cursor, DEVINST_RELATIVE_PARENT, &parent_cursor)) {
             return 0;
         }
 
         child_key_len = sizeof(child_key);
-        cret = CM_Get_DevNode_Registry_Property(usb_cursor->inst, CM_DRP_DRIVER, NULL,
+        cret = CM_Get_DevNode_Registry_Property(usb_cursor.inst, CM_DRP_DRIVER, NULL,
                                                 child_key, &child_key_len, 0);
         if (cret != CR_SUCCESS) {
             hs_log(HS_LOG_WARNING, "Failed to get device driver key: 0x%lx", cret);
@@ -442,7 +437,7 @@ static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t 
         if (r <= 0)
             return r;
         ports[depth] = (uint8_t)r;
-        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor->id, ports[depth]);
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor.id, ports[depth]);
         depth++;
 
         // We need place for the root hub index
@@ -451,13 +446,15 @@ static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t 
             return 0;
         }
 
-        *usb_cursor = parent_cursor;
-    } while (!is_root_usb_controller(usb_cursor->id));
+        usb_cursor = parent_cursor;
+    } while (!is_root_usb_controller(usb_cursor.id));
 
+    *roothub_cursor = usb_cursor;
     return (int)depth;
 }
 
-static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t ports[])
+static int resolve_usb_location_cfgmgr(struct device_cursor usb_cursor, uint8_t ports[],
+                                       struct device_cursor *roothub_cursor)
 {
     unsigned int depth;
 
@@ -469,7 +466,7 @@ static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t
 
         // Extract port from CM_DRP_LOCATION_INFORMATION (Vista and later versions)
         location_len = sizeof(location_buf);
-        cret = CM_Get_DevNode_Registry_Property(usb_cursor->inst, CM_DRP_LOCATION_INFORMATION,
+        cret = CM_Get_DevNode_Registry_Property(usb_cursor.inst, CM_DRP_LOCATION_INFORMATION,
                                                 NULL, location_buf, &location_len, 0);
         if (cret != CR_SUCCESS) {
             hs_log(HS_LOG_DEBUG, "No location information on this device node");
@@ -479,7 +476,7 @@ static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t
         sscanf(location_buf, "Port_#%04"SCNu8, &ports[depth]);
         if (!ports[depth])
             return 0;
-        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor->id, ports[depth]);
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor.id, ports[depth]);
         depth++;
 
         // We need place for the root hub index
@@ -488,17 +485,20 @@ static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t
             return 0;
         }
 
-        if (!move_device_cursor(usb_cursor, DEVINST_RELATIVE_PARENT)) {
+        if (!move_device_cursor(&usb_cursor, DEVINST_RELATIVE_PARENT)) {
             return 0;
         }
-    } while (!is_root_usb_controller(usb_cursor->id));
+    } while (!is_root_usb_controller(usb_cursor.id));
 
+    *roothub_cursor = usb_cursor;
     return (int)depth;
 }
 
 static int find_device_location(DEVINST inst, uint8_t ports[])
 {
-    struct device_cursor dev_cursor, usb_cursor;
+    struct device_cursor dev_cursor;
+    struct device_cursor usb_cursor;
+    struct device_cursor roothub_cursor;
     int depth;
 
     if (!get_device_cursor(inst, &dev_cursor)) {
@@ -513,27 +513,33 @@ static int find_device_location(DEVINST inst, uint8_t ports[])
         }
     }
 
-    // Browse the USB tree to resolve USB ports
-    if (use_xp_location_code()) {
-        hs_log(HS_LOG_DEBUG, "Using legacy XP code for location of '%s'", dev_cursor.id);
-        depth = resolve_usb_location_ioctl(&usb_cursor, ports);
-    } else {
-        depth = resolve_usb_location_cfgmgr(&usb_cursor, ports);
+    /* Browse the USB tree to resolve USB ports. Try the CfgMgr method first, only
+       available on Windows Vista and later versions. It may also fail with third-party
+       USB controller drivers, typically USB 3.0 host controllers before Windows 10. */
+    depth = 0;
+    if (!getenv("LIBHS_WIN32_FORCE_XP_LOCATION_CODE")) {
+        depth = resolve_usb_location_cfgmgr(usb_cursor, ports, &roothub_cursor);
+        if (depth < 0)
+            return depth;
     }
-    if (depth < 0)
-        return depth;
+    if (!depth) {
+        hs_log(HS_LOG_DEBUG, "Using legacy XP code for location of '%s'", dev_cursor.id);
+        depth = resolve_usb_location_ioctl(usb_cursor, ports, &roothub_cursor);
+        if (depth < 0)
+            return depth;
+    }
     if (!depth) {
         hs_log(HS_LOG_DEBUG, "Cannot resolve USB location for '%s'", dev_cursor.id);
         return 0;
     }
 
     // Resolve the USB controller ID
-    ports[depth] = find_controller(usb_cursor.id);
+    ports[depth] = find_controller(roothub_cursor.id);
     if (!ports[depth]) {
-        hs_log(HS_LOG_WARNING, "Unknown USB host controller '%s'", usb_cursor.id);
+        hs_log(HS_LOG_WARNING, "Unknown USB host controller '%s'", roothub_cursor.id);
         return 0;
     }
-    hs_log(HS_LOG_DEBUG, "Found controller ID for '%s': %"PRIu8, usb_cursor.id, ports[depth]);
+    hs_log(HS_LOG_DEBUG, "Found controller ID for '%s': %"PRIu8, roothub_cursor.id, ports[depth]);
     depth++;
 
     // The ports are in the wrong order
