@@ -431,11 +431,6 @@ static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t 
             return 0;
         }
 
-        if (depth == MAX_USB_DEPTH) {
-            hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
-            return 0;
-        }
-
         child_key_len = sizeof(child_key);
         cret = CM_Get_DevNode_Registry_Property(usb_cursor->inst, CM_DRP_DRIVER, NULL,
                                                 child_key, &child_key_len, 0);
@@ -444,11 +439,16 @@ static int resolve_usb_location_ioctl(struct device_cursor *usb_cursor, uint8_t 
             return 0;
         }
         r = find_device_port_ioctl(parent_cursor.id, child_key);
-        if (r < 0)
+        if (r <= 0)
             return r;
-        if (r) {
-            ports[depth++] = (uint8_t)r;
-            hs_log(HS_LOG_DEBUG, "Found port number of '%s': %d", usb_cursor->id, r);
+        ports[depth] = (uint8_t)r;
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor->id, ports[depth]);
+        depth++;
+
+        // We need place for the root hub index
+        if (depth == MAX_USB_DEPTH) {
+            hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
+            return 0;
         }
 
         *usb_cursor = parent_cursor;
@@ -467,11 +467,6 @@ static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t
         DWORD location_len;
         CONFIGRET cret;
 
-        if (depth == MAX_USB_DEPTH) {
-            hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
-            return 0;
-        }
-
         // Extract port from CM_DRP_LOCATION_INFORMATION (Vista and later versions)
         location_len = sizeof(location_buf);
         cret = CM_Get_DevNode_Registry_Property(usb_cursor->inst, CM_DRP_LOCATION_INFORMATION,
@@ -482,9 +477,15 @@ static int resolve_usb_location_cfgmgr(struct device_cursor *usb_cursor, uint8_t
         }
         ports[depth] = 0;
         sscanf(location_buf, "Port_#%04"SCNu8, &ports[depth]);
-        if (ports[depth]) {
-            hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor->id, ports[depth]);
-            depth++;
+        if (!ports[depth])
+            return 0;
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor->id, ports[depth]);
+        depth++;
+
+        // We need place for the root hub index
+        if (depth == MAX_USB_DEPTH) {
+            hs_log(HS_LOG_WARNING, "Excessive USB location depth, ignoring device");
+            return 0;
         }
 
         if (!move_device_cursor(usb_cursor, DEVINST_RELATIVE_PARENT)) {
@@ -506,7 +507,7 @@ static int find_device_location(DEVINST inst, uint8_t ports[])
 
     // Find the USB device instance
     usb_cursor = dev_cursor;
-    while (strncmp(usb_cursor.id, "USB\\", 4) != 0) {
+    while (strncmp(usb_cursor.id, "USB\\", 4) != 0 || strstr(usb_cursor.id, "&MI_")) {
         if (!move_device_cursor(&usb_cursor, DEVINST_RELATIVE_PARENT)) {
             return 0;
         }
