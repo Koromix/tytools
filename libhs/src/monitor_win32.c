@@ -426,8 +426,10 @@ static int resolve_device_location(DEVINST inst, uint8_t ports[])
         }
 
         if (is_root_usb_controller(id)) {
-            if (!depth)
+            if (!depth) {
+                hs_log(HS_LOG_DEBUG, "Cannot resolve USB location");
                 return 0;
+            }
 
             ports[depth] = find_controller(id);
             if (!ports[depth]) {
