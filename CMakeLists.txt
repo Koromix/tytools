@@ -3,6 +3,7 @@
 # Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
 # Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "")
 cmake_minimum_required(VERSION 3.0)
 project(ty C CXX)
 
