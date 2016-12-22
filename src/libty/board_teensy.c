@@ -26,12 +26,6 @@ struct ty_board_model {
     size_t block_size;
 };
 
-struct firmware_signature {
-    uint64_t magic;
-    const ty_board_model *model;
-    unsigned int priority;
-};
-
 #define TEENSY_VID 0x16C0
 
 #define SEREMU_TX_SIZE 32
@@ -172,18 +166,6 @@ static const ty_board_model *teensy_models[] = {
     &teensy_k64_model,
     &teensy_k66_model,
     NULL
-};
-
-static const struct firmware_signature signatures[] = {
-    {0x0C94007EFFCFF894, &teensy_pp10_model},
-    {0x0C94003FFFCFF894, &teensy_20_model},
-    {0x0C9400FEFFCFF894, &teensy_pp20_model},
-    {0x38800440823F0400, &teensy_30_model},
-    {0x30800440823F0400, &teensy_31_model},
-    {0x34800440823F0000, &teensy_lc_model},
-    {0x30800440823F0400, &teensy_32_model},
-    {0x0100002B88ED00E0, &teensy_k64_model, 1},
-    {0x002008E003000085, &teensy_k66_model, 2}
 };
 
 static const ty_board_model *identify_model(uint16_t usage)
@@ -396,50 +378,88 @@ void teensy_close_interface(ty_board_interface *iface)
     iface->h = NULL;
 }
 
-// TODO: don't search beyond code_size, and even less on Teensy 3.0 (size of .startup = 0x400)
 static unsigned int teensy_guess_models(const ty_firmware *fw,
                                         const ty_board_model **rguesses, unsigned int max)
 {
-    const uint8_t *image;
-    size_t size;
-    unsigned int priority = 0, count = 0;
+    const uint8_t *image = ty_firmware_get_image(fw);
+    size_t size = ty_firmware_get_size(fw);
 
-    image = ty_firmware_get_image(fw);
-    size = ty_firmware_get_size(fw);
+    /* Try ARM models first. We use a few facts to recognize these models:
+       - The interrupt vector table (_VectorsFlash[]) is located at 0x0 (at least initially)
+       - _VectorsFlash[] has a different length for each model
+       - ResetHandler() comes right after _VectorsFlash (this is enforced by the LD script)
+       - _VectorsFlash[1] contains the address of ResetHandler
+       Knowing all that, we can read the ResetHandler address 4 bytes in, and recognize the model
+       from this address.
+       To make sure it's really a Teensy firmware, we then check for a magic signature value
+       in the .startup section, which is the value assigned to SIM_SCGC5 in ResetHandler(). */
+    const size_t teensy3_startup_size = 0x400;
+    if (size >= teensy3_startup_size) {
+        uint32_t reset_handler_addr, magic_check;
+        unsigned int guesses_count = 0;
 
-    if (size < sizeof(uint64_t))
-        return 0;
+        reset_handler_addr = (uint32_t)image[4] | ((uint32_t)image[5] << 8) |
+                             ((uint32_t)image[6] << 16) | ((uint32_t)image[7] << 24);
+        switch (reset_handler_addr) {
+        case 0xF9:
+            rguesses[guesses_count++] = &teensy_30_model;
+            magic_check = 0x00043F82;
+            break;
+        case 0x1BD:
+            rguesses[guesses_count++] = &teensy_31_model;
+            if (max >= 2)
+                rguesses[guesses_count++] = &teensy_32_model;
+            magic_check = 0x00043F82;
+            break;
+        case 0xC1:
+            rguesses[guesses_count++] = &teensy_lc_model;
+            magic_check = 0x00003F82;
+            break;
+        case 0x199:
+            rguesses[guesses_count++] = &teensy_k64_model;
+            magic_check = 0x00043F82;
+            break;
+        case 0x1D1:
+            rguesses[guesses_count++] = &teensy_k66_model;
+            magic_check = 0x00043F82;
+            break;
+        }
 
-    /* Naive search with each board's signature, not pretty but unless
-       thousands of models appear this is good enough. */
-    for (size_t i = 0; i < size - sizeof(uint64_t); i++) {
-        uint64_t value8 = ((uint64_t)image[i] << 56) |
-                          ((uint64_t)image[i + 1] << 48) |
-                          ((uint64_t)image[i + 2] << 40) |
-                          ((uint64_t)image[i + 3] << 32) |
-                          ((uint64_t)image[i + 4] << 24) |
-                          ((uint64_t)image[i + 5] << 16) |
-                          ((uint64_t)image[i + 6] << 8) |
-                          image[i + 7];
+        if (guesses_count) {
+            for (size_t i = reset_handler_addr; i < teensy3_startup_size - sizeof(uint32_t); i++) {
+                uint32_t value4 = (uint32_t)image[i] | ((uint32_t)image[i + 1] << 8) |
+                                  ((uint32_t)image[i + 2] << 16) | ((uint32_t)image[i + 3] << 24);
 
-        for (unsigned int j = 0; j < TY_COUNTOF(signatures); j++) {
-            const struct firmware_signature *sig = &signatures[j];
-
-            if (value8 == sig->magic && sig->priority >= priority) {
-                if (sig->priority > priority) {
-                    priority = sig->priority;
-                    count = 0;
-                }
-
-                /* We need to continue, even if we reach max because a higher priority
-                   signature may clear the current guess list. */
-                if (count < max)
-                    rguesses[count++] = sig->model;
+                if (value4 == magic_check)
+                    return guesses_count;
             }
         }
     }
 
-    return count;
+    /* Now try AVR Teensies. We search for machine code that matches model-specific code in
+       _reboot_Teensyduino_(). Not elegant, but it does the work. */
+    if (size > sizeof(uint64_t) && size <= 130048) {
+        for (size_t i = 0; i < size - sizeof(uint64_t); i++) {
+            uint64_t value8 = (uint64_t)image[i] | ((uint64_t)image[i + 1] << 8) |
+                              ((uint64_t)image[i + 2] << 16) | ((uint64_t)image[i + 3] << 24) |
+                              ((uint64_t)image[i + 4] << 32) | ((uint64_t)image[i + 5] << 40) |
+                              ((uint64_t)image[i + 6] << 48) | ((uint64_t)image[i + 7] << 56);
+
+            switch (value8) {
+            case 0x94F8CFFF7E00940C:
+                rguesses[0] = &teensy_pp10_model;
+                return 1;
+            case 0x94F8CFFF3F00940C:
+                rguesses[0] = &teensy_20_model;
+                return 1;
+            case 0x94F8CFFFFE00940C:
+                rguesses[0] = &teensy_pp20_model;
+                return 1;
+            }
+        }
+    }
+
+    return 0;
 }
 
 static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
