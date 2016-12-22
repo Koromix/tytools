@@ -63,11 +63,10 @@ static const char *capability_names[] = {
 
 #ifdef _WIN32
     #define MANUAL_REBOOT_DELAY 15000
-    #define FINAL_TASK_TIMEOUT 8000
 #else
-    #define MANUAL_REBOOT_DELAY 5000
-    #define FINAL_TASK_TIMEOUT 5000
+    #define MANUAL_REBOOT_DELAY 8000
 #endif
+#define FINAL_TASK_TIMEOUT 8000
 
 const char *ty_board_family_get_name(const ty_board_family *family)
 {
