@@ -12,6 +12,7 @@
 #include "ty/board.h"
 #include "board_priv.h"
 #include "ty/firmware.h"
+#include "model_priv.h"
 #include "ty/system.h"
 
 struct ty_model {

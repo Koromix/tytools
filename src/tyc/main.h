@@ -10,6 +10,7 @@
 
 #include "ty/common.h"
 #include "ty/board.h"
+#include "ty/model.h"
 #include "ty/monitor.h"
 #include "ty/optline.h"
 

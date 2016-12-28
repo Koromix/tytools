@@ -9,6 +9,7 @@
 #include "hs/device.h"
 #include "hs/monitor.h"
 #include "board_priv.h"
+#include "model_priv.h"
 #include "ty/monitor.h"
 #include "ty/system.h"
 #include "ty/timer.h"

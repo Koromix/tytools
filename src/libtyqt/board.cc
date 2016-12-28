@@ -12,6 +12,7 @@
 #include <QTextCursor>
 
 #include "tyqt/board.hpp"
+#include "ty/model.h"
 #include "tyqt/database.hpp"
 #include "tyqt/monitor.hpp"
 

@@ -10,6 +10,7 @@
 
 #include "util.h"
 #include "ty/board.h"
+#include "ty/model.h"
 #include "hs/device.h"
 #include "htable.h"
 #include "list.h"
@@ -76,26 +77,6 @@ struct ty_board {
 
     void *udata;
 };
-
-struct _ty_model_vtable {
-    const ty_model **models;
-
-    int (*load_interface)(ty_board_interface *iface);
-    int (*update_board)(ty_board_interface *iface, ty_board *board);
-
-    unsigned int (*guess_models)(const struct ty_firmware *fw,
-                                 const ty_model **rmodels, unsigned int max);
-};
-
-#define TY_MODEL \
-    const struct _ty_model_vtable *vtable; \
-    \
-    const char *name; \
-    const char *mcu; \
-    \
-    size_t code_size;
-
-extern const struct _ty_model_vtable *_ty_model_vtables[];
 
 TY_C_END
 
