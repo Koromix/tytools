@@ -14,8 +14,8 @@
 #include "ty/firmware.h"
 #include "ty/system.h"
 
-struct ty_board_model {
-    TY_BOARD_MODEL
+struct ty_model {
+    TY_MODEL
 
     // Identifcation
     uint8_t usage;
@@ -37,16 +37,18 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
-const ty_board_family _ty_teensy_family;
+const struct _ty_model_vtable _ty_teensy_model_vtable;
 static const struct _ty_board_interface_vtable teensy_vtable;
 
-static const ty_board_model teensy_unknown_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_unknown_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy"
 };
 
-static const ty_board_model teensy_pp10_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_pp10_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy++ 1.0",
     .mcu = "at90usb646",
 
@@ -58,8 +60,9 @@ static const ty_board_model teensy_pp10_model = {
     .block_size = 256
 };
 
-static const ty_board_model teensy_20_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_20_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy 2.0",
     .mcu = "atmega32u4",
 
@@ -71,8 +74,9 @@ static const ty_board_model teensy_20_model = {
     .block_size = 128
 };
 
-static const ty_board_model teensy_pp20_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_pp20_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy++ 2.0",
     .mcu = "at90usb1286",
 
@@ -83,8 +87,9 @@ static const ty_board_model teensy_pp20_model = {
     .block_size = 256
 };
 
-static const ty_board_model teensy_30_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_30_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy 3.0",
     .mcu = "mk20dx128",
 
@@ -95,8 +100,9 @@ static const ty_board_model teensy_30_model = {
     .block_size = 1024
 };
 
-static const ty_board_model teensy_31_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_31_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy 3.1",
     .mcu = "mk20dx256",
 
@@ -107,8 +113,9 @@ static const ty_board_model teensy_31_model = {
     .block_size = 1024
 };
 
-static const ty_board_model teensy_lc_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_lc_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy LC",
     .mcu = "mkl26z64",
 
@@ -119,8 +126,9 @@ static const ty_board_model teensy_lc_model = {
     .block_size = 512
 };
 
-static const ty_board_model teensy_32_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_32_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy 3.2",
     .mcu = "mk20dx256",
 
@@ -131,8 +139,9 @@ static const ty_board_model teensy_32_model = {
     .block_size = 1024
 };
 
-static const ty_board_model teensy_k64_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_k64_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy 3.5",
     .mcu = "mk64fx512",
 
@@ -143,8 +152,9 @@ static const ty_board_model teensy_k64_model = {
     .block_size = 1024
 };
 
-static const ty_board_model teensy_k66_model = {
-    .family = &_ty_teensy_family,
+const ty_model _ty_teensy_k66_model = {
+    .vtable = &_ty_teensy_model_vtable,
+
     .name = "Teensy 3.6",
     .mcu = "mk66fx1m0",
 
@@ -155,25 +165,12 @@ static const ty_board_model teensy_k66_model = {
     .block_size = 1024
 };
 
-static const ty_board_model *teensy_models[] = {
-    &teensy_pp10_model,
-    &teensy_20_model,
-    &teensy_pp20_model,
-    &teensy_30_model,
-    &teensy_31_model,
-    &teensy_lc_model,
-    &teensy_32_model,
-    &teensy_k64_model,
-    &teensy_k66_model,
-    NULL
-};
-
-static const ty_board_model *identify_model(uint16_t usage)
+static const ty_model *identify_model(uint16_t usage)
 {
-    for (const ty_board_model **cur = teensy_models; *cur; cur++) {
-        const ty_board_model *model = *cur;
+    for (const ty_model **cur = ty_models; *cur; cur++) {
+        const ty_model *model = *cur;
 
-        if (model->usage == usage) {
+        if (model->vtable == &_ty_teensy_model_vtable && model->usage == usage) {
             ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16, model->name, usage);
             return *cur;
         }
@@ -269,7 +266,7 @@ static int teensy_load_interface(ty_board_interface *iface)
     }
 
     if (!iface->model)
-        iface->model = &teensy_unknown_model;
+        iface->model = &_ty_teensy_unknown_model;
     iface->vtable = &teensy_vtable;
 
     return 1;
@@ -337,7 +334,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
     }
 
     if (!board->id) {
-        r = asprintf(&board->id, "%"PRIu64"-%s", serial, iface->model->family->name);
+        r = asprintf(&board->id, "%"PRIu64"-Teensy", serial);
         if (r < 0) {
             board->id = NULL;
             return ty_error(TY_ERROR_MEMORY, NULL);
@@ -379,7 +376,7 @@ void teensy_close_interface(ty_board_interface *iface)
 }
 
 static unsigned int teensy_guess_models(const ty_firmware *fw,
-                                        const ty_board_model **rguesses, unsigned int max)
+                                        const ty_model **rguesses, unsigned int max)
 {
     const uint8_t *image = ty_firmware_get_image(fw);
     size_t size = ty_firmware_get_size(fw);
@@ -402,25 +399,25 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
                              ((uint32_t)image[6] << 16) | ((uint32_t)image[7] << 24);
         switch (reset_handler_addr) {
         case 0xF9:
-            rguesses[guesses_count++] = &teensy_30_model;
+            rguesses[guesses_count++] = &_ty_teensy_30_model;
             magic_check = 0x00043F82;
             break;
         case 0x1BD:
-            rguesses[guesses_count++] = &teensy_31_model;
+            rguesses[guesses_count++] = &_ty_teensy_31_model;
             if (max >= 2)
-                rguesses[guesses_count++] = &teensy_32_model;
+                rguesses[guesses_count++] = &_ty_teensy_32_model;
             magic_check = 0x00043F82;
             break;
         case 0xC1:
-            rguesses[guesses_count++] = &teensy_lc_model;
+            rguesses[guesses_count++] = &_ty_teensy_lc_model;
             magic_check = 0x00003F82;
             break;
         case 0x199:
-            rguesses[guesses_count++] = &teensy_k64_model;
+            rguesses[guesses_count++] = &_ty_teensy_k64_model;
             magic_check = 0x00043F82;
             break;
         case 0x1D1:
-            rguesses[guesses_count++] = &teensy_k66_model;
+            rguesses[guesses_count++] = &_ty_teensy_k66_model;
             magic_check = 0x00043F82;
             break;
         }
@@ -447,13 +444,13 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
 
             switch (value8) {
             case 0x94F8CFFF7E00940C:
-                rguesses[0] = &teensy_pp10_model;
+                rguesses[0] = &_ty_teensy_pp10_model;
                 return 1;
             case 0x94F8CFFF3F00940C:
-                rguesses[0] = &teensy_20_model;
+                rguesses[0] = &_ty_teensy_20_model;
                 return 1;
             case 0x94F8CFFFFE00940C:
-                rguesses[0] = &teensy_pp20_model;
+                rguesses[0] = &_ty_teensy_pp20_model;
                 return 1;
             }
         }
@@ -596,7 +593,7 @@ restart:
     return 0;
 }
 
-static int test_bootloader_support(const ty_board_model *model)
+static int test_bootloader_support(const ty_model *model)
 {
     if (model->experimental && !getenv("TY_EXPERIMENTAL_BOARDS"))
         return ty_error(TY_ERROR_UNSUPPORTED, "Support for %s boards is experimental, set "
@@ -689,10 +686,7 @@ static int teensy_reboot(ty_board_interface *iface)
     return r;
 }
 
-const ty_board_family _ty_teensy_family = {
-    .name = "Teensy",
-    .models = teensy_models,
-
+const struct _ty_model_vtable _ty_teensy_model_vtable = {
     .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
 

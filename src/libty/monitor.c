@@ -34,8 +34,8 @@ struct ty_monitor {
     void *udata;
 };
 
-struct ty_board_model {
-    TY_BOARD_MODEL
+struct ty_model {
+    TY_MODEL
 };
 
 struct callback {
@@ -97,7 +97,7 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     board->vid = hs_device_get_vid(iface->dev);
     board->pid = hs_device_get_pid(iface->dev);
 
-    r = (*iface->model->family->update_board)(iface, board);
+    r = (*iface->model->vtable->update_board)(iface, board);
     if (r <= 0)
         goto error;
     board->tag = board->id;
@@ -197,11 +197,11 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
     iface->dev = hs_device_ref(dev);
 
     r = 0;
-    for (const ty_board_family **cur = ty_board_families; *cur && !r; cur++) {
-        const ty_board_family *family = *cur;
+    for (const struct _ty_model_vtable **cur = _ty_model_vtables; *cur && !r; cur++) {
+        const struct _ty_model_vtable *model_vtable = *cur;
 
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*family->load_interface)(iface);
+        r = (*model_vtable->load_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
             if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
@@ -249,13 +249,13 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
-        r = (*iface->model->family->update_board)(iface, board);
+        r = (*iface->model->vtable->update_board)(iface, board);
         if (r < 0)
             goto error;
         if (update_tag_pointer)
             board->tag = board->id;
 
-        /* The family function update_board() returns 1 if the interface is compatible with
+        /* The model function update_board() returns 1 if the interface is compatible with
            this board, or 0 if not. In the latter case, the old board is dropped and a new
            one is used. */
         if (r) {

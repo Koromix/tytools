@@ -40,7 +40,7 @@ struct ty_board_interface {
 
     const char *name;
     int capabilities;
-    const ty_board_model *model;
+    const ty_model *model;
 
     hs_device *dev;
     ty_mutex open_lock;
@@ -58,7 +58,7 @@ struct ty_board {
     ty_list_head missing_node;
     uint64_t missing_since;
 
-    const ty_board_model *model;
+    const ty_model *model;
     char *id;
     char *tag;
     uint16_t vid;
@@ -77,25 +77,25 @@ struct ty_board {
     void *udata;
 };
 
-struct ty_board_family {
-    const char *name;
-
-    const ty_board_model **models;
+struct _ty_model_vtable {
+    const ty_model **models;
 
     int (*load_interface)(ty_board_interface *iface);
     int (*update_board)(ty_board_interface *iface, ty_board *board);
 
     unsigned int (*guess_models)(const struct ty_firmware *fw,
-                                 const ty_board_model **rmodels, unsigned int max);
+                                 const ty_model **rmodels, unsigned int max);
 };
 
-#define TY_BOARD_MODEL \
-    const ty_board_family *family; \
+#define TY_MODEL \
+    const struct _ty_model_vtable *vtable; \
     \
     const char *name; \
     const char *mcu; \
     \
     size_t code_size;
+
+extern const struct _ty_model_vtable *_ty_model_vtables[];
 
 TY_C_END
 

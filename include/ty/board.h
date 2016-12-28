@@ -19,11 +19,10 @@ struct ty_firmware;
 struct hs_handle;
 struct ty_task;
 
+typedef struct ty_model ty_model;
+
 typedef struct ty_board ty_board;
 typedef struct ty_board_interface ty_board_interface;
-
-typedef struct ty_board_family ty_board_family;
-typedef struct ty_board_model ty_board_model;
 
 // Keep in sync with capability_names in board.c
 typedef enum ty_board_capability {
@@ -51,24 +50,20 @@ enum {
 
 #define TY_UPLOAD_MAX_FIRMWARES 256
 
-typedef int ty_board_model_list_func(const ty_board_model *model, void *udata);
 typedef int ty_board_list_interfaces_func(ty_board_interface *iface, void *udata);
 typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *fw, size_t uploaded, void *udata);
 
-TY_PUBLIC extern const ty_board_family *ty_board_families[];
+TY_PUBLIC extern const ty_model *ty_models[];
 
-TY_PUBLIC const char *ty_board_family_get_name(const ty_board_family *family);
+TY_PUBLIC const ty_model *ty_model_find(const char *name);
 
-TY_PUBLIC int ty_board_model_list(ty_board_model_list_func *f, void *udata);
-TY_PUBLIC const ty_board_model *ty_board_model_find(const char *name);
+TY_PUBLIC bool ty_model_is_real(const ty_model *model);
+TY_PUBLIC bool ty_model_test_firmware(const ty_model *model, const struct ty_firmware *fw,
+                                      const ty_model **rguesses, unsigned int *rcount);
 
-TY_PUBLIC bool ty_board_model_is_real(const ty_board_model *model);
-TY_PUBLIC bool ty_board_model_test_firmware(const ty_board_model *model, const struct ty_firmware *fw,
-                                             const ty_board_model **rguesses, unsigned int *rcount);
-
-TY_PUBLIC const char *ty_board_model_get_name(const ty_board_model *model);
-TY_PUBLIC const char *ty_board_model_get_mcu(const ty_board_model *model);
-TY_PUBLIC size_t ty_board_model_get_code_size(const ty_board_model *model);
+TY_PUBLIC const char *ty_model_get_name(const ty_model *model);
+TY_PUBLIC const char *ty_model_get_mcu(const ty_model *model);
+TY_PUBLIC size_t ty_model_get_code_size(const ty_model *model);
 
 TY_PUBLIC const char *ty_board_capability_get_name(ty_board_capability cap);
 
@@ -92,8 +87,8 @@ TY_PUBLIC const char *ty_board_get_location(const ty_board *board);
 TY_PUBLIC uint64_t ty_board_get_serial_number(const ty_board *board);
 TY_PUBLIC const char *ty_board_get_description(const ty_board *board);
 
-TY_PUBLIC void ty_board_set_model(ty_board *board, const ty_board_model *model);
-TY_PUBLIC const ty_board_model *ty_board_get_model(const ty_board *board);
+TY_PUBLIC void ty_board_set_model(ty_board *board, const ty_model *model);
+TY_PUBLIC const ty_model *ty_board_get_model(const ty_board *board);
 TY_PUBLIC const char *ty_board_get_model_name(const ty_board *board);
 
 TY_PUBLIC int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, void *udata);

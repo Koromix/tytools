@@ -44,14 +44,6 @@ static void print_version(FILE *f)
     fprintf(f, "%s %s\n", executable_name, ty_version_string());
 }
 
-static int print_family_model(const ty_board_model *model, void *udata)
-{
-    FILE *f = udata;
-
-    fprintf(f, "   - %-22s (%s)\n", ty_board_model_get_name(model), ty_board_model_get_mcu(model));
-    return 0;
-}
-
 static void print_main_usage(FILE *f)
 {
     fprintf(f, "usage: %s <command> [options]\n\n", executable_name);
@@ -65,7 +57,10 @@ static void print_main_usage(FILE *f)
     fputc('\n', f);
 
     fprintf(f, "Supported models:\n");
-    ty_board_model_list(print_family_model, f);
+    for (const ty_model **cur = ty_models; *cur; cur++) {
+        const ty_model *model = *cur;
+        fprintf(f, "   - %-22s (%s)\n", ty_model_get_name(model), ty_model_get_mcu(model));
+    }
 }
 
 void print_common_options(FILE *f)

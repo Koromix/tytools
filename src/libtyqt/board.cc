@@ -78,7 +78,7 @@ void Board::loadSettings(Monitor *monitor)
     if (hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         auto model_name = cache_.get("model");
         if (model_name.isValid()) {
-            auto model = ty_board_model_find(model_name.toString().toUtf8().constData());
+            auto model = ty_model_find(model_name.toString().toUtf8().constData());
             if (model)
                 ty_board_set_model(board_, model);
         }
@@ -123,7 +123,7 @@ bool Board::hasCapability(ty_board_capability cap) const
     return ty_board_has_capability(board_, cap);
 }
 
-const ty_board_model *Board::model() const
+const ty_model *Board::model() const
 {
     return ty_board_get_model(board_);
 }
@@ -134,7 +134,7 @@ QString Board::modelName() const
     if (!model)
         return tr("(unknown)");
 
-    return ty_board_model_get_name(model);
+    return ty_model_get_name(model);
 }
 
 QString Board::tag() const
@@ -658,8 +658,8 @@ void Board::refreshBoard()
     }
 
     auto model = this->model();
-    if (ty_board_model_get_code_size(model))
-        cache_.put("model", ty_board_model_get_name(model));
+    if (ty_model_get_code_size(model))
+        cache_.put("model", ty_model_get_name(model));
 
     updateStatus();
     emit infoChanged();

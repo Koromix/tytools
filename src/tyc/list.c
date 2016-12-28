@@ -138,7 +138,7 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
     TY_UNUSED(event);
     TY_UNUSED(udata);
 
-    const ty_board_model *model = ty_board_get_model(board);
+    const ty_model *model = ty_board_get_model(board);
     const char *action = "";
 
     switch (event) {
@@ -160,7 +160,7 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
 
     if (output == OUTPUT_PLAIN) {
         printf("%s %s %s", action, ty_board_get_tag(board),
-               model ? ty_board_model_get_name(model) : "(unknown)");
+               model ? ty_model_get_name(model) : "(unknown)");
         if (ty_board_get_description(board))
             printf(" (%s)", ty_board_get_description(board));
     } else {
@@ -169,7 +169,7 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
         print_field("serial", "%"PRIu64, ty_board_get_serial_number(board));
         if (ty_board_get_description(board))
             print_field("description", "%s", ty_board_get_description(board));
-        print_field("model", "%s", ty_board_model_get_name(model));
+        print_field("model", "%s", ty_model_get_name(model));
     }
 
     if (verbose && ((event != TY_MONITOR_EVENT_DROPPED && event != TY_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {

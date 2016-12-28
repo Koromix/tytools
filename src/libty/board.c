@@ -17,8 +17,8 @@
 #include "task_priv.h"
 #include "ty/timer.h"
 
-struct ty_board_model {
-    TY_BOARD_MODEL
+struct ty_model {
+    TY_MODEL
 };
 
 struct ty_task {
@@ -45,10 +45,33 @@ struct ty_task {
     };
 };
 
-extern const ty_board_family _ty_teensy_family;
+extern const struct _ty_model_vtable _ty_teensy_model_vtable;
 
-const ty_board_family *ty_board_families[] = {
-    &_ty_teensy_family,
+const struct _ty_model_vtable *_ty_model_vtables[] = {
+    &_ty_teensy_model_vtable,
+    NULL
+};
+
+extern const ty_model _ty_teensy_pp10_model;
+extern const ty_model _ty_teensy_20_model;
+extern const ty_model _ty_teensy_pp20_model;
+extern const ty_model _ty_teensy_30_model;
+extern const ty_model _ty_teensy_31_model;
+extern const ty_model _ty_teensy_lc_model;
+extern const ty_model _ty_teensy_32_model;
+extern const ty_model _ty_teensy_k64_model;
+extern const ty_model _ty_teensy_k66_model;
+
+const ty_model *ty_models[] = {
+    &_ty_teensy_pp10_model,
+    &_ty_teensy_20_model,
+    &_ty_teensy_pp20_model,
+    &_ty_teensy_30_model,
+    &_ty_teensy_31_model,
+    &_ty_teensy_lc_model,
+    &_ty_teensy_32_model,
+    &_ty_teensy_k64_model,
+    &_ty_teensy_k66_model,
     NULL
 };
 
@@ -68,56 +91,27 @@ static const char *capability_names[] = {
 #endif
 #define FINAL_TASK_TIMEOUT 8000
 
-const char *ty_board_family_get_name(const ty_board_family *family)
-{
-    assert(family);
-    return family->name;
-}
-
-int ty_board_model_list(ty_board_model_list_func *f, void *udata)
-{
-    assert(f);
-
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
-
-        for (const ty_board_model **cur2 = family->models; *cur2; cur2++) {
-            const ty_board_model *model = *cur2;
-
-            int r = (*f)(model, udata);
-            if (r)
-                return r;
-        }
-    }
-
-    return 0;
-}
-
-const ty_board_model *ty_board_model_find(const char *name)
+const ty_model *ty_model_find(const char *name)
 {
     assert(name);
 
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
+    for (const ty_model **cur = ty_models; *cur; cur++) {
+        const ty_model *model = *cur;
 
-        for (const ty_board_model **cur2 = family->models; *cur2; cur2++) {
-            const ty_board_model *model = *cur2;
-
-            if (strcmp(model->name, name) == 0)
-                return model;
-        }
+        if (strcmp(model->name, name) == 0)
+            return model;
     }
 
     return NULL;
 }
 
-bool ty_board_model_is_real(const ty_board_model *model)
+bool ty_model_is_real(const ty_model *model)
 {
     return model && model->code_size;
 }
 
-bool ty_board_model_test_firmware(const ty_board_model *model, const ty_firmware *fw,
-                                   const ty_board_model **rguesses, unsigned int *rcount)
+bool ty_model_test_firmware(const ty_model *model, const ty_firmware *fw,
+                            const ty_model **rguesses, unsigned int *rcount)
 {
     assert(fw);
     assert(!!rguesses == !!rcount);
@@ -127,19 +121,19 @@ bool ty_board_model_test_firmware(const ty_board_model *model, const ty_firmware
     bool compatible = false;
     unsigned int count = 0;
 
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
+    for (const struct _ty_model_vtable **cur = _ty_model_vtables; *cur; cur++) {
+        const struct _ty_model_vtable *model_vtable = *cur;
 
-        const ty_board_model *family_guesses[8];
-        unsigned int family_count;
+        const ty_model *partial_guesses[8];
+        unsigned int partial_count;
 
-        family_count = (*family->guess_models)(fw, family_guesses, TY_COUNTOF(family_guesses));
+        partial_count = (*model_vtable->guess_models)(fw, partial_guesses, TY_COUNTOF(partial_guesses));
 
-        for (unsigned int i = 0; i < family_count; i++) {
-            if (family_guesses[i] == model)
+        for (unsigned int i = 0; i < partial_count; i++) {
+            if (partial_guesses[i] == model)
                 compatible = true;
             if (rguesses && count < *rcount)
-                rguesses[count++] = family_guesses[i];
+                rguesses[count++] = partial_guesses[i];
         }
     }
 
@@ -148,19 +142,19 @@ bool ty_board_model_test_firmware(const ty_board_model *model, const ty_firmware
     return compatible;
 }
 
-const char *ty_board_model_get_name(const ty_board_model *model)
+const char *ty_model_get_name(const ty_model *model)
 {
     assert(model);
     return model->name;
 }
 
-const char *ty_board_model_get_mcu(const ty_board_model *model)
+const char *ty_model_get_mcu(const ty_model *model)
 {
     assert(model);
     return model->mcu;
 }
 
-size_t ty_board_model_get_code_size(const ty_board_model *model)
+size_t ty_model_get_code_size(const ty_model *model)
 {
     assert(model);
     return model->code_size;
@@ -246,7 +240,7 @@ bool ty_board_matches_tag(ty_board *board, const char *id)
 
     if (serial && serial != board->serial)
         return false;
-    if (family && strcmp(family, board->model->family->name) != 0)
+    if (family && strcmp(family, strchr(board->id, '-') + 1) != 0)
         return false;
     if (location && strcmp(location, board->location) != 0 &&
             !ty_board_list_interfaces(board, match_interface, location))
@@ -330,7 +324,7 @@ const char *ty_board_get_description(const ty_board *board)
     return board->description;
 }
 
-void ty_board_set_model(ty_board *board, const ty_board_model *model)
+void ty_board_set_model(ty_board *board, const ty_model *model)
 {
     assert(board);
     assert(board->model);
@@ -344,7 +338,7 @@ void ty_board_set_model(ty_board *board, const ty_board_model *model)
     board->model = model;
 }
 
-const ty_board_model *ty_board_get_model(const ty_board *board)
+const ty_model *ty_board_get_model(const ty_board *board)
 {
     assert(board);
     return board->model;
@@ -354,7 +348,7 @@ const char *ty_board_get_model_name(const ty_board *board)
 {
     assert(board);
 
-    const ty_board_model *model = board->model;
+    const ty_model *model = board->model;
     if (!model)
         return NULL;
 
@@ -701,7 +695,7 @@ static int get_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned 
 {
     if (fws_count > 1) {
         for (unsigned int i = 0; i < fws_count; i++) {
-            if (ty_board_model_test_firmware(board->model, fws[i], NULL, 0)) {
+            if (ty_model_test_firmware(board->model, fws[i], NULL, 0)) {
                 *rfw = fws[i];
                 return 0;
             }
@@ -710,11 +704,11 @@ static int get_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned 
         return ty_error(TY_ERROR_FIRMWARE, "No firmware is compatible with '%s' (%s)",
                         board->tag, board->model->name);
     } else {
-        const ty_board_model *guesses[8];
+        const ty_model *guesses[8];
         unsigned int count;
 
         count = TY_COUNTOF(guesses);
-        if (ty_board_model_test_firmware(board->model, fws[0], guesses, &count)) {
+        if (ty_model_test_firmware(board->model, fws[0], guesses, &count)) {
             *rfw = fws[0];
             return 0;
         }
@@ -760,7 +754,7 @@ static int run_upload(ty_task *task)
 
     if (flags & TY_UPLOAD_NOCHECK) {
         fw = task->upload.fws[0];
-    } else if (ty_board_model_is_real(board->model)) {
+    } else if (ty_model_is_real(board->model)) {
         r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
         if (r < 0)
             return r;
@@ -806,11 +800,11 @@ wait:
     if (fw_size >= 1024) {
         ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
                (fw_size + 1023) / 1024,
-               (double)fw_size / (double)ty_board_model_get_code_size(board->model) * 100.0);
+               (double)fw_size / (double)ty_model_get_code_size(board->model) * 100.0);
     } else {
         ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
                fw_size,
-               (double)fw_size / (double)ty_board_model_get_code_size(board->model) * 100.0);
+               (double)fw_size / (double)ty_model_get_code_size(board->model) * 100.0);
     }
 
     r = ty_board_upload(board, fw, upload_progress_callback, NULL);

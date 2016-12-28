@@ -94,7 +94,7 @@ public:
     uint16_t capabilities() const;
     bool hasCapability(ty_board_capability cap) const;
 
-    const ty_board_model *model() const;
+    const ty_model *model() const;
     QString modelName() const;
 
     QString tag() const;
