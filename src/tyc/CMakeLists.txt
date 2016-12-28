@@ -3,7 +3,8 @@
 # Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
 # Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
 
-set(TYC_SOURCES list.c
+set(TYC_SOURCES identify.c
+                list.c
                 main.c
                 monitor.c
                 reset.c

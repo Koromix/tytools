@@ -19,16 +19,18 @@ struct command {
     const char *description;
 };
 
+int identify(int argc, char *argv[]);
 int list(int argc, char *argv[]);
 int monitor(int argc, char *argv[]);
 int reset(int argc, char *argv[]);
 int upload(int argc, char *argv[]);
 
 static const struct command commands[] = {
-    {"list",    list,    "List available boards"},
-    {"monitor", monitor, "Open serial (or emulated) connection with board"},
-    {"reset",   reset,   "Reset board"},
-    {"upload",  upload,  "Upload new firmware"},
+    {"identify", identify, "Identify models compatible with firmware"},
+    {"list",     list,     "List available boards"},
+    {"monitor",  monitor,  "Open serial (or emulated) connection with board"},
+    {"reset",    reset,    "Reset board"},
+    {"upload",   upload,   "Upload new firmware"},
     {0}
 };
 
