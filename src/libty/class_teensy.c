@@ -376,8 +376,8 @@ void teensy_close_interface(ty_board_interface *iface)
     iface->h = NULL;
 }
 
-static unsigned int teensy_guess_models(const ty_firmware *fw,
-                                        const ty_model **rguesses, unsigned int max)
+static unsigned int teensy_identify_models(const ty_firmware *fw,
+                                           const ty_model **rmodels, unsigned int max)
 {
     const uint8_t *image = ty_firmware_get_image(fw);
     size_t size = ty_firmware_get_size(fw);
@@ -394,42 +394,42 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
     const size_t teensy3_startup_size = 0x400;
     if (size >= teensy3_startup_size) {
         uint32_t reset_handler_addr, magic_check;
-        unsigned int guesses_count = 0;
+        unsigned int models_count = 0;
 
         reset_handler_addr = (uint32_t)image[4] | ((uint32_t)image[5] << 8) |
                              ((uint32_t)image[6] << 16) | ((uint32_t)image[7] << 24);
         switch (reset_handler_addr) {
         case 0xF9:
-            rguesses[guesses_count++] = &_ty_teensy_30_model;
+            rmodels[models_count++] = &_ty_teensy_30_model;
             magic_check = 0x00043F82;
             break;
         case 0x1BD:
-            rguesses[guesses_count++] = &_ty_teensy_31_model;
+            rmodels[models_count++] = &_ty_teensy_31_model;
             if (max >= 2)
-                rguesses[guesses_count++] = &_ty_teensy_32_model;
+                rmodels[models_count++] = &_ty_teensy_32_model;
             magic_check = 0x00043F82;
             break;
         case 0xC1:
-            rguesses[guesses_count++] = &_ty_teensy_lc_model;
+            rmodels[models_count++] = &_ty_teensy_lc_model;
             magic_check = 0x00003F82;
             break;
         case 0x199:
-            rguesses[guesses_count++] = &_ty_teensy_k64_model;
+            rmodels[models_count++] = &_ty_teensy_k64_model;
             magic_check = 0x00043F82;
             break;
         case 0x1D1:
-            rguesses[guesses_count++] = &_ty_teensy_k66_model;
+            rmodels[models_count++] = &_ty_teensy_k66_model;
             magic_check = 0x00043F82;
             break;
         }
 
-        if (guesses_count) {
+        if (models_count) {
             for (size_t i = reset_handler_addr; i < teensy3_startup_size - sizeof(uint32_t); i++) {
                 uint32_t value4 = (uint32_t)image[i] | ((uint32_t)image[i + 1] << 8) |
                                   ((uint32_t)image[i + 2] << 16) | ((uint32_t)image[i + 3] << 24);
 
                 if (value4 == magic_check)
-                    return guesses_count;
+                    return models_count;
             }
         }
     }
@@ -445,13 +445,13 @@ static unsigned int teensy_guess_models(const ty_firmware *fw,
 
             switch (value8) {
             case 0x94F8CFFF7E00940C:
-                rguesses[0] = &_ty_teensy_pp10_model;
+                rmodels[0] = &_ty_teensy_pp10_model;
                 return 1;
             case 0x94F8CFFF3F00940C:
-                rguesses[0] = &_ty_teensy_20_model;
+                rmodels[0] = &_ty_teensy_20_model;
                 return 1;
             case 0x94F8CFFFFE00940C:
-                rguesses[0] = &_ty_teensy_pp20_model;
+                rmodels[0] = &_ty_teensy_pp20_model;
                 return 1;
             }
         }
@@ -691,7 +691,7 @@ const struct _ty_model_vtable _ty_teensy_model_vtable = {
     .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
 
-    .guess_models = teensy_guess_models
+    .identify_models = teensy_identify_models
 };
 
 static const struct _ty_board_interface_vtable teensy_vtable = {

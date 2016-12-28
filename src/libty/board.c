@@ -592,43 +592,40 @@ static void cleanup_task(ty_task *task)
     ty_board_unref(task->board);
 }
 
-static int get_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned int fws_count,
-                                   ty_firmware **rfw)
+static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned int fws_count,
+                                      ty_firmware **rfw)
 {
-    if (fws_count > 1) {
-        for (unsigned int i = 0; i < fws_count; i++) {
-            if (ty_model_test_firmware(board->model, fws[i], NULL, 0)) {
+    const ty_model *fw_models[16];
+    unsigned int fw_models_count = 0;
+
+    for (unsigned int i = 0; i < fws_count; i++) {
+        fw_models_count = ty_firmware_identify(fws[i], fw_models, TY_COUNTOF(fw_models));
+
+        for (unsigned int j = 0; j < fw_models_count; j++) {
+            if (fw_models[j] == board->model) {
                 *rfw = fws[i];
                 return 0;
             }
         }
+    }
 
+    if (fws_count > 1) {
         return ty_error(TY_ERROR_FIRMWARE, "No firmware is compatible with '%s' (%s)",
                         board->tag, board->model->name);
+    } else if (fw_models_count) {
+        char buf[256], *ptr;
+
+        ptr = buf;
+        for (unsigned int i = 0; i < fw_models_count && ptr < buf + sizeof(buf); i++)
+            ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
+                            i ? (i + 1 < fw_models_count ? ", " : " and ") : "",
+                            fw_models[i]->name);
+
+        return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
+                        ty_firmware_get_name(fws[0]), buf);
     } else {
-        const ty_model *guesses[8];
-        unsigned int count;
-
-        count = TY_COUNTOF(guesses);
-        if (ty_model_test_firmware(board->model, fws[0], guesses, &count)) {
-            *rfw = fws[0];
-            return 0;
-        }
-
-        if (count) {
-            char buf[256], *ptr;
-
-            ptr = buf;
-            for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
-                ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
-                                i ? (i + 1 < count ? ", " : " and ") : "", guesses[i]->name);
-
-            return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
-                            ty_firmware_get_name(fws[0]), buf);
-        } else {
-            return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
-                            ty_firmware_get_name(fws[0]), board->tag);
-        }
+        return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
+                        ty_firmware_get_name(fws[0]), board->tag);
     }
 }
 
@@ -657,7 +654,7 @@ static int run_upload(ty_task *task)
     if (flags & TY_UPLOAD_NOCHECK) {
         fw = task->upload.fws[0];
     } else if (ty_model_is_real(board->model)) {
-        r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
+        r = select_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
         if (r < 0)
             return r;
     } else {
@@ -692,7 +689,7 @@ wait:
     }
 
     if (!fw) {
-        r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
+        r = select_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
         if (r < 0)
             return r;
     }

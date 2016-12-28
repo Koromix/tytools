@@ -62,38 +62,6 @@ bool ty_model_is_real(const ty_model *model)
     return model && model->code_size;
 }
 
-bool ty_model_test_firmware(const ty_model *model, const ty_firmware *fw,
-                            const ty_model **rguesses, unsigned int *rcount)
-{
-    assert(fw);
-    assert(!!rguesses == !!rcount);
-    if (rguesses)
-        assert(*rcount);
-
-    bool compatible = false;
-    unsigned int count = 0;
-
-    for (const struct _ty_model_vtable **cur = _ty_model_vtables; *cur; cur++) {
-        const struct _ty_model_vtable *model_vtable = *cur;
-
-        const ty_model *partial_guesses[8];
-        unsigned int partial_count;
-
-        partial_count = (*model_vtable->guess_models)(fw, partial_guesses, TY_COUNTOF(partial_guesses));
-
-        for (unsigned int i = 0; i < partial_count; i++) {
-            if (partial_guesses[i] == model)
-                compatible = true;
-            if (rguesses && count < *rcount)
-                rguesses[count++] = partial_guesses[i];
-        }
-    }
-
-    if (rcount)
-        *rcount = count;
-    return compatible;
-}
-
 const char *ty_model_get_name(const ty_model *model)
 {
     assert(model);

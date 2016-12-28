@@ -21,9 +21,6 @@ TY_PUBLIC extern const ty_model *ty_models[];
 TY_PUBLIC const ty_model *ty_model_find(const char *name);
 
 TY_PUBLIC bool ty_model_is_real(const ty_model *model);
-TY_PUBLIC bool ty_model_test_firmware(const ty_model *model, const struct ty_firmware *fw,
-                                      const ty_model **rguesses, unsigned int *rcount);
-
 TY_PUBLIC const char *ty_model_get_name(const ty_model *model);
 TY_PUBLIC const char *ty_model_get_mcu(const ty_model *model);
 TY_PUBLIC size_t ty_model_get_code_size(const ty_model *model);

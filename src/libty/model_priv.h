@@ -20,8 +20,8 @@ struct _ty_model_vtable {
     int (*load_interface)(ty_board_interface *iface);
     int (*update_board)(ty_board_interface *iface, ty_board *board);
 
-    unsigned int (*guess_models)(const struct ty_firmware *fw,
-                                 const ty_model **rmodels, unsigned int max);
+    unsigned int (*identify_models)(const struct ty_firmware *fw,
+                                    const ty_model **rmodels, unsigned int max);
 };
 
 #define TY_MODEL \

@@ -7,6 +7,7 @@
 
 #include "util.h"
 #include "firmware_priv.h"
+#include "model_priv.h"
 #include "ty/system.h"
 
 int _ty_firmware_load_elf(ty_firmware *fw);
@@ -165,4 +166,31 @@ int _ty_firmware_expand_image(ty_firmware *fw, size_t size)
     }
 
     return 0;
+}
+
+unsigned int ty_firmware_identify(const ty_firmware *fw, const ty_model **rmodels,
+                                  unsigned int max_models)
+{
+    assert(fw);
+    assert(rmodels);
+    assert(max_models);
+
+    unsigned int guesses_count = 0;
+
+    for (const struct _ty_model_vtable **cur = _ty_model_vtables; *cur; cur++) {
+        const struct _ty_model_vtable *model_vtable = *cur;
+
+        const ty_model *partial_guesses[8];
+        unsigned int partial_count;
+
+        partial_count = (*model_vtable->identify_models)(fw, partial_guesses,
+                                                      TY_COUNTOF(partial_guesses));
+
+        for (unsigned int i = 0; i < partial_count; i++) {
+            if (rmodels && guesses_count < max_models)
+                rmodels[guesses_count++] = partial_guesses[i];
+        }
+    }
+
+    return guesses_count;
 }
