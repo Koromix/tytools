@@ -158,7 +158,7 @@ char *ty_optline_get_value(ty_optline_context *ctx)
             ctx->current_value = arg + 2;
             ctx->index++;
         /* Support '-f bar' and '--foo bar', see ty_optline_next_option() for '--foo=bar'. */
-        } else if (!ctx->smallopt_offset && ctx->index < ctx->count &&
+        } else if (!ctx->smallopt_offset && ctx->index < ctx->limit &&
                    !is_opt(ctx->args[ctx->index])) {
             ctx->current_value = ctx->args[ctx->index];
             ctx->index++;

@@ -146,6 +146,18 @@ static void test_optline_value(void)
         ASSERT(!ty_optline_next_option(&ctx));
         ASSERT(!ty_optline_consume_non_option(&ctx));
     }
+
+    {
+        char *args[] = {"bar", "--foo"};
+        ty_optline_context ctx;
+        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+
+        ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
+        ASSERT(!ty_optline_get_value(&ctx));
+        ASSERT(!ty_optline_next_option(&ctx));
+        ASSERT_STR_EQUAL(ty_optline_consume_non_option(&ctx), "bar");
+        ASSERT(!ty_optline_consume_non_option(&ctx));
+    }
 }
 
 static void test_optline_positional(void)
