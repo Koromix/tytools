@@ -27,8 +27,8 @@ static void print_upload_usage(FILE *f)
                "You can pass multiple firmwares, and the first compatible one will be used.\n");
 
     fprintf(f, "Supported firmware formats: ");
-    for (const ty_firmware_format *format = ty_firmware_formats; format->name; format++)
-        fprintf(f, "%s%s", format != ty_firmware_formats ? ", " : "", format->name);
+    for (unsigned int i = 0; i < ty_firmware_formats_count; i++)
+        fprintf(f, "%s%s", i ? ", " : "", ty_firmware_formats[i].name);
     fprintf(f, ".\n");
 }
 

@@ -178,8 +178,8 @@ void UpdaterWindow::refreshProgress()
 QString UpdaterWindow::browseFirmwareFilter() const
 {
     QString exts;
-    for (auto format = ty_firmware_formats; format->name; format++)
-        exts += QString("*%1 ").arg(format->ext);
+    for (unsigned int i = 0; i < ty_firmware_formats_count; i++)
+        exts += QString("*%1 ").arg(ty_firmware_formats[i].ext);
     exts.chop(1);
 
     return tr("Binary Files (%1);;All Files (*)").arg(exts);

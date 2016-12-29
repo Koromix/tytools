@@ -17,6 +17,7 @@ struct ty_firmware;
 typedef struct ty_model ty_model;
 
 TY_PUBLIC extern const ty_model *ty_models[];
+TY_PUBLIC extern const unsigned int ty_models_count;
 
 TY_PUBLIC const ty_model *ty_model_find(const char *name);
 

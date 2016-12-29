@@ -59,10 +59,9 @@ static void print_main_usage(FILE *f)
     fputc('\n', f);
 
     fprintf(f, "Supported models:\n");
-    for (const ty_model **cur = ty_models; *cur; cur++) {
-        const ty_model *model = *cur;
-        fprintf(f, "   - %-22s (%s)\n", ty_model_get_name(model), ty_model_get_mcu(model));
-    }
+    for (unsigned int i = 0; i < ty_models_count; i++)
+        fprintf(f, "   - %-22s (%s)\n", ty_model_get_name(ty_models[i]),
+                ty_model_get_mcu(ty_models[i]));
 }
 
 void print_common_options(FILE *f)

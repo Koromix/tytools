@@ -33,6 +33,7 @@ struct _ty_model_vtable {
     size_t code_size;
 
 extern const struct _ty_model_vtable *_ty_model_vtables[];
+extern const unsigned int _ty_model_vtables_count;
 
 TY_C_END
 

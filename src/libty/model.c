@@ -16,9 +16,9 @@ struct ty_model {
 extern const struct _ty_model_vtable _ty_teensy_model_vtable;
 
 const struct _ty_model_vtable *_ty_model_vtables[] = {
-    &_ty_teensy_model_vtable,
-    NULL
+    &_ty_teensy_model_vtable
 };
+const unsigned int _ty_model_vtables_count = TY_COUNTOF(_ty_model_vtables);
 
 extern const ty_model _ty_teensy_pp10_model;
 extern const ty_model _ty_teensy_20_model;
@@ -39,19 +39,17 @@ const ty_model *ty_models[] = {
     &_ty_teensy_lc_model,
     &_ty_teensy_32_model,
     &_ty_teensy_k64_model,
-    &_ty_teensy_k66_model,
-    NULL
+    &_ty_teensy_k66_model
 };
+const unsigned int ty_models_count = TY_COUNTOF(ty_models);
 
 const ty_model *ty_model_find(const char *name)
 {
     assert(name);
 
-    for (const ty_model **cur = ty_models; *cur; cur++) {
-        const ty_model *model = *cur;
-
-        if (strcmp(model->name, name) == 0)
-            return model;
+    for (unsigned int i = 0; i < ty_models_count; i++) {
+        if (strcmp(ty_models[i]->name, name) == 0)
+            return ty_models[i];
     }
 
     return NULL;

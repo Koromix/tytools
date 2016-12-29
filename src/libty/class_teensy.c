@@ -168,12 +168,11 @@ const ty_model _ty_teensy_k66_model = {
 
 static const ty_model *identify_model(uint16_t usage)
 {
-    for (const ty_model **cur = ty_models; *cur; cur++) {
-        const ty_model *model = *cur;
-
-        if (model->vtable == &_ty_teensy_model_vtable && model->usage == usage) {
-            ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16, model->name, usage);
-            return *cur;
+    for (unsigned int i = 0; i < ty_models_count; i++) {
+        if (ty_models[i]->vtable == &_ty_teensy_model_vtable && ty_models[i]->usage == usage) {
+            ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16,
+                   ty_models[i]->name, usage);
+            return ty_models[i];
         }
     }
 

@@ -24,6 +24,7 @@ typedef struct ty_firmware_format {
 } ty_firmware_format;
 
 TY_PUBLIC extern const ty_firmware_format ty_firmware_formats[];
+TY_PUBLIC extern const unsigned int ty_firmware_formats_count;
 
 #define TY_FIRMWARE_MAX_SIZE (1024 * 1024)
 

@@ -198,11 +198,9 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
     iface->dev = hs_device_ref(dev);
 
     r = 0;
-    for (const struct _ty_model_vtable **cur = _ty_model_vtables; *cur && !r; cur++) {
-        const struct _ty_model_vtable *model_vtable = *cur;
-
+    for (unsigned int i = 0; i < _ty_model_vtables_count && !r; i++) {
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*model_vtable->load_interface)(iface);
+        r = (*_ty_model_vtables[i]->load_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
             if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)

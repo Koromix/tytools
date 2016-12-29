@@ -15,9 +15,9 @@ int _ty_firmware_load_ihex(ty_firmware *fw);
 
 const ty_firmware_format ty_firmware_formats[] = {
     {"elf",  ".elf", _ty_firmware_load_elf},
-    {"ihex", ".hex", _ty_firmware_load_ihex},
-    {0}
+    {"ihex", ".hex", _ty_firmware_load_ihex}
 };
+const unsigned int ty_firmware_formats_count = TY_COUNTOF(ty_firmware_formats);
 
 #define FIRMWARE_STEP_SIZE 32768
 
@@ -41,16 +41,18 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
     assert(filename);
     assert(rfw);
 
-    const ty_firmware_format *format;
+    const ty_firmware_format *format = NULL;
     ty_firmware *fw = NULL;
     int r;
 
     if (format_name) {
-        for (format = ty_firmware_formats; format->name; format++) {
-            if (strcasecmp(format->name, format_name) == 0)
+        for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
+            if (strcasecmp(ty_firmware_formats[i].name, format_name) == 0) {
+                format = &ty_firmware_formats[i];
                 break;
+            }
         }
-        if (!format->name) {
+        if (!format) {
             r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
             goto error;
         }
@@ -61,11 +63,13 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
             goto error;
         }
 
-        for (format = ty_firmware_formats; format->name; format++) {
-            if (strcmp(format->ext, ext) == 0)
+        for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
+            if (strcmp(ty_firmware_formats[i].ext, ext) == 0) {
+                format = &ty_firmware_formats[i];
                 break;
+            }
         }
-        if (!format->name) {
+        if (!format) {
             r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized file format", filename);
             goto error;
         }
@@ -177,18 +181,16 @@ unsigned int ty_firmware_identify(const ty_firmware *fw, const ty_model **rmodel
 
     unsigned int guesses_count = 0;
 
-    for (const struct _ty_model_vtable **cur = _ty_model_vtables; *cur; cur++) {
-        const struct _ty_model_vtable *model_vtable = *cur;
-
+    for (unsigned int i = 0; i < _ty_model_vtables_count; i++) {
         const ty_model *partial_guesses[8];
         unsigned int partial_count;
 
-        partial_count = (*model_vtable->identify_models)(fw, partial_guesses,
-                                                      TY_COUNTOF(partial_guesses));
+        partial_count = (*_ty_model_vtables[i]->identify_models)(fw, partial_guesses,
+                                                                 TY_COUNTOF(partial_guesses));
 
-        for (unsigned int i = 0; i < partial_count; i++) {
+        for (unsigned int j = 0; j < partial_count; j++) {
             if (rmodels && guesses_count < max_models)
-                rmodels[guesses_count++] = partial_guesses[i];
+                rmodels[guesses_count++] = partial_guesses[j];
         }
     }
 
