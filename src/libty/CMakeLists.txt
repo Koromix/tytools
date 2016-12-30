@@ -22,7 +22,6 @@ set(LIBTY_SOURCES ../../include/ty/board.h
                   firmware.c
                   firmware_elf.c
                   firmware_ihex.c
-                  firmware_priv.h
                   htable.c
                   list.h
                   model.c

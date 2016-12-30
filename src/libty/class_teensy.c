@@ -253,9 +253,6 @@ void teensy_close_interface(ty_board_interface *iface)
 static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmodels,
                                            unsigned int max_models)
 {
-    const uint8_t *image = ty_firmware_get_image(fw);
-    size_t size = ty_firmware_get_size(fw);
-
     /* Try ARM models first. We use a few facts to recognize these models:
        - The interrupt vector table (_VectorsFlash[]) is located at 0x0 (at least initially)
        - _VectorsFlash[] has a different length for each model
@@ -266,12 +263,12 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
        To make sure it's really a Teensy firmware, we then check for a magic signature value
        in the .startup section, which is the value assigned to SIM_SCGC5 in ResetHandler(). */
     const size_t teensy3_startup_size = 0x400;
-    if (size >= teensy3_startup_size) {
+    if (fw->size >= teensy3_startup_size) {
         uint32_t reset_handler_addr, magic_check;
         unsigned int models_count = 0;
 
-        reset_handler_addr = (uint32_t)image[4] | ((uint32_t)image[5] << 8) |
-                             ((uint32_t)image[6] << 16) | ((uint32_t)image[7] << 24);
+        reset_handler_addr = (uint32_t)fw->image[4] | ((uint32_t)fw->image[5] << 8) |
+                             ((uint32_t)fw->image[6] << 16) | ((uint32_t)fw->image[7] << 24);
         switch (reset_handler_addr) {
         case 0xF9:
             rmodels[models_count++] = TY_MODEL_TEENSY_30;
@@ -299,8 +296,10 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
         if (models_count) {
             for (size_t i = reset_handler_addr; i < teensy3_startup_size - sizeof(uint32_t); i++) {
-                uint32_t value4 = (uint32_t)image[i] | ((uint32_t)image[i + 1] << 8) |
-                                  ((uint32_t)image[i + 2] << 16) | ((uint32_t)image[i + 3] << 24);
+                uint32_t value4 = (uint32_t)fw->image[i] |
+                                  ((uint32_t)fw->image[i + 1] << 8) |
+                                  ((uint32_t)fw->image[i + 2] << 16) |
+                                  ((uint32_t)fw->image[i + 3] << 24);
 
                 if (value4 == magic_check)
                     return models_count;
@@ -310,12 +309,16 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
     /* Now try AVR Teensies. We search for machine code that matches model-specific code in
        _reboot_Teensyduino_(). Not elegant, but it does the work. */
-    if (size > sizeof(uint64_t) && size <= 130048) {
-        for (size_t i = 0; i < size - sizeof(uint64_t); i++) {
-            uint64_t value8 = (uint64_t)image[i] | ((uint64_t)image[i + 1] << 8) |
-                              ((uint64_t)image[i + 2] << 16) | ((uint64_t)image[i + 3] << 24) |
-                              ((uint64_t)image[i + 4] << 32) | ((uint64_t)image[i + 5] << 40) |
-                              ((uint64_t)image[i + 6] << 48) | ((uint64_t)image[i + 7] << 56);
+    if (fw->size > sizeof(uint64_t) && fw->size <= 130048) {
+        for (size_t i = 0; i < fw->size - sizeof(uint64_t); i++) {
+            uint64_t value8 = (uint64_t)fw->image[i] |
+                              ((uint64_t)fw->image[i + 1] << 8) |
+                              ((uint64_t)fw->image[i + 2] << 16) |
+                              ((uint64_t)fw->image[i + 3] << 24) |
+                              ((uint64_t)fw->image[i + 4] << 32) |
+                              ((uint64_t)fw->image[i + 5] << 40) |
+                              ((uint64_t)fw->image[i + 6] << 48) |
+                              ((uint64_t)fw->image[i + 7] << 56);
 
             switch (value8) {
             case 0x94F8CFFF7E00940C:
@@ -519,14 +522,9 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
 static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
                          ty_board_upload_progress_func *pf, void *udata)
 {
-    const uint8_t *image;
-    size_t size;
     unsigned int halfkay_version;
     size_t block_size;
     int r;
-
-    image = ty_firmware_get_image(fw);
-    size = ty_firmware_get_size(fw);
 
     r = get_halfkay_settings(iface->model, &halfkay_version, &block_size);
     if (r < 0)
@@ -538,11 +536,11 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
             return r;
     }
 
-    for (size_t addr = 0; addr < size; addr += block_size) {
-        size_t write_size = TY_MIN(block_size, (size_t)(size - addr));
+    for (size_t addr = 0; addr < fw->size; addr += block_size) {
+        size_t write_size = TY_MIN(block_size, (size_t)(fw->size - addr));
 
         r = halfkay_send(iface->h, halfkay_version, block_size,
-                         addr, image + addr, write_size, 3000);
+                         addr, fw->image + addr, write_size, 3000);
         if (r < 0)
             return r;
 

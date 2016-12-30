@@ -731,9 +731,9 @@ TaskInterface Board::watchTask(TaskInterface task)
 
 void Board::addUploadedFirmware(ty_firmware *fw)
 {
-    status_firmware_ = ty_firmware_get_name(fw);
+    status_firmware_ = fw->name;
 
-    auto filename = ty_firmware_get_filename(fw);
+    auto filename = fw->filename;
     recent_firmwares_.removeAll(filename);
     recent_firmwares_.prepend(filename);
     if (recent_firmwares_.count() > MAX_RECENT_FIRMWARES)

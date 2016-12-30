@@ -7,7 +7,7 @@
 
 #include "util.h"
 #include <sys/types.h>
-#include "firmware_priv.h"
+#include "ty/firmware.h"
 
 #define EI_NIDENT 16
 
@@ -141,7 +141,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     if (phdr.p_type != PT_LOAD || !phdr.p_filesz)
         return 0;
 
-    r = _ty_firmware_expand_image(ctx->fw, phdr.p_paddr + phdr.p_filesz);
+    r = ty_firmware_expand_image(ctx->fw, phdr.p_paddr + phdr.p_filesz);
     if (r < 0)
         return r;
     r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, ctx->fw->image + phdr.p_paddr);
@@ -151,35 +151,39 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     return 1;
 }
 
-int _ty_firmware_load_elf(ty_firmware *fw)
+int ty_firmware_load_elf(const char *filename, ty_firmware **rfw)
 {
-    assert(fw);
+    assert(filename);
+    assert(rfw);
 
     struct loader_context ctx = {0};
     int r;
 
-    ctx.fw = fw;
+    r = ty_firmware_new(filename, &ctx.fw);
+    if (r < 0)
+        goto cleanup;
 
 #ifdef _WIN32
-    ctx.fp = fopen(fw->filename, "rb");
+    ctx.fp = fopen(ctx.fw->filename, "rb");
 #else
-    ctx.fp = fopen(fw->filename, "rbe");
+    ctx.fp = fopen(ctx.fw->filename, "rbe");
 #endif
     if (!ctx.fp) {
         switch (errno) {
         case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", fw->filename);
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
             break;
         case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", fw->filename);
+            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", ctx.fw->filename);
             break;
         case ENOENT:
         case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", fw->filename);
+            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
             break;
 
         default:
-            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", fw->filename, strerror(errno));
+            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
+                         strerror(errno));
             break;
         }
         goto cleanup;
@@ -216,7 +220,7 @@ int _ty_firmware_load_elf(ty_firmware *fw)
     }
 
     if (!ctx.ehdr.e_phoff) {
-        r = ty_error(TY_ERROR_PARSE, "ELF file '%s' has no program headers", fw->filename);
+        r = ty_error(TY_ERROR_PARSE, "ELF file '%s' has no program headers", ctx.fw->filename);
         goto cleanup;
     }
 
@@ -226,9 +230,13 @@ int _ty_firmware_load_elf(ty_firmware *fw)
             goto cleanup;
     }
 
+    *rfw = ctx.fw;
+    ctx.fw = NULL;
+
     r = 0;
 cleanup:
     if (ctx.fp)
         fclose(ctx.fp);
+    ty_firmware_unref(ctx.fw);
     return r;
 }

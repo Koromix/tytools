@@ -394,7 +394,7 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
     }
     assert(board->model);
 
-    if (ty_firmware_get_size(fw) > ty_models[board->model].code_size) {
+    if (fw->size > ty_models[board->model].code_size) {
         r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", ty_models[board->model].name);
         goto cleanup;
     }
@@ -607,10 +607,10 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
                             ty_models[fw_models[i]].name);
 
         return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
-                        ty_firmware_get_name(fws[0]), buf);
+                        fws[0]->name, buf);
     } else {
         return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
-                        ty_firmware_get_name(fws[0]), board->tag);
+                        fws[0]->name, board->tag);
     }
 }
 
@@ -620,7 +620,7 @@ static int upload_progress_callback(const ty_board *board, const ty_firmware *fw
     TY_UNUSED(board);
     TY_UNUSED(udata);
 
-    ty_progress("Uploading", uploaded, ty_firmware_get_size(fw));
+    ty_progress("Uploading", uploaded, fw->size);
     return 0;
 }
 
@@ -633,7 +633,6 @@ static int run_upload(ty_task *task)
 {
     ty_board *board = task->board;
     ty_firmware *fw;
-    size_t fw_size;
     int flags = task->upload.flags, r;
 
     if (flags & TY_UPLOAD_NOCHECK) {
@@ -679,16 +678,15 @@ wait:
             return r;
     }
 
-    ty_log(TY_LOG_INFO, "Firmware: %s", ty_firmware_get_name(fw));
-    fw_size = ty_firmware_get_size(fw);
-    if (fw_size >= 1024) {
+    ty_log(TY_LOG_INFO, "Firmware: %s", fw->name);
+    if (fw->size >= 1024) {
         ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
-               (fw_size + 1023) / 1024,
-               (double)fw_size / (double)ty_models[board->model].code_size * 100.0);
+               (fw->size + 1023) / 1024,
+               (double)fw->size / (double)ty_models[board->model].code_size * 100.0);
     } else {
         ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
-               fw_size,
-               (double)fw_size / (double)ty_models[board->model].code_size * 100.0);
+               fw->size,
+               (double)fw->size / (double)ty_models[board->model].code_size * 100.0);
     }
 
     r = ty_board_upload(board, fw, upload_progress_callback, NULL);
