@@ -142,9 +142,9 @@ int ty_firmware_expand_image(ty_firmware *fw, size_t size)
         if (!tmp)
             return ty_error(TY_ERROR_MEMORY, NULL);
         fw->image = tmp;
-        fw->size = size;
-        fw->alloc_size = size;
+        fw->alloc_size = alloc_size;
     }
+    fw->size = size;
 
     return 0;
 }
