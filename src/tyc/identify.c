@@ -57,7 +57,7 @@ int identify(int argc, char *argv[])
     }
     do {
         ty_firmware *fw = NULL;
-        const ty_model *fw_models[16];
+        ty_model fw_models[64];
         unsigned int fw_models_count = 0;
         int r;
 
@@ -69,9 +69,9 @@ int identify(int argc, char *argv[])
         if (output_json) {
             printf("{\"file\": \"%s\", \"models\": [", opt);
             if (fw_models_count) {
-                printf("\"%s\"", ty_model_get_name(fw_models[0]));
+                printf("\"%s\"", ty_models[fw_models[0]].name);
                 for (unsigned int i = 1; i < fw_models_count; i++)
-                    printf(", \"%s\"", ty_model_get_name(fw_models[i]));
+                    printf(", \"%s\"", ty_models[fw_models[i]].name);
             }
             printf("]");
             if (r < 0)
@@ -80,10 +80,10 @@ int identify(int argc, char *argv[])
         } else {
             printf("%s: ", opt);
             if (fw_models_count) {
-                printf("%s", ty_model_get_name(fw_models[0]));
+                printf("%s", ty_models[fw_models[0]].name);
                 for (unsigned int i = 1; i < fw_models_count; i++)
                     printf("%s%s", (i + 1 < fw_models_count) ? ", " : " and ",
-                           ty_model_get_name(fw_models[i]));
+                           ty_models[fw_models[i]].name);
             } else {
                 printf("Unknown");
             }

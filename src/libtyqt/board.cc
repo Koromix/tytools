@@ -124,18 +124,15 @@ bool Board::hasCapability(ty_board_capability cap) const
     return ty_board_has_capability(board_, cap);
 }
 
-const ty_model *Board::model() const
+ty_model Board::model() const
 {
     return ty_board_get_model(board_);
 }
 
 QString Board::modelName() const
 {
-    auto model = ty_board_get_model(board_);
-    if (!model)
-        return tr("(unknown)");
-
-    return ty_model_get_name(model);
+    ty_model model = ty_board_get_model(board_);
+    return ty_models[model].name;
 }
 
 QString Board::tag() const
@@ -658,9 +655,9 @@ void Board::refreshBoard()
         }
     }
 
-    auto model = this->model();
-    if (ty_model_get_code_size(model))
-        cache_.put("model", ty_model_get_name(model));
+    ty_model model = this->model();
+    if (ty_model_is_real(model))
+        cache_.put("model", ty_models[model].name);
 
     updateStatus();
     emit infoChanged();

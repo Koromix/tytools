@@ -18,10 +18,6 @@
 #include "task_priv.h"
 #include "ty/timer.h"
 
-struct ty_model {
-    TY_MODEL
-};
-
 struct ty_task {
     TY_TASK
 
@@ -226,35 +222,24 @@ const char *ty_board_get_description(const ty_board *board)
     return board->description;
 }
 
-void ty_board_set_model(ty_board *board, const ty_model *model)
+void ty_board_set_model(ty_board *board, ty_model model)
 {
     assert(board);
     assert(board->model);
 
-    if (board->model && board->model->code_size && board->model != model) {
+    if (board->model && ty_models[board->model].code_size && board->model != model) {
         ty_log(TY_LOG_WARNING, "Cannot set model '%s' for incompatible board '%s'",
-               model->name, board->tag);
+               ty_models[model].name, board->tag);
         return;
     }
 
     board->model = model;
 }
 
-const ty_model *ty_board_get_model(const ty_board *board)
+ty_model ty_board_get_model(const ty_board *board)
 {
     assert(board);
     return board->model;
-}
-
-const char *ty_board_get_model_name(const ty_board *board)
-{
-    assert(board);
-
-    const ty_model *model = board->model;
-    if (!model)
-        return NULL;
-
-    return model->name;
 }
 
 int ty_board_get_capabilities(const ty_board *board)
@@ -409,8 +394,8 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
     }
     assert(board->model);
 
-    if (ty_firmware_get_size(fw) > board->model->code_size) {
-        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->name);
+    if (ty_firmware_get_size(fw) > ty_models[board->model].code_size) {
+        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", ty_models[board->model].name);
         goto cleanup;
     }
 
@@ -595,7 +580,7 @@ static void cleanup_task(ty_task *task)
 static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned int fws_count,
                                       ty_firmware **rfw)
 {
-    const ty_model *fw_models[16];
+    ty_model fw_models[64];
     unsigned int fw_models_count = 0;
 
     for (unsigned int i = 0; i < fws_count; i++) {
@@ -611,7 +596,7 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
 
     if (fws_count > 1) {
         return ty_error(TY_ERROR_FIRMWARE, "No firmware is compatible with '%s' (%s)",
-                        board->tag, board->model->name);
+                        board->tag, ty_models[board->model].name);
     } else if (fw_models_count) {
         char buf[256], *ptr;
 
@@ -619,7 +604,7 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
         for (unsigned int i = 0; i < fw_models_count && ptr < buf + sizeof(buf); i++)
             ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
                             i ? (i + 1 < fw_models_count ? ", " : " and ") : "",
-                            fw_models[i]->name);
+                            ty_models[fw_models[i]].name);
 
         return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
                         ty_firmware_get_name(fws[0]), buf);
@@ -662,7 +647,7 @@ static int run_upload(ty_task *task)
         fw = NULL;
     }
 
-    ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, board->model->name);
+    ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, ty_models[board->model].name);
 
     // Can't upload directly, should we try to reboot or wait?
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
@@ -699,11 +684,11 @@ wait:
     if (fw_size >= 1024) {
         ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
                (fw_size + 1023) / 1024,
-               (double)fw_size / (double)ty_model_get_code_size(board->model) * 100.0);
+               (double)fw_size / (double)ty_models[board->model].code_size * 100.0);
     } else {
         ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
                fw_size,
-               (double)fw_size / (double)ty_model_get_code_size(board->model) * 100.0);
+               (double)fw_size / (double)ty_models[board->model].code_size * 100.0);
     }
 
     r = ty_board_upload(board, fw, upload_progress_callback, NULL);
@@ -789,7 +774,7 @@ static int run_reset(ty_task *task)
     ty_board *board = task->board;
     int r;
 
-    ty_log(TY_LOG_INFO, "Resetting board '%s' (%s)", board->tag, board->model->name);
+    ty_log(TY_LOG_INFO, "Resetting board '%s' (%s)", board->tag, ty_models[board->model].name);
 
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
         ty_log(TY_LOG_INFO, "Triggering board reboot");
@@ -834,7 +819,7 @@ static int run_reboot(ty_task *task)
     ty_board *board = task->board;
     int r;
 
-    ty_log(TY_LOG_INFO, "Rebooting board '%s' (%s)", board->tag, board->model->name);
+    ty_log(TY_LOG_INFO, "Rebooting board '%s' (%s)", board->tag, ty_models[board->model].name);
 
     if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
         ty_log(TY_LOG_INFO, "Board is already in bootloader mode");

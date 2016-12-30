@@ -10,7 +10,7 @@
 
 #include "util.h"
 #include "ty/board.h"
-#include "ty/model.h"
+#include "model_priv.h"
 #include "hs/device.h"
 #include "htable.h"
 #include "list.h"
@@ -32,6 +32,7 @@ struct _ty_board_interface_vtable {
 };
 
 struct ty_board_interface {
+    const struct _ty_model_vtable *model_vtable;
     const struct _ty_board_interface_vtable *vtable;
     unsigned int refcount;
 
@@ -41,7 +42,7 @@ struct ty_board_interface {
 
     const char *name;
     int capabilities;
-    const ty_model *model;
+    ty_model model;
 
     hs_device *dev;
     ty_mutex open_lock;
@@ -59,7 +60,7 @@ struct ty_board {
     ty_list_head missing_node;
     uint64_t missing_since;
 
-    const ty_model *model;
+    ty_model model;
     char *id;
     char *tag;
     uint16_t vid;

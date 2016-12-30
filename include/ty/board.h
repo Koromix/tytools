@@ -9,6 +9,7 @@
 #define TY_BOARD_H
 
 #include "common.h"
+#include "model.h"
 
 TY_C_BEGIN
 
@@ -18,7 +19,6 @@ struct ty_monitor;
 struct ty_firmware;
 struct hs_handle;
 struct ty_task;
-struct ty_model;
 
 typedef struct ty_board ty_board;
 typedef struct ty_board_interface ty_board_interface;
@@ -74,9 +74,8 @@ TY_PUBLIC const char *ty_board_get_location(const ty_board *board);
 TY_PUBLIC uint64_t ty_board_get_serial_number(const ty_board *board);
 TY_PUBLIC const char *ty_board_get_description(const ty_board *board);
 
-TY_PUBLIC void ty_board_set_model(ty_board *board, const struct ty_model *model);
-TY_PUBLIC const struct ty_model *ty_board_get_model(const ty_board *board);
-TY_PUBLIC const char *ty_board_get_model_name(const ty_board *board);
+TY_PUBLIC void ty_board_set_model(ty_board *board, ty_model model);
+TY_PUBLIC ty_model ty_board_get_model(const ty_board *board);
 
 TY_PUBLIC int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, void *udata);
 TY_PUBLIC int ty_board_open_interface(ty_board *board, ty_board_capability cap, ty_board_interface **riface);

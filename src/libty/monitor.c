@@ -35,10 +35,6 @@ struct ty_monitor {
     void *udata;
 };
 
-struct ty_model {
-    TY_MODEL
-};
-
 struct callback {
     ty_list_head monitor_node;
     int id;
@@ -98,7 +94,7 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     board->vid = hs_device_get_vid(iface->dev);
     board->pid = hs_device_get_pid(iface->dev);
 
-    r = (*iface->model->vtable->update_board)(iface, board);
+    r = (*iface->model_vtable->update_board)(iface, board);
     if (r <= 0)
         goto error;
     board->tag = board->id;
@@ -248,7 +244,7 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
-        r = (*iface->model->vtable->update_board)(iface, board);
+        r = (*iface->model_vtable->update_board)(iface, board);
         if (r < 0)
             goto error;
         if (update_tag_pointer)

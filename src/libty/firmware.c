@@ -172,7 +172,7 @@ int _ty_firmware_expand_image(ty_firmware *fw, size_t size)
     return 0;
 }
 
-unsigned int ty_firmware_identify(const ty_firmware *fw, const ty_model **rmodels,
+unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
                                   unsigned int max_models)
 {
     assert(fw);
@@ -182,7 +182,7 @@ unsigned int ty_firmware_identify(const ty_firmware *fw, const ty_model **rmodel
     unsigned int guesses_count = 0;
 
     for (unsigned int i = 0; i < _ty_model_vtables_count; i++) {
-        const ty_model *partial_guesses[8];
+        ty_model partial_guesses[16];
         unsigned int partial_count;
 
         partial_count = (*_ty_model_vtables[i]->identify_models)(fw, partial_guesses,

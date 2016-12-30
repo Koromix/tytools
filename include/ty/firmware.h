@@ -9,10 +9,9 @@
 #define TY_FIRMWARE_H
 
 #include "common.h"
+#include "model.h"
 
 TY_C_BEGIN
-
-struct ty_model;
 
 typedef struct ty_firmware ty_firmware;
 
@@ -39,7 +38,7 @@ TY_PUBLIC const char *ty_firmware_get_name(const ty_firmware *fw);
 TY_PUBLIC size_t ty_firmware_get_size(const ty_firmware *fw);
 TY_PUBLIC const uint8_t *ty_firmware_get_image(const ty_firmware *fw);
 
-TY_PUBLIC unsigned int ty_firmware_identify(const ty_firmware *fw, const struct ty_model **rmodels,
+TY_PUBLIC unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
                                             unsigned int max_models);
 
 TY_C_END

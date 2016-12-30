@@ -21,16 +21,8 @@ struct _ty_model_vtable {
     int (*update_board)(ty_board_interface *iface, ty_board *board);
 
     unsigned int (*identify_models)(const struct ty_firmware *fw,
-                                    const ty_model **rmodels, unsigned int max);
+                                    ty_model *rmodels, unsigned int max_models);
 };
-
-#define TY_MODEL \
-    const struct _ty_model_vtable *vtable; \
-    \
-    const char *name; \
-    const char *mcu; \
-    \
-    size_t code_size;
 
 extern const struct _ty_model_vtable *_ty_model_vtables[];
 extern const unsigned int _ty_model_vtables_count;

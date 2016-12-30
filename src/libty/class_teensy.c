@@ -15,18 +15,6 @@
 #include "model_priv.h"
 #include "ty/system.h"
 
-struct ty_model {
-    TY_MODEL
-
-    // Identifcation
-    uint8_t usage;
-    bool experimental;
-
-    // Upload settings
-    unsigned int halfkay_version;
-    size_t block_size;
-};
-
 #define TEENSY_VID 0x16C0
 
 #define SEREMU_TX_SIZE 32
@@ -39,145 +27,31 @@ enum {
 };
 
 const struct _ty_model_vtable _ty_teensy_model_vtable;
-static const struct _ty_board_interface_vtable teensy_vtable;
+static const struct _ty_board_interface_vtable teensy_iface_vtable;
 
-const ty_model _ty_teensy_unknown_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy"
-};
-
-const ty_model _ty_teensy_pp10_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy++ 1.0",
-    .mcu = "at90usb646",
-
-    .usage = 0x1A,
-    .experimental = true,
-
-    .code_size = 64512,
-    .halfkay_version = 1,
-    .block_size = 256
-};
-
-const ty_model _ty_teensy_20_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy 2.0",
-    .mcu = "atmega32u4",
-
-    .usage = 0x1B,
-    .experimental = true,
-
-    .code_size = 32256,
-    .halfkay_version = 1,
-    .block_size = 128
-};
-
-const ty_model _ty_teensy_pp20_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy++ 2.0",
-    .mcu = "at90usb1286",
-
-    .usage = 0x1C,
-
-    .code_size = 130048,
-    .halfkay_version = 2,
-    .block_size = 256
-};
-
-const ty_model _ty_teensy_30_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy 3.0",
-    .mcu = "mk20dx128",
-
-    .usage = 0x1D,
-
-    .code_size = 131072,
-    .halfkay_version = 3,
-    .block_size = 1024
-};
-
-const ty_model _ty_teensy_31_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy 3.1",
-    .mcu = "mk20dx256",
-
-    .usage = 0x1E,
-
-    .code_size = 262144,
-    .halfkay_version = 3,
-    .block_size = 1024
-};
-
-const ty_model _ty_teensy_lc_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy LC",
-    .mcu = "mkl26z64",
-
-    .usage = 0x20,
-
-    .code_size = 63488,
-    .halfkay_version = 3,
-    .block_size = 512
-};
-
-const ty_model _ty_teensy_32_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy 3.2",
-    .mcu = "mk20dx256",
-
-    .usage = 0x21,
-
-    .code_size = 262144,
-    .halfkay_version = 3,
-    .block_size = 1024
-};
-
-const ty_model _ty_teensy_k64_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy 3.5",
-    .mcu = "mk64fx512",
-
-    .usage = 0x1F,
-
-    .code_size = 524288,
-    .halfkay_version = 3,
-    .block_size = 1024
-};
-
-const ty_model _ty_teensy_k66_model = {
-    .vtable = &_ty_teensy_model_vtable,
-
-    .name = "Teensy 3.6",
-    .mcu = "mk66fx1m0",
-
-    .usage = 0x22,
-
-    .code_size = 1048576,
-    .halfkay_version = 3,
-    .block_size = 1024
-};
-
-static const ty_model *identify_model(uint16_t usage)
+static ty_model identify_model(uint16_t usage)
 {
-    for (unsigned int i = 0; i < ty_models_count; i++) {
-        if (ty_models[i]->vtable == &_ty_teensy_model_vtable && ty_models[i]->usage == usage) {
-            ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16,
-                   ty_models[i]->name, usage);
-            return ty_models[i];
-        }
+    ty_model model = 0;
+    switch (usage) {
+        case 0x1A: model = TY_MODEL_TEENSY_PP_10; break;
+        case 0x1B: model = TY_MODEL_TEENSY_20; break;
+        case 0x1C: model = TY_MODEL_TEENSY_PP_20; break;
+        case 0x1D: model = TY_MODEL_TEENSY_30; break;
+        case 0x1E: model = TY_MODEL_TEENSY_31; break;
+        case 0x20: model = TY_MODEL_TEENSY_LC; break;
+        case 0x21: model = TY_MODEL_TEENSY_32; break;
+        case 0x1F: model = TY_MODEL_TEENSY_35; break;
+        case 0x23: model = TY_MODEL_TEENSY_36; break;
     }
 
-    ty_log(TY_LOG_DEBUG, "Unknown Teensy model with usage value 0x%"PRIx16, usage);
-    return NULL;
+    if (model != 0) {
+        ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16,
+               ty_models[model].name, usage);
+    } else {
+        ty_log(TY_LOG_DEBUG, "Unknown Teensy model with usage value 0x%"PRIx16, usage);
+    }
+
+    return model;
 }
 
 static uint64_t parse_bootloader_serial(const char *s)
@@ -265,9 +139,10 @@ static int teensy_load_interface(ty_board_interface *iface)
         break;
     }
 
+    iface->model_vtable = &_ty_teensy_model_vtable;
+    iface->vtable = &teensy_iface_vtable;
     if (!iface->model)
-        iface->model = &_ty_teensy_unknown_model;
-    iface->vtable = &teensy_vtable;
+        iface->model = TY_MODEL_TEENSY;
 
     return 1;
 }
@@ -281,8 +156,8 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
     serial_string = hs_device_get_serial_number_string(iface->dev);
     product_string = hs_device_get_product_string(iface->dev);
 
-    if (iface->model->code_size) {
-        if (board->model && board->model->code_size && board->model != iface->model)
+    if (ty_models[iface->model].code_size) {
+        if (ty_models[board->model].code_size && board->model != iface->model)
             return 0;
         board->model = iface->model;
 
@@ -319,7 +194,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
                because there is no way to interpret the serial number correctly, and the board
                will show up as a different board if it is first plugged in bootloader mode.
                The only way to fix this is to use Teensyduino >= 1.19. */
-            if (iface->model->code_size && serial * 10 == board->serial) {
+            if (ty_models[iface->model].code_size && serial * 10 == board->serial) {
                 ty_log(TY_LOG_WARNING, "Upgrade board '%s' to use a recent Teensyduino version",
                        board->tag);
             } else {
@@ -375,8 +250,8 @@ void teensy_close_interface(ty_board_interface *iface)
     iface->h = NULL;
 }
 
-static unsigned int teensy_identify_models(const ty_firmware *fw,
-                                           const ty_model **rmodels, unsigned int max)
+static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmodels,
+                                           unsigned int max_models)
 {
     const uint8_t *image = ty_firmware_get_image(fw);
     size_t size = ty_firmware_get_size(fw);
@@ -399,25 +274,25 @@ static unsigned int teensy_identify_models(const ty_firmware *fw,
                              ((uint32_t)image[6] << 16) | ((uint32_t)image[7] << 24);
         switch (reset_handler_addr) {
         case 0xF9:
-            rmodels[models_count++] = &_ty_teensy_30_model;
+            rmodels[models_count++] = TY_MODEL_TEENSY_30;
             magic_check = 0x00043F82;
             break;
         case 0x1BD:
-            rmodels[models_count++] = &_ty_teensy_31_model;
-            if (max >= 2)
-                rmodels[models_count++] = &_ty_teensy_32_model;
+            rmodels[models_count++] = TY_MODEL_TEENSY_31;
+            if (max_models >= 2)
+                rmodels[models_count++] = TY_MODEL_TEENSY_32;
             magic_check = 0x00043F82;
             break;
         case 0xC1:
-            rmodels[models_count++] = &_ty_teensy_lc_model;
+            rmodels[models_count++] = TY_MODEL_TEENSY_LC;
             magic_check = 0x00003F82;
             break;
         case 0x199:
-            rmodels[models_count++] = &_ty_teensy_k64_model;
+            rmodels[models_count++] = TY_MODEL_TEENSY_35;
             magic_check = 0x00043F82;
             break;
         case 0x1D1:
-            rmodels[models_count++] = &_ty_teensy_k66_model;
+            rmodels[models_count++] = TY_MODEL_TEENSY_36;
             magic_check = 0x00043F82;
             break;
         }
@@ -444,13 +319,13 @@ static unsigned int teensy_identify_models(const ty_firmware *fw,
 
             switch (value8) {
             case 0x94F8CFFF7E00940C:
-                rmodels[0] = &_ty_teensy_pp10_model;
+                rmodels[0] = TY_MODEL_TEENSY_PP_10;
                 return 1;
             case 0x94F8CFFF3F00940C:
-                rmodels[0] = &_ty_teensy_20_model;
+                rmodels[0] = TY_MODEL_TEENSY_20;
                 return 1;
             case 0x94F8CFFFFE00940C:
-                rmodels[0] = &_ty_teensy_pp20_model;
+                rmodels[0] = TY_MODEL_TEENSY_PP_20;
                 return 1;
             }
         }
@@ -529,7 +404,8 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
     return 0;
 }
 
-static int halfkay_send(ty_board_interface *iface, size_t addr, const void *data, size_t size, unsigned int timeout)
+static int halfkay_send(hs_handle *h, unsigned int halfkay_version, size_t block_size,
+                        size_t addr, const void *data, size_t size, unsigned int timeout)
 {
     uint8_t buf[2048] = {0};
     uint64_t start;
@@ -539,14 +415,14 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, const void *data
     // Update if header gets bigger than 64 bytes
     assert(size < sizeof(buf) - 65);
 
-    switch (iface->model->halfkay_version) {
+    switch (halfkay_version) {
     case 1:
         buf[1] = addr & 255;
         buf[2] = (addr >> 8) & 255;
 
         if (size)
             memcpy(buf + 3, data, size);
-        size = iface->model->block_size + 3;
+        size = block_size + 3;
         break;
 
     case 2:
@@ -555,7 +431,7 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, const void *data
 
         if (size)
             memcpy(buf + 3, data, size);
-        size = iface->model->block_size + 3;
+        size = block_size + 3;
         break;
 
     case 3:
@@ -565,7 +441,7 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, const void *data
 
         if (size)
             memcpy(buf + 65, data, size);
-        size = iface->model->block_size + 65;
+        size = block_size + 65;
         break;
 
     default:
@@ -578,7 +454,7 @@ static int halfkay_send(ty_board_interface *iface, size_t addr, const void *data
     start = ty_millis();
     hs_error_mask(HS_ERROR_IO);
 restart:
-    r = hs_hid_write(iface->h, buf, size);
+    r = hs_hid_write(h, buf, size);
     if (r == HS_ERROR_IO && ty_millis() - start < timeout) {
         ty_delay(10);
         goto restart;
@@ -593,28 +469,68 @@ restart:
     return 0;
 }
 
-static int test_bootloader_support(const ty_model *model)
+static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
+                                size_t *rblock_size)
 {
-    if (model->experimental && !getenv("TY_EXPERIMENTAL_BOARDS"))
-        return ty_error(TY_ERROR_UNSUPPORTED, "Support for %s boards is experimental, set "
-                                              "environment variable TY_EXPERIMENTAL_BOARDS to any "
-                                              "value to enable support for them", model->name);
+    if ((model == TY_MODEL_TEENSY_PP_10 || model == TY_MODEL_TEENSY_20) &&
+            !getenv("TY_EXPERIMENTAL_BOARDS")) {
+        return ty_error(TY_ERROR_UNSUPPORTED,
+                        "Support for %s boards is experimental, set environment variable"
+                        "TY_EXPERIMENTAL_BOARDS to any value to enable support for them",
+                        ty_models[model].name);
+    }
+
+    *rhalfkay_version = 0;
+    switch ((ty_model_teensy)model) {
+    case TY_MODEL_TEENSY_PP_10:
+        *rhalfkay_version = 1;
+        *rblock_size = 256;
+        break;
+    case TY_MODEL_TEENSY_20:
+        *rhalfkay_version = 1;
+        *rblock_size = 128;
+        break;
+    case TY_MODEL_TEENSY_PP_20:
+        *rhalfkay_version = 2;
+        *rblock_size = 256;
+        break;
+    case TY_MODEL_TEENSY_30:
+    case TY_MODEL_TEENSY_31:
+    case TY_MODEL_TEENSY_32:
+    case TY_MODEL_TEENSY_35:
+    case TY_MODEL_TEENSY_36:
+        *rhalfkay_version = 3;
+        *rblock_size = 1024;
+        break;
+    case TY_MODEL_TEENSY_LC:
+        *rhalfkay_version = 3;
+        *rblock_size = 512;
+        break;
+
+    case TY_MODEL_TEENSY:
+        assert(false);
+        break;
+    }
+    assert(*rhalfkay_version);
 
     return 0;
 }
 
-static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_upload_progress_func *pf, void *udata)
+static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
+                         ty_board_upload_progress_func *pf, void *udata)
 {
     const uint8_t *image;
     size_t size;
+    unsigned int halfkay_version;
+    size_t block_size;
     int r;
-
-    r = test_bootloader_support(iface->model);
-    if (r < 0)
-        return r;
 
     image = ty_firmware_get_image(fw);
     size = ty_firmware_get_size(fw);
+
+    r = get_halfkay_settings(iface->model, &halfkay_version, &block_size);
+    if (r < 0)
+        return r;
 
     if (pf) {
         r = (*pf)(iface->board, fw, 0, udata);
@@ -622,10 +538,11 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_up
             return r;
     }
 
-    for (size_t addr = 0; addr < size; addr += iface->model->block_size) {
-        size_t block_size = TY_MIN(iface->model->block_size, (size_t)(size - addr));
+    for (size_t addr = 0; addr < size; addr += block_size) {
+        size_t write_size = TY_MIN(block_size, (size_t)(size - addr));
 
-        r = halfkay_send(iface, addr, image + addr, block_size, 3000);
+        r = halfkay_send(iface->h, halfkay_version, block_size,
+                         addr, image + addr, write_size, 3000);
         if (r < 0)
             return r;
 
@@ -634,7 +551,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_up
         ty_delay(addr ? 20 : 200);
 
         if (pf) {
-            r = (*pf)(iface->board, fw, addr + block_size, udata);
+            r = (*pf)(iface->board, fw, addr + write_size, udata);
             if (r)
                 return r;
         }
@@ -645,11 +562,14 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw, ty_board_up
 
 static int teensy_reset(ty_board_interface *iface)
 {
-    int r = test_bootloader_support(iface->model);
+    unsigned int halfkay_version;
+    size_t block_size;
+
+    int r = get_halfkay_settings(iface->model, &halfkay_version, &block_size);
     if (r < 0)
         return r;
 
-    return halfkay_send(iface, 0xFFFFFF, NULL, 0, 250);
+    return halfkay_send(iface->h, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 250);
 }
 
 static int teensy_reboot(ty_board_interface *iface)
@@ -693,7 +613,7 @@ const struct _ty_model_vtable _ty_teensy_model_vtable = {
     .identify_models = teensy_identify_models
 };
 
-static const struct _ty_board_interface_vtable teensy_vtable = {
+static const struct _ty_board_interface_vtable teensy_iface_vtable = {
     .open_interface = teensy_open_interface,
     .close_interface = teensy_close_interface,
 
