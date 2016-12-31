@@ -1,6 +1,0 @@
-build
-.tags*
-CMakeLists.txt.*
-*.pro.*
-*.user
-doc/pages
