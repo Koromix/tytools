@@ -6,7 +6,7 @@
  */
 
 #include "util.h"
-#include "htable.h"
+#include "ty/htable.h"
 
 int ty_htable_init(ty_htable *table, unsigned int size)
 {

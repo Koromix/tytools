@@ -8,7 +8,7 @@
 #ifndef TY_HTABLE_H
 #define TY_HTABLE_H
 
-#include "util.h"
+#include "common.h"
 
 TY_C_BEGIN
 

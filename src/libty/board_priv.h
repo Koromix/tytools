@@ -12,8 +12,8 @@
 #include "ty/board.h"
 #include "model_priv.h"
 #include "hs/device.h"
-#include "htable.h"
-#include "list.h"
+#include "ty/htable.h"
+#include "ty/list.h"
 #include "ty/task.h"
 #include "ty/thread.h"
 

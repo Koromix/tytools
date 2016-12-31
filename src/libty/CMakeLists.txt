@@ -6,6 +6,8 @@
 set(LIBTY_SOURCES ../../include/ty/board.h
                   ../../include/ty/common.h
                   ../../include/ty/firmware.h
+                  ../../include/ty/htable.h
+                  ../../include/ty/list.h
                   ../../include/ty/model.h
                   ../../include/ty/monitor.h
                   ../../include/ty/optline.h
@@ -23,7 +25,6 @@ set(LIBTY_SOURCES ../../include/ty/board.h
                   firmware_elf.c
                   firmware_ihex.c
                   htable.c
-                  list.h
                   model.c
                   model_priv.h
                   monitor.c

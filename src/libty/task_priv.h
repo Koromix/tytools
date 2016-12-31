@@ -9,7 +9,7 @@
 #define TY_TASK_PRIV_H
 
 #include "util.h"
-#include "list.h"
+#include "ty/list.h"
 #include "ty/task.h"
 #include "ty/thread.h"
 
