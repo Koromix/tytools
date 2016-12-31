@@ -8,7 +8,7 @@
 #include "util.h"
 #include "ty/list.h"
 #include "ty/system.h"
-#include "task_priv.h"
+#include "ty/task.h"
 
 struct ty_pool {
     int unused_timeout;
@@ -32,10 +32,6 @@ struct pool_thread {
 
     ty_thread thread;
     bool run;
-};
-
-struct ty_task {
-    TY_TASK
 };
 
 static ty_pool *default_pool;
@@ -187,20 +183,23 @@ int ty_pool_get_default(ty_pool **rpool)
     return 0;
 }
 
-int _ty_task_new(const char *name, size_t size, const struct _ty_task_vtable *vtable,
-                 ty_task **rtask)
+int ty_task_new(const char *name, int (*run)(ty_task *task), ty_task **rtask)
 {
+    assert(name);
+    assert(run);
+    assert(rtask);
+
     ty_task * task;
     int r;
 
-    task = calloc(1, size);
+    task = calloc(1, sizeof(*task));
     if (!task) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
     task->refcount = 1;
 
-    task->vtable = vtable;
+    task->task_run = run;
     task->name = strdup(name);
     if (!task->name) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
@@ -239,10 +238,10 @@ void ty_task_unref(ty_task *task)
         if (task->result_cleanup)
             (*task->result_cleanup)(task->result);
 
-        if (task->cleanup)
-            (*task->cleanup)(task->cleanup_ptr);
-        if (task->vtable->cleanup)
-            (*task->vtable->cleanup)(task);
+        if (task->user_cleanup)
+            (*task->user_cleanup)(task->user_cleanup_udata);
+        if (task->task_finalize)
+            (*task->task_finalize)(task);
 
         free(task->name);
         ty_cond_release(&task->cond);
@@ -250,31 +249,6 @@ void ty_task_unref(ty_task *task)
     }
 
     free(task);
-}
-
-void ty_task_set_cleanup(ty_task *task, ty_task_cleanup_func *f, void *ptr)
-{
-    assert(task);
-
-    task->cleanup = f;
-    task->cleanup_ptr = ptr;
-}
-
-void ty_task_set_callback(ty_task *task, ty_message_func *f, void *udata)
-{
-    assert(task);
-    assert(task->status == TY_TASK_STATUS_READY);
-
-    task->callback = f;
-    task->callback_udata = udata;
-}
-
-void ty_task_set_pool(ty_task *task, ty_pool *pool)
-{
-    assert(task);
-    assert(task->status == TY_TASK_STATUS_READY);
-
-    task->pool = pool;
 }
 
 static void change_status(ty_task *task, ty_task_status status)
@@ -304,7 +278,11 @@ static void run_task(ty_task *task)
     current_task = task;
 
     change_status(task, TY_TASK_STATUS_RUNNING);
-    task->ret = (*task->vtable->run)(task);
+    task->ret = (*task->task_run)(task);
+    if (task->task_finalize) {
+        (*task->task_finalize)(task);
+        task->task_finalize = NULL;
+    }
     change_status(task, TY_TASK_STATUS_FINISHED);
 
     current_task = previous_task;
@@ -478,53 +456,7 @@ int ty_task_join(ty_task *task)
     return task->ret;
 }
 
-const char *ty_task_get_name(ty_task *task)
-{
-    assert(task);
-    return task->name;
-}
-
-ty_task_status ty_task_get_status(ty_task *task)
-{
-    assert(task);
-    return task->status;
-}
-
-int ty_task_get_return_value(ty_task *task)
-{
-    assert(task);
-    assert(task->status == TY_TASK_STATUS_FINISHED);
-
-    return task->ret;
-}
-
-void *ty_task_get_result(ty_task *task)
-{
-    assert(task);
-    assert(task->status == TY_TASK_STATUS_FINISHED);
-
-    return task->result;
-}
-
-void *ty_task_steal_result(ty_task *task, ty_task_cleanup_func **rf)
-{
-    assert(task);
-    assert(rf);
-    assert(task->status == TY_TASK_STATUS_FINISHED);
-
-    *rf = task->result_cleanup;
-    task->result_cleanup = NULL;
-
-    return task->result;
-}
-
-void _ty_task_set_result(ty_task *task, void *ptr, ty_task_cleanup_func *f)
-{
-    task->result = ptr;
-    task->result_cleanup = f;
-}
-
-ty_task *_ty_task_get_current(void)
+ty_task *ty_task_get_current(void)
 {
     return current_task;
 }

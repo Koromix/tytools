@@ -31,7 +31,6 @@ set(LIBTY_SOURCES ../../include/ty/board.h
                   optline.c
                   system.c
                   task.c
-                  task_priv.h
                   util.h)
 if(LINUX)
     list(APPEND LIBTY_SOURCES system_posix.c

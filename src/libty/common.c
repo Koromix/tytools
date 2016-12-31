@@ -10,11 +10,7 @@
 #include "hs/common.h"
 #include "ty/system.h"
 #include "version.h"
-#include "task_priv.h"
-
-struct ty_task {
-    TY_TASK
-};
+#include "ty/task.h"
 
 int ty_config_verbosity = TY_LOG_INFO;
 
@@ -254,15 +250,15 @@ void ty_message(ty_message_data *msg)
 {
     ty_task *task = msg->task;
     if (!task) {
-        task = _ty_task_get_current();
+        task = ty_task_get_current();
         msg->task = task;
     }
     if (!msg->ctx && task)
-        msg->ctx = ty_task_get_name(task);
+        msg->ctx = task->name;
 
     (*handler)(msg, handler_udata);
-    if (task && task->callback)
-        (*task->callback)(msg, task->callback_udata);
+    if (task && task->user_callback)
+        (*task->user_callback)(msg, task->user_callback_udata);
 }
 
 int ty_libhs_translate_error(int err)

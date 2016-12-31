@@ -74,12 +74,13 @@ void Task::removeListener(TaskListener *listener)
 TyTask::TyTask(ty_task *task)
     : task_(task)
 {
-    name_ = ty_task_get_name(task);
+    name_ = task->name;
 
-    ty_task_set_callback(task, [](const ty_message_data *msg, void *udata) {
+    task->user_callback = [](const ty_message_data *msg, void *udata) {
         auto task = static_cast<TyTask *>(udata);
         task->notifyMessage(msg);
-    }, this);
+    };
+    task->user_callback_udata = this;
 }
 
 TyTask::~TyTask()
@@ -100,10 +101,11 @@ void TyTask::notifyMessage(const ty_message_data *msg)
     /* The task is doing something, we don't need to keep it alive anymore... it'll keep this
        object alive instead. */
     if (task_ && msg->type == TY_MESSAGE_STATUS) {
-        ty_task_set_cleanup(task_, [](void *ptr) {
+        task_->user_cleanup = [](void *ptr) {
             auto task_ptr = static_cast<shared_ptr<Task> *>(ptr);
             delete task_ptr;
-        }, new shared_ptr<Task>(shared_from_this()));
+        };
+        task_->user_cleanup_udata = new shared_ptr<Task>(shared_from_this());
 
         ty_task_unref(task_);
         task_ = NULL;
@@ -137,11 +139,14 @@ void TyTask::notifyStatus(const ty_message_data *msg)
         reportStarted();
         break;
     case TY_TASK_STATUS_FINISHED: {
-        ty_task_cleanup_func *f;
-        void *result = ty_task_steal_result(msg->task, &f);
-        if (!f)
-            f = [](void *ptr) { Q_UNUSED(ptr); };
-        reportFinished(ty_task_get_return_value(msg->task) >= 0, shared_ptr<void>(result, f));
+        void *result = msg->task->result;
+        void (*result_cleanup_func)(void *result) = msg->task->result_cleanup;
+        msg->task->result_cleanup = NULL;
+
+        if (!result_cleanup_func)
+            result_cleanup_func = [](void *result) { Q_UNUSED(result); };
+        reportFinished(msg->task->ret >= 0, shared_ptr<void>(result, result_cleanup_func));
+
         break;
     }
 

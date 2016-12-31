@@ -9,13 +9,69 @@
 #define TY_TASK_H
 
 #include "common.h"
+#include "ty/list.h"
+#include "ty/thread.h"
 
 TY_C_BEGIN
 
-typedef struct ty_pool ty_pool;
-typedef struct ty_task ty_task;
+struct ty_board;
+struct ty_firmware;
 
-typedef void ty_task_cleanup_func(void *ptr);
+typedef struct ty_pool ty_pool;
+
+typedef struct ty_task {
+    unsigned int refcount;
+
+    char *name;
+    ty_task_status status;
+    ty_pool *pool;
+
+    ty_message_func *user_callback;
+    void *user_callback_udata;
+    void (*user_cleanup)(void *udata);
+    void *user_cleanup_udata;
+
+    int ret;
+    void *result;
+    void (*result_cleanup)(void *result);
+
+    int (*task_run)(struct ty_task *task);
+    void (*task_finalize)(struct ty_task *task);
+
+    ty_list_head list;
+    ty_mutex mutex;
+    ty_cond cond;
+
+    union {
+        struct {
+            struct ty_board *board;
+            struct ty_firmware **fws;
+            unsigned int fws_count;
+            int flags;
+        } upload;
+
+        struct {
+            struct ty_board *board;
+            char *buf;
+            size_t size;
+        } send;
+
+        struct {
+            struct ty_board *board;
+            FILE *fp;
+            size_t size;
+            char *filename;
+        } send_file;
+
+        struct {
+            struct ty_board *board;
+        } reset;
+
+        struct {
+            struct ty_board *board;
+        } reboot;
+    } u;
+} ty_task;
 
 TY_PUBLIC int ty_pool_new(ty_pool **rpool);
 TY_PUBLIC void ty_pool_free(ty_pool *pool);
@@ -27,23 +83,16 @@ TY_PUBLIC int ty_pool_get_idle_timeout(ty_pool *pool);
 
 TY_PUBLIC int ty_pool_get_default(ty_pool **rpool);
 
+TY_PUBLIC int ty_task_new(const char *name, int (*run)(ty_task *task), ty_task **rtask);
+
 TY_PUBLIC ty_task *ty_task_ref(ty_task *task);
 TY_PUBLIC void ty_task_unref(ty_task *task);
-
-TY_PUBLIC void ty_task_set_cleanup(ty_task *task, ty_task_cleanup_func *f, void *ptr);
-TY_PUBLIC void ty_task_set_callback(ty_task *task, ty_message_func *f, void *udata);
-TY_PUBLIC void ty_task_set_pool(ty_task *task, ty_pool *pool);
 
 TY_PUBLIC int ty_task_start(ty_task *task);
 TY_PUBLIC int ty_task_wait(ty_task *task, ty_task_status status, int timeout);
 TY_PUBLIC int ty_task_join(ty_task *task);
 
-TY_PUBLIC const char *ty_task_get_name(ty_task *task);
-TY_PUBLIC ty_task_status ty_task_get_status(ty_task *task);
-
-TY_PUBLIC int ty_task_get_return_value(ty_task *task);
-TY_PUBLIC void *ty_task_get_result(ty_task *task);
-TY_PUBLIC void *ty_task_steal_result(ty_task *task, ty_task_cleanup_func **rf);
+TY_PUBLIC ty_task *ty_task_get_current(void);
 
 TY_C_END
 
