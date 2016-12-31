@@ -85,7 +85,7 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
         goto error;
     }
 
-    r = ty_mutex_init(&board->interfaces_lock, TY_MUTEX_FAST);
+    r = ty_mutex_init(&board->interfaces_lock);
     if (r < 0)
         goto error;
 
@@ -187,7 +187,7 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
     }
     iface->refcount = 1;
 
-    r = ty_mutex_init(&iface->open_lock, TY_MUTEX_FAST);
+    r = ty_mutex_init(&iface->open_lock);
     if (r < 0)
         goto error;
 
@@ -398,7 +398,7 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
     if (r < 0)
         goto error;
 
-    r = ty_mutex_init(&monitor->refresh_mutex, TY_MUTEX_FAST);
+    r = ty_mutex_init(&monitor->refresh_mutex);
     if (r < 0)
         goto error;
 

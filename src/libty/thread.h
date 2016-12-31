@@ -24,11 +24,6 @@ typedef struct ty_thread {
 #endif
 } ty_thread;
 
-typedef enum ty_mutex_type {
-    TY_MUTEX_FAST,
-    TY_MUTEX_RECURSIVE
-} ty_mutex_type;
-
 typedef struct ty_mutex {
 #if defined(_MSC_VER)
     __declspec(align(4)) struct { char dummy[24]; } mutex; // CRITICAL_SECTION
@@ -75,7 +70,7 @@ TY_PUBLIC int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata
 TY_PUBLIC int ty_thread_join(ty_thread *thread);
 TY_PUBLIC void ty_thread_detach(ty_thread *thread);
 
-TY_PUBLIC int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type);
+TY_PUBLIC int ty_mutex_init(ty_mutex *mutex);
 TY_PUBLIC void ty_mutex_release(ty_mutex *mutex);
 
 TY_PUBLIC void ty_mutex_lock(ty_mutex *mutex);

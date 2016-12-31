@@ -53,7 +53,7 @@ int ty_pool_new(ty_pool **rpool)
     pool->max_threads = 16;
     pool->unused_timeout = 10000;
 
-    r = ty_mutex_init(&pool->mutex, TY_MUTEX_FAST);
+    r = ty_mutex_init(&pool->mutex);
     if (r < 0)
         goto error;
     r = ty_cond_init(&pool->pending_cond);
@@ -206,7 +206,7 @@ int ty_task_new(const char *name, int (*run)(ty_task *task), ty_task **rtask)
         goto error;
     }
 
-    r = ty_mutex_init(&task->mutex, TY_MUTEX_FAST);
+    r = ty_mutex_init(&task->mutex);
     if (r < 0)
         goto error;
     r = ty_cond_init(&task->cond);

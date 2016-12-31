@@ -98,10 +98,8 @@ void ty_thread_detach(ty_thread *thread)
     thread->h = NULL;
 }
 
-int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
+int ty_mutex_init(ty_mutex *mutex)
 {
-    TY_UNUSED(type);
-
     InitializeCriticalSection((CRITICAL_SECTION *)&mutex->mutex);
     mutex->init = true;
 
