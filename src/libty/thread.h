@@ -9,11 +9,7 @@
 #define TY_THREAD_H
 
 #include "common.h"
-#ifdef _WIN32
-    // FIXME: avoid windows.h in public headers
-    #define WIN32_LEAN_AND_MEAN
-    #include <windows.h>
-#else
+#ifndef _WIN32
     #include <pthread.h>
 #endif
 
@@ -21,7 +17,7 @@ TY_C_BEGIN
 
 typedef struct ty_thread {
 #ifdef _WIN32
-    HANDLE h;
+    void *h; // HANDLE
 #else
     pthread_t thread;
     bool init;
@@ -34,8 +30,10 @@ typedef enum ty_mutex_type {
 } ty_mutex_type;
 
 typedef struct ty_mutex {
-#ifdef _WIN32
-    CRITICAL_SECTION mutex;
+#if defined(_MSC_VER)
+    __declspec(align(4)) struct { char dummy[24]; } mutex; // CRITICAL_SECTION
+#elif defined(_WIN32)
+    struct { char dummy[24]; } __attribute__((__aligned__(4))) mutex; // CRITICAL_SECTION
 #else
     pthread_mutex_t mutex;
 #endif
@@ -43,13 +41,24 @@ typedef struct ty_mutex {
 } ty_mutex;
 
 typedef struct ty_cond {
-#ifdef _WIN32
+#if defined(_MSC_VER)
     union {
-        CONDITION_VARIABLE cv;
+        __declspec(align(4)) struct { char dummy[4]; } cv; // CONDITION_VARIABLE
         struct {
-            HANDLE ev;
+            void *ev; // HANDLE
 
-            CRITICAL_SECTION mutex;
+            __declspec(align(4)) struct { char dummy[24]; } mutex; // CRITICAL_SECTION
+            unsigned int waiting;
+            unsigned int wakeup;
+        } xp;
+    };
+#elif defined(_WIN32)
+    union {
+        struct { char dummy[4]; } __attribute__((__aligned__(4))) cv; // CONDITION_VARIABLE
+        struct {
+            void *ev; // HANDLE
+
+            struct { char dummy[24]; } __attribute__((__aligned__(4))) mutex; // CRITICAL_SECTION
             unsigned int waiting;
             unsigned int wakeup;
         } xp;

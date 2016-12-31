@@ -6,6 +6,8 @@
  */
 
 #include "common_priv.h"
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <process.h>
 #include "system.h"
 #include "thread.h"
@@ -100,7 +102,7 @@ int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
 {
     TY_UNUSED(type);
 
-    InitializeCriticalSection(&mutex->mutex);
+    InitializeCriticalSection((CRITICAL_SECTION *)&mutex->mutex);
     mutex->init = true;
 
     return 0;
@@ -111,43 +113,43 @@ void ty_mutex_release(ty_mutex *mutex)
     if (!mutex->init)
         return;
 
-    DeleteCriticalSection(&mutex->mutex);
+    DeleteCriticalSection((CRITICAL_SECTION *)&mutex->mutex);
     mutex->init = false;
 }
 
 void ty_mutex_lock(ty_mutex *mutex)
 {
-    EnterCriticalSection(&mutex->mutex);
+    EnterCriticalSection((CRITICAL_SECTION *)&mutex->mutex);
 }
 
 void ty_mutex_unlock(ty_mutex *mutex)
 {
-    LeaveCriticalSection(&mutex->mutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)&mutex->mutex);
 }
 
 static void WINAPI WakeConditionVariable_fallback(CONDITION_VARIABLE *cv)
 {
     ty_cond *cond = (ty_cond *)cv;
 
-    EnterCriticalSection(&cond->xp.mutex);
+    EnterCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
 
     if (cond->xp.wakeup < cond->xp.waiting)
         cond->xp.wakeup++;
     SetEvent(cond->xp.ev);
 
-    LeaveCriticalSection(&cond->xp.mutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
 }
 
 static void WINAPI WakeAllConditionVariable_fallback(CONDITION_VARIABLE *cv)
 {
     ty_cond *cond = (ty_cond *)cv;
 
-    EnterCriticalSection(&cond->xp.mutex);
+    EnterCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
 
     cond->xp.wakeup = cond->xp.waiting;
     SetEvent(cond->xp.ev);
 
-    LeaveCriticalSection(&cond->xp.mutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
 }
 
 static DWORD adjust_timeout_win32(DWORD timeout, uint64_t start)
@@ -172,15 +174,15 @@ static BOOL WINAPI SleepConditionVariableCS_fallback(CONDITION_VARIABLE *cv,
     DWORD wret;
 
     while (true) {
-        EnterCriticalSection(&cond->xp.mutex);
+        EnterCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
         if (!cond->xp.wakeup)
             break;
-        LeaveCriticalSection(&cond->xp.mutex);
+        LeaveCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
     }
 
     cond->xp.waiting++;
 
-    LeaveCriticalSection(&cond->xp.mutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
     LeaveCriticalSection(mutex);
 
     start = ty_millis();
@@ -188,7 +190,7 @@ restart:
     wret = WaitForSingleObject(cond->xp.ev, adjust_timeout_win32(timeout, start));
     assert(wret == WAIT_OBJECT_0 || wret == WAIT_TIMEOUT);
 
-    EnterCriticalSection(&cond->xp.mutex);
+    EnterCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
 
     if (cond->xp.wakeup) {
         if (!--cond->xp.wakeup)
@@ -197,12 +199,12 @@ restart:
     } else if (wret == WAIT_TIMEOUT) {
         signaled = false;
     } else {
-        LeaveCriticalSection(&cond->xp.mutex);
+        LeaveCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
         goto restart;
     }
     cond->xp.waiting--;
 
-    LeaveCriticalSection(&cond->xp.mutex);
+    LeaveCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
 
     EnterCriticalSection(mutex);
     return signaled;
@@ -232,13 +234,13 @@ int ty_cond_init(ty_cond *cond)
     }
 
     if (InitializeConditionVariable_) {
-        InitializeConditionVariable_(&cond->cv);
+        InitializeConditionVariable_((CONDITION_VARIABLE *)&cond->cv);
     } else {
         memset(cond, 0, sizeof(*cond));
         cond->xp.ev = CreateEvent(NULL, TRUE, FALSE, NULL);
         if (!cond->xp.ev)
             return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
-        InitializeCriticalSection(&cond->xp.mutex);
+        InitializeCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
     }
     cond->init = true;
 
@@ -252,7 +254,7 @@ void ty_cond_release(ty_cond *cond)
 
     // Apparently, there is no need for a DeleteConditionVariable() on Windows >= Vista
     if (!WakeConditionVariable_) {
-        DeleteCriticalSection(&cond->xp.mutex);
+        DeleteCriticalSection((CRITICAL_SECTION *)&cond->xp.mutex);
         CloseHandle(cond->xp.ev);
     }
     cond->init = false;
@@ -260,16 +262,17 @@ void ty_cond_release(ty_cond *cond)
 
 void ty_cond_signal(ty_cond *cond)
 {
-    WakeConditionVariable_(&cond->cv);
+    WakeConditionVariable_((CONDITION_VARIABLE *)&cond->cv);
 }
 
 void ty_cond_broadcast(ty_cond *cond)
 {
-    WakeAllConditionVariable_(&cond->cv);
+    WakeAllConditionVariable_((CONDITION_VARIABLE *)&cond->cv);
 }
 
 bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout)
 {
-    return SleepConditionVariableCS_(&cond->cv, &mutex->mutex,
+    return SleepConditionVariableCS_((CONDITION_VARIABLE *)&cond->cv,
+                                     (CRITICAL_SECTION *)&mutex->mutex,
                                      timeout >= 0 ? (DWORD)timeout : INFINITE);
 }
