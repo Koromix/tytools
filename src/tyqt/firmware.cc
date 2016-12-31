@@ -5,7 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "tyqt/firmware.hpp"
+#include "firmware.hpp"
 
 using namespace std;
 

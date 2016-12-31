@@ -5,7 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <stdarg.h>
 
 #ifndef HAVE_ASPRINTF

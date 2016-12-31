@@ -9,8 +9,8 @@
 #include <QLineEdit>
 #include <QPainter>
 
-#include "tyqt/board.hpp"
-#include "tyqt/board_widget.hpp"
+#include "board.hpp"
+#include "board_widget.hpp"
 
 using namespace std;
 

@@ -5,7 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "ty/task.h"
+#include "../libty/task.h"
 #include "main.h"
 
 static bool bootloader = false;

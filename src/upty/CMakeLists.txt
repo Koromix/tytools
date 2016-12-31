@@ -5,18 +5,33 @@
 
 find_package(EasyQt5)
 
-set(UPTY_SOURCES updater_window.cc
+set(UPTY_SOURCES ../tyqt/board.cc
+                 ../tyqt/board.hpp
+                 ../tyqt/database.cc
+                 ../tyqt/database.hpp
+                 ../tyqt/descriptor_notifier.cc
+                 ../tyqt/descriptor_notifier.hpp
+                 ../tyqt/firmware.cc
+                 ../tyqt/firmware.hpp
+                 ../tyqt/log_dialog.cc
+                 ../tyqt/log_dialog.hpp
+                 ../tyqt/monitor.cc
+                 ../tyqt/monitor.hpp
+                 ../tyqt/task.cc
+                 ../tyqt/task.hpp
+                 updater_window.cc
                  upty.cc)
-set(UPTY_FORMS updater_window.ui)
+set(UPTY_FORMS ../tyqt/log_dialog.ui
+               updater_window.ui)
 
-set(UPTY_ICON_FILE_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/images/upty")
-set(UPTY_RESOURCES upty.qrc)
+set(UPTY_ICON_FILE_PREFIX "${CMAKE_SOURCE_DIR}/resources/images/upty")
+set(UPTY_RESOURCES "${CMAKE_SOURCE_DIR}/resources/resources.qrc")
 if(TY_CONFIG_VARIANT)
     if(EXISTS "${TY_CONFIG_VARIANT_PATH}/upty.png")
         set(UPTY_ICON_FILE_PREFIX "${TY_CONFIG_VARIANT_PATH}/upty")
     endif()
-    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/upty_resources.qrc")
-        list(INSERT UPTY_RESOURCES 0 "${TY_CONFIG_VARIANT_PATH}/upty_resources.qrc")
+    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
+        list(INSERT UPTY_RESOURCES 0 "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
     endif()
 endif()
 
@@ -34,7 +49,8 @@ add_executable(upty WIN32 MACOSX_BUNDLE
                ${UPTY_SOURCES} ${UPTY_FORMS_HEADERS} ${UPTY_RESOURCES_RCC})
 set_target_properties(upty PROPERTIES AUTOMOC ON
                                       OUTPUT_NAME ${TY_CONFIG_UPTY_EXECUTABLE})
-target_link_libraries(upty PRIVATE ${LIBHS_LIBRARIES} libty libtyqt EasyQt5)
+target_link_libraries(upty PRIVATE ${LIBHS_LIBRARIES} libty EasyQt5)
+# We need these include directories for moc-generated files
 target_include_directories(upty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                         ${CMAKE_CURRENT_BINARY_DIR})
 if(APPLE)

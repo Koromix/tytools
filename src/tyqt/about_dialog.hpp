@@ -8,7 +8,7 @@
 #ifndef ABOUT_HH
 #define ABOUT_HH
 
-#include "ty/common.h"
+#include "../libty/common.h"
 #include "ui_about_dialog.h"
 
 class AboutDialog: public QDialog, private Ui::AboutDialog {

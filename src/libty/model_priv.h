@@ -8,9 +8,9 @@
 #ifndef TY_MODEL_PRIV_H
 #define TY_MODEL_PRIV_H
 
-#include "util.h"
-#include "ty/board.h"
-#include "ty/model.h"
+#include "common_priv.h"
+#include "board.h"
+#include "model.h"
 
 TY_C_BEGIN
 

@@ -11,10 +11,10 @@
 #include <QTextBlock>
 #include <QTextCursor>
 
-#include "tyqt/board.hpp"
-#include "ty/model.h"
-#include "tyqt/database.hpp"
-#include "tyqt/monitor.hpp"
+#include "board.hpp"
+#include "../libty/model.h"
+#include "database.hpp"
+#include "monitor.hpp"
 
 using namespace std;
 

@@ -5,7 +5,7 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -19,7 +19,7 @@
 #else
     #include <poll.h>
 #endif
-#include "ty/system.h"
+#include "system.h"
 
 struct child_report {
     ty_err err;

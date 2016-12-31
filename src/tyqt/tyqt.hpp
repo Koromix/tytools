@@ -15,9 +15,9 @@
 
 #include <memory>
 
-#include "tyqt/database.hpp"
-#include "tyqt/monitor.hpp"
-#include "tyqt/session_channel.hpp"
+#include "database.hpp"
+#include "monitor.hpp"
+#include "session_channel.hpp"
 
 class LogDialog;
 class MainWindow;

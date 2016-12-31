@@ -9,8 +9,8 @@
 #define TY_TASK_H
 
 #include "common.h"
-#include "ty/list.h"
-#include "ty/thread.h"
+#include "list.h"
+#include "thread.h"
 
 TY_C_BEGIN
 

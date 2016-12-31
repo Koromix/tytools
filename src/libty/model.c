@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/firmware.h"
+#include "common_priv.h"
+#include "firmware.h"
 #include "model_priv.h"
 
 extern const struct _ty_model_vtable _ty_teensy_model_vtable;

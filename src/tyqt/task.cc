@@ -7,7 +7,7 @@
 
 #include <QMutexLocker>
 
-#include "tyqt/task.hpp"
+#include "task.hpp"
 
 using namespace std;
 

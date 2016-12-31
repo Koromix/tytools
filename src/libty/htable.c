@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/htable.h"
+#include "common_priv.h"
+#include "htable.h"
 
 int ty_htable_init(ty_htable *table, unsigned int size)
 {

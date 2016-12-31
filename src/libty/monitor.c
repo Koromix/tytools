@@ -5,14 +5,14 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include "hs/device.h"
 #include "hs/monitor.h"
 #include "board_priv.h"
 #include "model_priv.h"
-#include "ty/monitor.h"
-#include "ty/system.h"
-#include "ty/timer.h"
+#include "monitor.h"
+#include "system.h"
+#include "timer.h"
 
 struct ty_monitor {
     int flags;

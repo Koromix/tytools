@@ -15,10 +15,10 @@
 
 #include "about_dialog.hpp"
 #include "arduino_dialog.hpp"
-#include "tyqt/board.hpp"
-#include "tyqt/board_widget.hpp"
+#include "board.hpp"
+#include "board_widget.hpp"
 #include "main_window.hpp"
-#include "tyqt/monitor.hpp"
+#include "monitor.hpp"
 #include "preferences_dialog.hpp"
 #include "tyqt.hpp"
 

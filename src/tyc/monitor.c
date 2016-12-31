@@ -12,7 +12,7 @@
 #endif
 #include "hs/device.h"
 #include "hs/serial.h"
-#include "ty/system.h"
+#include "../libty/system.h"
 #include "main.h"
 
 enum {

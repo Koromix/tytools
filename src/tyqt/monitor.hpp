@@ -16,7 +16,7 @@
 
 #include "database.hpp"
 #include "descriptor_notifier.hpp"
-#include "ty/monitor.h"
+#include "../libty/monitor.h"
 
 class Board;
 struct ty_board;

@@ -21,11 +21,11 @@
 #include <memory>
 #include <vector>
 
-#include "ty/board.h"
+#include "../libty/board.h"
 #include "database.hpp"
 #include "descriptor_notifier.hpp"
 #include "firmware.hpp"
-#include "ty/monitor.h"
+#include "../libty/monitor.h"
 #include "task.hpp"
 
 class Monitor;

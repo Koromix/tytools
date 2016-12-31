@@ -7,7 +7,7 @@
 
 #include <QSettings>
 
-#include "tyqt/database.hpp"
+#include "database.hpp"
 
 using namespace std;
 

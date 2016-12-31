@@ -5,10 +5,10 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/firmware.h"
+#include "common_priv.h"
+#include "firmware.h"
 #include "model_priv.h"
-#include "ty/system.h"
+#include "system.h"
 
 const ty_firmware_format ty_firmware_formats[] = {
     {"elf",  ".elf", ty_firmware_load_elf},

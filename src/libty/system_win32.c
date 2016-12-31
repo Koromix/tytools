@@ -5,13 +5,13 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <direct.h>
 #include <io.h>
 #include <shlobj.h>
-#include "ty/system.h"
+#include "system.h"
 
 typedef ULONGLONG WINAPI GetTickCount64_func(void);
 

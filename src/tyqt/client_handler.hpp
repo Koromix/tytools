@@ -13,8 +13,8 @@
 #include <memory>
 #include <vector>
 
-#include "tyqt/session_channel.hpp"
-#include "tyqt/task.hpp"
+#include "session_channel.hpp"
+#include "task.hpp"
 
 class Board;
 

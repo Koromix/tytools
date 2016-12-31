@@ -8,28 +8,48 @@ find_package(EasyQt5)
 set(TYQT_SOURCES about_dialog.cc
                  arduino_dialog.cc
                  arduino_install.cc
+                 board.cc
+                 board.hpp
+                 board_widget.cc
+                 board_widget.hpp
+                 database.cc
+                 database.hpp
+                 descriptor_notifier.cc
+                 descriptor_notifier.hpp
                  client_handler.cc
                  enhanced_group_box.cc
                  enhanced_plain_text.cc
+                 firmware.cc
+                 firmware.hpp
+                 log_dialog.cc
+                 log_dialog.hpp
                  main.cc
                  main_window.cc
+                 monitor.cc
+                 monitor.hpp
                  preferences_dialog.cc
                  selector_dialog.cc
+                 session_channel.cc
+                 session_channel.hpp
+                 task.cc
+                 task.hpp
                  tyqt.cc)
 set(TYQT_FORMS about_dialog.ui
                arduino_dialog.ui
+               board_widget.ui
+               log_dialog.ui
                main_window.ui
                preferences_dialog.ui
                selector_dialog.ui)
 
-set(TYQT_ICON_FILE_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/images/tyqt")
-set(TYQT_RESOURCES tyqt.qrc)
+set(TYQT_ICON_FILE_PREFIX "${CMAKE_SOURCE_DIR}/resources/images/tyqt")
+set(TYQT_RESOURCES "${CMAKE_SOURCE_DIR}/resources/resources.qrc")
 if(TY_CONFIG_VARIANT)
     if(EXISTS "${TY_CONFIG_VARIANT_PATH}/tyqt.png")
         set(TYQT_ICON_FILE_PREFIX "{TY_CONFIG_VARIANT_PATH}/tyqt")
     endif()
-    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/tyqt_resources.qrc")
-        list(INSERT TYQT_RESOURCES 0 "${TY_CONFIG_VARIANT_PATH}/tyqt_resources.qrc")
+    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
+        list(INSERT TYQT_RESOURCES 0 "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
     endif()
 endif()
 
@@ -47,7 +67,8 @@ add_executable(tyqt WIN32 MACOSX_BUNDLE
                ${TYQT_SOURCES} ${TYQT_FORMS_HEADERS} ${TYQT_RESOURCES_RCC})
 set_target_properties(tyqt PROPERTIES AUTOMOC ON
                                       OUTPUT_NAME ${TY_CONFIG_TYQT_EXECUTABLE})
-target_link_libraries(tyqt PRIVATE ${LIBHS_LIBRARIES} libty libtyqt EasyQt5)
+target_link_libraries(tyqt PRIVATE ${LIBHS_LIBRARIES} libty EasyQt5)
+# We need these include directories for moc-generated files
 target_include_directories(tyqt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                         ${CMAKE_CURRENT_BINARY_DIR})
 if(APPLE)

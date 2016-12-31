@@ -5,9 +5,9 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <sys/types.h>
-#include "ty/firmware.h"
+#include "firmware.h"
 
 #define EI_NIDENT 16
 

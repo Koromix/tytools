@@ -11,12 +11,12 @@
 #include <QDir>
 #include <QIcon>
 
-#include "tyqt/board.hpp"
-#include "tyqt/database.hpp"
-#include "tyqt/descriptor_notifier.hpp"
-#include "tyqt/monitor.hpp"
+#include "board.hpp"
+#include "database.hpp"
+#include "descriptor_notifier.hpp"
+#include "monitor.hpp"
 #include "hs/platform.h"
-#include "ty/task.h"
+#include "../libty/task.h"
 
 using namespace std;
 

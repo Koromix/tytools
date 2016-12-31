@@ -8,11 +8,11 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "ty/common.h"
-#include "ty/board.h"
-#include "ty/model.h"
-#include "ty/monitor.h"
-#include "ty/optline.h"
+#include "../libty/common.h"
+#include "../libty/board.h"
+#include "../libty/model.h"
+#include "../libty/monitor.h"
+#include "../libty/optline.h"
 
 TY_C_BEGIN
 

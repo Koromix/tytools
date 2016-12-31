@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include "tyqt/log_dialog.hpp"
+#include "log_dialog.hpp"
 
 using namespace std;
 

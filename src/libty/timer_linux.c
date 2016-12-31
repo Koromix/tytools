@@ -5,11 +5,11 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <sys/timerfd.h>
 #include <unistd.h>
-#include "ty/timer.h"
-#include "ty/system.h"
+#include "timer.h"
+#include "system.h"
 
 struct ty_timer {
     int fd;

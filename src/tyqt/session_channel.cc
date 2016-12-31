@@ -16,7 +16,7 @@
     #include <unistd.h>
 #endif
 
-#include "tyqt/session_channel.hpp"
+#include "session_channel.hpp"
 
 #ifdef _WIN32
 typedef BOOL WINAPI ProcessIdToSessionId_func(DWORD dwProcessId, DWORD *pSessionId);

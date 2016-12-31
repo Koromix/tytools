@@ -8,7 +8,7 @@
 #ifndef TY_COMPAT_H
 #define TY_COMPAT_H
 
-#include "util.h"
+#include "common_priv.h"
 #include <stdarg.h>
 
 TY_C_BEGIN

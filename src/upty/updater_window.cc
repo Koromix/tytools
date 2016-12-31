@@ -9,9 +9,9 @@
 #include <QFileDialog>
 #include <QUrl>
 
-#include "tyqt/board.hpp"
-#include "tyqt/monitor.hpp"
-#include "tyqt/task.hpp"
+#include "../tyqt/board.hpp"
+#include "../tyqt/monitor.hpp"
+#include "../tyqt/task.hpp"
 #include "updater_window.hpp"
 #include "upty.hpp"
 

@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/firmware.h"
+#include "common_priv.h"
+#include "firmware.h"
 
 struct parser_context {
     ty_firmware *fw;

@@ -14,11 +14,11 @@
     #include <windows.h>
 #endif
 
-#include "tyqt/board.hpp"
+#include "board.hpp"
 #include "client_handler.hpp"
 #include "main_window.hpp"
 #include "selector_dialog.hpp"
-#include "tyqt/monitor.hpp"
+#include "monitor.hpp"
 #include "tyqt.hpp"
 
 using namespace std;

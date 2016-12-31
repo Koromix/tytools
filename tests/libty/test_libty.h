@@ -8,7 +8,7 @@
 #ifndef TEST_LIBTY_H
 #define TEST_LIBTY_H
 
-#include "ty/common.h"
+#include "../../src/libty/common.h"
 
 TY_C_BEGIN
 

@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/optline.h"
+#include "common_priv.h"
+#include "optline.h"
 
 void ty_optline_init(ty_optline_context *ctx, char **args, unsigned int args_count)
 {

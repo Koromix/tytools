@@ -10,7 +10,7 @@
     #include <sys/wait.h>
 #endif
 #include "hs/common.h"
-#include "ty/system.h"
+#include "../libty/system.h"
 #include "main.h"
 
 struct command {

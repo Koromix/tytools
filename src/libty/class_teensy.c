@@ -5,15 +5,15 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include "hs/device.h"
 #include "hs/hid.h"
 #include "hs/serial.h"
-#include "ty/board.h"
+#include "board.h"
 #include "board_priv.h"
-#include "ty/firmware.h"
+#include "firmware.h"
 #include "model_priv.h"
-#include "ty/system.h"
+#include "system.h"
 
 #define TEENSY_VID 0x16C0
 

@@ -9,8 +9,8 @@
 #include <QItemDelegate>
 #include <QPushButton>
 
-#include "tyqt/board.hpp"
-#include "tyqt/monitor.hpp"
+#include "board.hpp"
+#include "monitor.hpp"
 #include "selector_dialog.hpp"
 #include "tyqt.hpp"
 

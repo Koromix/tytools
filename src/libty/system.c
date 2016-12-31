@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/system.h"
+#include "common_priv.h"
+#include "system.h"
 
 int ty_adjust_timeout(int timeout, uint64_t start)
 {

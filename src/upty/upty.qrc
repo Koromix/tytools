@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file alias="upty">images/upty.png</file>
-    </qresource>
-</RCC>

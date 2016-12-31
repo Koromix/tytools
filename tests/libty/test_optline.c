@@ -6,7 +6,7 @@
  */
 
 #include "test_libty.h"
-#include "ty/optline.h"
+#include "../../src/libty/optline.h"
 
 static void test_optline_empty(void)
 {

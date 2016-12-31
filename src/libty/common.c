@@ -5,12 +5,12 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <stdarg.h>
 #include "hs/common.h"
-#include "ty/system.h"
+#include "system.h"
 #include "version.h"
-#include "ty/task.h"
+#include "task.h"
 
 int ty_config_verbosity = TY_LOG_INFO;
 

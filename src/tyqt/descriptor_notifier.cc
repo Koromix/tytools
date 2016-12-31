@@ -7,7 +7,7 @@
 
 #include <QThread>
 
-#include "tyqt/descriptor_notifier.hpp"
+#include "descriptor_notifier.hpp"
 
 using namespace std;
 

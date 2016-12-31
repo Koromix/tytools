@@ -10,9 +10,9 @@
 #include <QTranslator>
 
 #include "hs/common.h"
-#include "ty/common.h"
-#include "tyqt/log_dialog.hpp"
-#include "tyqt/monitor.hpp"
+#include "../libty/common.h"
+#include "../tyqt/log_dialog.hpp"
+#include "../tyqt/monitor.hpp"
 #include "updater_window.hpp"
 #include "upty.hpp"
 
@@ -99,8 +99,6 @@ int main(int argc, char *argv[])
 {
     hs_log_set_handler(ty_libhs_log_handler, NULL);
 
-    // TODO: move to libtyqt function
-    Q_INIT_RESOURCE(libtyqt);
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");

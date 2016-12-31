@@ -5,10 +5,10 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <time.h>
-#include "ty/system.h"
-#include "ty/thread.h"
+#include "system.h"
+#include "thread.h"
 
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t thread_cond = PTHREAD_COND_INITIALIZER;

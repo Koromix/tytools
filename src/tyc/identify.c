@@ -7,7 +7,7 @@
 
 #include <stdarg.h>
 #include "main.h"
-#include "ty/firmware.h"
+#include "../libty/firmware.h"
 
 static const char *firmware_format = NULL;
 static bool output_json = false;

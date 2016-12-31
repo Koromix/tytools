@@ -13,7 +13,7 @@
 
 #include <memory>
 
-#include "ty/common.h"
+#include "../libty/common.h"
 #include "ui_updater_window.h"
 
 class Board;

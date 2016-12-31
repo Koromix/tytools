@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file alias="tyqt">images/tyqt.png</file>
-    </qresource>
-</RCC>

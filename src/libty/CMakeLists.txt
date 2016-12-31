@@ -3,35 +3,34 @@
 # Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
 # Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
 
-set(LIBTY_SOURCES ../../include/ty/board.h
-                  ../../include/ty/common.h
-                  ../../include/ty/firmware.h
-                  ../../include/ty/htable.h
-                  ../../include/ty/list.h
-                  ../../include/ty/model.h
-                  ../../include/ty/monitor.h
-                  ../../include/ty/optline.h
-                  ../../include/ty/system.h
-                  ../../include/ty/task.h
-                  ../../include/ty/thread.h
-                  ../../include/ty/timer.h
-
-                  board.c
+set(LIBTY_SOURCES board.c
+                  board.h
                   board_priv.h
                   class_teensy.c
                   common.c
+                  common.h
+                  common_priv.h
                   compat.c
                   firmware.c
+                  firmware.h
                   firmware_elf.c
                   firmware_ihex.c
                   htable.c
+                  htable.h
+                  list.h
                   model.c
+                  model.h
                   model_priv.h
                   monitor.c
+                  monitor.h
                   optline.c
+                  optline.h
                   system.c
+                  system.h
                   task.c
-                  util.h)
+                  task.h
+                  thread.h
+                  timer.h)
 if(LINUX)
     list(APPEND LIBTY_SOURCES system_posix.c
                               thread_pthread.c
@@ -75,9 +74,8 @@ list(APPEND LIBTY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 add_library(libty STATIC ${LIBTY_SOURCES})
 set_target_properties(libty PROPERTIES OUTPUT_NAME ty)
 target_link_libraries(libty PRIVATE ${LIBTY_LINK_LIBRARIES})
-target_include_directories(libty PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/../../include
-                                         ${CMAKE_CURRENT_BINARY_DIR}
-                                 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# We need that for config.h
+target_include_directories(libty PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 if(MSVC)
     target_compile_definitions(libty PUBLIC TY_STATIC)
 endif()

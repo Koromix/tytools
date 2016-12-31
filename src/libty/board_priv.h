@@ -8,14 +8,14 @@
 #ifndef TY_BOARD_PRIV_H
 #define TY_BOARD_PRIV_H
 
-#include "util.h"
-#include "ty/board.h"
+#include "common_priv.h"
+#include "board.h"
 #include "model_priv.h"
 #include "hs/device.h"
-#include "ty/htable.h"
-#include "ty/list.h"
-#include "ty/task.h"
-#include "ty/thread.h"
+#include "htable.h"
+#include "list.h"
+#include "task.h"
+#include "thread.h"
 
 TY_C_BEGIN
 

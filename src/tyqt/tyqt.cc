@@ -21,11 +21,11 @@
 
 #include "arduino_install.hpp"
 #include "client_handler.hpp"
-#include "ty/common.h"
-#include "tyqt/log_dialog.hpp"
+#include "../libty/common.h"
+#include "log_dialog.hpp"
 #include "main_window.hpp"
-#include "ty/optline.h"
-#include "tyqt/task.hpp"
+#include "../libty/optline.h"
+#include "task.hpp"
 #include "tyqt.hpp"
 
 struct ClientCommand {

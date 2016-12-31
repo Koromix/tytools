@@ -66,7 +66,6 @@ int main(int argc, char *argv[])
 {
     hs_log_set_handler(ty_libhs_log_handler, NULL);
 
-    Q_INIT_RESOURCE(libtyqt);
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");

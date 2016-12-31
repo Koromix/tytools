@@ -5,10 +5,10 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
-#include "ty/list.h"
-#include "ty/system.h"
-#include "ty/task.h"
+#include "common_priv.h"
+#include "list.h"
+#include "system.h"
+#include "task.h"
 
 struct ty_pool {
     int unused_timeout;

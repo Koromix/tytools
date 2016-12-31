@@ -8,7 +8,7 @@
 #ifndef TY_UTIL_H
 #define TY_UTIL_H
 
-#include "ty/common.h"
+#include "common.h"
 #include "compat.h"
 
 void _ty_refcount_increase(unsigned int *rrefcount);

@@ -5,10 +5,10 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#include "util.h"
+#include "common_priv.h"
 #include <process.h>
-#include "ty/system.h"
-#include "ty/thread.h"
+#include "system.h"
+#include "thread.h"
 
 typedef void WINAPI InitializeConditionVariable_func(CONDITION_VARIABLE *cv);
 typedef BOOL WINAPI SleepConditionVariableCS_func(CONDITION_VARIABLE *cv, CRITICAL_SECTION *cs, DWORD timeout);
