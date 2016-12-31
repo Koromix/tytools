@@ -6,8 +6,8 @@
  */
 
 #include "common_priv.h"
-#include "hs/device.h"
-#include "hs/monitor.h"
+#include "../libhs/device.h"
+#include "../libhs/monitor.h"
 #include "board_priv.h"
 #include "model_priv.h"
 #include "monitor.h"

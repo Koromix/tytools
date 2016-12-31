@@ -9,7 +9,7 @@
 #ifndef _WIN32
     #include <sys/stat.h>
 #endif
-#include "hs/device.h"
+#include "../libhs/device.h"
 #include "board_priv.h"
 #include "firmware.h"
 #include "model_priv.h"

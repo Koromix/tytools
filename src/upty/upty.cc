@@ -9,7 +9,7 @@
 #include <QMessageBox>
 #include <QTranslator>
 
-#include "hs/common.h"
+#include "../libhs/common.h"
 #include "../libty/common.h"
 #include "../tyqt/log_dialog.hpp"
 #include "../tyqt/monitor.hpp"

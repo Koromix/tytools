@@ -14,7 +14,7 @@
     #include <stdlib.h>
 #endif
 
-#include "hs/common.h"
+#include "../libhs/common.h"
 #include "tyqt.hpp"
 
 #ifdef QT_STATIC

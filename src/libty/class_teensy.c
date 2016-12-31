@@ -6,9 +6,9 @@
  */
 
 #include "common_priv.h"
-#include "hs/device.h"
-#include "hs/hid.h"
-#include "hs/serial.h"
+#include "../libhs/device.h"
+#include "../libhs/hid.h"
+#include "../libhs/serial.h"
 #include "board.h"
 #include "board_priv.h"
 #include "firmware.h"

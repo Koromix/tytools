@@ -10,8 +10,8 @@
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
 #endif
-#include "hs/device.h"
-#include "hs/serial.h"
+#include "../libhs/device.h"
+#include "../libhs/serial.h"
 #include "../libty/system.h"
 #include "main.h"
 

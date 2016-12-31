@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "hs/common.h"
+#include "../libhs/common.h"
 #include "config.h"
 
 #ifdef __cplusplus

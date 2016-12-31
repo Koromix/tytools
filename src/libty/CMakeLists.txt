@@ -36,6 +36,9 @@ if(LINUX)
                               thread_pthread.c
                               timer_linux.c)
 
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GNU_SOURCE")
+
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBUDEV REQUIRED libudev)
 

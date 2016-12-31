@@ -9,7 +9,7 @@
     #include <signal.h>
     #include <sys/wait.h>
 #endif
-#include "hs/common.h"
+#include "../libhs/common.h"
 #include "../libty/system.h"
 #include "main.h"
 

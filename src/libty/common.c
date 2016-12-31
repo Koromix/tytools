@@ -7,7 +7,7 @@
 
 #include "common_priv.h"
 #include <stdarg.h>
-#include "hs/common.h"
+#include "../libhs/common.h"
 #include "system.h"
 #include "version.h"
 #include "task.h"

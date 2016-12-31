@@ -11,7 +11,7 @@
 #include "common_priv.h"
 #include "board.h"
 #include "model_priv.h"
-#include "hs/device.h"
+#include "../libhs/device.h"
 #include "htable.h"
 #include "list.h"
 #include "task.h"
