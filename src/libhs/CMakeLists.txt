@@ -87,8 +87,8 @@ set(LIBHS_SOURCES common.c
                   libhs.h
                   list.h
                   match.h
-                  monitor.c
                   monitor.h
+                  monitor_common.c
                   monitor_priv.h
                   platform.c
                   platform.h

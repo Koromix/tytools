@@ -24,11 +24,8 @@
 
 #include "common_priv.h"
 #include "device_priv.h"
+#include "match.h"
 #include "monitor_priv.h"
-
-struct hs_monitor {
-    _HS_MONITOR
-};
 
 static int find_callback(hs_device *dev, void *udata)
 {
@@ -44,40 +41,18 @@ int hs_find(const hs_match *matches, unsigned int count, hs_device **rdev)
     return hs_enumerate(matches, count, find_callback, rdev);
 }
 
-int _hs_monitor_init(hs_monitor *monitor, const hs_match *matches, unsigned int count)
+void _hs_monitor_clear_devices(_hs_htable *devices)
 {
-    int r;
-
-    r = _hs_filter_init(&monitor->filter, matches, count);
-    if (r < 0)
-        return r;
-
-    r = _hs_htable_init(&monitor->devices, 64);
-    if (r < 0)
-        return r;
-
-    return 0;
-}
-
-void _hs_monitor_release(hs_monitor *monitor)
-{
-    _hs_monitor_clear(monitor);
-    _hs_htable_release(&monitor->devices);
-    _hs_filter_release(&monitor->filter);
-}
-
-void _hs_monitor_clear(hs_monitor *monitor)
-{
-    _hs_htable_foreach(cur, &monitor->devices) {
+    _hs_htable_foreach(cur, devices) {
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
         hs_device_unref(dev);
     }
-    _hs_htable_clear(&monitor->devices);
+    _hs_htable_clear(devices);
 }
 
-bool _hs_monitor_has_device(hs_monitor *monitor, const char *key, uint8_t iface)
+bool _hs_monitor_has_device(_hs_htable *devices, const char *key, uint8_t iface)
 {
-    _hs_htable_foreach_hash(cur, &monitor->devices, _hs_htable_hash_str(key)) {
+    _hs_htable_foreach_hash(cur, devices, _hs_htable_hash_str(key)) {
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
 
         if (strcmp(dev->key, key) == 0 && dev->iface == iface)
@@ -87,15 +62,13 @@ bool _hs_monitor_has_device(hs_monitor *monitor, const char *key, uint8_t iface)
     return false;
 }
 
-int _hs_monitor_add(hs_monitor *monitor, hs_device *dev, hs_enumerate_func *f, void *udata)
+int _hs_monitor_add(_hs_htable *devices, hs_device *dev, hs_enumerate_func *f, void *udata)
 {
-    if (!_hs_filter_match_device(&monitor->filter, dev))
-        return 0;
-    if (_hs_monitor_has_device(monitor, dev->key, dev->iface))
+    if (_hs_monitor_has_device(devices, dev->key, dev->iface))
         return 0;
 
     hs_device_ref(dev);
-    _hs_htable_add(&monitor->devices, _hs_htable_hash_str(dev->key), &dev->hnode);
+    _hs_htable_add(devices, _hs_htable_hash_str(dev->key), &dev->hnode);
 
     _hs_device_log(dev, "Add");
 
@@ -106,10 +79,10 @@ int _hs_monitor_add(hs_monitor *monitor, hs_device *dev, hs_enumerate_func *f, v
     }
 }
 
-void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func *f,
+void _hs_monitor_remove(_hs_htable *devices, const char *key, hs_enumerate_func *f,
                         void *udata)
 {
-    _hs_htable_foreach_hash(cur, &monitor->devices, _hs_htable_hash_str(key)) {
+    _hs_htable_foreach_hash(cur, devices, _hs_htable_hash_str(key)) {
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
 
         if (strcmp(dev->key, key) == 0) {
@@ -126,12 +99,9 @@ void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func 
     }
 }
 
-int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
+int _hs_monitor_list(_hs_htable *devices, hs_enumerate_func *f, void *udata)
 {
-    assert(monitor);
-    assert(f);
-
-    _hs_htable_foreach(cur, &monitor->devices) {
+    _hs_htable_foreach(cur, devices) {
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
         int r;
 

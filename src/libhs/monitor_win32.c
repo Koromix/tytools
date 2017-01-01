@@ -45,7 +45,8 @@
 #include "platform.h"
 
 struct hs_monitor {
-    _HS_MONITOR
+    _hs_filter filter;
+    _hs_htable devices;
 
     HANDLE thread;
     HANDLE thread_hwnd;
@@ -1304,7 +1305,11 @@ cleanup:
 
 static int monitor_enumerate_callback(hs_device *dev, void *udata)
 {
-    return _hs_monitor_add(udata, dev, NULL, NULL);
+    hs_monitor *monitor = udata;
+
+    if (!_hs_filter_match_device(&monitor->filter, dev))
+        return 0;
+    return _hs_monitor_add(&monitor->devices, dev, NULL, NULL);
 }
 
 /* Monitoring device changes on Windows involves a window to receive device notifications on the
@@ -1324,7 +1329,11 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
         goto error;
     }
 
-    r = _hs_monitor_init(monitor, matches, count);
+    r = _hs_filter_init(&monitor->filter, matches, count);
+    if (r < 0)
+        goto error;
+
+    r = _hs_htable_init(&monitor->devices, 64);
     if (r < 0)
         goto error;
 
@@ -1355,7 +1364,9 @@ void hs_monitor_free(hs_monitor *monitor)
         if (monitor->thread_event)
             CloseHandle(monitor->thread_event);
 
-        _hs_monitor_release(monitor);
+        _hs_monitor_clear_devices(&monitor->devices);
+        _hs_htable_release(&monitor->devices);
+        _hs_filter_release(&monitor->filter);
     }
 
     free(monitor);
@@ -1411,7 +1422,7 @@ void hs_monitor_stop(hs_monitor *monitor)
     if (!monitor->thread)
         return;
 
-    _hs_monitor_clear(monitor);
+    _hs_monitor_clear_devices(&monitor->devices);
 
     if (monitor->thread_hwnd) {
         PostMessage(monitor->thread_hwnd, WM_CLOSE, 0, 0);
@@ -1450,7 +1461,9 @@ static int process_arrival_notification(hs_monitor *monitor, const char *key, hs
     if (r <= 0)
         return r;
 
-    r = _hs_monitor_add(monitor, dev, f, udata);
+    r = _hs_filter_match_device(&monitor->filter, dev);
+    if (r)
+        r = _hs_monitor_add(&monitor->devices, dev, f, udata);
     hs_device_unref(dev);
 
     return r;
@@ -1490,7 +1503,7 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
         case DEVICE_EVENT_REMOVED:
             hs_log(HS_LOG_DEBUG, "Received removal notification for device '%s'",
                    notif->device_key);
-            _hs_monitor_remove(monitor, notif->device_key, f, udata);
+            _hs_monitor_remove(&monitor->devices, notif->device_key, f, udata);
             r = 0;
             break;
         }
@@ -1512,4 +1525,9 @@ cleanup:
         ResetEvent(monitor->thread_event);
     LeaveCriticalSection(&monitor->notifications_lock);
     return r;
+}
+
+int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
+{
+    return _hs_monitor_list(&monitor->devices, f, udata);
 }

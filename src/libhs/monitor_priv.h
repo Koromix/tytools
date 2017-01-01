@@ -26,28 +26,18 @@
 #define _HS_MONITOR_PRIV_H
 
 #include "common_priv.h"
-#include "filter_priv.h"
 #include "htable.h"
-#include "list.h"
 #include "monitor.h"
 
 struct hs_device;
 
-#define _HS_MONITOR \
-    _hs_filter filter; \
-    \
-    _hs_htable devices; \
+void _hs_monitor_clear_devices(_hs_htable *devices);
 
-int _hs_monitor_init(hs_monitor *monitor, const hs_match *matches, unsigned int count);
-void _hs_monitor_release(hs_monitor *monitor);
+bool _hs_monitor_has_device(_hs_htable *devices, const char *key, uint8_t iface);
 
-void _hs_monitor_clear(hs_monitor *monitor);
+int _hs_monitor_add(_hs_htable *devices, struct hs_device *dev, hs_enumerate_func *f, void *udata);
+void _hs_monitor_remove(_hs_htable *devices, const char *key, hs_enumerate_func *f, void *udata);
 
-bool _hs_monitor_has_device(hs_monitor *monitor, const char *key, uint8_t iface);
-
-int _hs_monitor_add(hs_monitor *monitor, struct hs_device *dev, hs_enumerate_func *f,
-                    void *udata);
-void _hs_monitor_remove(hs_monitor *monitor, const char *key, hs_enumerate_func *f,
-                        void *udata);
+int _hs_monitor_list(_hs_htable *devices, hs_enumerate_func *f, void *udata);
 
 #endif

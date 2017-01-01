@@ -31,11 +31,13 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "device_priv.h"
+#include "filter_priv.h"
 #include "monitor_priv.h"
 #include "platform.h"
 
 struct hs_monitor {
-    _HS_MONITOR
+    _hs_filter filter;
+    _hs_htable devices;
 
     struct udev_monitor *udev_mon;
     int wait_fd;
@@ -529,7 +531,11 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     }
     monitor->wait_fd = -1;
 
-    r = _hs_monitor_init(monitor, matches, count);
+    r = _hs_filter_init(&monitor->filter, matches, count);
+    if (r < 0)
+        goto error;
+
+    r = _hs_htable_init(&monitor->devices, 64);
     if (r < 0)
         goto error;
 
@@ -554,10 +560,12 @@ error:
 void hs_monitor_free(hs_monitor *monitor)
 {
     if (monitor) {
-        _hs_monitor_release(monitor);
-
         close(monitor->wait_fd);
         udev_monitor_unref(monitor->udev_mon);
+
+        _hs_monitor_clear_devices(&monitor->devices);
+        _hs_htable_release(&monitor->devices);
+        _hs_filter_release(&monitor->filter);
     }
 
     free(monitor);
@@ -565,7 +573,11 @@ void hs_monitor_free(hs_monitor *monitor)
 
 static int monitor_enumerate_callback(hs_device *dev, void *udata)
 {
-    return _hs_monitor_add(udata, dev, NULL, NULL);
+    hs_monitor *monitor = udata;
+
+    if (!_hs_filter_match_device(&monitor->filter, dev))
+        return 0;
+    return _hs_monitor_add(&monitor->devices, dev, NULL, NULL);
 }
 
 int hs_monitor_start(hs_monitor *monitor)
@@ -621,7 +633,7 @@ void hs_monitor_stop(hs_monitor *monitor)
     if (!monitor->udev_mon)
         return;
 
-    _hs_monitor_clear(monitor);
+    _hs_monitor_clear_devices(&monitor->devices);
 
     dup3(common_eventfd, monitor->wait_fd, O_CLOEXEC);
     udev_monitor_unref(monitor->udev_mon);
@@ -653,12 +665,15 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
             hs_device *dev = NULL;
 
             r = read_device_information(udev_dev, &dev);
-            if (r > 0)
-                r = _hs_monitor_add(monitor, dev, f, udata);
+            if (r > 0) {
+                r = _hs_filter_match_device(&monitor->filter, dev);
+                if (r)
+                    r = _hs_monitor_add(&monitor->devices, dev, f, udata);
+            }
 
             hs_device_unref(dev);
         } else if (strcmp(action, "remove") == 0) {
-            _hs_monitor_remove(monitor, udev_device_get_devpath(udev_dev), f, udata);
+            _hs_monitor_remove(&monitor->devices, udev_device_get_devpath(udev_dev), f, udata);
         }
         udev_device_unref(udev_dev);
         if (r)
@@ -670,4 +685,9 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
     return 0;
+}
+
+int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
+{
+    return _hs_monitor_list(&monitor->devices, f, udata);
 }

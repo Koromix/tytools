@@ -40,7 +40,8 @@
 #include "platform.h"
 
 struct hs_monitor {
-    _HS_MONITOR
+    _hs_filter filter;
+    _hs_htable devices;
 
     IONotificationPortRef notify_port;
     int kqfd;
@@ -417,7 +418,9 @@ static int attached_callback(hs_device *dev, void *udata)
 {
     hs_monitor *monitor = udata;
 
-    return _hs_monitor_add(monitor, dev, monitor->callback, monitor->callback_udata);
+    if (!_hs_filter_match_device(&monitor->filter, dev))
+        return 0;
+    return _hs_monitor_add(&monitor->devices, dev, monitor->callback, monitor->callback_udata);
 }
 
 static void darwin_devices_attached(void *udata, io_iterator_t it)
@@ -442,7 +445,7 @@ static void darwin_devices_detached(void *udata, io_iterator_t it)
             char key[32];
 
             sprintf(key, "%"PRIx64, session);
-            _hs_monitor_remove(monitor, key, monitor->callback, monitor->callback_udata);
+            _hs_monitor_remove(&monitor->devices, key, monitor->callback, monitor->callback_udata);
         }
 
         IOObjectRelease(service);
@@ -544,7 +547,11 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
 
     monitor->kqfd = -1;
 
-    r = _hs_monitor_init(monitor, matches, count);
+    r = _hs_filter_init(&monitor->filter, matches, count);
+    if (r < 0)
+        goto error;
+
+    r = _hs_htable_init(&monitor->devices, 64);
     if (r < 0)
         goto error;
 
@@ -603,7 +610,9 @@ void hs_monitor_free(hs_monitor *monitor)
             IONotificationPortDestroy(monitor->notify_port);
         close(monitor->kqfd);
 
-        _hs_monitor_release(monitor);
+        _hs_monitor_clear_devices(&monitor->devices);
+        _hs_htable_release(&monitor->devices);
+        _hs_filter_release(&monitor->filter);
     }
 
     free(monitor);
@@ -617,7 +626,11 @@ hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor)
 
 static int start_enumerate_callback(hs_device *dev, void *udata)
 {
-    return _hs_monitor_add(udata, dev, NULL, NULL);
+    hs_monitor *monitor = udata;
+
+    if (!_hs_filter_match_device(&monitor->filter, dev))
+        return 0;
+    return _hs_monitor_add(&monitor->devices, dev, NULL, NULL);
 }
 
 int hs_monitor_start(hs_monitor *monitor)
@@ -664,7 +677,7 @@ void hs_monitor_stop(hs_monitor *monitor)
     if (!monitor->started)
         return;
 
-    _hs_monitor_clear(monitor);
+    _hs_monitor_clear_devices(&monitor->devices);
     for (unsigned int i = 0; i < monitor->iterator_count; i++) {
         clear_iterator(monitor->iterators[i]);
         IOObjectRelease(monitor->iterators[i]);
@@ -724,4 +737,9 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
     }
 
     return r;
+}
+
+int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
+{
+    return _hs_monitor_list(&monitor->devices, f, udata);
 }
