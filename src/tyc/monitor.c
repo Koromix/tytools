@@ -23,28 +23,28 @@ enum {
 #define BUFFER_SIZE 8192
 #define ERROR_IO_TIMEOUT 5000
 
-static int terminal_flags = 0;
-static hs_serial_config serial_config = {0};
-static int directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
-static bool reconnect = false;
-static int timeout_eof = 200;
+static int monitor_term_flags = 0;
+static hs_serial_config monitor_serial_config = {0};
+static int monitor_directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
+static bool monitor_reconnect = false;
+static int monitor_timeout_eof = 200;
 
 #ifdef _WIN32
-static bool fake_echo;
+static bool monitor_fake_echo;
 
-static bool input_run = true;
-static HANDLE input_thread;
+static bool monitor_input_run = true;
+static HANDLE monitor_input_thread;
 
-static HANDLE input_available;
-static HANDLE input_processed;
+static HANDLE monitor_input_available;
+static HANDLE monitor_input_processed;
 
-static char input_line[BUFFER_SIZE];
-static ssize_t input_ret;
+static char monitor_input_line[BUFFER_SIZE];
+static ssize_t monitor_input_ret;
 #endif
 
 static void print_monitor_usage(FILE *f)
 {
-    fprintf(f, "usage: %s monitor [options]\n\n", executable_name);
+    fprintf(f, "usage: %s monitor [options]\n\n", tyc_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -56,7 +56,7 @@ static void print_monitor_usage(FILE *f)
                "   -D, --direction <dir>    Open serial connection in given direction\n"
                "                            Supports input, output, both (default)\n"
                "       --timeout-eof <ms>   Time before closing after EOF on standard input\n"
-               "                            Defaults to %d ms, use -1 to disable\n\n", timeout_eof);
+               "                            Defaults to %d ms, use -1 to disable\n\n", monitor_timeout_eof);
 
     fprintf(f, "Serial settings:\n"
                "   -b, --baudrate <rate>    Use baudrate for serial port\n"
@@ -98,11 +98,12 @@ static unsigned int __stdcall stdin_thread(void *udata)
     BOOL success;
     int r;
 
-    while (input_run) {
-        WaitForSingleObject(input_processed, INFINITE);
-        ResetEvent(input_processed);
+    while (monitor_input_run) {
+        WaitForSingleObject(monitor_input_processed, INFINITE);
+        ResetEvent(monitor_input_processed);
 
-        success = ReadFile(GetStdHandle(STD_INPUT_HANDLE), input_line, sizeof(input_line), &len, NULL);
+        success = ReadFile(GetStdHandle(STD_INPUT_HANDLE), monitor_input_line,
+                           sizeof(monitor_input_line), &len, NULL);
         if (!success) {
             r = ty_error(TY_ERROR_IO, "I/O error while reading standard input");
             goto error;
@@ -112,30 +113,30 @@ static unsigned int __stdcall stdin_thread(void *udata)
             goto error;
         }
 
-        input_ret = (ssize_t)len;
-        SetEvent(input_available);
+        monitor_input_ret = (ssize_t)len;
+        SetEvent(monitor_input_available);
     }
 
     return 0;
 
 error:
-    input_ret = r;
-    SetEvent(input_available);
+    monitor_input_ret = r;
+    SetEvent(monitor_input_available);
     return 0;
 }
 
 static int start_stdin_thread(void)
 {
-    input_available = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (!input_available)
+    monitor_input_available = CreateEvent(NULL, TRUE, FALSE, NULL);
+    if (!monitor_input_available)
         return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
 
-    input_processed = CreateEvent(NULL, TRUE, TRUE, NULL);
-    if (!input_processed)
+    monitor_input_processed = CreateEvent(NULL, TRUE, TRUE, NULL);
+    if (!monitor_input_processed)
         return ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
 
-    input_thread = (HANDLE)_beginthreadex(NULL, 0, stdin_thread, NULL, 0, NULL);
-    if (!input_thread)
+    monitor_input_thread = (HANDLE)_beginthreadex(NULL, 0, stdin_thread, NULL, 0, NULL);
+    if (!monitor_input_thread)
         return ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
 
     return 0;
@@ -143,14 +144,14 @@ static int start_stdin_thread(void)
 
 static void stop_stdin_thread(void)
 {
-    if (input_thread) {
+    if (monitor_input_thread) {
         CONSOLE_SCREEN_BUFFER_INFO sb;
         INPUT_RECORD ir = {0};
         DWORD written;
 
         // This is not enough because the background thread may be blocked in ReadFile
-        input_run = false;
-        SetEvent(input_processed);
+        monitor_input_run = false;
+        SetEvent(monitor_input_processed);
 
         /* We'll soon push VK_RETURN to the console input, which will result in a newline,
            so move the cursor up one line to avoid showing it. */
@@ -169,14 +170,14 @@ static void stop_stdin_thread(void)
         // Write a newline to snap the background thread out of the blocking ReadFile call
         WriteConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &ir, 1, &written);
 
-        WaitForSingleObject(input_thread, INFINITE);
-        CloseHandle(input_thread);
+        WaitForSingleObject(monitor_input_thread, INFINITE);
+        CloseHandle(monitor_input_thread);
     }
 
-    if (input_processed)
-        CloseHandle(input_processed);
-    if (input_available)
-        CloseHandle(input_available);
+    if (monitor_input_processed)
+        CloseHandle(monitor_input_processed);
+    if (monitor_input_available)
+        CloseHandle(monitor_input_available);
 }
 
 #endif
@@ -191,7 +192,7 @@ static int open_serial_interface(ty_board *board, ty_board_interface **riface)
         return r;
 
     if (hs_device_get_type(ty_board_interface_get_device(iface)) == HS_DEVICE_TYPE_SERIAL) {
-        r = hs_serial_set_config(ty_board_interface_get_handle(iface), &serial_config);
+        r = hs_serial_set_config(ty_board_interface_get_handle(iface), &monitor_serial_config);
         if (r < 0)
             return (int)r;
     }
@@ -214,18 +215,18 @@ static int fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
     if (r < 0)
         return r;
 
-    if (directions & DIRECTION_INPUT)
+    if (monitor_directions & DIRECTION_INPUT)
         ty_board_interface_get_descriptors(iface, set, 2);
 #ifdef _WIN32
-    if (directions & DIRECTION_OUTPUT) {
-        if (input_available) {
-            ty_descriptor_set_add(set, input_available, 3);
+    if (monitor_directions & DIRECTION_OUTPUT) {
+        if (monitor_input_available) {
+            ty_descriptor_set_add(set, monitor_input_available, 3);
         } else {
             ty_descriptor_set_add(set, GetStdHandle(STD_INPUT_HANDLE), 3);
         }
     }
 #else
-    if (directions & DIRECTION_OUTPUT)
+    if (monitor_directions & DIRECTION_OUTPUT)
         ty_descriptor_set_add(set, STDIN_FILENO, 3);
 #endif
 
@@ -270,7 +271,7 @@ restart:
                 return (int)r;
 
             if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL)) {
-                if (!reconnect)
+                if (!monitor_reconnect)
                     return 0;
 
                 ty_log(TY_LOG_INFO, "Waiting for '%s'...", ty_board_get_tag(board));
@@ -286,7 +287,7 @@ restart:
         case 2:
             r = ty_board_serial_read(board, buf, sizeof(buf), 0);
             if (r < 0) {
-                if (r == TY_ERROR_IO && reconnect) {
+                if (r == TY_ERROR_IO && monitor_reconnect) {
                     timeout = ERROR_IO_TIMEOUT;
                     ty_descriptor_set_remove(&set, 2);
                     ty_descriptor_set_remove(&set, 3);
@@ -311,15 +312,15 @@ restart:
 
         case 3:
 #ifdef _WIN32
-            if (input_available) {
-                if (input_ret < 0)
-                    return (int)input_ret;
+            if (monitor_input_available) {
+                if (monitor_input_ret < 0)
+                    return (int)monitor_input_ret;
 
-                memcpy(buf, input_line, (size_t)input_ret);
-                r = input_ret;
+                memcpy(buf, monitor_input_line, (size_t)monitor_input_ret);
+                r = monitor_input_ret;
 
-                ResetEvent(input_available);
-                SetEvent(input_processed);
+                ResetEvent(monitor_input_available);
+                SetEvent(monitor_input_processed);
             } else {
                 r = read(STDIN_FILENO, buf, sizeof(buf));
             }
@@ -333,10 +334,10 @@ restart:
                                 strerror(errno));
             }
             if (!r) {
-                if (timeout_eof >= 0) {
+                if (monitor_timeout_eof >= 0) {
                     /* EOF reached, don't listen to stdin anymore, and start timeout to give some
                        time for the device to send any data before closing down. */
-                    timeout = timeout_eof;
+                    timeout = monitor_timeout_eof;
                     ty_descriptor_set_remove(&set, 1);
                     ty_descriptor_set_remove(&set, 3);
                 }
@@ -344,7 +345,7 @@ restart:
             }
 
 #ifdef _WIN32
-            if (fake_echo) {
+            if (monitor_fake_echo) {
                 r = write(outfd, buf, (unsigned int)r);
                 if (r < 0)
                     return (int)r;
@@ -353,7 +354,7 @@ restart:
 
             r = ty_board_serial_write(board, buf, (size_t)r);
             if (r < 0) {
-                if (r == TY_ERROR_IO && reconnect) {
+                if (r == TY_ERROR_IO && monitor_reconnect) {
                     timeout = ERROR_IO_TIMEOUT;
                     ty_descriptor_set_remove(&set, 2);
                     ty_descriptor_set_remove(&set, 3);
@@ -389,7 +390,7 @@ int monitor(int argc, char *argv[])
             }
 
             errno = 0;
-            serial_config.baudrate = (uint32_t)strtoul(value, NULL, 10);
+            monitor_serial_config.baudrate = (uint32_t)strtoul(value, NULL, 10);
             if (errno) {
                 ty_log(TY_LOG_ERROR, "--baudrate requires a number");
                 print_monitor_usage(stderr);
@@ -403,8 +404,8 @@ int monitor(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            serial_config.databits = (unsigned int)strtoul(value, NULL, 10);
-            if (serial_config.databits < 5 || serial_config.databits > 8) {
+            monitor_serial_config.databits = (unsigned int)strtoul(value, NULL, 10);
+            if (monitor_serial_config.databits < 5 || monitor_serial_config.databits > 8) {
                 ty_log(TY_LOG_ERROR, "--databits must be one of: 5, 6, 7 or 8");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
@@ -417,8 +418,8 @@ int monitor(int argc, char *argv[])
                 return EXIT_FAILURE;
             }
 
-            serial_config.stopbits = (unsigned int)strtoul(value, NULL, 10);
-            if (serial_config.stopbits < 1 || serial_config.stopbits > 2) {
+            monitor_serial_config.stopbits = (unsigned int)strtoul(value, NULL, 10);
+            if (monitor_serial_config.stopbits < 1 || monitor_serial_config.stopbits > 2) {
                 ty_log(TY_LOG_ERROR, "--stopbits must be one of: 1 or 2");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
@@ -432,11 +433,11 @@ int monitor(int argc, char *argv[])
             }
 
             if (strcmp(value, "input") == 0) {
-                directions = DIRECTION_INPUT;
+                monitor_directions = DIRECTION_INPUT;
             } else if (strcmp(value, "output") == 0) {
-                directions = DIRECTION_OUTPUT;
+                monitor_directions = DIRECTION_OUTPUT;
             } else if (strcmp(value, "both") == 0) {
-                directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
+                monitor_directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
             } else {
                 ty_log(TY_LOG_ERROR, "--direction must be one of: input, output or both");
                 print_monitor_usage(stderr);
@@ -451,14 +452,14 @@ int monitor(int argc, char *argv[])
             }
 
             if (strcmp(value, "off") == 0) {
-                serial_config.rts = HS_SERIAL_CONFIG_RTS_OFF;
-                serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
+                monitor_serial_config.rts = HS_SERIAL_CONFIG_RTS_OFF;
+                monitor_serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
             } else if (strcmp(value, "xonxoff") == 0) {
-                serial_config.rts = HS_SERIAL_CONFIG_RTS_OFF;
-                serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_INOUT;
+                monitor_serial_config.rts = HS_SERIAL_CONFIG_RTS_OFF;
+                monitor_serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_INOUT;
             } else if (strcmp(value, "rtscts") == 0) {
-                serial_config.rts = HS_SERIAL_CONFIG_RTS_FLOW;
-                serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
+                monitor_serial_config.rts = HS_SERIAL_CONFIG_RTS_FLOW;
+                monitor_serial_config.xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
             } else if (strcmp(value, "off") != 0) {
                 ty_log(TY_LOG_ERROR, "--flow must be one of: off, rtscts or xonxoff");
                 print_monitor_usage(stderr);
@@ -473,26 +474,26 @@ int monitor(int argc, char *argv[])
             }
 
             if (strcmp(value, "off") == 0) {
-                serial_config.parity = HS_SERIAL_CONFIG_PARITY_OFF;
+                monitor_serial_config.parity = HS_SERIAL_CONFIG_PARITY_OFF;
             } else if (strcmp(value, "even") == 0) {
-                serial_config.parity = HS_SERIAL_CONFIG_PARITY_EVEN;
+                monitor_serial_config.parity = HS_SERIAL_CONFIG_PARITY_EVEN;
             } else if (strcmp(value, "odd") == 0) {
-                serial_config.parity = HS_SERIAL_CONFIG_PARITY_ODD;
+                monitor_serial_config.parity = HS_SERIAL_CONFIG_PARITY_ODD;
             } else if (strcmp(value, "mark") == 0) {
-                serial_config.parity = HS_SERIAL_CONFIG_PARITY_MARK;
+                monitor_serial_config.parity = HS_SERIAL_CONFIG_PARITY_MARK;
             } else if (strcmp(value, "space") == 0) {
-                serial_config.parity = HS_SERIAL_CONFIG_PARITY_SPACE;
+                monitor_serial_config.parity = HS_SERIAL_CONFIG_PARITY_SPACE;
             } else {
                 ty_log(TY_LOG_ERROR, "--parity must be one of: off, even, mark or space");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
         } else if (strcmp(opt, "--raw") == 0 || strcmp(opt, "-r") == 0) {
-            terminal_flags |= TY_TERMINAL_RAW;
+            monitor_term_flags |= TY_TERMINAL_RAW;
         } else if (strcmp(opt, "--reconnect") == 0 || strcmp(opt, "-R") == 0) {
-            reconnect = true;
+            monitor_reconnect = true;
         } else if (strcmp(opt, "--silent") == 0 || strcmp(opt, "-s") == 0) {
-            terminal_flags |= TY_TERMINAL_SILENT;
+            monitor_term_flags |= TY_TERMINAL_SILENT;
         } else if (strcmp(opt, "--timeout-eof") == 0) {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
@@ -502,14 +503,14 @@ int monitor(int argc, char *argv[])
             }
 
             errno = 0;
-            timeout_eof = (int)strtol(value, NULL, 10);
+            monitor_timeout_eof = (int)strtol(value, NULL, 10);
             if (errno) {
                 ty_log(TY_LOG_ERROR, "--timeout requires a number");
                 print_monitor_usage(stderr);
                 return EXIT_FAILURE;
             }
-            if (timeout_eof < 0)
-                timeout_eof = -1;
+            if (monitor_timeout_eof < 0)
+                monitor_timeout_eof = -1;
         } else if (!parse_common_option(&optl, opt)) {
             print_monitor_usage(stderr);
             return EXIT_FAILURE;
@@ -523,11 +524,11 @@ int monitor(int argc, char *argv[])
 
     if (ty_standard_get_modes(TY_STANDARD_INPUT) & TY_DESCRIPTOR_MODE_TERMINAL) {
 #ifdef _WIN32
-        if (terminal_flags & TY_TERMINAL_RAW && !(terminal_flags & TY_TERMINAL_SILENT)) {
-            terminal_flags |= TY_TERMINAL_SILENT;
+        if (monitor_term_flags & TY_TERMINAL_RAW && !(monitor_term_flags & TY_TERMINAL_SILENT)) {
+            monitor_term_flags |= TY_TERMINAL_SILENT;
 
             if (ty_standard_get_modes(TY_STANDARD_OUTPUT) & TY_DESCRIPTOR_MODE_TERMINAL)
-                fake_echo = true;
+                monitor_fake_echo = true;
         }
 
         /* Unlike POSIX platforms, Windows does not implement the console line editing behavior
@@ -540,14 +541,14 @@ int monitor(int argc, char *argv[])
          * and pass the lines in a buffer. When a new line is entered, the input_available
          * event is set to signal the poll in loop(). I also tried to use an anonymous pipe to
          * make it simpler, but the Wait functions do not support them. */
-        if (directions & DIRECTION_OUTPUT && !(terminal_flags & TY_TERMINAL_RAW)) {
+        if (monitor_directions & DIRECTION_OUTPUT && !(monitor_term_flags & TY_TERMINAL_RAW)) {
             r = start_stdin_thread();
             if (r < 0)
                 goto cleanup;
         }
 #endif
 
-        r = ty_terminal_setup(terminal_flags);
+        r = ty_terminal_setup(monitor_term_flags);
         if (r < 0)
             goto cleanup;
     }

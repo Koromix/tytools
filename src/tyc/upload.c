@@ -10,11 +10,11 @@
 #include "main.h"
 
 static int upload_flags = 0;
-static const char *firmware_format = NULL;
+static const char *upload_firmware_format = NULL;
 
 static void print_upload_usage(FILE *f)
 {
-    fprintf(f, "usage: %s upload [options] <firmwares>\n\n", executable_name);
+    fprintf(f, "usage: %s upload [options] <firmwares>\n\n", tyc_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -54,8 +54,8 @@ int upload(int argc, char *argv[])
         } else if (strcmp(opt, "--noreset") == 0) {
             upload_flags |= TY_UPLOAD_NORESET;
         } else if (strcmp(opt, "--format") == 0 || strcmp(opt, "-f") == 0) {
-            firmware_format = ty_optline_get_value(&optl);
-            if (!firmware_format) {
+            upload_firmware_format = ty_optline_get_value(&optl);
+            if (!upload_firmware_format) {
                 ty_log(TY_LOG_ERROR, "Option '--format' takes an argument");
                 print_upload_usage(stderr);
                 return EXIT_FAILURE;
@@ -73,7 +73,7 @@ int upload(int argc, char *argv[])
             break;
         }
 
-        r = ty_firmware_load(opt, firmware_format, &fws[fws_count]);
+        r = ty_firmware_load(opt, upload_firmware_format, &fws[fws_count]);
         if (!r)
             fws_count++;
     }

@@ -18,17 +18,17 @@ enum collection_type {
     COLLECTION_OBJECT = '{'
 };
 
-static enum output_format output = OUTPUT_PLAIN;
-static bool verbose = false;
-static bool watch = false;
+static enum output_format list_output = OUTPUT_PLAIN;
+static bool list_verbose = false;
+static bool list_watch = false;
 
-static enum collection_type collections[8];
-static unsigned int collection_depth;
-static bool collection_started;
+static enum collection_type list_collections[8];
+static unsigned int list_collection_depth;
+static bool list_collection_started;
 
 static void print_list_usage(FILE *f)
 {
-    fprintf(f, "usage: %s list [options]\n\n", executable_name);
+    fprintf(f, "usage: %s list [options]\n\n", tyc_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -61,19 +61,20 @@ static void print_field(const char *key, const char *format, ...)
         value[0] = 0;
     }
 
-    switch (output) {
+    switch (list_output) {
     case OUTPUT_PLAIN:
         if (key || format)
-            printf("\n%*s%c ", collection_depth * 2, "", collection_depth % 2 ? '+' : '-');
+            printf("\n%*s%c ", list_collection_depth * 2, "", list_collection_depth % 2 ? '+' : '-');
         if (key)
             printf("%s: ", key);
         printf("%s", value);
         break;
 
     case OUTPUT_JSON:
-        if (collection_started)
+        if (list_collection_started)
             printf(", ");
-        if (collection_depth && collections[collection_depth - 1] == COLLECTION_LIST && key && format) {
+        if (list_collection_depth && list_collections[list_collection_depth - 1] == COLLECTION_LIST &&
+                key && format) {
             if (numeric) {
                 printf("[\"%s\", %s]", key, value);
             } else {
@@ -91,37 +92,37 @@ static void print_field(const char *key, const char *format, ...)
         break;
     }
 
-    collection_started = true;
+    list_collection_started = true;
 }
 
 static void start_collection(const char *key, enum collection_type type)
 {
     print_field(key, NULL);
-    if (output == OUTPUT_JSON)
+    if (list_output == OUTPUT_JSON)
         printf("%c", type);
 
-    assert(collection_depth < TY_COUNTOF(collections));
-    collections[collection_depth++] = type;
+    assert(list_collection_depth < TY_COUNTOF(list_collections));
+    list_collections[list_collection_depth++] = type;
 
-    collection_started = false;
+    list_collection_started = false;
 }
 
 static void end_collection(void)
 {
-    assert(collection_depth);
-    collection_depth--;
+    assert(list_collection_depth);
+    list_collection_depth--;
 
-    switch (output) {
+    switch (list_output) {
     case OUTPUT_PLAIN:
-        if (!collection_started && collections[collection_depth] == COLLECTION_LIST)
+        if (!list_collection_started && list_collections[list_collection_depth] == COLLECTION_LIST)
             printf("(none)");
         break;
     case OUTPUT_JSON:
-        printf("%c", collections[collection_depth] + 2);
+        printf("%c", list_collections[list_collection_depth] + 2);
         break;
     }
 
-    collection_started = !!collection_depth;
+    list_collection_started = !!list_collection_depth;
 }
 
 static int print_interface_info(ty_board_interface *iface, void *udata)
@@ -158,7 +159,7 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
 
     start_collection(NULL, COLLECTION_OBJECT);
 
-    if (output == OUTPUT_PLAIN) {
+    if (list_output == OUTPUT_PLAIN) {
         printf("%s %s %s", action, ty_board_get_tag(board), ty_models[model].name);
         if (ty_board_get_description(board))
             printf(" (%s)", ty_board_get_description(board));
@@ -171,7 +172,8 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
         print_field("model", "%s", ty_models[model].name);
     }
 
-    if (verbose && ((event != TY_MONITOR_EVENT_DROPPED && event != TY_MONITOR_EVENT_DISAPPEARED) || output != OUTPUT_PLAIN)) {
+    if (list_verbose && ((event != TY_MONITOR_EVENT_DROPPED && event != TY_MONITOR_EVENT_DISAPPEARED) ||
+                         list_output != OUTPUT_PLAIN)) {
         print_field("location", "%s", ty_board_get_location(board));
 
         int capabilities = ty_board_get_capabilities(board);
@@ -216,18 +218,18 @@ int list(int argc, char *argv[])
             }
 
             if (strcmp(value, "plain") == 0) {
-                output = OUTPUT_PLAIN;
+                list_output = OUTPUT_PLAIN;
             } else if (strcmp(value, "json") == 0) {
-                output = OUTPUT_JSON;
+                list_output = OUTPUT_JSON;
             } else {
                 ty_log(TY_LOG_ERROR, "--output must be one off plain or json");
                 print_list_usage(stderr);
                 return EXIT_FAILURE;
             }
         } else if (strcmp(opt, "--verbose") == 0 || strcmp(opt, "-v") == 0) {
-            verbose = true;
+            list_verbose = true;
         } else if (strcmp(opt, "--watch") == 0 || strcmp(opt, "-w") == 0) {
-            watch = true;
+            list_watch = true;
         } else if (!parse_common_option(&optl, opt)) {
             print_list_usage(stderr);
             return EXIT_FAILURE;
@@ -247,7 +249,7 @@ int list(int argc, char *argv[])
     if (r < 0)
         return EXIT_FAILURE;
 
-    if (watch) {
+    if (list_watch) {
         r = ty_monitor_register_callback(monitor, list_callback, NULL);
         if (r < 0)
             return EXIT_FAILURE;

@@ -9,12 +9,12 @@
 #include "main.h"
 #include "../libty/firmware.h"
 
-static const char *firmware_format = NULL;
-static bool output_json = false;
+static const char *identify_firmware_format = NULL;
+static bool identify_output_json = false;
 
 static void print_identify_usage(FILE *f)
 {
-    fprintf(f, "usage: %s identify [options] <firmwares>\n\n", executable_name);
+    fprintf(f, "usage: %s identify [options] <firmwares>\n\n", tyc_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -35,14 +35,14 @@ int identify(int argc, char *argv[])
             print_identify_usage(stdout);
             return EXIT_SUCCESS;
         } else if (strcmp(opt, "--format") == 0 || strcmp(opt, "-f") == 0) {
-            firmware_format = ty_optline_get_value(&optl);
-            if (!firmware_format) {
+            identify_firmware_format = ty_optline_get_value(&optl);
+            if (!identify_firmware_format) {
                 ty_log(TY_LOG_ERROR, "Option '--format' takes an argument");
                 print_identify_usage(stderr);
                 return EXIT_FAILURE;
             }
         } else if (strcmp(opt, "--json") == 0 || strcmp(opt, "-j") == 0) {
-            output_json = true;
+            identify_output_json = true;
         } else if (!parse_common_option(&optl, opt)) {
             print_identify_usage(stderr);
             return EXIT_FAILURE;
@@ -61,12 +61,12 @@ int identify(int argc, char *argv[])
         unsigned int fw_models_count = 0;
         int r;
 
-        r = ty_firmware_load(opt, firmware_format, &fw);
+        r = ty_firmware_load(opt, identify_firmware_format, &fw);
         if (!r)
             fw_models_count = ty_firmware_identify(fw, fw_models, TY_COUNTOF(fw_models));
         ty_firmware_unref(fw);
 
-        if (output_json) {
+        if (identify_output_json) {
             printf("{\"file\": \"%s\", \"models\": [", opt);
             if (fw_models_count) {
                 printf("\"%s\"", ty_models[fw_models[0]].name);

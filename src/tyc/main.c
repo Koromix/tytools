@@ -34,21 +34,21 @@ static const struct command commands[] = {
     {0}
 };
 
-const char *executable_name;
+const char *tyc_executable_name;
 
-static const char *board_tag = NULL;
+static const char *main_board_tag = NULL;
 
-static ty_monitor *board_monitor;
+static ty_monitor *main_board_monitor;
 static ty_board *main_board;
 
 static void print_version(FILE *f)
 {
-    fprintf(f, "%s %s\n", executable_name, ty_version_string());
+    fprintf(f, "%s %s\n", tyc_executable_name, ty_version_string());
 }
 
 static void print_main_usage(FILE *f)
 {
-    fprintf(f, "usage: %s <command> [options]\n\n", executable_name);
+    fprintf(f, "usage: %s <command> [options]\n\n", tyc_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -80,7 +80,7 @@ static int board_callback(ty_board *board, ty_monitor_event event, void *udata)
 
     switch (event) {
     case TY_MONITOR_EVENT_ADDED:
-        if (!main_board && ty_board_matches_tag(board, board_tag))
+        if (!main_board && ty_board_matches_tag(board, main_board_tag))
             main_board = ty_board_ref(board);
         break;
 
@@ -101,7 +101,7 @@ static int board_callback(ty_board *board, ty_monitor_event event, void *udata)
 
 static int init_monitor()
 {
-    if (board_monitor)
+    if (main_board_monitor)
         return 0;
 
     ty_monitor *monitor = NULL;
@@ -119,7 +119,7 @@ static int init_monitor()
     if (r < 0)
         goto error;
 
-    board_monitor = monitor;
+    main_board_monitor = monitor;
     return 0;
 
 error:
@@ -133,7 +133,7 @@ int get_monitor(ty_monitor **rmonitor)
     if (r < 0)
         return r;
 
-    *rmonitor = board_monitor;
+    *rmonitor = main_board_monitor;
     return 0;
 }
 
@@ -144,8 +144,8 @@ int get_board(ty_board **rboard)
         return r;
 
     if (!main_board) {
-        if (board_tag) {
-            return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' not found", board_tag);
+        if (main_board_tag) {
+            return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' not found", main_board_tag);
         } else {
             return ty_error(TY_ERROR_NOT_FOUND, "No board available");
         }
@@ -158,8 +158,8 @@ int get_board(ty_board **rboard)
 bool parse_common_option(ty_optline_context *optl, char *arg)
 {
     if (strcmp(arg, "--board") == 0 || strcmp(arg, "-B") == 0) {
-        board_tag = ty_optline_get_value(optl);
-        if (!board_tag) {
+        main_board_tag = ty_optline_get_value(optl);
+        if (!main_board_tag) {
             ty_log(TY_LOG_ERROR, "Option '--board' takes an argument");
             return false;
         }
@@ -179,14 +179,14 @@ int main(int argc, char *argv[])
     int r;
 
     if (argc && *argv[0]) {
-        executable_name = argv[0] + strlen(argv[0]);
-        while (executable_name > argv[0] && !strchr(TY_PATH_SEPARATORS, executable_name[-1]))
-            executable_name--;
+        tyc_executable_name = argv[0] + strlen(argv[0]);
+        while (tyc_executable_name > argv[0] && !strchr(TY_PATH_SEPARATORS, tyc_executable_name[-1]))
+            tyc_executable_name--;
     } else {
 #ifdef _WIN32
-        executable_name = TY_CONFIG_TYC_EXECUTABLE ".exe";
+        tyc_executable_name = TY_CONFIG_TYC_EXECUTABLE ".exe";
 #else
-        executable_name = TY_CONFIG_TYC_EXECUTABLE;
+        tyc_executable_name = TY_CONFIG_TYC_EXECUTABLE;
 #endif
     }
 
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
     r = (*cmd->f)(argc - 1, argv + 1);
 
     ty_board_unref(main_board);
-    ty_monitor_free(board_monitor);
+    ty_monitor_free(main_board_monitor);
 
     return r;
 }

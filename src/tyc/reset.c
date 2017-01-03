@@ -8,11 +8,11 @@
 #include "../libty/task.h"
 #include "main.h"
 
-static bool bootloader = false;
+static bool reset_bootloader = false;
 
 static void print_reset_usage(FILE *f)
 {
-    fprintf(f, "usage: %s reset\n\n", executable_name);
+    fprintf(f, "usage: %s reset\n\n", tyc_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -35,7 +35,7 @@ int reset(int argc, char *argv[])
             print_reset_usage(stdout);
             return EXIT_SUCCESS;
         } else if (strcmp(opt, "-b") == 0 || strcmp(opt, "--bootloader") == 0) {
-            bootloader = true;
+            reset_bootloader = true;
         } else if (!parse_common_option(&optl, opt)) {
             print_reset_usage(stderr);
             return EXIT_FAILURE;
@@ -51,7 +51,7 @@ int reset(int argc, char *argv[])
     if (r < 0)
         goto cleanup;
 
-    if (bootloader) {
+    if (reset_bootloader) {
         r = ty_reboot(board, &task);
     } else {
         r = ty_reset(board, &task);
