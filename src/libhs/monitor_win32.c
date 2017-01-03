@@ -1027,7 +1027,7 @@ static int enumerate_setup_class(const GUID *guid, const _hs_filter *filter, hs_
 {
     HDEVINFO set = NULL;
     SP_DEVINFO_DATA info;
-    hs_device *dev;
+    hs_device *dev = NULL;
     int r;
 
     set = SetupDiGetClassDevs(guid, NULL, NULL, DIGCF_PRESENT);

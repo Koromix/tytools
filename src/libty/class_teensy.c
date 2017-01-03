@@ -522,8 +522,8 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
 static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
                          ty_board_upload_progress_func *pf, void *udata)
 {
-    unsigned int halfkay_version;
-    size_t block_size;
+    unsigned int halfkay_version = 0;
+    size_t block_size = 0;
     int r;
 
     r = get_halfkay_settings(iface->model, &halfkay_version, &block_size);
@@ -560,8 +560,8 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
 
 static int teensy_reset(ty_board_interface *iface)
 {
-    unsigned int halfkay_version;
-    size_t block_size;
+    unsigned int halfkay_version = 0;
+    size_t block_size = 0;
 
     int r = get_halfkay_settings(iface->model, &halfkay_version, &block_size);
     if (r < 0)

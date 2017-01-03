@@ -784,7 +784,7 @@ int ty_reset(ty_board *board, ty_task **rtask)
     assert(board);
     assert(rtask);
 
-    ty_task *task;
+    ty_task *task = NULL;
     int r;
 
     r = new_board_task(board, "reset", run_reset, &task);
@@ -833,7 +833,7 @@ int ty_reboot(ty_board *board, ty_task **rtask)
     assert(board);
     assert(rtask);
 
-    ty_task *task;
+    ty_task *task = NULL;
     int r;
 
     r = new_board_task(board, "reboot", run_reboot, &task);
