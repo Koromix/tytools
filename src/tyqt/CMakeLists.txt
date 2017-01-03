@@ -77,10 +77,12 @@ if(APPLE)
     set_target_properties(tyqt PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${TY_CONFIG_TYQT_NAME}
                                           MACOSX_BUNDLE_ICON_FILE ${_icon_file_name})
 endif()
+enable_unity_build(tyqt)
 
 if(WIN32)
     add_executable(tyqtc tyqtc.c)
     set_target_properties(tyqtc PROPERTIES OUTPUT_NAME ${TY_CONFIG_TYQT_EXECUTABLE}c)
+    enable_unity_build(tyqtc)
 endif()
 
 if(WIN32)

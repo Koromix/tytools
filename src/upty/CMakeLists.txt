@@ -59,6 +59,7 @@ if(APPLE)
     set_target_properties(upty PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${TY_CONFIG_UPTY_NAME}
                                           MACOSX_BUNDLE_ICON_FILE ${_icon_file_name})
 endif()
+enable_unity_build(upty)
 
 if(WIN32)
     install(TARGETS upty RUNTIME DESTINATION .)

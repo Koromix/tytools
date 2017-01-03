@@ -8,6 +8,7 @@ cmake_minimum_required(VERSION 3.0)
 project(ty C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+include("cmake/Utility.cmake")
 
 if(TY_CONFIG_VARIANT)
     if(IS_ABSOLUTE ${TY_CONFIG_VARIANT})
