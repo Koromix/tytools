@@ -30,7 +30,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "device_posix_priv.h"
+#include "device_priv.h"
 #include "hid.h"
 #include "platform.h"
 
@@ -61,7 +61,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
         uint64_t start;
 
         pfd.events = POLLIN;
-        pfd.fd = h->fd;
+        pfd.fd = h->u.file.fd;
 
         start = hs_millis();
 restart:
@@ -81,24 +81,24 @@ restart:
         /* Work around a hidraw bug introduced in Linux 2.6.28 and fixed in Linux 2.6.34, see
            https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a38f2c7c4dd53d5be097930902c108e362584a3 */
         if (detect_kernel26_byte_bug()) {
-            if (size + 1 > h->read_buf_size) {
-                free(h->read_buf);
-                h->read_buf_size = 0;
+            if (size + 1 > h->u.file.read_buf_size) {
+                free(h->u.file.read_buf);
+                h->u.file.read_buf_size = 0;
 
-                h->read_buf = malloc(size + 1);
-                if (!h->read_buf)
+                h->u.file.read_buf = malloc(size + 1);
+                if (!h->u.file.read_buf)
                     return hs_error(HS_ERROR_MEMORY, NULL);
-                h->read_buf_size = size + 1;
+                h->u.file.read_buf_size = size + 1;
             }
 
-            r = read(h->fd, h->read_buf, size + 1);
+            r = read(h->u.file.fd, h->u.file.read_buf, size + 1);
             if (r > 0)
-                memcpy(buf, h->read_buf + 1, (size_t)--r);
+                memcpy(buf, h->u.file.read_buf + 1, (size_t)--r);
         } else {
-            r = read(h->fd, buf, size);
+            r = read(h->u.file.fd, buf, size);
         }
     } else {
-        r = read(h->fd, buf + 1, size - 1);
+        r = read(h->u.file.fd, buf + 1, size - 1);
         if (r > 0) {
             buf[0] = 0;
             r++;
@@ -129,7 +129,7 @@ ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
 
 restart:
     // On linux, USB requests timeout after 5000ms and O_NONBLOCK isn't honoured for write
-    r = write(h->fd, (const char *)buf, size);
+    r = write(h->u.file.fd, (const char *)buf, size);
     if (r < 0) {
         if (errno == EINTR)
             goto restart;
@@ -155,7 +155,7 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
         buf[1] = report_id;
 
 restart:
-    r = ioctl(h->fd, HIDIOCGFEATURE(size - 1), (const char *)buf + 1);
+    r = ioctl(h->u.file.fd, HIDIOCGFEATURE(size - 1), (const char *)buf + 1);
     if (r < 0) {
         if (errno == EINTR)
             goto restart;
@@ -181,7 +181,7 @@ ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size
     ssize_t r;
 
 restart:
-    r = ioctl(h->fd, HIDIOCSFEATURE(size), (const char *)buf);
+    r = ioctl(h->u.file.fd, HIDIOCSFEATURE(size), (const char *)buf);
     if (r < 0) {
         if (errno == EINTR)
             goto restart;

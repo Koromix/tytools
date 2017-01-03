@@ -27,7 +27,7 @@
 #include <windows.h>
 #include <hidsdi.h>
 #include <winioctl.h>
-#include "device_win32_priv.h"
+#include "device_priv.h"
 #include "hid.h"
 #include "platform.h"
 
@@ -44,23 +44,23 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    if (h->read_status < 0) {
+    if (h->u.handle.read_status < 0) {
         // Could be a transient error, try to restart it
         _hs_win32_start_async_read(h);
-        if (h->read_status < 0)
-            return h->read_status;
+        if (h->u.handle.read_status < 0)
+            return h->u.handle.read_status;
     }
 
     _hs_win32_finalize_async_read(h, timeout);
-    if (h->read_status <= 0)
-        return h->read_status;
+    if (h->u.handle.read_status <= 0)
+        return h->u.handle.read_status;
 
     /* HID communication is message-based. So if the caller does not provide a big enough
        buffer, we can just discard the extra data, unlike for serial communication. */
-    if (h->read_len) {
-        if (size > h->read_len)
-            size = h->read_len;
-        memcpy(buf, h->read_buf, size);
+    if (h->u.handle.read_len) {
+        if (size > h->u.handle.read_len)
+            size = h->u.handle.read_len;
+        memcpy(buf, h->u.handle.read_buf, size);
     } else {
         size = 0;
     }
@@ -104,14 +104,14 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
     buf[0] = report_id;
     len = (DWORD)size;
 
-    success = DeviceIoControl(h->handle, IOCTL_HID_GET_FEATURE, buf, (DWORD)size, buf,
+    success = DeviceIoControl(h->u.handle.h, IOCTL_HID_GET_FEATURE, buf, (DWORD)size, buf,
                               (DWORD)size, NULL, &ov);
     if (!success && GetLastError() != ERROR_IO_PENDING) {
-        CancelIo(h->handle);
+        CancelIo(h->u.handle.h);
         return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
     }
 
-    success = GetOverlappedResult(h->handle, &ov, &len, TRUE);
+    success = GetOverlappedResult(h->u.handle.h, &ov, &len, TRUE);
     if (!success)
         return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
 
@@ -131,7 +131,7 @@ ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size
         return 0;
 
     // Timeout behavior?
-    BOOL success = HidD_SetFeature(h->handle, (char *)buf, (DWORD)size);
+    BOOL success = HidD_SetFeature(h->u.handle.h, (char *)buf, (DWORD)size);
     if (!success)
         return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
 

@@ -25,7 +25,7 @@
 #include "common_priv.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "device_win32_priv.h"
+#include "device_priv.h"
 #include "platform.h"
 #include "serial.h"
 
@@ -38,7 +38,7 @@ int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
     BOOL success;
 
     dcb.DCBlength = sizeof(dcb);
-    success = GetCommState(h->handle, &dcb);
+    success = GetCommState(h->u.handle.h, &dcb);
     if (!success)
         return hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", h->dev->path,
                         hs_win32_strerror(0));
@@ -178,7 +178,7 @@ int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
         return hs_error(HS_ERROR_SYSTEM, "Invalid XON/XOFF setting: %d", config->xonxoff);
     }
 
-    success = SetCommState(h->handle, &dcb);
+    success = SetCommState(h->u.handle.h, &dcb);
     if (!success)
         return hs_error(HS_ERROR_SYSTEM, "SetCommState() failed on '%s': %s",
                         h->dev->path, hs_win32_strerror(0));
@@ -195,7 +195,7 @@ int hs_serial_get_config(hs_handle *h, hs_serial_config *config)
     BOOL success;
 
     dcb.DCBlength = sizeof(dcb);
-    success = GetCommState(h->handle, &dcb);
+    success = GetCommState(h->u.handle.h, &dcb);
     if (!success)
         return hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", h->dev->path,
                         hs_win32_strerror(0));
@@ -281,32 +281,32 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
-    if (h->read_status < 0) {
+    if (h->u.handle.read_status < 0) {
         // Could be a transient error, try to restart it
         _hs_win32_start_async_read(h);
-        if (h->read_status < 0)
-            return h->read_status;
+        if (h->u.handle.read_status < 0)
+            return h->u.handle.read_status;
     }
 
     /* Serial devices are stream-based. If we don't have any data yet, see if our asynchronous
        read request has returned anything. Then we can just give the user the data we have, until
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
-    if (!h->read_len) {
+    if (!h->u.handle.read_len) {
         _hs_win32_finalize_async_read(h, timeout);
-        if (h->read_status <= 0)
-            return h->read_status;
+        if (h->u.handle.read_status <= 0)
+            return h->u.handle.read_status;
     }
 
-    if (size > h->read_len)
-        size = h->read_len;
-    memcpy(buf, h->read_ptr, size);
-    h->read_ptr += size;
-    h->read_len -= size;
+    if (size > h->u.handle.read_len)
+        size = h->u.handle.read_len;
+    memcpy(buf, h->u.handle.read_ptr, size);
+    h->u.handle.read_ptr += size;
+    h->u.handle.read_len -= size;
 
     /* Our buffer has been fully read, start a new asynchonous request. I don't know how
        much latency this brings. Maybe double buffering would help, but not before any concrete
        benchmarking is done. */
-    if (!h->read_len) {
+    if (!h->u.handle.read_len) {
         hs_error_mask(HS_ERROR_IO);
         _hs_win32_start_async_read(h);
         hs_error_unmask();

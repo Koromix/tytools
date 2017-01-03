@@ -27,7 +27,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
-#include "device_posix_priv.h"
+#include "device_priv.h"
 #include "platform.h"
 #include "serial.h"
 
@@ -40,11 +40,11 @@ int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
     int modem_bits;
     int r;
 
-    r = tcgetattr(h->fd, &tio);
+    r = tcgetattr(h->u.file.fd, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get serial port settings from '%s': %s",
                         h->dev->path, strerror(errno));
-    r = ioctl(h->fd, TIOCMGET, &modem_bits);
+    r = ioctl(h->u.file.fd, TIOCMGET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get modem bits from '%s': %s",
                         h->dev->path, strerror(errno));
@@ -227,11 +227,11 @@ int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
         }
     }
 
-    r = ioctl(h->fd, TIOCMSET, &modem_bits);
+    r = ioctl(h->u.file.fd, TIOCMSET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to set modem bits of '%s': %s",
                         h->dev->path, strerror(errno));
-    r = tcsetattr(h->fd, TCSANOW, &tio);
+    r = tcsetattr(h->u.file.fd, TCSANOW, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to change serial port settings of '%s': %s",
                         h->dev->path, strerror(errno));
@@ -247,11 +247,11 @@ int hs_serial_get_config(hs_handle *h, hs_serial_config *config)
     int modem_bits;
     int r;
 
-    r = tcgetattr(h->fd, &tio);
+    r = tcgetattr(h->u.file.fd, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to read port settings from '%s': %s",
                         h->dev->path, strerror(errno));
-    r = ioctl(h->fd, TIOCMGET, &modem_bits);
+    r = ioctl(h->u.file.fd, TIOCMGET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get modem bits from '%s': %s",
                         h->dev->path, strerror(errno));
@@ -405,7 +405,7 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
         uint64_t start;
 
         pfd.events = POLLIN;
-        pfd.fd = h->fd;
+        pfd.fd = h->u.file.fd;
 
         start = hs_millis();
 restart:
@@ -421,7 +421,7 @@ restart:
             return 0;
     }
 
-    r = read(h->fd, buf, size);
+    r = read(h->u.file.fd, buf, size);
     if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
@@ -446,7 +446,7 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeo
     size_t written;
 
     pfd.events = POLLOUT;
-    pfd.fd = h->fd;
+    pfd.fd = h->u.file.fd;
 
     start = hs_millis();
     adjusted_timeout = timeout;
@@ -466,7 +466,7 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeo
         if (!r)
             break;
 
-        r = write(h->fd, buf + written, size - written);
+        r = write(h->u.file.fd, buf + written, size - written);
         if (r < 0) {
             if (errno == EINTR)
                 continue;

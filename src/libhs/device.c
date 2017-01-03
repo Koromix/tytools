@@ -30,10 +30,6 @@
 #include "monitor.h"
 #include "platform.h"
 
-struct hs_handle {
-    _HS_HANDLE
-};
-
 hs_device *hs_device_ref(hs_device *dev)
 {
     assert(dev);

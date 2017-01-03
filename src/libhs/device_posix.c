@@ -29,7 +29,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "device_posix_priv.h"
+#include "device_priv.h"
 #include "platform.h"
 
 static int open_posix_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
@@ -63,8 +63,8 @@ static int open_posix_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh
     }
 
 restart:
-    h->fd = open(dev->path, fd_flags);
-    if (h->fd < 0) {
+    h->u.file.fd = open(dev->path, fd_flags);
+    if (h->u.file.fd < 0) {
         switch (errno) {
         case EINTR:
             goto restart;
@@ -101,7 +101,7 @@ restart:
         struct termios tio;
         int modem_bits;
 
-        r = tcgetattr(h->fd, &tio);
+        r = tcgetattr(h->u.file.fd, &tio);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "tcgetattr() failed on '%s': %s", dev->path,
                          strerror(errno));
@@ -116,19 +116,19 @@ restart:
         tio.c_cflag |= CLOCAL | CREAD | HUPCL;
         modem_bits = TIOCM_DTR;
 
-        r = tcsetattr(h->fd, TCSANOW, &tio);
+        r = tcsetattr(h->u.file.fd, TCSANOW, &tio);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "tcsetattr() failed on '%s': %s", dev->path,
                          strerror(errno));
             goto error;
         }
-        r = ioctl(h->fd, TIOCMBIS, &modem_bits);
+        r = ioctl(h->u.file.fd, TIOCMBIS, &modem_bits);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "ioctl(TIOCMBIS, TIOCM_DTR) failed on '%s': %s",
                          dev->path, strerror(errno));
             goto error;
         }
-        r = tcflush(h->fd, TCIFLUSH);
+        r = tcflush(h->u.file.fd, TCIFLUSH);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "tcflush(TCIFLUSH) failed on '%s': %s",
                          dev->path, strerror(errno));
@@ -149,10 +149,10 @@ static void close_posix_device(hs_handle *h)
     if (h) {
 #ifdef __linux__
         // Only used for hidraw to work around a bug on old kernels
-        free(h->read_buf);
+        free(h->u.file.read_buf);
 #endif
 
-        close(h->fd);
+        close(h->u.file.fd);
         hs_device_unref(h->dev);
     }
 
@@ -161,7 +161,7 @@ static void close_posix_device(hs_handle *h)
 
 static hs_descriptor get_posix_descriptor(const hs_handle *h)
 {
-    return h->fd;
+    return h->u.file.fd;
 }
 
 const struct _hs_device_vtable _hs_posix_device_vtable = {

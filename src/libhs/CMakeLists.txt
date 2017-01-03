@@ -95,14 +95,12 @@ set(LIBHS_SOURCES common.c
                   serial.h)
 if(WIN32)
     list(APPEND LIBHS_SOURCES device_win32.c
-                              device_win32_priv.h
                               hid_win32.c
                               monitor_win32.c
                               platform_win32.c
                               serial_win32.c)
 else()
     list(APPEND LIBHS_SOURCES device_posix.c
-                              device_posix_priv.h
                               serial_posix.c)
 
     if(LINUX)

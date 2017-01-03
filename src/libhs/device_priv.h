@@ -75,10 +75,49 @@ struct hs_device {
 
 };
 
-#define _HS_HANDLE \
-    hs_device *dev; \
+struct hs_handle {
+    hs_device *dev;
     hs_handle_mode mode;
 
+    union {
+#if defined(_WIN32)
+        struct {
+            void *h; // HANDLE
+
+            struct _OVERLAPPED *read_ov;
+            uint8_t *read_buf;
+            uint8_t *read_ptr;
+            size_t read_len;
+            int read_status;
+            unsigned long read_pending_thread; // DWORD
+
+            void *write_handle; // HANDLE
+            void *write_event; // HANDLE
+        } handle;
+#else
+        struct {
+            int fd;
+
+    #ifdef __linux__
+            // Used to work around an old kernel 2.6 (pre-2.6.34) hidraw bug
+            uint8_t *read_buf;
+            size_t read_buf_size;
+    #endif
+        } file;
+
+    #ifdef __APPLE__
+        struct _hs_hid_darwin *hid;
+    #endif
+#endif
+    } u;
+};
+
 void _hs_device_log(const struct hs_device *dev, const char *verb);
+
+#ifdef _WIN32
+void _hs_win32_start_async_read(hs_handle *h);
+void _hs_win32_finalize_async_read(hs_handle *h, int timeout);
+ssize_t _hs_win32_write_sync(hs_handle *h, const uint8_t *buf, size_t size, int timeout);
+#endif
 
 #endif
