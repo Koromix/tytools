@@ -24,7 +24,7 @@ static TY_THREAD_LOCAL char last_error_msg[512];
 
 const char *ty_version_string(void)
 {
-    return TY_CONFIG_VERSION;
+    return TY_VERSION;
 }
 
 static bool log_level_is_enabled(ty_log_level level)

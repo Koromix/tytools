@@ -142,7 +142,7 @@ set_target_properties(libhs_static PROPERTIES OUTPUT_NAME hs_static
                                               CLEAN_DIRECT_OUTPUT ON)
 target_link_libraries(libhs_static ${LIBHS_LINK_LIBRARIES})
 
-if(TY_BUILD_EXAMPLES)
+if(BUILD_EXAMPLES)
     add_subdirectory(examples/enumerate_devices)
     add_subdirectory(examples/monitor_devices)
     add_subdirectory(examples/serial_dumper)

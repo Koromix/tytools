@@ -18,7 +18,11 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
     setWindowTitle(tr("About %1").arg(QApplication::applicationName()));
 
     connect(closeButton, &QPushButton::clicked, this, &AboutDialog::close);
-    connect(reportBugButton, &QPushButton::clicked, &AboutDialog::openBugReports);
+    if (TY_CONFIG_URL_BUGS[0]) {
+        connect(reportBugButton, &QPushButton::clicked, &AboutDialog::openBugReports);
+    } else {
+        reportBugButton->hide();
+    }
     connect(licenseButton, &QPushButton::clicked, &AboutDialog::openLicense);
     connect(websiteLabel, &QLabel::linkActivated, this, [](const QString &link) {
         QDesktopServices::openUrl(QUrl(link));
@@ -26,24 +30,19 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
 
     versionLabel->setText(QString("%1 %2").arg(QCoreApplication::applicationName(),
                                                QCoreApplication::applicationVersion()));
-#ifdef TY_CONFIG_URL_WEBSITE
-    websiteLabel->setText(QString("<a href=\"%1\">%1</a>").arg(TY_CONFIG_URL_WEBSITE));
-#endif
+    if (TY_CONFIG_URL_WEBSITE[0])
+        websiteLabel->setText(QString("<a href=\"%1\">%1</a>").arg(TY_CONFIG_URL_WEBSITE));
 }
 
-#ifdef TY_CONFIG_URL_WEBSITE
 void AboutDialog::openWebsite()
 {
     QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_WEBSITE));
 }
-#endif
 
-#ifdef TY_CONFIG_URL_BUGS
 void AboutDialog::openBugReports()
 {
     QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_BUGS));
 }
-#endif
 
 void AboutDialog::openLicense()
 {

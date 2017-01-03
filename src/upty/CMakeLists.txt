@@ -26,12 +26,12 @@ set(UPTY_FORMS ../tyqt/log_dialog.ui
 
 set(UPTY_ICON_FILE_PREFIX "${CMAKE_SOURCE_DIR}/resources/images/upty")
 set(UPTY_RESOURCES "${CMAKE_SOURCE_DIR}/resources/resources.qrc")
-if(TY_CONFIG_VARIANT)
-    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/upty.png")
-        set(UPTY_ICON_FILE_PREFIX "${TY_CONFIG_VARIANT_PATH}/upty")
+if(CONFIG_VARIANT)
+    if(EXISTS "${CONFIG_VARIANT_PATH}/upty.png")
+        set(UPTY_ICON_FILE_PREFIX "${CONFIG_VARIANT_PATH}/upty")
     endif()
-    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
-        list(INSERT UPTY_RESOURCES 0 "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
+    if(EXISTS "${CONFIG_VARIANT_PATH}/resources.qrc")
+        list(INSERT UPTY_RESOURCES 0 "${CONFIG_VARIANT_PATH}/resources.qrc")
     endif()
 endif()
 
@@ -48,7 +48,7 @@ qt5_add_resources(UPTY_RESOURCES_RCC ${UPTY_RESOURCES})
 add_executable(upty WIN32 MACOSX_BUNDLE
                ${UPTY_SOURCES} ${UPTY_FORMS_HEADERS} ${UPTY_RESOURCES_RCC})
 set_target_properties(upty PROPERTIES AUTOMOC ON
-                                      OUTPUT_NAME ${TY_CONFIG_UPTY_EXECUTABLE})
+                                      OUTPUT_NAME ${CONFIG_UPTY_EXECUTABLE})
 target_link_libraries(upty PRIVATE ${LIBHS_LIBRARIES} libty EasyQt5)
 # We need these include directories for moc-generated files
 target_include_directories(upty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -56,7 +56,7 @@ target_include_directories(upty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 if(APPLE)
     set_source_files_properties("${UPTY_ICON_FILE_PREFIX}.icns" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     get_filename_component(_icon_file_name "${UPTY_ICON_FILE_PREFIX}.icns" NAME)
-    set_target_properties(upty PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${TY_CONFIG_UPTY_NAME}
+    set_target_properties(upty PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${CONFIG_UPTY_NAME}
                                           MACOSX_BUNDLE_ICON_FILE ${_icon_file_name})
 endif()
 enable_unity_build(upty)

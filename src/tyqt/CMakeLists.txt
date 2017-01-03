@@ -44,12 +44,12 @@ set(TYQT_FORMS about_dialog.ui
 
 set(TYQT_ICON_FILE_PREFIX "${CMAKE_SOURCE_DIR}/resources/images/tyqt")
 set(TYQT_RESOURCES "${CMAKE_SOURCE_DIR}/resources/resources.qrc")
-if(TY_CONFIG_VARIANT)
-    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/tyqt.png")
-        set(TYQT_ICON_FILE_PREFIX "{TY_CONFIG_VARIANT_PATH}/tyqt")
+if(CONFIG_VARIANT)
+    if(EXISTS "${CONFIG_VARIANT_PATH}/tyqt.png")
+        set(TYQT_ICON_FILE_PREFIX "{CONFIG_VARIANT_PATH}/tyqt")
     endif()
-    if(EXISTS "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
-        list(INSERT TYQT_RESOURCES 0 "${TY_CONFIG_VARIANT_PATH}/resources.qrc")
+    if(EXISTS "${CONFIG_VARIANT_PATH}/resources.qrc")
+        list(INSERT TYQT_RESOURCES 0 "${CONFIG_VARIANT_PATH}/resources.qrc")
     endif()
 endif()
 
@@ -66,7 +66,7 @@ qt5_add_resources(TYQT_RESOURCES_RCC ${TYQT_RESOURCES})
 add_executable(tyqt WIN32 MACOSX_BUNDLE
                ${TYQT_SOURCES} ${TYQT_FORMS_HEADERS} ${TYQT_RESOURCES_RCC})
 set_target_properties(tyqt PROPERTIES AUTOMOC ON
-                                      OUTPUT_NAME ${TY_CONFIG_TYQT_EXECUTABLE})
+                                      OUTPUT_NAME ${CONFIG_TYQT_EXECUTABLE})
 target_link_libraries(tyqt PRIVATE ${LIBHS_LIBRARIES} libty EasyQt5)
 # We need these include directories for moc-generated files
 target_include_directories(tyqt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -74,14 +74,14 @@ target_include_directories(tyqt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 if(APPLE)
     set_source_files_properties("${TYQT_ICON_FILE_PREFIX}.icns" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     get_filename_component(_icon_file_name "${TYQT_ICON_FILE_PREFIX}.icns" NAME)
-    set_target_properties(tyqt PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${TY_CONFIG_TYQT_NAME}
+    set_target_properties(tyqt PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME ${CONFIG_TYQT_NAME}
                                           MACOSX_BUNDLE_ICON_FILE ${_icon_file_name})
 endif()
 enable_unity_build(tyqt)
 
 if(WIN32)
     add_executable(tyqtc tyqtc.c)
-    set_target_properties(tyqtc PROPERTIES OUTPUT_NAME ${TY_CONFIG_TYQT_EXECUTABLE}c)
+    set_target_properties(tyqtc PROPERTIES OUTPUT_NAME "${CONFIG_TYQT_EXECUTABLE}c")
     enable_unity_build(tyqtc)
 endif()
 

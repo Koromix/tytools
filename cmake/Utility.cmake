@@ -5,11 +5,11 @@
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo" OR
    CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
-    set(ENABLE_UNITY_BUILDS ON CACHE BOOL "Use single-TU builds (aka. Unity builds)")
+    set(USE_UNITY_BUILDS ON CACHE BOOL "Use single-TU builds (aka. Unity builds)")
 else()
-    set(ENABLE_UNITY_BUILDS OFF CACHE BOOL "Use single-TU builds (aka. Unity builds)")
+    set(USE_UNITY_BUILDS OFF CACHE BOOL "Use single-TU builds (aka. Unity builds)")
 endif()
-if(ENABLE_UNITY_BUILDS)
+if(USE_UNITY_BUILDS)
     function(enable_unity_build TARGET)
         get_target_property(sources ${TARGET} SOURCES)
         string(GENEX_STRIP "${sources}" sources)

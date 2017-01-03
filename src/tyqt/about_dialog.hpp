@@ -18,12 +18,8 @@ public:
     AboutDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
 
 public slots:
-#ifdef TY_CONFIG_URL_WEBSITE
     static void openWebsite();
-#endif
-#ifdef TY_CONFIG_URL_BUGS
     static void openBugReports();
-#endif
     static void openLicense();
 };
 

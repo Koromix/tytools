@@ -11,14 +11,14 @@ set(TYC_SOURCES identify.c
                 upload.c)
 
 add_executable(tyc ${TYC_SOURCES})
-set_target_properties(tyc PROPERTIES OUTPUT_NAME ${TY_CONFIG_TYC_EXECUTABLE})
+set_target_properties(tyc PROPERTIES OUTPUT_NAME ${CONFIG_TYC_EXECUTABLE})
 target_link_libraries(tyc PRIVATE ${LIBHS_LIBRARIES} libty)
 enable_unity_build(tyc)
 
 if(WIN32)
     install(TARGETS tyc DESTINATION .)
 elseif(APPLE)
-    if(TY_CONFIG_TYQT_BUILD)
+    if(CONFIG_TYQT_BUILD)
         install(TARGETS tyc RUNTIME DESTINATION TyQt.app/Contents/MacOS)
     endif()
 else()
