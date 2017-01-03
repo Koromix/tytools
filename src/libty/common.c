@@ -6,6 +6,10 @@
  */
 
 #include "common_priv.h"
+#ifdef _WIN32
+    // Need that for InterlockedX functions
+    #include <windows.h>
+#endif
 #include <stdarg.h>
 #include "../libhs/common.h"
 #include "system.h"
