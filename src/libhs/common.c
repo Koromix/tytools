@@ -28,8 +28,8 @@
 static hs_log_handler_func *log_handler = hs_log_default_handler;
 static void *log_handler_udata;
 
-static _HS_THREAD_LOCAL hs_error_code mask[32];
-static _HS_THREAD_LOCAL unsigned int mask_count;
+static _HS_THREAD_LOCAL hs_error_code error_masks[32];
+static _HS_THREAD_LOCAL unsigned int error_masks_count;
 
 static _HS_THREAD_LOCAL char last_error_msg[512];
 
@@ -87,16 +87,16 @@ void hs_log_default_handler(hs_log_level level, int err, const char *msg, void *
 
 void hs_error_mask(hs_error_code err)
 {
-    assert(mask_count < _HS_COUNTOF(mask));
+    assert(error_masks_count < _HS_COUNTOF(error_masks));
 
-    mask[mask_count++] = err;
+    error_masks[error_masks_count++] = err;
 }
 
 void hs_error_unmask(void)
 {
-    assert(mask_count);
+    assert(error_masks_count);
 
-    mask_count--;
+    error_masks_count--;
 }
 
 int hs_error_is_masked(int err)
@@ -104,8 +104,8 @@ int hs_error_is_masked(int err)
     if (err >= 0)
         return 0;
 
-    for (unsigned int i = 0; i < mask_count; i++) {
-        if (mask[i] == err)
+    for (unsigned int i = 0; i < error_masks_count; i++) {
+        if (error_masks[i] == err)
             return 1;
     }
 

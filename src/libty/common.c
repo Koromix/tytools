@@ -18,11 +18,11 @@
 
 int ty_config_verbosity = TY_LOG_INFO;
 
-static ty_message_func *handler = ty_message_default_handler;
-static void *handler_udata = NULL;
+static ty_message_func *message_handler = ty_message_default_handler;
+static void *message_handler_udata = NULL;
 
-static TY_THREAD_LOCAL ty_err mask[16];
-static TY_THREAD_LOCAL unsigned int mask_count;
+static TY_THREAD_LOCAL ty_err error_masks[16];
+static TY_THREAD_LOCAL unsigned int error_masks_count;
 
 static TY_THREAD_LOCAL char last_error_msg[512];
 
@@ -108,8 +108,8 @@ void ty_message_redirect(ty_message_func *f, void *udata)
     assert(f);
     assert(f != ty_message_default_handler || !udata);
 
-    handler = f;
-    handler_udata = udata;
+    message_handler = f;
+    message_handler_udata = udata;
 }
 
 void ty_log(ty_log_level level, const char *fmt, ...)
@@ -175,16 +175,16 @@ static const char *generic_error(int err)
 
 void ty_error_mask(ty_err err)
 {
-    assert(mask_count < TY_COUNTOF(mask));
+    assert(error_masks_count < TY_COUNTOF(error_masks));
 
-    mask[mask_count++] = err;
+    error_masks[error_masks_count++] = err;
 }
 
 void ty_error_unmask(void)
 {
-    assert(mask_count);
+    assert(error_masks_count);
 
-    mask_count--;
+    error_masks_count--;
 }
 
 bool ty_error_is_masked(int err)
@@ -192,8 +192,8 @@ bool ty_error_is_masked(int err)
     if (err >= 0)
         return false;
 
-    for (unsigned int i = 0; i < mask_count; i++) {
-        if (mask[i] == err)
+    for (unsigned int i = 0; i < error_masks_count; i++) {
+        if (error_masks[i] == err)
             return true;
     }
 
@@ -260,7 +260,7 @@ void ty_message(ty_message_data *msg)
     if (!msg->ctx && task)
         msg->ctx = task->name;
 
-    (*handler)(msg, handler_udata);
+    (*message_handler)(msg, message_handler_udata);
     if (task && task->user_callback)
         (*task->user_callback)(msg, task->user_callback_udata);
 }
