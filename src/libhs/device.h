@@ -288,17 +288,6 @@ HS_PUBLIC hs_device *hs_handle_get_device(const hs_handle *h);
  */
 HS_PUBLIC hs_descriptor hs_handle_get_descriptor(const hs_handle *h);
 
-/**
-  * @{
-  * @name Deprecated functions
-  */
-
-/**
- * @ingroup device
- * @deprecated Use hs_handle_open() instead.
- */
-HS_PUBLIC int hs_device_open(hs_device *dev, hs_handle **rh);
-
 HS_END_C
 
 #endif

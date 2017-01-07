@@ -199,9 +199,3 @@ hs_descriptor hs_handle_get_descriptor(const hs_handle *h)
     assert(h);
     return (*h->dev->vtable->get_descriptor)(h);
 }
-
-// Deprecated, replaced by hs_handle_open
-int hs_device_open(hs_device *dev, hs_handle **rh)
-{
-    return hs_handle_open(dev, HS_HANDLE_MODE_RW, rh);
-}
