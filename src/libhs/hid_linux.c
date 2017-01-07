@@ -46,11 +46,11 @@ static bool detect_kernel26_byte_bug()
     return bug;
 }
 
-ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_READ);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -61,7 +61,7 @@ ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
         uint64_t start;
 
         pfd.events = POLLIN;
-        pfd.fd = h->u.file.fd;
+        pfd.fd = port->u.file.fd;
 
         start = hs_millis();
 restart:
@@ -70,35 +70,35 @@ restart:
             if (errno == EINTR)
                 goto restart;
 
-            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
                             strerror(errno));
         }
         if (!r)
             return 0;
     }
 
-    if (h->dev->u.hid.numbered_reports) {
+    if (port->dev->u.hid.numbered_reports) {
         /* Work around a hidraw bug introduced in Linux 2.6.28 and fixed in Linux 2.6.34, see
            https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a38f2c7c4dd53d5be097930902c108e362584a3 */
         if (detect_kernel26_byte_bug()) {
-            if (size + 1 > h->u.file.read_buf_size) {
-                free(h->u.file.read_buf);
-                h->u.file.read_buf_size = 0;
+            if (size + 1 > port->u.file.read_buf_size) {
+                free(port->u.file.read_buf);
+                port->u.file.read_buf_size = 0;
 
-                h->u.file.read_buf = malloc(size + 1);
-                if (!h->u.file.read_buf)
+                port->u.file.read_buf = malloc(size + 1);
+                if (!port->u.file.read_buf)
                     return hs_error(HS_ERROR_MEMORY, NULL);
-                h->u.file.read_buf_size = size + 1;
+                port->u.file.read_buf_size = size + 1;
             }
 
-            r = read(h->u.file.fd, h->u.file.read_buf, size + 1);
+            r = read(port->u.file.fd, port->u.file.read_buf, size + 1);
             if (r > 0)
-                memcpy(buf, h->u.file.read_buf + 1, (size_t)--r);
+                memcpy(buf, port->u.file.read_buf + 1, (size_t)--r);
         } else {
-            r = read(h->u.file.fd, buf, size);
+            r = read(port->u.file.fd, buf, size);
         }
     } else {
-        r = read(h->u.file.fd, buf + 1, size - 1);
+        r = read(port->u.file.fd, buf + 1, size - 1);
         if (r > 0) {
             buf[0] = 0;
             r++;
@@ -108,18 +108,18 @@ restart:
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
 
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
                         strerror(errno));
     }
 
     return r;
 }
 
-ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
+ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_WRITE);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
@@ -129,23 +129,23 @@ ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
 
 restart:
     // On linux, USB requests timeout after 5000ms and O_NONBLOCK isn't honoured for write
-    r = write(h->u.file.fd, (const char *)buf, size);
+    r = write(port->u.file.fd, (const char *)buf, size);
     if (r < 0) {
         if (errno == EINTR)
             goto restart;
 
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
                         strerror(errno));
     }
 
     return r;
 }
 
-ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf, size_t size)
+ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_READ);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -155,12 +155,12 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
         buf[1] = report_id;
 
 restart:
-    r = ioctl(h->u.file.fd, HIDIOCGFEATURE(size - 1), (const char *)buf + 1);
+    r = ioctl(port->u.file.fd, HIDIOCGFEATURE(size - 1), (const char *)buf + 1);
     if (r < 0) {
         if (errno == EINTR)
             goto restart;
 
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
                         strerror(errno));
     }
 
@@ -168,11 +168,11 @@ restart:
     return r + 1;
 }
 
-ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size)
+ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_WRITE);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
@@ -181,12 +181,12 @@ ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size
     ssize_t r;
 
 restart:
-    r = ioctl(h->u.file.fd, HIDIOCSFEATURE(size), (const char *)buf);
+    r = ioctl(port->u.file.fd, HIDIOCSFEATURE(size), (const char *)buf);
     if (r < 0) {
         if (errno == EINTR)
             goto restart;
 
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
                         strerror(errno));
     }
 

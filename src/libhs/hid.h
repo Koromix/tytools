@@ -34,7 +34,7 @@ HS_BEGIN_C
  * @brief Send and receive HID reports (input, output, feature) to and from HID devices.
  */
 
-struct hs_handle;
+struct hs_port;
 
 /**
  * @ingroup hid
@@ -46,7 +46,7 @@ struct hs_handle;
  * If no report is available, the function waits for up to @p timeout milliseconds. Use a
  * negative value to wait indefinitely.
  *
- * @param      h       Device handle.
+ * @param      port    Device handle.
  * @param[out] buf     Input report buffer.
  * @param      size    Size of the report buffer (make room for the report ID).
  * @param      timeout Timeout in milliseconds, or -1 to block indefinitely.
@@ -54,21 +54,21 @@ struct hs_handle;
  * @return This function returns the size of the report in bytes + 1 (report ID). It
  *     returns 0 on timeout, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_read(struct hs_handle *h, uint8_t *buf, size_t size, int timeout);
+HS_PUBLIC ssize_t hs_hid_read(struct hs_port *port, uint8_t *buf, size_t size, int timeout);
 /**
  * @ingroup hid
  * @brief Send an output report to the device.
  *
  * The first byte must be the report ID, or 0 if the device does not use report IDs.
  *
- * @param h    Device handle.
+ * @param port Device handle.
  * @param buf  Output report data.
  * @param size Output report size (including the report ID byte).
  *
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative error code.
  */
-HS_PUBLIC ssize_t hs_hid_write(struct hs_handle *h, const uint8_t *buf, size_t size);
+HS_PUBLIC ssize_t hs_hid_write(struct hs_port *port, const uint8_t *buf, size_t size);
 
 /**
  * @ingroup hid
@@ -76,7 +76,7 @@ HS_PUBLIC ssize_t hs_hid_write(struct hs_handle *h, const uint8_t *buf, size_t s
  *
  * The first byte will contain the report ID, or 0 if the device does not use numbered reports.
  *
- * @param      h         Device handle.
+ * @param      port      Device handle.
  * @param      report_id Specific report to retrieve, or 0 if the device does not use
  *     numbered reports.
  * @param[out] buf       Feature report buffer (make room for the report ID).
@@ -85,21 +85,21 @@ HS_PUBLIC ssize_t hs_hid_write(struct hs_handle *h, const uint8_t *buf, size_t s
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf, size_t size);
+HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size);
 /**
  * @ingroup hid
  * @brief Send a feature report to the device.
  *
  * The first byte must be the report ID, or 0 if the device does not use numbered reports.
  *
- * @param h    Device handle.
+ * @param port Device handle.
  * @param buf  Output report data.
  * @param size Output report size (including the report ID byte).
  *
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_send_feature_report(struct hs_handle *h, const uint8_t *buf, size_t size);
+HS_PUBLIC ssize_t hs_hid_send_feature_report(struct hs_port *port, const uint8_t *buf, size_t size);
 
 HS_END_C
 

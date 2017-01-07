@@ -169,33 +169,33 @@ void _hs_device_log(const hs_device *dev, const char *verb)
     }
 }
 
-int hs_handle_open(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
+int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport)
 {
     assert(dev);
-    assert(rh);
+    assert(rport);
 
     if (dev->state != HS_DEVICE_STATUS_ONLINE)
         return hs_error(HS_ERROR_NOT_FOUND, "Device '%s' is not connected", dev->path);
 
-    return (*dev->vtable->open)(dev, mode ,rh);
+    return (*dev->vtable->open)(dev, mode ,rport);
 }
 
-void hs_handle_close(hs_handle *h)
+void hs_port_close(hs_port *port)
 {
-    if (!h)
+    if (!port)
         return;
 
-    (*h->dev->vtable->close)(h);
+    (*port->dev->vtable->close)(port);
 }
 
-hs_device *hs_handle_get_device(const hs_handle *h)
+hs_device *hs_port_get_device(const hs_port *port)
 {
-    assert(h);
-    return h->dev;
+    assert(port);
+    return port->dev;
 }
 
-hs_descriptor hs_handle_get_descriptor(const hs_handle *h)
+hs_descriptor hs_port_get_descriptor(const hs_port *port)
 {
-    assert(h);
-    return (*h->dev->vtable->get_descriptor)(h);
+    assert(port);
+    return (*port->dev->vtable->get_descriptor)(port);
 }

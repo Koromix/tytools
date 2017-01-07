@@ -32,39 +32,39 @@
 #include "device_priv.h"
 #include "platform.h"
 
-static int open_posix_device(hs_device *dev, hs_handle_mode mode, hs_handle **rh)
+static int open_posix_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
 {
-    hs_handle *h;
+    hs_port *port;
 #ifdef __APPLE__
     unsigned int retry = 4;
 #endif
     int fd_flags;
     int r;
 
-    h = calloc(1, sizeof(*h));
-    if (!h) {
+    port = calloc(1, sizeof(*port));
+    if (!port) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
     }
-    h->dev = hs_device_ref(dev);
-    h->mode = mode;
+    port->dev = hs_device_ref(dev);
+    port->mode = mode;
 
     fd_flags = O_CLOEXEC | O_NOCTTY | O_NONBLOCK;
     switch (mode) {
-    case HS_HANDLE_MODE_READ:
+    case HS_PORT_MODE_READ:
         fd_flags |= O_RDONLY;
         break;
-    case HS_HANDLE_MODE_WRITE:
+    case HS_PORT_MODE_WRITE:
         fd_flags |= O_WRONLY;
         break;
-    case HS_HANDLE_MODE_RW:
+    case HS_PORT_MODE_RW:
         fd_flags |= O_RDWR;
         break;
     }
 
 restart:
-    h->u.file.fd = open(dev->path, fd_flags);
-    if (h->u.file.fd < 0) {
+    port->u.file.fd = open(dev->path, fd_flags);
+    if (port->u.file.fd < 0) {
         switch (errno) {
         case EINTR:
             goto restart;
@@ -101,7 +101,7 @@ restart:
         struct termios tio;
         int modem_bits;
 
-        r = tcgetattr(h->u.file.fd, &tio);
+        r = tcgetattr(port->u.file.fd, &tio);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "tcgetattr() failed on '%s': %s", dev->path,
                          strerror(errno));
@@ -116,19 +116,19 @@ restart:
         tio.c_cflag |= CLOCAL | CREAD | HUPCL;
         modem_bits = TIOCM_DTR;
 
-        r = tcsetattr(h->u.file.fd, TCSANOW, &tio);
+        r = tcsetattr(port->u.file.fd, TCSANOW, &tio);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "tcsetattr() failed on '%s': %s", dev->path,
                          strerror(errno));
             goto error;
         }
-        r = ioctl(h->u.file.fd, TIOCMBIS, &modem_bits);
+        r = ioctl(port->u.file.fd, TIOCMBIS, &modem_bits);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "ioctl(TIOCMBIS, TIOCM_DTR) failed on '%s': %s",
                          dev->path, strerror(errno));
             goto error;
         }
-        r = tcflush(h->u.file.fd, TCIFLUSH);
+        r = tcflush(port->u.file.fd, TCIFLUSH);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "tcflush(TCIFLUSH) failed on '%s': %s",
                          dev->path, strerror(errno));
@@ -136,32 +136,32 @@ restart:
         }
     }
 
-    *rh = h;
+    *rport = port;
     return 0;
 
 error:
-    hs_handle_close(h);
+    hs_port_close(port);
     return r;
 }
 
-static void close_posix_device(hs_handle *h)
+static void close_posix_device(hs_port *port)
 {
-    if (h) {
+    if (port) {
 #ifdef __linux__
         // Only used for hidraw to work around a bug on old kernels
-        free(h->u.file.read_buf);
+        free(port->u.file.read_buf);
 #endif
 
-        close(h->u.file.fd);
-        hs_device_unref(h->dev);
+        close(port->u.file.fd);
+        hs_device_unref(port->dev);
     }
 
-    free(h);
+    free(port);
 }
 
-static hs_descriptor get_posix_descriptor(const hs_handle *h)
+static hs_descriptor get_posix_descriptor(const hs_port *port)
 {
-    return h->u.file.fd;
+    return port->u.file.fd;
 }
 
 const struct _hs_device_vtable _hs_posix_device_vtable = {

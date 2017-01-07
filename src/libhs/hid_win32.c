@@ -36,64 +36,64 @@
     CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 #define IOCTL_HID_GET_FEATURE HID_OUT_CTL_CODE(100)
 
-ssize_t hs_hid_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_READ);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
 
-    if (h->u.handle.read_status < 0) {
+    if (port->u.handle.read_status < 0) {
         // Could be a transient error, try to restart it
-        _hs_win32_start_async_read(h);
-        if (h->u.handle.read_status < 0)
-            return h->u.handle.read_status;
+        _hs_win32_start_async_read(port);
+        if (port->u.handle.read_status < 0)
+            return port->u.handle.read_status;
     }
 
-    _hs_win32_finalize_async_read(h, timeout);
-    if (h->u.handle.read_status <= 0)
-        return h->u.handle.read_status;
+    _hs_win32_finalize_async_read(port, timeout);
+    if (port->u.handle.read_status <= 0)
+        return port->u.handle.read_status;
 
     /* HID communication is message-based. So if the caller does not provide a big enough
        buffer, we can just discard the extra data, unlike for serial communication. */
-    if (h->u.handle.read_len) {
-        if (size > h->u.handle.read_len)
-            size = h->u.handle.read_len;
-        memcpy(buf, h->u.handle.read_buf, size);
+    if (port->u.handle.read_len) {
+        if (size > port->u.handle.read_len)
+            size = port->u.handle.read_len;
+        memcpy(buf, port->u.handle.read_buf, size);
     } else {
         size = 0;
     }
 
     hs_error_mask(HS_ERROR_IO);
-    _hs_win32_start_async_read(h);
+    _hs_win32_start_async_read(port);
     hs_error_unmask();
 
     return (ssize_t)size;
 }
 
-ssize_t hs_hid_write(hs_handle *h, const uint8_t *buf, size_t size)
+ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_WRITE);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
         return 0;
 
-    ssize_t r = _hs_win32_write_sync(h, buf, size, 5000);
+    ssize_t r = _hs_win32_write_sync(port, buf, size, 5000);
     if (!r)
-        return hs_error(HS_ERROR_IO, "Timed out while writing to '%s'", h->dev->path);
+        return hs_error(HS_ERROR_IO, "Timed out while writing to '%s'", port->dev->path);
 
     return r;
 }
 
-ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf, size_t size)
+ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_READ);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -104,36 +104,36 @@ ssize_t hs_hid_get_feature_report(hs_handle *h, uint8_t report_id, uint8_t *buf,
     buf[0] = report_id;
     len = (DWORD)size;
 
-    success = DeviceIoControl(h->u.handle.h, IOCTL_HID_GET_FEATURE, buf, (DWORD)size, buf,
+    success = DeviceIoControl(port->u.handle.h, IOCTL_HID_GET_FEATURE, buf, (DWORD)size, buf,
                               (DWORD)size, NULL, &ov);
     if (!success && GetLastError() != ERROR_IO_PENDING) {
-        CancelIo(h->u.handle.h);
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+        CancelIo(port->u.handle.h);
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->dev->path);
     }
 
-    success = GetOverlappedResult(h->u.handle.h, &ov, &len, TRUE);
+    success = GetOverlappedResult(port->u.handle.h, &ov, &len, TRUE);
     if (!success)
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->dev->path);
 
     /* Apparently the length returned by the IOCTL_HID_GET_FEATURE ioctl does not account
        for the report ID byte. */
     return (ssize_t)len + 1;
 }
 
-ssize_t hs_hid_send_feature_report(hs_handle *h, const uint8_t *buf, size_t size)
+ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_HID);
-    assert(h->mode & HS_HANDLE_MODE_WRITE);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
     if (size < 2)
         return 0;
 
     // Timeout behavior?
-    BOOL success = HidD_SetFeature(h->u.handle.h, (char *)buf, (DWORD)size);
+    BOOL success = HidD_SetFeature(port->u.handle.h, (char *)buf, (DWORD)size);
     if (!success)
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", h->dev->path);
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->dev->path);
 
     return (ssize_t)size;
 }

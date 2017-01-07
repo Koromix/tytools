@@ -47,7 +47,7 @@ struct ty_board_interface {
     hs_device *dev;
     ty_mutex open_lock;
     unsigned int open_count;
-    hs_handle *h;
+    hs_port *port;
 };
 
 struct ty_board {

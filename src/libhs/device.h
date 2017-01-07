@@ -37,7 +37,7 @@ HS_BEGIN_C
 struct hs_monitor;
 
 typedef struct hs_device hs_device;
-typedef struct hs_handle hs_handle;
+typedef struct hs_port hs_port;
 
 /**
  * @ingroup device
@@ -71,13 +71,13 @@ typedef enum hs_device_type {
  * @ingroup device
  * @brief Device open mode.
  *
- * @sa hs_handle_open()
+ * @sa hs_port_open()
  */
-typedef enum hs_handle_mode {
-    HS_HANDLE_MODE_READ  = 1,
-    HS_HANDLE_MODE_WRITE = 2,
-    HS_HANDLE_MODE_RW    = 3
-} hs_handle_mode;
+typedef enum hs_port_mode {
+    HS_PORT_MODE_READ  = 1,
+    HS_PORT_MODE_WRITE = 2,
+    HS_PORT_MODE_RW    = 3
+} hs_port_mode;
 
 /**
  * @{
@@ -244,28 +244,28 @@ HS_PUBLIC uint16_t hs_device_get_hid_usage(const hs_device *dev);
  * The handle object keeps a refcounted reference to the device object, you are free to drop
  * your own reference.
  *
- * @param      dev  Device object to open.
- * @param      mode Open device for read / write or both.
- * @param[out] rh   Device handle, the value is changed only if the function succeeds.
+ * @param      dev   Device object to open.
+ * @param      mode  Open device for read / write or both.
+ * @param[out] rport Device handle, the value is changed only if the function succeeds.
  * @return This function returns 0 on success, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC int hs_handle_open(hs_device *dev, hs_handle_mode mode, hs_handle **rh);
+HS_PUBLIC int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport);
 /**
  * @ingroup device
  * @brief Close a device, and free all used resources.
  *
- * @param h Device handle.
+ * @param port Device handle.
  */
-HS_PUBLIC void hs_handle_close(hs_handle *h);
+HS_PUBLIC void hs_port_close(hs_port *port);
 
 /**
  * @ingroup device
  * @brief Get the device object from which this handle was opened.
  *
- * @param h Device handle.
+ * @param port Device handle.
  * @return Device object.
  */
-HS_PUBLIC hs_device *hs_handle_get_device(const hs_handle *h);
+HS_PUBLIC hs_device *hs_port_get_device(const hs_port *port);
 /**
  * @ingroup device
  * @brief Get a pollable device descriptor.
@@ -281,12 +281,12 @@ HS_PUBLIC hs_device *hs_handle_get_device(const hs_handle *h);
  * HID devices on OSX, this is actually a pipe that gets signalled when IOHIDDevice gives
  * libhs a report on the background thread.
  *
- * @param h Device handle.
+ * @param port Device handle.
  * @return This function returns a pollable descriptor.
  *
  * @sa hs_descriptor
  */
-HS_PUBLIC hs_descriptor hs_handle_get_descriptor(const hs_handle *h);
+HS_PUBLIC hs_descriptor hs_port_get_descriptor(const hs_port *port);
 
 HS_END_C
 

@@ -434,7 +434,7 @@ void ty_board_interface_unref(ty_board_interface *iface)
         if (_ty_refcount_decrease(&iface->refcount))
             return;
 
-        hs_handle_close(iface->h);
+        hs_port_close(iface->port);
         hs_device_unref(iface->dev);
 
         ty_mutex_release(&iface->open_lock);
@@ -451,7 +451,7 @@ int ty_board_interface_open(ty_board_interface *iface)
 
     ty_mutex_lock(&iface->open_lock);
 
-    if (!iface->h) {
+    if (!iface->port) {
         r = (*iface->vtable->open_interface)(iface);
         if (r < 0)
             goto cleanup;
@@ -509,10 +509,10 @@ hs_device *ty_board_interface_get_device(const ty_board_interface *iface)
     return iface->dev;
 }
 
-hs_handle *ty_board_interface_get_handle(const ty_board_interface *iface)
+hs_port *ty_board_interface_get_handle(const ty_board_interface *iface)
 {
     assert(iface);
-    return iface->h;
+    return iface->port;
 }
 
 void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct ty_descriptor_set *set, int id)
@@ -520,8 +520,8 @@ void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct 
     assert(iface);
     assert(set);
 
-    if (iface->h)
-        ty_descriptor_set_add(set, hs_handle_get_descriptor(iface->h), id);
+    if (iface->port)
+        ty_descriptor_set_add(set, hs_port_get_descriptor(iface->port), id);
 }
 
 static int new_board_task(ty_board *board, const char *action, int (*run)(ty_task *task),

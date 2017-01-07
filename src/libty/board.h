@@ -17,7 +17,7 @@ struct ty_descriptor_set;
 struct hs_device;
 struct ty_monitor;
 struct ty_firmware;
-struct hs_handle;
+struct hs_port;
 struct ty_task;
 
 typedef struct ty_board ty_board;
@@ -107,7 +107,7 @@ TY_PUBLIC uint8_t ty_board_interface_get_interface_number(const ty_board_interfa
 TY_PUBLIC const char *ty_board_interface_get_path(const ty_board_interface *iface);
 
 TY_PUBLIC struct hs_device *ty_board_interface_get_device(const ty_board_interface *iface);
-TY_PUBLIC struct hs_handle *ty_board_interface_get_handle(const ty_board_interface *iface);
+TY_PUBLIC struct hs_port *ty_board_interface_get_handle(const ty_board_interface *iface);
 TY_PUBLIC void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct ty_descriptor_set *set, int id);
 
 TY_PUBLIC int ty_upload(ty_board *board, struct ty_firmware **fws, unsigned int fws_count,

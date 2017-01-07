@@ -235,7 +235,7 @@ HS_PUBLIC void hs_log(hs_log_level level, const char *fmt, ...) HS_PRINTF_FORMAT
  * For example, if you want to open a device without a missing device message, you can use:
  * @code{.c}
  * hs_error_mask(HS_ERROR_NOT_FOUND);
- * r = hs_handle_open(dev, HS_HANDLE_MODE_RW, &h);
+ * r = hs_port_open(dev, HS_PORT_MODE_RW, &port);
  * hs_error_unmask();
  * if (r < 0)
  *     return r;

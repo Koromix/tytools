@@ -41,7 +41,7 @@ static size_t read_total, read_rate;
 
 struct serial_source {
     hs_device *dev;
-    hs_handle *in;
+    hs_port *in;
     FILE *out;
 
     char out_name[40];
@@ -53,7 +53,7 @@ static void free_serial_source(struct serial_source *src)
         if (src->out)
             fclose(src->out);
 
-        hs_handle_close(src->in);
+        hs_port_close(src->in);
         hs_device_unref(src->dev);
     }
 
@@ -79,7 +79,7 @@ static int add_serial_source(hs_device *dev)
     }
 
     src->dev = hs_device_ref(dev);
-    r = hs_handle_open(dev, HS_HANDLE_MODE_READ, &src->in);
+    r = hs_port_open(dev, HS_PORT_MODE_READ, &src->in);
     if (r < 0) {
         // If something goes wrong, ignore this device and continue monitoring anyway
         r = 0;
@@ -93,7 +93,7 @@ static int add_serial_source(hs_device *dev)
         goto error;
     }
 
-    sources[sources_count].desc = hs_handle_get_descriptor(src->in);
+    sources[sources_count].desc = hs_port_get_descriptor(src->in);
     sources[sources_count].udata = src;
     sources_count++;
 

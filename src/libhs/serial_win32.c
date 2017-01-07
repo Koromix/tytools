@@ -29,18 +29,18 @@
 #include "platform.h"
 #include "serial.h"
 
-int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
+int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
 {
-    assert(h);
+    assert(port);
     assert(config);
 
     DCB dcb;
     BOOL success;
 
     dcb.DCBlength = sizeof(dcb);
-    success = GetCommState(h->u.handle.h, &dcb);
+    success = GetCommState(port->u.handle.h, &dcb);
     if (!success)
-        return hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", port->dev->path,
                         hs_win32_strerror(0));
 
     switch (config->baudrate) {
@@ -178,26 +178,26 @@ int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
         return hs_error(HS_ERROR_SYSTEM, "Invalid XON/XOFF setting: %d", config->xonxoff);
     }
 
-    success = SetCommState(h->u.handle.h, &dcb);
+    success = SetCommState(port->u.handle.h, &dcb);
     if (!success)
         return hs_error(HS_ERROR_SYSTEM, "SetCommState() failed on '%s': %s",
-                        h->dev->path, hs_win32_strerror(0));
+                        port->dev->path, hs_win32_strerror(0));
 
     return 0;
 }
 
-int hs_serial_get_config(hs_handle *h, hs_serial_config *config)
+int hs_serial_get_config(hs_port *port, hs_serial_config *config)
 {
-    assert(h);
+    assert(port);
     assert(config);
 
     DCB dcb;
     BOOL success;
 
     dcb.DCBlength = sizeof(dcb);
-    success = GetCommState(h->u.handle.h, &dcb);
+    success = GetCommState(port->u.handle.h, &dcb);
     if (!success)
-        return hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", port->dev->path,
                         hs_win32_strerror(0));
 
     /* 0 is the INVALID value for all parameters, we keep that value if we can't interpret
@@ -273,57 +273,57 @@ int hs_serial_get_config(hs_handle *h, hs_serial_config *config)
     return 0;
 }
 
-ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t hs_serial_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
-    assert(h->mode & HS_HANDLE_MODE_READ);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
 
-    if (h->u.handle.read_status < 0) {
+    if (port->u.handle.read_status < 0) {
         // Could be a transient error, try to restart it
-        _hs_win32_start_async_read(h);
-        if (h->u.handle.read_status < 0)
-            return h->u.handle.read_status;
+        _hs_win32_start_async_read(port);
+        if (port->u.handle.read_status < 0)
+            return port->u.handle.read_status;
     }
 
     /* Serial devices are stream-based. If we don't have any data yet, see if our asynchronous
        read request has returned anything. Then we can just give the user the data we have, until
        our buffer is empty. We can't just discard stuff, unlike what we do for long HID messages. */
-    if (!h->u.handle.read_len) {
-        _hs_win32_finalize_async_read(h, timeout);
-        if (h->u.handle.read_status <= 0)
-            return h->u.handle.read_status;
+    if (!port->u.handle.read_len) {
+        _hs_win32_finalize_async_read(port, timeout);
+        if (port->u.handle.read_status <= 0)
+            return port->u.handle.read_status;
     }
 
-    if (size > h->u.handle.read_len)
-        size = h->u.handle.read_len;
-    memcpy(buf, h->u.handle.read_ptr, size);
-    h->u.handle.read_ptr += size;
-    h->u.handle.read_len -= size;
+    if (size > port->u.handle.read_len)
+        size = port->u.handle.read_len;
+    memcpy(buf, port->u.handle.read_ptr, size);
+    port->u.handle.read_ptr += size;
+    port->u.handle.read_len -= size;
 
     /* Our buffer has been fully read, start a new asynchonous request. I don't know how
        much latency this brings. Maybe double buffering would help, but not before any concrete
        benchmarking is done. */
-    if (!h->u.handle.read_len) {
+    if (!port->u.handle.read_len) {
         hs_error_mask(HS_ERROR_IO);
-        _hs_win32_start_async_read(h);
+        _hs_win32_start_async_read(port);
         hs_error_unmask();
     }
 
     return (ssize_t)size;
 }
 
-ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeout)
+ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int timeout)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
-    assert(h->mode & HS_HANDLE_MODE_WRITE);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
     
     if (!size)
         return 0;
 
-    return _hs_win32_write_sync(h, buf, size, timeout);
+    return _hs_win32_write_sync(port, buf, size, timeout);
 }

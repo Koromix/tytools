@@ -219,19 +219,19 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
     return 1;
 }
 
-static int change_baudrate(hs_handle *h, unsigned int baudrate)
+static int change_baudrate(hs_port *port, unsigned int baudrate)
 {
     hs_serial_config config = {
         .baudrate = baudrate
     };
-    return ty_libhs_translate_error(hs_serial_set_config(h, &config));
+    return ty_libhs_translate_error(hs_serial_set_config(port, &config));
 }
 
 int teensy_open_interface(ty_board_interface *iface)
 {
     int r;
 
-    r = hs_handle_open(iface->dev, HS_HANDLE_MODE_RW, &iface->h);
+    r = hs_port_open(iface->dev, HS_PORT_MODE_RW, &iface->port);
     if (r < 0)
         return ty_libhs_translate_error(r);
 
@@ -239,15 +239,15 @@ int teensy_open_interface(ty_board_interface *iface)
        around and reuse them. The device will keep rebooting if 134 is what stays around,
        so try to break the loop here. */
     if (hs_device_get_type(iface->dev) == HS_DEVICE_TYPE_SERIAL)
-        change_baudrate(iface->h, 115200);
+        change_baudrate(iface->port, 115200);
 
     return 0;
 }
 
 void teensy_close_interface(ty_board_interface *iface)
 {
-    hs_handle_close(iface->h);
-    iface->h = NULL;
+    hs_port_close(iface->port);
+    iface->port = NULL;
 }
 
 static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmodels,
@@ -344,13 +344,13 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
 
     switch (hs_device_get_type(iface->dev)) {
     case HS_DEVICE_TYPE_SERIAL:
-        r = hs_serial_read(iface->h, (uint8_t *)buf, size, timeout);
+        r = hs_serial_read(iface->port, (uint8_t *)buf, size, timeout);
         if (r < 0)
             return ty_libhs_translate_error((int)r);
         return r;
 
     case HS_DEVICE_TYPE_HID:
-        r = hs_hid_read(iface->h, hid_buf, sizeof(hid_buf), timeout);
+        r = hs_hid_read(iface->port, hid_buf, sizeof(hid_buf), timeout);
         if (r < 0)
             return ty_libhs_translate_error((int)r);
         if (r < 2)
@@ -373,7 +373,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
 
     switch (hs_device_get_type(iface->dev)) {
     case HS_DEVICE_TYPE_SERIAL:
-        r = hs_serial_write(iface->h, (uint8_t *)buf, size, 5000);
+        r = hs_serial_write(iface->port, (uint8_t *)buf, size, 5000);
         if (r < 0)
             return ty_libhs_translate_error((int)r);
         if (!r)
@@ -391,7 +391,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
             memset(report, 0, sizeof(report));
             memcpy(report + 1, buf + i, block_size);
 
-            r = hs_hid_write(iface->h, report, sizeof(report));
+            r = hs_hid_write(iface->port, report, sizeof(report));
             if (r < 0)
                 return ty_libhs_translate_error((int)r);
             if (!r)
@@ -407,7 +407,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
     return 0;
 }
 
-static int halfkay_send(hs_handle *h, unsigned int halfkay_version, size_t block_size,
+static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t block_size,
                         size_t addr, const void *data, size_t size, unsigned int timeout)
 {
     uint8_t buf[2048] = {0};
@@ -457,7 +457,7 @@ static int halfkay_send(hs_handle *h, unsigned int halfkay_version, size_t block
     start = ty_millis();
     hs_error_mask(HS_ERROR_IO);
 restart:
-    r = hs_hid_write(h, buf, size);
+    r = hs_hid_write(port, buf, size);
     if (r == HS_ERROR_IO && ty_millis() - start < timeout) {
         ty_delay(10);
         goto restart;
@@ -539,7 +539,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
     for (size_t addr = 0; addr < fw->size; addr += block_size) {
         size_t write_size = TY_MIN(block_size, (size_t)(fw->size - addr));
 
-        r = halfkay_send(iface->h, halfkay_version, block_size,
+        r = halfkay_send(iface->port, halfkay_version, block_size,
                          addr, fw->image + addr, write_size, 3000);
         if (r < 0)
             return r;
@@ -567,7 +567,7 @@ static int teensy_reset(ty_board_interface *iface)
     if (r < 0)
         return r;
 
-    return halfkay_send(iface->h, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 250);
+    return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 250);
 }
 
 static int teensy_reboot(ty_board_interface *iface)
@@ -580,18 +580,18 @@ static int teensy_reboot(ty_board_interface *iface)
     r = TY_ERROR_UNSUPPORTED;
     switch (hs_device_get_type(iface->dev)) {
     case HS_DEVICE_TYPE_SERIAL:
-        r = change_baudrate(iface->h, serial_magic);
+        r = change_baudrate(iface->port, serial_magic);
         if (!r) {
             /* Don't keep these settings, some systems (such as Linux) may reuse them and
                the device will keep rebooting when opened. */
             ty_error_mask(TY_ERROR_SYSTEM);
-            change_baudrate(iface->h, 115200);
+            change_baudrate(iface->port, 115200);
             ty_error_unmask();
         }
         break;
 
     case HS_DEVICE_TYPE_HID:
-        r = (int)hs_hid_send_feature_report(iface->h, seremu_magic, sizeof(seremu_magic));
+        r = (int)hs_hid_send_feature_report(iface->port, seremu_magic, sizeof(seremu_magic));
         if (r < 0) {
             r = ty_libhs_translate_error(r);
         } else {

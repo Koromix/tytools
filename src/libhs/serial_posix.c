@@ -31,23 +31,23 @@
 #include "platform.h"
 #include "serial.h"
 
-int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
+int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
 {
-    assert(h);
+    assert(port);
     assert(config);
 
     struct termios tio;
     int modem_bits;
     int r;
 
-    r = tcgetattr(h->u.file.fd, &tio);
+    r = tcgetattr(port->u.file.fd, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get serial port settings from '%s': %s",
-                        h->dev->path, strerror(errno));
-    r = ioctl(h->u.file.fd, TIOCMGET, &modem_bits);
+                        port->dev->path, strerror(errno));
+    r = ioctl(port->u.file.fd, TIOCMGET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get modem bits from '%s': %s",
-                        h->dev->path, strerror(errno));
+                        port->dev->path, strerror(errno));
 
     if (config->baudrate) {
         speed_t std_baudrate;
@@ -227,34 +227,34 @@ int hs_serial_set_config(hs_handle *h, const hs_serial_config *config)
         }
     }
 
-    r = ioctl(h->u.file.fd, TIOCMSET, &modem_bits);
+    r = ioctl(port->u.file.fd, TIOCMSET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to set modem bits of '%s': %s",
-                        h->dev->path, strerror(errno));
-    r = tcsetattr(h->u.file.fd, TCSANOW, &tio);
+                        port->dev->path, strerror(errno));
+    r = tcsetattr(port->u.file.fd, TCSANOW, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to change serial port settings of '%s': %s",
-                        h->dev->path, strerror(errno));
+                        port->dev->path, strerror(errno));
 
     return 0;
 }
 
-int hs_serial_get_config(hs_handle *h, hs_serial_config *config)
+int hs_serial_get_config(hs_port *port, hs_serial_config *config)
 {
-    assert(h);
+    assert(port);
 
     struct termios tio;
     int modem_bits;
     int r;
 
-    r = tcgetattr(h->u.file.fd, &tio);
+    r = tcgetattr(port->u.file.fd, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to read port settings from '%s': %s",
-                        h->dev->path, strerror(errno));
-    r = ioctl(h->u.file.fd, TIOCMGET, &modem_bits);
+                        port->dev->path, strerror(errno));
+    r = ioctl(port->u.file.fd, TIOCMGET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get modem bits from '%s': %s",
-                        h->dev->path, strerror(errno));
+                        port->dev->path, strerror(errno));
 
     /* 0 is the INVALID value for all parameters, we keep that value if we can't interpret
        a termios value (only a cross-platform subset of it is exposed in hs_serial_config). */
@@ -390,11 +390,11 @@ int hs_serial_get_config(hs_handle *h, hs_serial_config *config)
     return 0;
 }
 
-ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
+ssize_t hs_serial_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
-    assert(h->mode & HS_HANDLE_MODE_READ);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
 
@@ -405,7 +405,7 @@ ssize_t hs_serial_read(hs_handle *h, uint8_t *buf, size_t size, int timeout)
         uint64_t start;
 
         pfd.events = POLLIN;
-        pfd.fd = h->u.file.fd;
+        pfd.fd = port->u.file.fd;
 
         start = hs_millis();
 restart:
@@ -414,30 +414,30 @@ restart:
             if (errno == EINTR)
                 goto restart;
 
-            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
                             strerror(errno));
         }
         if (!r)
             return 0;
     }
 
-    r = read(h->u.file.fd, buf, size);
+    r = read(port->u.file.fd, buf, size);
     if (r < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
 
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", h->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
                         strerror(errno));
     }
 
     return r;
 }
 
-ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeout)
+ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int timeout)
 {
-    assert(h);
-    assert(h->dev->type == HS_DEVICE_TYPE_SERIAL);
-    assert(h->mode & HS_HANDLE_MODE_WRITE);
+    assert(port);
+    assert(port->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
     struct pollfd pfd;
@@ -446,7 +446,7 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeo
     size_t written;
 
     pfd.events = POLLOUT;
-    pfd.fd = h->u.file.fd;
+    pfd.fd = port->u.file.fd;
 
     start = hs_millis();
     adjusted_timeout = timeout;
@@ -460,18 +460,18 @@ ssize_t hs_serial_write(hs_handle *h, const uint8_t *buf, size_t size, int timeo
             if (errno == EINTR)
                 continue;
 
-            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
                             strerror(errno));
         }
         if (!r)
             break;
 
-        r = write(h->u.file.fd, buf + written, size - written);
+        r = write(port->u.file.fd, buf + written, size - written);
         if (r < 0) {
             if (errno == EINTR)
                 continue;
 
-            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", h->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
                             strerror(errno));
         }
         written += (size_t)r;

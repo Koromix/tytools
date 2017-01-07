@@ -32,10 +32,10 @@
 struct hs_monitor;
 
 struct _hs_device_vtable {
-    int (*open)(hs_device *dev, hs_handle_mode mode, hs_handle **rh);
-    void (*close)(hs_handle *h);
+    int (*open)(hs_device *dev, hs_port_mode mode, hs_port **rport);
+    void (*close)(hs_port *port);
 
-    hs_descriptor (*get_descriptor)(const hs_handle *h);
+    hs_descriptor (*get_descriptor)(const hs_port *port);
 };
 
 struct hs_device {
@@ -75,9 +75,9 @@ struct hs_device {
 
 };
 
-struct hs_handle {
+struct hs_port {
     hs_device *dev;
-    hs_handle_mode mode;
+    hs_port_mode mode;
 
     union {
 #if defined(_WIN32)
@@ -115,9 +115,9 @@ struct hs_handle {
 void _hs_device_log(const struct hs_device *dev, const char *verb);
 
 #ifdef _WIN32
-void _hs_win32_start_async_read(hs_handle *h);
-void _hs_win32_finalize_async_read(hs_handle *h, int timeout);
-ssize_t _hs_win32_write_sync(hs_handle *h, const uint8_t *buf, size_t size, int timeout);
+void _hs_win32_start_async_read(hs_port *port);
+void _hs_win32_finalize_async_read(hs_port *port, int timeout);
+ssize_t _hs_win32_write_sync(hs_port *port, const uint8_t *buf, size_t size, int timeout);
 #endif
 
 #endif
