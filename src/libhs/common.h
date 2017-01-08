@@ -27,6 +27,7 @@
 
 #include <stddef.h>
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -38,6 +39,11 @@
 #endif
 
 HS_BEGIN_C
+
+typedef struct hs_device hs_device;
+typedef struct hs_monitor hs_monitor;
+typedef struct hs_port hs_port;
+typedef struct hs_match hs_match;
 
 /**
  * @defgroup misc Miscellaneous

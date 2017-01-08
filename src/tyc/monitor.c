@@ -191,7 +191,7 @@ static int open_serial_interface(ty_board *board, ty_board_interface **riface)
     if (r < 0)
         return r;
 
-    if (hs_device_get_type(ty_board_interface_get_device(iface)) == HS_DEVICE_TYPE_SERIAL) {
+    if (ty_board_interface_get_device(iface)->type == HS_DEVICE_TYPE_SERIAL) {
         r = hs_serial_set_config(ty_board_interface_get_handle(iface), &monitor_serial_config);
         if (r < 0)
             return (int)r;

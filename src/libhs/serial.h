@@ -34,8 +34,6 @@ HS_BEGIN_C
  * @brief Send and receive bytes to and from serial devices.
  */
 
-struct hs_port;
-
 /**
  * @ingroup serial
  * @brief Supported serial baud rates.
@@ -206,7 +204,7 @@ typedef struct hs_serial_config {
  *
  * @sa hs_serial_config for available serial settings.
  */
-HS_PUBLIC int hs_serial_set_config(struct hs_port *port, const hs_serial_config *config);
+HS_PUBLIC int hs_serial_set_config(hs_port *port, const hs_serial_config *config);
 
 /**
  * @ingroup serial
@@ -225,7 +223,7 @@ HS_PUBLIC int hs_serial_set_config(struct hs_port *port, const hs_serial_config 
  *
  * @sa hs_serial_config for available serial settings.
  */
-HS_PUBLIC int hs_serial_get_config(struct hs_port *port, hs_serial_config *config);
+HS_PUBLIC int hs_serial_get_config(hs_port *port, hs_serial_config *config);
 
 /**
  * @ingroup serial
@@ -240,7 +238,7 @@ HS_PUBLIC int hs_serial_get_config(struct hs_port *port, hs_serial_config *confi
  * @param      timeout Timeout in milliseconds, or -1 to block indefinitely.
  * @return This function returns the number of bytes read, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_serial_read(struct hs_port *port, uint8_t *buf, size_t size, int timeout);
+HS_PUBLIC ssize_t hs_serial_read(hs_port *port, uint8_t *buf, size_t size, int timeout);
 /**
  * @ingroup serial
  * @brief Send bytes to a serial device.
@@ -255,7 +253,7 @@ HS_PUBLIC ssize_t hs_serial_read(struct hs_port *port, uint8_t *buf, size_t size
  * @return This function returns the number of bytes written, or a negative @ref hs_error_code
  *     value.
  */
-HS_PUBLIC ssize_t hs_serial_write(struct hs_port *port, const uint8_t *buf, size_t size, int timeout);
+HS_PUBLIC ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int timeout);
 
 HS_END_C
 

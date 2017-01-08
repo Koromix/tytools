@@ -50,7 +50,7 @@ HS_BEGIN_C
  * r = hs_enumerate(matches, sizeof(matches) / sizeof(*matches), device_callback, NULL);
  * @endcode
  */
-typedef struct hs_match {
+struct hs_match {
     /** Device type @ref hs_device_type or 0 to match all types. */
     unsigned int type;
 
@@ -61,7 +61,7 @@ typedef struct hs_match {
 
     /** Device path or NULL to match all. */
     const char *path;
-} hs_match;
+};
 
 /**
  * @ingroup match

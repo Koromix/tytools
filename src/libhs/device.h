@@ -26,6 +26,7 @@
 #define HS_DEVICE_H
 
 #include "common.h"
+#include "htable.h"
 
 HS_BEGIN_C
 
@@ -34,18 +35,13 @@ HS_BEGIN_C
  * @brief Access device information and open device handles.
  */
 
-struct hs_monitor;
-
-typedef struct hs_device hs_device;
-typedef struct hs_port hs_port;
-
 /**
  * @ingroup device
  * @brief Current device status.
  *
  * The device status can only change when hs_monitor_refresh() is called.
  *
- * @sa hs_device_get_status()
+ * @sa hs_device
  */
 typedef enum hs_device_status {
     /** Device is connected and ready. */
@@ -58,7 +54,7 @@ typedef enum hs_device_status {
  * @ingroup device
  * @brief Device type.
  *
- * @sa hs_device_get_type()
+ * @sa hs_device
  */
 typedef enum hs_device_type {
     /** HID device. */
@@ -69,15 +65,89 @@ typedef enum hs_device_type {
 
 /**
  * @ingroup device
+ * @brief The hs_device struct
+ *
+ * Members omitted from the list below are reserved for internal use.
+ */
+struct hs_device {
+    /** @cond */
+    unsigned int refcount;
+    _hs_htable_head hnode;
+    char *key;
+    /** @endcond */
+
+    /** Device type, see @ref hs_device_type. */
+    hs_device_type type;
+    /** Current device status, see @ref hs_device_status. */
+    hs_device_status status;
+    /**
+     * @brief Device location.
+     *
+     * The location is bus-specific:
+     * - **USB** = "usb-<root_hub_id>[-<port_id>]+" (e.g. "usb-2-5-4")
+     */
+    char *location;
+    /**
+     * @brief Get the device node path.
+     *
+     * This may not always be a real filesystem path, for example on OS X HID devices cannot be
+     * used through a device node.
+     */
+    char *path;
+    /** Device vendor identifier. */
+    uint16_t vid;
+    /** Device product identifier. */
+    uint16_t pid;
+    /** Device manufacturer string, or NULL if not available. */
+    char *manufacturer_string;
+    /** Device product string, or NULL if not available. */
+    char *product_string;
+    /** Device serial number string, or NULL if not available. */
+    char *serial_number_string;
+    /** Device interface number. */
+    uint8_t iface_number;
+
+    /** Contains type-specific information, see below. */
+    union {
+        /** Only valid when type == HS_DEVICE_TYPE_HID. */
+        struct {
+            /** Primary usage page value read from the HID report descriptor. */
+            uint16_t usage_page;
+            /** Primary usage value read from the HID report descriptor. */
+            uint16_t usage;
+
+#ifdef __linux__
+            /** @cond */
+            // Needed to work around a bug on old Linux kernels
+            bool numbered_reports;
+            /** @endcond */
+#endif
+        } hid;
+    } u;
+};
+
+/**
+ * @ingroup device
  * @brief Device open mode.
  *
  * @sa hs_port_open()
  */
 typedef enum hs_port_mode {
+    /** Open device for reading. */
     HS_PORT_MODE_READ  = 1,
+    /** Open device for writing. */
     HS_PORT_MODE_WRITE = 2,
+    /** Open device for read/write operations. */
     HS_PORT_MODE_RW    = 3
 } hs_port_mode;
+
+/**
+ * @ingroup device
+ * @typedef hs_port
+ * @brief Opaque structure representing a device I/O port.
+ *
+ */
+struct hs_port;
 
 /**
  * @{
@@ -103,134 +173,6 @@ HS_PUBLIC hs_device *hs_device_ref(hs_device *dev);
  * @param dev Device object.
  */
 HS_PUBLIC void hs_device_unref(hs_device *dev);
-
-/**
-  * @{
-  * @name Device information
-  */
-
-/**
- * @ingroup device
- * @brief Get the current device status.
- *
- * @param dev Device object.
- * @return This function returns the current device status.
- *
- * @sa hs_device_status
- */
-HS_PUBLIC hs_device_status hs_device_get_status(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device type.
- *
- * @param dev Device object.
- * @return This function returns the device type.
- *
- * @sa hs_device_type
- */
-HS_PUBLIC hs_device_type hs_device_get_type(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device location.
- *
- * The location is bus-specific:
- * - **USB** = "usb-<root_hub_id>[-<port_id>]+" (e.g. "usb-2-5-4")
- *
- * @param dev Device object.
- * @return This function returns the cached location, you must not change or free the it.
- */
-HS_PUBLIC const char *hs_device_get_location(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device interface number.
- *
- * @param dev Device object.
- * @return This function returns the device interface number.
- */
-HS_PUBLIC uint8_t hs_device_get_interface_number(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device node path.
- *
- * This may not always be a real filesystem path, for example on OS X HID devices cannot be used
- * through a device node.
- *
- * @param dev Device object.
- * @return This function returns the cached node path, you must not change or free the it.
- */
-HS_PUBLIC const char *hs_device_get_path(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device vendor identifier.
- *
- * @param dev Device object.
- * @return This function returns the vendor ID.
- */
-HS_PUBLIC uint16_t hs_device_get_vid(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device product identifier.
- *
- * @param dev Device object.
- * @return This function returns the product ID.
- */
-HS_PUBLIC uint16_t hs_device_get_pid(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device manufacturer string.
- *
- * This string is internal to the device object, you must not change or free it. NULL means
- * the device did not report a manufacturer string.
- *
- * @param dev Device object.
- * @return This function returns the manufacturer string, or NULL if the device did not report one.
- */
-HS_PUBLIC const char *hs_device_get_manufacturer_string(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device product string.
- *
- * This string is internal to the device object, you must not change or free it. NULL means
- * the device did not report a product string.
- *
- * @param dev Device object.
- * @return This function returns the product string, or NULL if the device did not report one.
- */
-HS_PUBLIC const char *hs_device_get_product_string(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the device serial number string.
- *
- * This string is internal to the device object, you must not change or free it. NULL means
- * the device did not report a serial number.
- *
- * @param dev Device object.
- * @return This function returns the serial number string, or NULL if the device did not report one.
- */
-HS_PUBLIC const char *hs_device_get_serial_number_string(const hs_device *dev);
-
-/**
- * @ingroup device
- * @brief Get the primary usage page value from the HID report descriptor.
- *
- * It is invalid to call this function for non-HID devices, and will result in an assert
- * on debug builds.
- *
- * @param dev Device object.
- * @return This function returns the primary HID usage page value.
- */
-HS_PUBLIC uint16_t hs_device_get_hid_usage_page(const hs_device *dev);
-/**
- * @ingroup device
- * @brief Get the primary usage value from the HID report descriptor.
- *
- * It is invalid to call this function for non-HID devices, and will result in an assert
- * on debug builds.
- *
- * @param dev Device object.
- * @return This function returns the primary HID usage value.
- */
-HS_PUBLIC uint16_t hs_device_get_hid_usage(const hs_device *dev);
 
 /**
   * @{

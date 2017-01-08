@@ -27,39 +27,6 @@
 
 #include "common_priv.h"
 #include "device.h"
-#include "htable.h"
-
-struct hs_monitor;
-
-struct hs_device {
-    unsigned int refcount;
-    _hs_htable_head hnode;
-    char *key;
-
-    hs_device_type type;
-    hs_device_status status;
-
-    char *location;
-    char *path;
-    uint16_t vid;
-    uint16_t pid;
-    char *manufacturer_string;
-    char *product_string;
-    char *serial_number_string;
-    uint8_t iface_number;
-
-    union {
-        struct {
-            uint16_t usage_page;
-            uint16_t usage;
-#ifdef __linux__
-            // Needed to work around a bug on old Linux kernels
-            bool numbered_reports;
-#endif
-        } hid;
-    } u;
-
-};
 
 struct hs_port {
     hs_device_type type;
@@ -101,7 +68,7 @@ struct hs_port {
     } u;
 };
 
-void _hs_device_log(const struct hs_device *dev, const char *verb);
+void _hs_device_log(const hs_device *dev, const char *verb);
 
 int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport);
 void _hs_close_file_port(hs_port *port);

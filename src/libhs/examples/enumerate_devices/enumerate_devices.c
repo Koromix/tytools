@@ -32,7 +32,7 @@ static int device_callback(hs_device *dev, void *udata)
 
     const char *type = "?";
 
-    switch (hs_device_get_type(dev)) {
+    switch (dev->type) {
     case HS_DEVICE_TYPE_HID:
         type = "hid";
         break;
@@ -42,17 +42,16 @@ static int device_callback(hs_device *dev, void *udata)
     }
 
     printf("+ %s@%"PRIu8" %04"PRIx16":%04"PRIx16" (%s)\n",
-           hs_device_get_location(dev), hs_device_get_interface_number(dev),
-           hs_device_get_vid(dev), hs_device_get_pid(dev), type);
+           dev->location, dev->iface_number, dev->vid, dev->pid, type);
 
 #define PRINT_PROPERTY(name, prop) \
-        if (prop(dev)) \
-            printf("  - " name " %s\n", prop(dev));
+        if (dev->prop) \
+            printf("  - " name " %s\n", dev->prop);
 
-    PRINT_PROPERTY("device node:  ", hs_device_get_path);
-    PRINT_PROPERTY("manufacturer: ", hs_device_get_manufacturer_string);
-    PRINT_PROPERTY("product:      ", hs_device_get_product_string);
-    PRINT_PROPERTY("serial number:", hs_device_get_serial_number_string);
+    PRINT_PROPERTY("device node:  ", path);
+    PRINT_PROPERTY("manufacturer: ", manufacturer_string);
+    PRINT_PROPERTY("product:      ", product_string);
+    PRINT_PROPERTY("serial number:", serial_number_string);
 
 #undef PRINT_PROPERTY
 

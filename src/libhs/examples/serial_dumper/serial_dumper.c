@@ -68,7 +68,7 @@ static int add_serial_source(hs_device *dev)
 
     if (sources_count == sizeof(sources) / sizeof(*sources)) {
         hs_log(HS_LOG_WARNING, "Cannot monitor more than %zu descriptors, ignoring %s",
-               sizeof(sources) / sizeof(*sources), hs_device_get_path(dev));
+               sizeof(sources) / sizeof(*sources), dev->path);
         return 0;
     }
 
@@ -97,7 +97,7 @@ static int add_serial_source(hs_device *dev)
     sources[sources_count].udata = src;
     sources_count++;
 
-    printf("Dumping '%s' to %s\n", hs_device_get_path(dev), src->out_name);
+    printf("Dumping '%s' to %s\n", dev->path, src->out_name);
     return 0;
 
 error:
@@ -118,7 +118,7 @@ static void remove_serial_source(hs_device *dev)
             sources[i].udata = sources[sources_count - 1].udata;
             sources_count--;
 
-            printf("Closed file %s for device '%s'\n", src->out_name, hs_device_get_path(dev));
+            printf("Closed file %s for device '%s'\n", src->out_name, dev->path);
             break;
         }
     }
@@ -128,7 +128,7 @@ static int device_callback(hs_device *dev, void *udata)
 {
     (void)(udata);
 
-    switch (hs_device_get_status(dev)) {
+    switch (dev->status) {
     case HS_DEVICE_STATUS_ONLINE:
         return add_serial_source(dev);
     case HS_DEVICE_STATUS_DISCONNECTED:

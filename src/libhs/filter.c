@@ -91,13 +91,13 @@ static bool match_paths(const char *path1, const char *path2)
 
 static bool test_match(const hs_match *match, const hs_device *dev)
 {
-    if (match->type && hs_device_get_type(dev) != (hs_device_type)match->type)
+    if (match->type && dev->type != (hs_device_type)match->type)
         return false;
-    if (match->vid && hs_device_get_vid(dev) != match->vid)
+    if (match->vid && dev->vid != match->vid)
         return false;
-    if (match->pid && hs_device_get_pid(dev) != match->pid)
+    if (match->pid && dev->pid != match->pid)
         return false;
-    if (match->path && !match_paths(hs_device_get_path(dev), match->path))
+    if (match->path && !match_paths(dev->path, match->path))
         return false;
 
     return true;
@@ -106,7 +106,7 @@ static bool test_match(const hs_match *match, const hs_device *dev)
 bool _hs_filter_match_device(const _hs_filter *filter, const hs_device *dev)
 {
     // Do the fast checks first
-    if (!_hs_filter_has_type(filter, hs_device_get_type(dev)))
+    if (!_hs_filter_has_type(filter, dev->type))
         return false;
     if (!filter->count)
         return true;

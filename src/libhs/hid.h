@@ -34,8 +34,6 @@ HS_BEGIN_C
  * @brief Send and receive HID reports (input, output, feature) to and from HID devices.
  */
 
-struct hs_port;
-
 /**
  * @ingroup hid
  * @brief Read an input report from the device.
@@ -54,7 +52,7 @@ struct hs_port;
  * @return This function returns the size of the report in bytes + 1 (report ID). It
  *     returns 0 on timeout, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_read(struct hs_port *port, uint8_t *buf, size_t size, int timeout);
+HS_PUBLIC ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout);
 /**
  * @ingroup hid
  * @brief Send an output report to the device.
@@ -68,7 +66,7 @@ HS_PUBLIC ssize_t hs_hid_read(struct hs_port *port, uint8_t *buf, size_t size, i
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative error code.
  */
-HS_PUBLIC ssize_t hs_hid_write(struct hs_port *port, const uint8_t *buf, size_t size);
+HS_PUBLIC ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size);
 
 /**
  * @ingroup hid
@@ -85,7 +83,8 @@ HS_PUBLIC ssize_t hs_hid_write(struct hs_port *port, const uint8_t *buf, size_t 
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size);
+HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id,
+                                            uint8_t *buf, size_t size);
 /**
  * @ingroup hid
  * @brief Send a feature report to the device.
@@ -99,7 +98,7 @@ HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, ui
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_send_feature_report(struct hs_port *port, const uint8_t *buf, size_t size);
+HS_PUBLIC ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size);
 
 HS_END_C
 

@@ -83,10 +83,12 @@ static uint64_t parse_bootloader_serial(const char *s)
 
 static int teensy_load_interface(ty_board_interface *iface)
 {
-    if (hs_device_get_vid(iface->dev) != TEENSY_VID)
+    hs_device *dev = iface->dev;
+
+    if (dev->vid != TEENSY_VID)
         return 0;
 
-    switch (hs_device_get_pid(iface->dev)) {
+    switch (dev->pid) {
     case 0x478:
     case 0x482:
     case 0x483:
@@ -101,7 +103,7 @@ static int teensy_load_interface(ty_board_interface *iface)
         return 0;
     }
 
-    switch (hs_device_get_type(iface->dev)) {
+    switch (dev->type) {
     case HS_DEVICE_TYPE_SERIAL:
         iface->name = "Serial";
         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
@@ -110,10 +112,10 @@ static int teensy_load_interface(ty_board_interface *iface)
         break;
 
     case HS_DEVICE_TYPE_HID:
-        switch (hs_device_get_hid_usage_page(iface->dev)) {
+        switch (dev->u.hid.usage_page) {
         case TEENSY_USAGE_PAGE_BOOTLOADER:
             iface->name = "HalfKay";
-            iface->model = identify_model(hs_device_get_hid_usage(iface->dev));
+            iface->model = identify_model(dev->u.hid.usage);
             if (iface->model) {
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
@@ -149,20 +151,16 @@ static int teensy_load_interface(ty_board_interface *iface)
 
 static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 {
-    const char *serial_string, *product_string;
     uint64_t serial = 0;
     int r;
-
-    serial_string = hs_device_get_serial_number_string(iface->dev);
-    product_string = hs_device_get_product_string(iface->dev);
 
     if (ty_models[iface->model].code_size) {
         if (ty_models[board->model].code_size && board->model != iface->model)
             return 0;
         board->model = iface->model;
 
-        if (serial_string)
-            serial = parse_bootloader_serial(serial_string);
+        if (iface->dev->serial_number_string)
+            serial = parse_bootloader_serial(iface->dev->serial_number_string);
 
         if (!board->description) {
             board->description = strdup("Teensy (HalfKay)");
@@ -173,11 +171,12 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
         if (!board->model)
             board->model = iface->model;
 
-        if (serial_string)
-            serial = strtoull(serial_string, NULL, 10);
+        if (iface->dev->serial_number_string)
+            serial = strtoull(iface->dev->serial_number_string, NULL, 10);
 
         free(board->description);
-        board->description = strdup(product_string ? product_string : "Teensy");
+        board->description = strdup(iface->dev->product_string ? iface->dev->product_string
+                                                               : "Teensy");
         if (!board->description)
             return ty_error(TY_ERROR_MEMORY, NULL);
     }
@@ -238,7 +237,7 @@ int teensy_open_interface(ty_board_interface *iface)
     /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
        around and reuse them. The device will keep rebooting if 134 is what stays around,
        so try to break the loop here. */
-    if (hs_device_get_type(iface->dev) == HS_DEVICE_TYPE_SERIAL)
+    if (iface->dev->type == HS_DEVICE_TYPE_SERIAL)
         change_baudrate(iface->port, 115200);
 
     return 0;
@@ -342,7 +341,7 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
     uint8_t hid_buf[SEREMU_RX_SIZE + 1];
     ssize_t r;
 
-    switch (hs_device_get_type(iface->dev)) {
+    switch (iface->dev->type) {
     case HS_DEVICE_TYPE_SERIAL:
         r = hs_serial_read(iface->port, (uint8_t *)buf, size, timeout);
         if (r < 0)
@@ -371,14 +370,13 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
     size_t total = 0;
     ssize_t r;
 
-    switch (hs_device_get_type(iface->dev)) {
+    switch (iface->dev->type) {
     case HS_DEVICE_TYPE_SERIAL:
         r = hs_serial_write(iface->port, (uint8_t *)buf, size, 5000);
         if (r < 0)
             return ty_libhs_translate_error((int)r);
         if (!r)
-            return ty_error(TY_ERROR_IO, "Timed out while writing to '%s'",
-                            hs_device_get_path(iface->dev));
+            return ty_error(TY_ERROR_IO, "Timed out while writing to '%s'", iface->dev->path);
 
         return r;
 
@@ -578,7 +576,7 @@ static int teensy_reboot(ty_board_interface *iface)
     int r;
 
     r = TY_ERROR_UNSUPPORTED;
-    switch (hs_device_get_type(iface->dev)) {
+    switch (iface->dev->type) {
     case HS_DEVICE_TYPE_SERIAL:
         r = change_baudrate(iface->port, serial_magic);
         if (!r) {

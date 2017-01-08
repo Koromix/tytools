@@ -494,13 +494,13 @@ int ty_board_interface_get_capabilities(const ty_board_interface *iface)
 const char *ty_board_interface_get_path(const ty_board_interface *iface)
 {
     assert(iface);
-    return hs_device_get_path(iface->dev);
+    return iface->dev->path;
 }
 
 uint8_t ty_board_interface_get_interface_number(const ty_board_interface *iface)
 {
     assert(iface);
-    return hs_device_get_interface_number(iface->dev);
+    return iface->dev->iface_number;
 }
 
 hs_device *ty_board_interface_get_device(const ty_board_interface *iface)

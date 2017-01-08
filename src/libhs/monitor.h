@@ -34,14 +34,12 @@ HS_BEGIN_C
  * @brief Discover devices and react when devices are added and removed.
  */
 
-struct hs_device;
-struct hs_match;
-
 /**
  * @ingroup monitor
+ * @typedef hs_monitor
  * @brief Opaque structure representing a device monitor.
  */
-typedef struct hs_monitor hs_monitor;
+struct hs_monitor;
 
 /**
  * @ingroup monitor
@@ -85,7 +83,7 @@ typedef int hs_enumerate_func(struct hs_device *dev, void *udata);
  * @sa hs_match Match specific devices.
  * @sa hs_enumerate_func() for more information about the callback.
  */
-HS_PUBLIC int hs_enumerate(const struct hs_match *matches, unsigned int count,
+HS_PUBLIC int hs_enumerate(const hs_match *matches, unsigned int count,
                            hs_enumerate_func *f, void *udata);
 
 /**
@@ -100,7 +98,7 @@ HS_PUBLIC int hs_enumerate(const struct hs_match *matches, unsigned int count,
  * @return This function returns 1 if a device is found, 0 if not or a negative @ref hs_error_code
  *     value.
  */
-HS_PUBLIC int hs_find(const struct hs_match *matches, unsigned int count, struct hs_device **rdev);
+HS_PUBLIC int hs_find(const hs_match *matches, unsigned int count, struct hs_device **rdev);
 
 /**
  * @{
@@ -120,8 +118,7 @@ HS_PUBLIC int hs_find(const struct hs_match *matches, unsigned int count, struct
  *
  * @sa hs_monitor_free()
  */
-HS_PUBLIC int hs_monitor_new(const struct hs_match *matches, unsigned int count,
-                             hs_monitor **rmonitor);
+HS_PUBLIC int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor);
 /**
  * @ingroup monitor
  * @brief Close a device monitor.

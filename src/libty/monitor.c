@@ -79,7 +79,7 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     }
     board->refcount = 1;
 
-    board->location = strdup(hs_device_get_location(iface->dev));
+    board->location = strdup(iface->dev->location);
     if (!board->location) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
@@ -91,8 +91,8 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
 
     ty_list_init(&board->interfaces);
 
-    board->vid = hs_device_get_vid(iface->dev);
-    board->pid = hs_device_get_pid(iface->dev);
+    board->vid = iface->dev->vid;
+    board->pid = iface->dev->pid;
 
     r = (*iface->model_vtable->update_board)(iface, board);
     if (r <= 0)
@@ -238,7 +238,7 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
     if (r <= 0)
         goto error;
 
-    board = find_board(monitor, hs_device_get_location(dev));
+    board = find_board(monitor, dev->location);
 
     if (board) {
         bool update_tag_pointer = false;
@@ -254,14 +254,14 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
            this board, or 0 if not. In the latter case, the old board is dropped and a new
            one is used. */
         if (r) {
-            if (board->vid != hs_device_get_vid(dev) || board->pid != hs_device_get_pid(dev)) {
+            if (board->vid != dev->vid || board->pid != dev->pid) {
                 /* Theoretically, this should not happen unless device removal notifications
                    where dropped somewhere. */
                 if (board->state == TY_BOARD_STATE_ONLINE)
                     close_board(board);
 
-                board->vid = hs_device_get_vid(dev);
-                board->pid = hs_device_get_pid(dev);
+                board->vid = dev->vid;
+                board->pid = dev->pid;
             }
 
             event = TY_MONITOR_EVENT_CHANGED;
@@ -358,7 +358,7 @@ static int device_callback(hs_device *dev, void *udata)
 {
     ty_monitor *monitor = udata;
 
-    switch (hs_device_get_status(dev)) {
+    switch (dev->status) {
     case HS_DEVICE_STATUS_ONLINE:
         monitor->refresh_callback_ret = add_interface(monitor, dev);
         return !!monitor->refresh_callback_ret;
