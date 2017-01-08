@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  */
 
-#ifndef _HS_LIST_H
-#define _HS_LIST_H
+#ifndef HS_LIST_H
+#define HS_LIST_H
 
-#include "common_priv.h"
+#include "common.h"
 
 typedef struct _hs_list_head {
     struct _hs_list_head *prev;

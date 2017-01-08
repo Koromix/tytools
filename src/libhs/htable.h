@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  */
 
-#ifndef _HS_HTABLE_H
-#define _HS_HTABLE_H
+#ifndef HS_HTABLE_H
+#define HS_HTABLE_H
 
-#include "common_priv.h"
+#include "common.h"
 
 typedef struct _hs_htable_head {
     // Keep first!
@@ -51,8 +51,6 @@ void _hs_htable_clear(_hs_htable *table);
 
 static inline uint32_t _hs_htable_hash_str(const char *s)
 {
-    assert(s);
-
     uint32_t hash = 0;
     while (*s)
         hash = hash * 101 + (unsigned char)*s++;

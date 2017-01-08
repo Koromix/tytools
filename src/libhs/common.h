@@ -96,6 +96,10 @@ typedef long ssize_t;
     #error "This compiler is not supported"
 #endif
 
+#define _HS_UNIQUE_ID(prefix) _HS_CONCAT(prefix, __LINE__)
+#define _hs_container_of(head, type, member) \
+    ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
+
 #if defined(DOXYGEN)
 /**
  * @ingroup misc

@@ -26,6 +26,8 @@
 #define HS_LIBHS_H
 
 #include "common.h"
+#include "htable.h"
+#include "list.h"
 #include "device.h"
 #include "hid.h"
 #include "match.h"
