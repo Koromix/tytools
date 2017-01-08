@@ -90,7 +90,7 @@ int main(void)
         goto cleanup;
 
     /* Enumerate devices and start listening to OS notifications. The list is refreshed and the
-       callback is called only when hs_monitor_refresh() is called. Use hs_monitor_get_descriptor()
+       callback is called only when hs_monitor_refresh() is called. Use hs_monitor_get_poll_handle()
        to get a pollable descriptor and integrate it to your event loop. */
     r = hs_monitor_start(monitor);
     if (r < 0)
@@ -104,7 +104,7 @@ int main(void)
 
     /* Add the waitable descriptor provided by the monitor to the descriptor set, it will
        become ready (POLLIN) when there are pending events. */
-    sources[0].desc = hs_monitor_get_descriptor(monitor);
+    sources[0].desc = hs_monitor_get_poll_handle(monitor);
     /* We also want to poll the terminal/console input buffer, to exit on key presses. */
 #ifdef _WIN32
     sources[1].desc = GetStdHandle(STD_INPUT_HANDLE);

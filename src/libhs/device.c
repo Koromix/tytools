@@ -194,8 +194,8 @@ hs_device *hs_port_get_device(const hs_port *port)
     return port->dev;
 }
 
-hs_descriptor hs_port_get_descriptor(const hs_port *port)
+hs_handle hs_port_get_poll_handle(const hs_port *port)
 {
     assert(port);
-    return (*port->dev->vtable->get_descriptor)(port);
+    return (*port->dev->vtable->get_poll_handle)(port);
 }

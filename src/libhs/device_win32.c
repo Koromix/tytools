@@ -269,7 +269,7 @@ static void close_win32_device(hs_port *port)
     free(port);
 }
 
-static hs_descriptor get_win32_descriptor(const hs_port *port)
+static hs_handle get_win32_handle(const hs_port *port)
 {
     return port->u.handle.read_ov->hEvent;
 }
@@ -278,7 +278,7 @@ const struct _hs_device_vtable _hs_win32_device_vtable = {
     .open = open_win32_device,
     .close = close_win32_device,
 
-    .get_descriptor = get_win32_descriptor
+    .get_poll_handle = get_win32_handle
 };
 
 // Call only when port->status != 0, otherwise you will leak kernel memory

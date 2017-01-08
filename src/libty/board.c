@@ -521,7 +521,7 @@ void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct 
     assert(set);
 
     if (iface->port)
-        ty_descriptor_set_add(set, hs_port_get_descriptor(iface->port), id);
+        ty_descriptor_set_add(set, hs_port_get_poll_handle(iface->port), id);
 }
 
 static int new_board_task(ty_board *board, const char *action, int (*run)(ty_task *task),

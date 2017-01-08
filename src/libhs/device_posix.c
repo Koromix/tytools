@@ -159,7 +159,7 @@ static void close_posix_device(hs_port *port)
     free(port);
 }
 
-static hs_descriptor get_posix_descriptor(const hs_port *port)
+static hs_handle get_posix_fd(const hs_port *port)
 {
     return port->u.file.fd;
 }
@@ -168,5 +168,5 @@ const struct _hs_device_vtable _hs_posix_device_vtable = {
     .open = open_posix_device,
     .close = close_posix_device,
 
-    .get_descriptor = get_posix_descriptor
+    .get_poll_handle = get_posix_fd
 };

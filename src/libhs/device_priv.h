@@ -35,7 +35,7 @@ struct _hs_device_vtable {
     int (*open)(hs_device *dev, hs_port_mode mode, hs_port **rport);
     void (*close)(hs_port *port);
 
-    hs_descriptor (*get_descriptor)(const hs_port *port);
+    hs_handle (*get_poll_handle)(const hs_port *port);
 };
 
 struct hs_device {

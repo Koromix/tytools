@@ -520,7 +520,7 @@ void ty_monitor_get_descriptors(const ty_monitor *monitor, ty_descriptor_set *se
     assert(monitor);
     assert(set);
 
-    ty_descriptor_set_add(set, hs_monitor_get_descriptor(monitor->device_monitor), id);
+    ty_descriptor_set_add(set, hs_monitor_get_poll_handle(monitor->device_monitor), id);
     ty_timer_get_descriptors(monitor->timer, set, id);
 }
 

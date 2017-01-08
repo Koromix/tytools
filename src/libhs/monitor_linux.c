@@ -640,7 +640,7 @@ void hs_monitor_stop(hs_monitor *monitor)
     monitor->udev_mon = NULL;
 }
 
-hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor)
+hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor)
 {
     assert(monitor);
     return monitor->wait_fd;

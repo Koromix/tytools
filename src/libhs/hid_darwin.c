@@ -365,7 +365,7 @@ static void close_hid_device(hs_port *port)
     free(port);
 }
 
-static hs_descriptor get_hid_descriptor(const hs_port *port)
+static hs_handle get_hid_poll_handle(const hs_port *port)
 {
     return port->u.hid->poll_pipe[0];
 }
@@ -374,7 +374,7 @@ const struct _hs_device_vtable _hs_darwin_hid_vtable = {
     .open = open_hid_device,
     .close = close_hid_device,
 
-    .get_descriptor = get_hid_descriptor
+    .get_poll_handle = get_hid_poll_handle
 };
 
 ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)

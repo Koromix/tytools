@@ -93,7 +93,7 @@ static int add_serial_source(hs_device *dev)
         goto error;
     }
 
-    sources[sources_count].desc = hs_port_get_descriptor(src->in);
+    sources[sources_count].desc = hs_port_get_poll_handle(src->in);
     sources[sources_count].udata = src;
     sources_count++;
 
@@ -186,7 +186,7 @@ int main(void)
     if (r < 0)
         goto cleanup;
 
-    sources[0].desc = hs_monitor_get_descriptor(monitor);
+    sources[0].desc = hs_monitor_get_poll_handle(monitor);
 #ifdef _WIN32
     sources[1].desc = GetStdHandle(STD_INPUT_HANDLE);
 #else

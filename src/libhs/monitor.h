@@ -139,7 +139,7 @@ HS_PUBLIC void hs_monitor_free(hs_monitor *monitor);
  * @ingroup monitor
  * @brief Get a pollable descriptor for device monitor events.
  *
- * @ref hs_descriptor is a typedef to the platform descriptor type: int on POSIX platforms,
+ * @ref hs_handle is a typedef to the platform descriptor type: int on POSIX platforms,
  * HANDLE on Windows.
  *
  * You can use this descriptor with select()/poll() on POSIX platforms and the Wait
@@ -152,10 +152,10 @@ HS_PUBLIC void hs_monitor_free(hs_monitor *monitor);
  * @return This function returns a pollable descriptor, call hs_monitor_refresh() when it
  *     becomes ready.
  *
- * @sa hs_descriptor
+ * @sa hs_handle
  * @sa hs_monitor_refresh()
  */
-HS_PUBLIC hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor);
+HS_PUBLIC hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor);
 
 /**
  * @ingroup monitor
@@ -164,7 +164,7 @@ HS_PUBLIC hs_descriptor hs_monitor_get_descriptor(const hs_monitor *monitor);
  * This function lists current devices and connects to the OS device manager for device change
  * notifications.
  *
- * You can use hs_monitor_get_descriptor() to get a pollable descriptor (int on POSIX, HANDLE
+ * You can use hs_monitor_get_poll_handle() to get a pollable descriptor (int on POSIX, HANDLE
  * on Windows). This descriptors becomes ready (POLLIN) when there are notifications, you can then
  * call hs_monitor_refresh() to process them.
  *

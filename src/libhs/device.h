@@ -268,9 +268,9 @@ HS_PUBLIC void hs_port_close(hs_port *port);
 HS_PUBLIC hs_device *hs_port_get_device(const hs_port *port);
 /**
  * @ingroup device
- * @brief Get a pollable device descriptor.
+ * @brief Get a pollable device handle.
  *
- * @ref hs_descriptor is a typedef to the platform descriptor type: int on POSIX platforms,
+ * @ref hs_handle is a typedef to the platform descriptor type: int on POSIX platforms,
  * HANDLE on Windows.
  *
  * You can use this descriptor with select()/poll() on POSIX platforms and the Wait
@@ -282,11 +282,11 @@ HS_PUBLIC hs_device *hs_port_get_device(const hs_port *port);
  * libhs a report on the background thread.
  *
  * @param port Device handle.
- * @return This function returns a pollable descriptor.
+ * @return This function returns a pollable handle.
  *
- * @sa hs_descriptor
+ * @sa hs_handle
  */
-HS_PUBLIC hs_descriptor hs_port_get_descriptor(const hs_port *port);
+HS_PUBLIC hs_handle hs_port_get_poll_handle(const hs_port *port);
 
 HS_END_C
 

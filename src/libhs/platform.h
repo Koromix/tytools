@@ -60,7 +60,7 @@ enum hs_win32_release {
  */
 typedef struct hs_poll_source {
     /** OS-specific descriptor. */
-    hs_descriptor desc;
+    hs_handle desc;
     /** Custom pointer. */
     void *udata;
 

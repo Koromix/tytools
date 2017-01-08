@@ -108,11 +108,11 @@ typedef long ssize_t;
  * - int on POSIX platforms, including OS X
  * - HANDLE (aka. void *) on Windows
  */
-typedef _platform_specific_ hs_descriptor;
+typedef _platform_specific_ hs_handle;
 #elif defined(_WIN32)
-typedef void *hs_descriptor; // HANDLE
+typedef void *hs_handle; // HANDLE
 #else
-typedef int hs_descriptor;
+typedef int hs_handle;
 #endif
 
 /**
