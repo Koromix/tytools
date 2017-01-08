@@ -12,7 +12,7 @@ set(TYC_SOURCES identify.c
 
 add_executable(tyc ${TYC_SOURCES})
 set_target_properties(tyc PROPERTIES OUTPUT_NAME ${CONFIG_TYC_EXECUTABLE})
-target_link_libraries(tyc PRIVATE ${LIBHS_LIBRARIES} libty)
+target_link_libraries(tyc PRIVATE libhs libty)
 enable_unity_build(tyc)
 
 if(WIN32)

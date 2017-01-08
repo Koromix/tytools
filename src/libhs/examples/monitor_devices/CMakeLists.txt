@@ -21,4 +21,4 @@
 # THE SOFTWARE.
 
 add_executable(monitor_devices monitor_devices.c)
-target_link_libraries(monitor_devices libhs_static)
+target_link_libraries(monitor_devices libhs)

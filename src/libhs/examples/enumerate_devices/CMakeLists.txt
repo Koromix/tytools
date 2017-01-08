@@ -21,4 +21,4 @@
 # THE SOFTWARE.
 
 add_executable(enumerate_devices enumerate_devices.c)
-target_link_libraries(enumerate_devices libhs_static)
+target_link_libraries(enumerate_devices libhs)

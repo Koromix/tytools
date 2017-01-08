@@ -116,31 +116,15 @@ else()
     endif()
 endif()
 
+add_library(libhs STATIC ${LIBHS_SOURCES})
+set_target_properties(libhs PROPERTIES OUTPUT_NAME hs)
+target_link_libraries(libhs ${LIBHS_LINK_LIBRARIES})
+# We need that for auto-generated file config.h
+target_include_directories(libhs PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 if(MSVC)
-    add_library(libhs_shared SHARED ${LIBHS_SOURCES})
-    add_library(libhs_static STATIC ${LIBHS_SOURCES})
-    target_compile_definitions(libhs_static PUBLIC HS_STATIC)
-    # We need that for auto-generated file config.h
-    target_include_directories(libhs_static PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories(libhs_shared PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    enable_unity_build(libhs_shared)
-    enable_unity_build(libhs_static)
-else()
-    add_library(libhs OBJECT ${LIBHS_SOURCES})
-    set_target_properties(libhs PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    # Same as before, need that for config.h
-    target_include_directories(libhs PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    enable_unity_build(libhs)
-    add_library(libhs_shared SHARED $<TARGET_OBJECTS:libhs>)
-    add_library(libhs_static STATIC $<TARGET_OBJECTS:libhs>)
-    set_target_properties(libhs_static PROPERTIES OUTPUT_NAME hs)
+    target_compile_definitions(libhs PUBLIC HS_STATIC)
 endif()
-set_target_properties(libhs_shared PROPERTIES OUTPUT_NAME hs
-                                              CLEAN_DIRECT_OUTPUT ON)
-target_link_libraries(libhs_shared ${LIBHS_LINK_LIBRARIES})
-set_target_properties(libhs_static PROPERTIES OUTPUT_NAME hs_static
-                                              CLEAN_DIRECT_OUTPUT ON)
-target_link_libraries(libhs_static ${LIBHS_LINK_LIBRARIES})
+enable_unity_build(libhs)
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/enumerate_devices)

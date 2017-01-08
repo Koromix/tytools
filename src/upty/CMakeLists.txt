@@ -49,7 +49,7 @@ add_executable(upty WIN32 MACOSX_BUNDLE
                ${UPTY_SOURCES} ${UPTY_FORMS_HEADERS} ${UPTY_RESOURCES_RCC})
 set_target_properties(upty PROPERTIES AUTOMOC ON
                                       OUTPUT_NAME ${CONFIG_UPTY_EXECUTABLE})
-target_link_libraries(upty PRIVATE ${LIBHS_LIBRARIES} libty EasyQt5)
+target_link_libraries(upty PRIVATE libhs libty EasyQt5)
 # We need these include directories for moc-generated files
 target_include_directories(upty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                         ${CMAKE_CURRENT_BINARY_DIR})

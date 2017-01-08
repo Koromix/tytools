@@ -5,5 +5,5 @@
 
 add_executable(test_libty test_libty.c
                           test_optline.c)
-target_link_libraries(test_libty ${LIBHS_LIBRARIES} libty)
+target_link_libraries(test_libty libhs libty)
 add_test(NAME libty COMMAND test_libty)

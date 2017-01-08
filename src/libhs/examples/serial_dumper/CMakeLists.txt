@@ -21,4 +21,4 @@
 # THE SOFTWARE.
 
 add_executable(serial_dumper serial_dumper.c)
-target_link_libraries(serial_dumper libhs_static)
+target_link_libraries(serial_dumper libhs)

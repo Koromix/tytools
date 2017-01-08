@@ -67,7 +67,7 @@ add_executable(tyqt WIN32 MACOSX_BUNDLE
                ${TYQT_SOURCES} ${TYQT_FORMS_HEADERS} ${TYQT_RESOURCES_RCC})
 set_target_properties(tyqt PROPERTIES AUTOMOC ON
                                       OUTPUT_NAME ${CONFIG_TYQT_EXECUTABLE})
-target_link_libraries(tyqt PRIVATE ${LIBHS_LIBRARIES} libty EasyQt5)
+target_link_libraries(tyqt PRIVATE libhs libty EasyQt5)
 # We need these include directories for moc-generated files
 target_include_directories(tyqt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                         ${CMAKE_CURRENT_BINARY_DIR})

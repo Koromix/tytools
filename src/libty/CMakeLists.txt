@@ -70,7 +70,7 @@ endif()
 configure_file(config.h.in config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
-list(APPEND LIBTY_LINK_LIBRARIES ${LIBHS_LIBRARIES})
+list(APPEND LIBTY_LINK_LIBRARIES libhs)
 find_package(Threads)
 list(APPEND LIBTY_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
