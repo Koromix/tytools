@@ -82,6 +82,7 @@ set(LIBHS_SOURCES common.c
                   device.h
                   device_priv.h
                   filter.c
+                  filter_priv.h
                   hid.h
                   htable.c
                   libhs.h
