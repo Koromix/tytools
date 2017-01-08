@@ -85,7 +85,6 @@ set(LIBHS_SOURCES common.c
                   filter_priv.h
                   hid.h
                   htable.c
-                  libhs.h
                   list.h
                   match.h
                   monitor.h
@@ -127,6 +126,9 @@ if(MSVC)
     target_compile_definitions(libhs PUBLIC HS_STATIC)
 endif()
 enable_unity_build(libhs)
+
+add_amalgamated_file(libhs "${CMAKE_BINARY_DIR}/libhs.h" libhs.h)
+add_amalgamated_file(libhs "${CMAKE_BINARY_DIR}/libhs.c" libhs.c EXCLUDE libhs.h)
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/enumerate_devices)

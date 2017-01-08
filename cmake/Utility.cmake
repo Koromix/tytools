@@ -45,3 +45,21 @@ else()
     function(enable_unity_build TARGET)
     endfunction()
 endif()
+
+set(utility_source_dir "${CMAKE_CURRENT_LIST_DIR}")
+function(add_amalgamated_file TARGET DEST SRC)
+    cmake_parse_arguments("OPT" "" "" "EXCLUDE" ${ARGN})
+
+    get_filename_component(DEST "${DEST}" REALPATH BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+    get_filename_component(SRC "${SRC}" REALPATH BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+    # Without that the semicolons are turned into spaces... Fuck CMake.
+    string(REPLACE ";" "\\;" opt_exclude_escaped "${OPT_EXCLUDE}")
+    add_custom_command(
+        TARGET "${TARGET}" POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -DEXCLUDE="${opt_exclude_escaped}" -P "${utility_source_dir}/AmalgamateSourceFiles.cmake" "${SRC}" "${DEST}")
+
+    target_sources(${TARGET} PRIVATE "${SRC}")
+    set_source_files_properties("${SRC}" PROPERTIES HEADER_FILE_ONLY 1)
+endfunction()
