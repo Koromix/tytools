@@ -11,6 +11,7 @@ set(LIBTY_SOURCES board.c
                   common.h
                   common_priv.h
                   compat.c
+                  compat_priv.h
                   firmware.c
                   firmware.h
                   firmware_elf.c

@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#ifndef TY_COMPAT_H
-#define TY_COMPAT_H
+#ifndef TY_COMPAT_PRIV_H
+#define TY_COMPAT_PRIV_H
 
 #include "common_priv.h"
 #include <stdarg.h>

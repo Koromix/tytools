@@ -9,7 +9,7 @@
 #define TY_UTIL_H
 
 #include "common.h"
-#include "compat.h"
+#include "compat_priv.h"
 
 void _ty_refcount_increase(unsigned int *rrefcount);
 unsigned int _ty_refcount_decrease(unsigned int *rrefcount);

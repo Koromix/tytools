@@ -26,7 +26,7 @@
 #define _HS_UTIL_H
 
 #include "common.h"
-#include "compat.h"
+#include "compat_priv.h"
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>

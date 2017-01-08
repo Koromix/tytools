@@ -78,6 +78,7 @@ set(LIBHS_SOURCES common.c
                   common.h
                   common_priv.h
                   compat.c
+                  compat_priv.h
                   device.c
                   device.h
                   device_priv.h
