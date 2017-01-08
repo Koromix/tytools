@@ -139,29 +139,29 @@ static int fill_device_details(struct udev_aggregate *agg, hs_device *dev)
 
     buf = udev_device_get_sysattr_value(agg->usb, "manufacturer");
     if (buf) {
-        dev->manufacturer = strdup(buf);
-        if (!dev->manufacturer)
+        dev->manufacturer_string = strdup(buf);
+        if (!dev->manufacturer_string)
             return hs_error(HS_ERROR_MEMORY, NULL);
     }
 
     buf = udev_device_get_sysattr_value(agg->usb, "product");
     if (buf) {
-        dev->product = strdup(buf);
-        if (!dev->product)
+        dev->product_string = strdup(buf);
+        if (!dev->product_string)
             return hs_error(HS_ERROR_MEMORY, NULL);
     }
 
     buf = udev_device_get_sysattr_value(agg->usb, "serial");
     if (buf) {
-        dev->serial = strdup(buf);
-        if (!dev->serial)
+        dev->serial_number_string = strdup(buf);
+        if (!dev->serial_number_string)
             return hs_error(HS_ERROR_MEMORY, NULL);
     }
 
     errno = 0;
     buf = udev_device_get_devpath(agg->iface);
     buf += strlen(buf) - 1;
-    dev->iface = (uint8_t)strtoul(buf, NULL, 10);
+    dev->iface_number = (uint8_t)strtoul(buf, NULL, 10);
     if (errno)
         return 0;
 
@@ -344,7 +344,7 @@ static int read_device_information(struct udev_device *udev_dev, hs_device **rde
         goto cleanup;
     }
     dev->refcount = 1;
-    dev->state = HS_DEVICE_STATUS_ONLINE;
+    dev->status = HS_DEVICE_STATUS_ONLINE;
 
     r = fill_device_details(&agg, dev);
     if (r <= 0)

@@ -301,11 +301,11 @@ static int fill_device_details(struct service_aggregate *agg, hs_device *dev)
     GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idVendor", kCFNumberSInt64Type, &dev->vid);
     GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idProduct", kCFNumberSInt64Type, &dev->pid);
     GET_MANDATORY_PROPERTY_NUMBER(agg->iface_service, "bInterfaceNumber", kCFNumberSInt64Type,
-                                  &dev->iface);
+                                  &dev->iface_number);
 
-    GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Vendor Name", &dev->manufacturer);
-    GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Product Name", &dev->product);
-    GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Serial Number", &dev->serial);
+    GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Vendor Name", &dev->manufacturer_string);
+    GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Product Name", &dev->product_string);
+    GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Serial Number", &dev->serial_number_string);
 
 #undef GET_MANDATORY_PROPERTY_NUMBER
 #undef GET_OPTIONAL_PROPERTY_STRING
@@ -350,7 +350,7 @@ static int process_darwin_device(io_service_t service, hs_device **rdev)
         goto cleanup;
     }
     dev->refcount = 1;
-    dev->state = HS_DEVICE_STATUS_ONLINE;
+    dev->status = HS_DEVICE_STATUS_ONLINE;
 
     r = find_device_node(&agg, dev);
     if (r <= 0)

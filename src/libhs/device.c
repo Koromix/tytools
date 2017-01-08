@@ -58,9 +58,9 @@ void hs_device_unref(hs_device *dev)
         free(dev->location);
         free(dev->path);
 
-        free(dev->manufacturer);
-        free(dev->product);
-        free(dev->serial);
+        free(dev->manufacturer_string);
+        free(dev->product_string);
+        free(dev->serial_number_string);
     }
 
     free(dev);
@@ -69,7 +69,7 @@ void hs_device_unref(hs_device *dev)
 hs_device_status hs_device_get_status(const hs_device *dev)
 {
     assert(dev);
-    return dev->state;
+    return dev->status;
 }
 
 hs_device_type hs_device_get_type(const hs_device *dev)
@@ -87,7 +87,7 @@ const char *hs_device_get_location(const hs_device *dev)
 uint8_t hs_device_get_interface_number(const hs_device *dev)
 {
     assert(dev);
-    return dev->iface;
+    return dev->iface_number;
 }
 
 const char *hs_device_get_path(const hs_device *dev)
@@ -111,19 +111,19 @@ uint16_t hs_device_get_pid(const hs_device *dev)
 const char *hs_device_get_manufacturer_string(const hs_device *dev)
 {
     assert(dev);
-    return dev->manufacturer;
+    return dev->manufacturer_string;
 }
 
 const char *hs_device_get_product_string(const hs_device *dev)
 {
     assert(dev);
-    return dev->product;
+    return dev->product_string;
 }
 
 const char *hs_device_get_serial_number_string(const hs_device *dev)
 {
     assert(dev);
-    return dev->serial;
+    return dev->serial_number_string;
 }
 
 uint16_t hs_device_get_hid_usage_page(const hs_device *dev)
@@ -149,10 +149,10 @@ void _hs_device_log(const hs_device *dev, const char *verb)
         hs_log(HS_LOG_DEBUG, "%s serial device '%s' on iface %"PRIu8"\n"
                              "  - USB VID/PID = %04"PRIx16":%04"PRIx16", USB location = %s\n"
                              "  - USB manufacturer = %s, product = %s, S/N = %s",
-               verb, dev->key, dev->iface, dev->vid, dev->pid, dev->location,
-               dev->manufacturer ? dev->manufacturer : "(none)",
-               dev->product ? dev->product : "(none)",
-               dev->serial ? dev->serial : "(none)");
+               verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
+               dev->manufacturer_string ? dev->manufacturer_string : "(none)",
+               dev->product_string ? dev->product_string : "(none)",
+               dev->serial_number_string ? dev->serial_number_string : "(none)");
         break;
 
     case HS_DEVICE_TYPE_HID:
@@ -160,10 +160,10 @@ void _hs_device_log(const hs_device *dev, const char *verb)
                              "  - USB VID/PID = %04"PRIx16":%04"PRIx16", USB location = %s\n"
                              "  - USB manufacturer = %s, product = %s, S/N = %s\n"
                              "  - HID usage page = 0x%"PRIx16", HID usage = 0x%"PRIx16,
-               verb, dev->key, dev->iface, dev->vid, dev->pid, dev->location,
-               dev->manufacturer ? dev->manufacturer : "(none)",
-               dev->product ? dev->product : "(none)",
-               dev->serial ? dev->serial : "(none)",
+               verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
+               dev->manufacturer_string ? dev->manufacturer_string : "(none)",
+               dev->product_string ? dev->product_string : "(none)",
+               dev->serial_number_string ? dev->serial_number_string : "(none)",
                dev->u.hid.usage_page, dev->u.hid.usage);
         break;
     }
@@ -174,7 +174,7 @@ int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport)
     assert(dev);
     assert(rport);
 
-    if (dev->state != HS_DEVICE_STATUS_ONLINE)
+    if (dev->status != HS_DEVICE_STATUS_ONLINE)
         return hs_error(HS_ERROR_NOT_FOUND, "Device '%s' is not connected", dev->path);
 
     switch (dev->type) {

@@ -55,7 +55,7 @@ bool _hs_monitor_has_device(_hs_htable *devices, const char *key, uint8_t iface)
     _hs_htable_foreach_hash(cur, devices, _hs_htable_hash_str(key)) {
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
 
-        if (strcmp(dev->key, key) == 0 && dev->iface == iface)
+        if (strcmp(dev->key, key) == 0 && dev->iface_number == iface)
             return true;
     }
 
@@ -64,7 +64,7 @@ bool _hs_monitor_has_device(_hs_htable *devices, const char *key, uint8_t iface)
 
 int _hs_monitor_add(_hs_htable *devices, hs_device *dev, hs_enumerate_func *f, void *udata)
 {
-    if (_hs_monitor_has_device(devices, dev->key, dev->iface))
+    if (_hs_monitor_has_device(devices, dev->key, dev->iface_number))
         return 0;
 
     hs_device_ref(dev);
@@ -86,7 +86,7 @@ void _hs_monitor_remove(_hs_htable *devices, const char *key, hs_enumerate_func 
         hs_device *dev = _hs_container_of(cur, hs_device, hnode);
 
         if (strcmp(dev->key, key) == 0) {
-            dev->state = HS_DEVICE_STATUS_DISCONNECTED;
+            dev->status = HS_DEVICE_STATUS_DISCONNECTED;
 
             hs_log(HS_LOG_DEBUG, "Remove device '%s'", dev->key);
 

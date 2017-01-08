@@ -32,27 +32,21 @@
 struct hs_monitor;
 
 struct hs_device {
-    _hs_htable_head hnode;
-
     unsigned int refcount;
-
+    _hs_htable_head hnode;
     char *key;
 
     hs_device_type type;
-
-    hs_device_status state;
+    hs_device_status status;
 
     char *location;
     char *path;
-
     uint16_t vid;
     uint16_t pid;
-
-    char *manufacturer;
-    char *product;
-    char *serial;
-
-    uint8_t iface;
+    char *manufacturer_string;
+    char *product_string;
+    char *serial_number_string;
+    uint8_t iface_number;
 
     union {
         struct {

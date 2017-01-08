@@ -579,9 +579,9 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
             } \
         }
 
-    READ_HID_PROPERTY(desc->iManufacturer, HidD_GetManufacturerString, &dev->manufacturer);
-    READ_HID_PROPERTY(desc->iProduct, HidD_GetProductString, &dev->product);
-    READ_HID_PROPERTY(desc->iSerialNumber, HidD_GetSerialNumberString, &dev->serial);
+    READ_HID_PROPERTY(desc->iManufacturer, HidD_GetManufacturerString, &dev->manufacturer_string);
+    READ_HID_PROPERTY(desc->iProduct, HidD_GetProductString, &dev->product_string);
+    READ_HID_PROPERTY(desc->iSerialNumber, HidD_GetSerialNumberString, &dev->serial_number_string);
 
 #undef READ_HID_PROPERTY
 
@@ -695,8 +695,8 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
         goto cleanup;
     }
 
-    dev->iface = 0;
-    r = sscanf(buf, "USB\\VID_%04hx&PID_%04hx&MI_%02hhu", &dev->vid, &dev->pid, &dev->iface);
+    dev->iface_number = 0;
+    r = sscanf(buf, "USB\\VID_%04hx&PID_%04hx&MI_%02hhu", &dev->vid, &dev->pid, &dev->iface_number);
     if (r < 2) {
         hs_log(HS_LOG_WARNING, "Failed to parse USB properties from '%s'", buf);
         r = 0;
@@ -770,9 +770,9 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
                 goto cleanup; \
         }
 
-    READ_STRING_DESCRIPTOR(node->DeviceDescriptor.iManufacturer, &dev->manufacturer);
-    READ_STRING_DESCRIPTOR(node->DeviceDescriptor.iProduct, &dev->product);
-    READ_STRING_DESCRIPTOR(node->DeviceDescriptor.iSerialNumber, &dev->serial);
+    READ_STRING_DESCRIPTOR(node->DeviceDescriptor.iManufacturer, &dev->manufacturer_string);
+    READ_STRING_DESCRIPTOR(node->DeviceDescriptor.iProduct, &dev->product_string);
+    READ_STRING_DESCRIPTOR(node->DeviceDescriptor.iSerialNumber, &dev->serial_number_string);
 
 #undef READ_STRING_DESCRIPTOR
 
@@ -872,7 +872,7 @@ static int process_win32_device(DEVINST inst, const char *id, hs_device **rdev)
         goto cleanup;
     }
     dev->refcount = 1;
-    dev->state = HS_DEVICE_STATUS_ONLINE;
+    dev->status = HS_DEVICE_STATUS_ONLINE;
 
     if (id) {
         dev->key = strdup(id);
