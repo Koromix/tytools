@@ -76,9 +76,6 @@ struct service_aggregate {
     io_service_t usb_service;
 };
 
-extern const struct _hs_device_vtable _hs_posix_device_vtable;
-extern const struct _hs_device_vtable _hs_darwin_hid_vtable;
-
 static struct device_class device_classes[] = {
     {"IOHIDDevice",       "IOUSBHostHIDDevice", HS_DEVICE_TYPE_HID},
     {"IOSerialBSDClient", "IOSerialBSDClient",  HS_DEVICE_TYPE_SERIAL},
@@ -189,14 +186,12 @@ static int find_device_node(struct service_aggregate *agg, hs_device *dev)
 
     if (IOObjectConformsTo(agg->dev_service, "IOSerialBSDClient")) {
         dev->type = HS_DEVICE_TYPE_SERIAL;
-        dev->vtable = &_hs_posix_device_vtable;
 
         r = get_ioregistry_value_string(agg->dev_service, CFSTR("IOCalloutDevice"), &dev->path);
         if (!r)
             hs_log(HS_LOG_WARNING, "Serial device does not have property 'IOCalloutDevice'");
     } else if (IOObjectConformsTo(agg->dev_service, "IOHIDDevice")) {
         dev->type = HS_DEVICE_TYPE_HID;
-        dev->vtable = &_hs_darwin_hid_vtable;
 
         r = get_ioregistry_entry_path(agg->dev_service, &dev->path);
     } else {

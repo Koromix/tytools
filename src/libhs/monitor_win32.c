@@ -93,8 +93,6 @@ __declspec(dllimport) BOOLEAN NTAPI HidD_GetPreparsedData(HANDLE HidDeviceObject
 __declspec(dllimport) BOOLEAN NTAPI HidD_FreePreparsedData(PHIDP_PREPARSED_DATA PreparsedData);
 #endif
 
-extern const struct _hs_device_vtable _hs_win32_device_vtable;
-
 #define MAX_USB_DEPTH 8
 #define MONITOR_CLASS_NAME "hs_monitor"
 
@@ -857,7 +855,6 @@ static int find_device_node(DEVINST inst, hs_device *dev)
         hs_log(HS_LOG_DEBUG, "Unknown device type for '%s'", dev->key);
         return 0;
     }
-    dev->vtable = &_hs_win32_device_vtable;
 
     return 1;
 }

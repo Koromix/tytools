@@ -209,7 +209,7 @@ static bool get_hid_device_property_number(IOHIDDeviceRef ref, CFStringRef prop,
     return CFNumberGetValue(data, type, rn);
 }
 
-static int open_hid_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
+int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 {
     hs_port *port;
     kern_return_t kret;
@@ -221,13 +221,15 @@ static int open_hid_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
     }
-    port->dev = hs_device_ref(dev);
-    port->mode = mode;
-    port->u.hid = (struct _hs_hid_darwin *)((char *)port +
-                                         _HS_ALIGN_SIZE_FOR_TYPE(sizeof(*port), struct _hs_hid_darwin));
-
+    port->type = dev->type;
     port->u.hid->poll_pipe[0] = -1;
     port->u.hid->poll_pipe[1] = -1;
+
+    port->u.hid = (struct _hs_hid_darwin *)((char *)port +
+                                            _HS_ALIGN_SIZE_FOR_TYPE(sizeof(*port), struct _hs_hid_darwin));
+    port->mode = mode;
+    port->path = dev->path;
+    port->dev = hs_device_ref(dev);
 
     _hs_list_init(&port->u.hid->reports);
     _hs_list_init(&port->u.hid->free_reports);
@@ -319,7 +321,7 @@ error:
     return r;
 }
 
-static void close_hid_device(hs_port *port)
+void _hs_darwin_close_hid_port(hs_port *port)
 {
     if (port) {
         if (port->u.hid->shutdown_source) {
@@ -365,22 +367,15 @@ static void close_hid_device(hs_port *port)
     free(port);
 }
 
-static hs_handle get_hid_poll_handle(const hs_port *port)
+hs_handle _hs_darwin_get_hid_port_poll_handle(const hs_port *port)
 {
     return port->u.hid->poll_pipe[0];
 }
 
-const struct _hs_device_vtable _hs_darwin_hid_vtable = {
-    .open = open_hid_device,
-    .close = close_hid_device,
-
-    .get_poll_handle = get_hid_poll_handle
-};
-
 ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
@@ -389,7 +384,7 @@ ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
     ssize_t r;
 
     if (port->u.hid->device_removed)
-        return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->dev->path);
+        return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->path);
 
     if (timeout) {
         struct pollfd pfd;
@@ -405,7 +400,7 @@ restart:
             if (errno == EINTR)
                 goto restart;
 
-            return hs_error(HS_ERROR_SYSTEM, "poll('%s') failed: %s", port->dev->path, strerror(errno));
+            return hs_error(HS_ERROR_SYSTEM, "poll('%s') failed: %s", port->path, strerror(errno));
         }
         if (!r)
             return 0;
@@ -449,7 +444,7 @@ static ssize_t send_report(hs_port *port, IOHIDReportType type, const uint8_t *b
     kern_return_t kret;
 
     if (port->u.hid->device_removed)
-        return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->dev->path);
+        return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->path);
 
     if (size < 2)
         return 0;
@@ -467,7 +462,7 @@ static ssize_t send_report(hs_port *port, IOHIDReportType type, const uint8_t *b
        to behave well in that case. The HID API does like to crash OSX for no reason. */
     kret = IOHIDDeviceSetReport(port->u.hid->hid_ref, type, report, buf, (CFIndex)size);
     if (kret != kIOReturnSuccess)
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->dev->path);
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->path);
 
     return (ssize_t)size + !report;
 }
@@ -475,7 +470,7 @@ static ssize_t send_report(hs_port *port, IOHIDReportType type, const uint8_t *b
 ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
@@ -485,7 +480,7 @@ ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size)
 ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
@@ -494,13 +489,13 @@ ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf
     kern_return_t kret;
 
     if (port->u.hid->device_removed)
-        return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->dev->path);
+        return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->path);
 
     len = (CFIndex)size - 1;
     kret = IOHIDDeviceGetReport(port->u.hid->hid_ref, kIOHIDReportTypeFeature, report_id,
                                 buf + 1, &len);
     if (kret != kIOReturnSuccess)
-        return hs_error(HS_ERROR_IO, "IOHIDDeviceGetReport() failed on '%s'", port->dev->path);
+        return hs_error(HS_ERROR_IO, "IOHIDDeviceGetReport() failed on '%s'", port->path);
 
     buf[0] = report_id;
     return (ssize_t)len;
@@ -509,7 +504,7 @@ ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf
 ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 

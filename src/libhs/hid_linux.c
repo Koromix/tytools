@@ -49,7 +49,7 @@ static bool detect_kernel26_byte_bug()
 ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
@@ -70,14 +70,14 @@ restart:
             if (errno == EINTR)
                 goto restart;
 
-            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->path,
                             strerror(errno));
         }
         if (!r)
             return 0;
     }
 
-    if (port->dev->u.hid.numbered_reports) {
+    if (port->u.file.numbered_hid_reports) {
         /* Work around a hidraw bug introduced in Linux 2.6.28 and fixed in Linux 2.6.34, see
            https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5a38f2c7c4dd53d5be097930902c108e362584a3 */
         if (detect_kernel26_byte_bug()) {
@@ -108,7 +108,7 @@ restart:
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
 
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->path,
                         strerror(errno));
     }
 
@@ -118,7 +118,7 @@ restart:
 ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
@@ -134,7 +134,7 @@ restart:
         if (errno == EINTR)
             goto restart;
 
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->path,
                         strerror(errno));
     }
 
@@ -144,7 +144,7 @@ restart:
 ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
@@ -160,7 +160,7 @@ restart:
         if (errno == EINTR)
             goto restart;
 
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->path,
                         strerror(errno));
     }
 
@@ -171,7 +171,7 @@ restart:
 ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_HID);
+    assert(port->type == HS_DEVICE_TYPE_HID);
     assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
@@ -186,7 +186,7 @@ restart:
         if (errno == EINTR)
             goto restart;
 
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->path,
                         strerror(errno));
     }
 

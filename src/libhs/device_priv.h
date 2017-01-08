@@ -31,13 +31,6 @@
 
 struct hs_monitor;
 
-struct _hs_device_vtable {
-    int (*open)(hs_device *dev, hs_port_mode mode, hs_port **rport);
-    void (*close)(hs_port *port);
-
-    hs_handle (*get_poll_handle)(const hs_port *port);
-};
-
 struct hs_device {
     _hs_htable_head hnode;
 
@@ -46,7 +39,6 @@ struct hs_device {
     char *key;
 
     hs_device_type type;
-    const struct _hs_device_vtable *vtable;
 
     hs_device_status state;
 
@@ -76,8 +68,10 @@ struct hs_device {
 };
 
 struct hs_port {
-    hs_device *dev;
+    hs_device_type type;
+    const char *path;
     hs_port_mode mode;
+    hs_device *dev;
 
     union {
 #if defined(_WIN32)
@@ -102,6 +96,7 @@ struct hs_port {
             // Used to work around an old kernel 2.6 (pre-2.6.34) hidraw bug
             uint8_t *read_buf;
             size_t read_buf_size;
+            bool numbered_hid_reports;
     #endif
         } file;
 
@@ -114,10 +109,18 @@ struct hs_port {
 
 void _hs_device_log(const struct hs_device *dev, const char *verb);
 
-#ifdef _WIN32
+int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport);
+void _hs_close_file_port(hs_port *port);
+hs_handle _hs_get_file_port_poll_handle(const hs_port *port);
+
+#if defined(_WIN32)
 void _hs_win32_start_async_read(hs_port *port);
 void _hs_win32_finalize_async_read(hs_port *port, int timeout);
 ssize_t _hs_win32_write_sync(hs_port *port, const uint8_t *buf, size_t size, int timeout);
+#elif defined(__APPLE__)
+int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport);
+void _hs_darwin_close_hid_port(hs_port *port);
+hs_handle _hs_darwin_get_hid_port_poll_handle(const hs_port *port);
 #endif
 
 #endif

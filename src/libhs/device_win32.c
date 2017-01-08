@@ -36,7 +36,7 @@ static CancelIoEx_func *CancelIoEx_ = CancelIoEx_resolve;
 
 #define READ_BUFFER_SIZE 16384
 
-static int open_win32_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
+int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 {
     hs_port *port = NULL;
     DWORD access;
@@ -47,8 +47,11 @@ static int open_win32_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
     }
-    port->dev = hs_device_ref(dev);
+    port->type = dev->type;
+
     port->mode = mode;
+    port->path = dev->path;
+    port->dev = hs_device_ref(dev);
 
     switch (mode) {
     case HS_PORT_MODE_READ:
@@ -94,7 +97,7 @@ static int open_win32_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
         dcb.DCBlength = sizeof(dcb);
         success = GetCommState(port->u.handle.h, &dcb);
         if (!success) {
-            r = hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", port->dev->path,
+            r = hs_error(HS_ERROR_SYSTEM, "GetCommState() failed on '%s': %s", port->path,
                          hs_win32_strerror(0));
             goto error;
         }
@@ -121,19 +124,19 @@ static int open_win32_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
         success = SetCommState(port->u.handle.h, &dcb);
         if (!success) {
             r = hs_error(HS_ERROR_SYSTEM, "SetCommState() failed on '%s': %s",
-                         port->dev->path, hs_win32_strerror(0));
+                         port->path, hs_win32_strerror(0));
             goto error;
         }
         success = SetCommTimeouts(port->u.handle.h, &timeouts);
         if (!success) {
             r = hs_error(HS_ERROR_SYSTEM, "SetCommTimeouts() failed on '%s': %s",
-                         port->dev->path, hs_win32_strerror(0));
+                         port->path, hs_win32_strerror(0));
             goto error;
         }
         success = PurgeComm(port->u.handle.h, PURGE_RXCLEAR);
         if (!success) {
             r = hs_error(HS_ERROR_SYSTEM, "PurgeComm(PURGE_RXCLEAR) failed on '%s': %s",
-                         port->dev->path, hs_win32_strerror(0));
+                         port->path, hs_win32_strerror(0));
             goto error;
         }
     }
@@ -197,7 +200,6 @@ error:
     return r;
 }
 
-static void close_win32_device(hs_port *port);
 static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
 {
     hs_port *port = udata;
@@ -212,7 +214,7 @@ static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
     }
 
     port->u.handle.read_pending_thread = 0;
-    close_win32_device(port);
+    _hs_close_file_port(port);
 
     return 0;
 }
@@ -223,7 +225,7 @@ static BOOL WINAPI CancelIoEx_resolve(HANDLE hFile, LPOVERLAPPED lpOverlapped)
     return CancelIoEx_(hFile, lpOverlapped);
 }
 
-static void close_win32_device(hs_port *port)
+void _hs_close_file_port(hs_port *port)
 {
     if (port) {
         hs_device_unref(port->dev);
@@ -269,17 +271,10 @@ static void close_win32_device(hs_port *port)
     free(port);
 }
 
-static hs_handle get_win32_handle(const hs_port *port)
+hs_handle _hs_get_file_port_poll_handle(const hs_port *port)
 {
     return port->u.handle.read_ov->hEvent;
 }
-
-const struct _hs_device_vtable _hs_win32_device_vtable = {
-    .open = open_win32_device,
-    .close = close_win32_device,
-
-    .get_poll_handle = get_win32_handle
-};
 
 // Call only when port->status != 0, otherwise you will leak kernel memory
 void _hs_win32_start_async_read(hs_port *port)
@@ -292,7 +287,7 @@ void _hs_win32_start_async_read(hs_port *port)
         CancelIo(port->u.handle.h);
 
         port->u.handle.read_status = hs_error(HS_ERROR_IO, "I/O error while reading from '%s'",
-                                           port->dev->path);
+                                           port->path);
         return;
     }
 
@@ -316,7 +311,7 @@ void _hs_win32_finalize_async_read(hs_port *port, int timeout)
 
         port->u.handle.read_pending_thread = 0;
         port->u.handle.read_status = hs_error(HS_ERROR_IO, "I/O error while reading from '%s'",
-                                           port->dev->path);
+                                           port->path);
         return;
     }
 
@@ -336,7 +331,7 @@ ssize_t _hs_win32_write_sync(hs_port *port, const uint8_t *buf, size_t size, int
     ov.hEvent = port->u.handle.write_event;
     success = WriteFile(port->u.handle.write_handle, buf, (DWORD)size, NULL, &ov);
     if (!success && GetLastError() != ERROR_IO_PENDING)
-        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->dev->path);
+        return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->path);
 
     if (timeout > 0)
         WaitForSingleObject(ov.hEvent, (DWORD)timeout);
@@ -354,7 +349,7 @@ ssize_t _hs_win32_write_sync(hs_port *port, const uint8_t *buf, size_t size, int
             if (!success)
                 len = 0;
         } else {
-            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->dev->path);
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->path);
         }
     }
 

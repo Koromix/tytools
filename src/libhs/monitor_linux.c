@@ -54,8 +54,6 @@ struct udev_aggregate {
     struct udev_device *iface;
 };
 
-extern const struct _hs_device_vtable _hs_posix_device_vtable;
-
 static struct device_subsystem device_subsystems[] = {
     {"hidraw", HS_DEVICE_TYPE_HID},
     {"tty",    HS_DEVICE_TYPE_SERIAL},
@@ -107,7 +105,6 @@ static int fill_device_details(struct udev_aggregate *agg, hs_device *dev)
     } else {
         return 0;
     }
-    dev->vtable = &_hs_posix_device_vtable;
 
     buf = udev_device_get_devnode(agg->dev);
     if (!buf || access(buf, F_OK) != 0)

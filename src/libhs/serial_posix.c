@@ -43,11 +43,11 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
     r = tcgetattr(port->u.file.fd, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get serial port settings from '%s': %s",
-                        port->dev->path, strerror(errno));
+                        port->path, strerror(errno));
     r = ioctl(port->u.file.fd, TIOCMGET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get modem bits from '%s': %s",
-                        port->dev->path, strerror(errno));
+                        port->path, strerror(errno));
 
     if (config->baudrate) {
         speed_t std_baudrate;
@@ -230,11 +230,11 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
     r = ioctl(port->u.file.fd, TIOCMSET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to set modem bits of '%s': %s",
-                        port->dev->path, strerror(errno));
+                        port->path, strerror(errno));
     r = tcsetattr(port->u.file.fd, TCSANOW, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to change serial port settings of '%s': %s",
-                        port->dev->path, strerror(errno));
+                        port->path, strerror(errno));
 
     return 0;
 }
@@ -250,11 +250,11 @@ int hs_serial_get_config(hs_port *port, hs_serial_config *config)
     r = tcgetattr(port->u.file.fd, &tio);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to read port settings from '%s': %s",
-                        port->dev->path, strerror(errno));
+                        port->path, strerror(errno));
     r = ioctl(port->u.file.fd, TIOCMGET, &modem_bits);
     if (r < 0)
         return hs_error(HS_ERROR_SYSTEM, "Unable to get modem bits from '%s': %s",
-                        port->dev->path, strerror(errno));
+                        port->path, strerror(errno));
 
     /* 0 is the INVALID value for all parameters, we keep that value if we can't interpret
        a termios value (only a cross-platform subset of it is exposed in hs_serial_config). */
@@ -393,7 +393,7 @@ int hs_serial_get_config(hs_port *port, hs_serial_config *config)
 ssize_t hs_serial_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(port->type == HS_DEVICE_TYPE_SERIAL);
     assert(port->mode & HS_PORT_MODE_READ);
     assert(buf);
     assert(size);
@@ -414,7 +414,7 @@ restart:
             if (errno == EINTR)
                 goto restart;
 
-            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->path,
                             strerror(errno));
         }
         if (!r)
@@ -426,7 +426,7 @@ restart:
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return 0;
 
-        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->dev->path,
+        return hs_error(HS_ERROR_IO, "I/O error while reading from '%s': %s", port->path,
                         strerror(errno));
     }
 
@@ -436,7 +436,7 @@ restart:
 ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int timeout)
 {
     assert(port);
-    assert(port->dev->type == HS_DEVICE_TYPE_SERIAL);
+    assert(port->type == HS_DEVICE_TYPE_SERIAL);
     assert(port->mode & HS_PORT_MODE_WRITE);
     assert(buf);
 
@@ -460,7 +460,7 @@ ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int time
             if (errno == EINTR)
                 continue;
 
-            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->path,
                             strerror(errno));
         }
         if (!r)
@@ -471,7 +471,7 @@ ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int time
             if (errno == EINTR)
                 continue;
 
-            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->dev->path,
+            return hs_error(HS_ERROR_IO, "I/O error while writing to '%s': %s", port->path,
                             strerror(errno));
         }
         written += (size_t)r;

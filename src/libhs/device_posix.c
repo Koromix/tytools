@@ -32,7 +32,7 @@
 #include "device_priv.h"
 #include "platform.h"
 
-static int open_posix_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
+int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 {
     hs_port *port;
 #ifdef __APPLE__
@@ -46,8 +46,12 @@ static int open_posix_device(hs_device *dev, hs_port_mode mode, hs_port **rport)
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
     }
-    port->dev = hs_device_ref(dev);
+    port->type = dev->type;
+    port->u.file.fd = -1;
+
     port->mode = mode;
+    port->path = dev->path;
+    port->dev = hs_device_ref(dev);
 
     fd_flags = O_CLOEXEC | O_NOCTTY | O_NONBLOCK;
     switch (mode) {
@@ -135,6 +139,11 @@ restart:
             goto error;
         }
     }
+#ifdef __linux__
+    else if (dev->type == HS_DEVICE_TYPE_HID) {
+        port->u.file.numbered_hid_reports = dev->u.hid.numbered_reports;
+    }
+#endif
 
     *rport = port;
     return 0;
@@ -144,7 +153,7 @@ error:
     return r;
 }
 
-static void close_posix_device(hs_port *port)
+void _hs_close_file_port(hs_port *port)
 {
     if (port) {
 #ifdef __linux__
@@ -159,14 +168,7 @@ static void close_posix_device(hs_port *port)
     free(port);
 }
 
-static hs_handle get_posix_fd(const hs_port *port)
+hs_handle _hs_get_file_port_poll_handle(const hs_port *port)
 {
     return port->u.file.fd;
 }
-
-const struct _hs_device_vtable _hs_posix_device_vtable = {
-    .open = open_posix_device,
-    .close = close_posix_device,
-
-    .get_poll_handle = get_posix_fd
-};
