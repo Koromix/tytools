@@ -5,8 +5,8 @@
  * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
  */
 
-#ifndef TY_UTIL_H
-#define TY_UTIL_H
+#ifndef TY_COMMON_PRIV_H
+#define TY_COMMON_PRIV_H
 
 #include "common.h"
 #include "compat_priv.h"

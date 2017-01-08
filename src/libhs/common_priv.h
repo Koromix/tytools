@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _HS_UTIL_H
-#define _HS_UTIL_H
+#ifndef _HS_COMMON_PRIV_H
+#define _HS_COMMON_PRIV_H
 
 #include "common.h"
 #include "compat_priv.h"
