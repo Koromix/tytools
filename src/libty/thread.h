@@ -24,11 +24,25 @@ typedef struct ty_thread {
 #endif
 } ty_thread;
 
-typedef struct ty_mutex {
-#if defined(_MSC_VER)
-    __declspec(align(4)) struct { char dummy[24]; } mutex; // CRITICAL_SECTION
+/* Define correctly-sized dummy types to get CRITICAL_SECTION and CONDITION_VARIABLE
+   without including windows.h. */
+#if defined(_MSC_VER) && defined(_WIN64)
+typedef __declspec(align(8)) struct { char dummy[40]; } TY_WIN32_CRITICAL_SECTION;
+typedef __declspec(align(8)) struct { char dummy[8]; } TY_WIN32_CONDITION_VARIABLE;
+#elif defined(_MSC_VER)
+typedef __declspec(align(4)) struct { char dummy[24]; } TY_WIN32_CRITICAL_SECTION;
+typedef __declspec(align(4)) struct { char dummy[4]; } TY_WIN32_CONDITION_VARIABLE;
+#elif defined(_WIN64)
+typedef struct { char dummy[40]; } __attribute__((__aligned__(8))) TY_WIN32_CRITICAL_SECTION;
+typedef struct { char dummy[8]; } __attribute__((__aligned__(8))) TY_WIN32_CONDITION_VARIABLE;
 #elif defined(_WIN32)
-    struct { char dummy[24]; } __attribute__((__aligned__(4))) mutex; // CRITICAL_SECTION
+typedef struct { char dummy[24]; } __attribute__((__aligned__(4))) TY_WIN32_CRITICAL_SECTION;
+typedef struct { char dummy[4]; } __attribute__((__aligned__(4))) TY_WIN32_CONDITION_VARIABLE;
+#endif
+
+typedef struct ty_mutex {
+#ifdef _WIN32
+    TY_WIN32_CRITICAL_SECTION mutex;
 #else
     pthread_mutex_t mutex;
 #endif
@@ -36,24 +50,13 @@ typedef struct ty_mutex {
 } ty_mutex;
 
 typedef struct ty_cond {
-#if defined(_MSC_VER)
+#ifdef _WIN32
     union {
-        __declspec(align(4)) struct { char dummy[4]; } cv; // CONDITION_VARIABLE
+        TY_WIN32_CONDITION_VARIABLE cv;
         struct {
             void *ev; // HANDLE
 
-            __declspec(align(4)) struct { char dummy[24]; } mutex; // CRITICAL_SECTION
-            unsigned int waiting;
-            unsigned int wakeup;
-        } xp;
-    };
-#elif defined(_WIN32)
-    union {
-        struct { char dummy[4]; } __attribute__((__aligned__(4))) cv; // CONDITION_VARIABLE
-        struct {
-            void *ev; // HANDLE
-
-            struct { char dummy[24]; } __attribute__((__aligned__(4))) mutex; // CRITICAL_SECTION
+            TY_WIN32_CRITICAL_SECTION mutex;
             unsigned int waiting;
             unsigned int wakeup;
         } xp;
