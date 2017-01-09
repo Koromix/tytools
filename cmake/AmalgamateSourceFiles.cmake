@@ -28,7 +28,12 @@ foreach(line IN LISTS lines)
         set(include_file "${CMAKE_MATCH_1}")
         list(FIND EXCLUDE "${include_file}" exclude_index)
         if(exclude_index EQUAL -1)
-            get_filename_component(include_file_full "${include_file}" REALPATH BASE_DIR "${src_dir}")
+            if(NOT IS_ABSOLUTE "${include_file}")
+                set(include_file_full "${src_dir}/${include_file}")
+            else()
+                set(include_file_full "${include_file}")
+            endif()
+
             file(READ "${include_file_full}" include_content)
             string(REGEX REPLACE "\n$" "" include_content "${include_content}")
 
@@ -52,10 +57,10 @@ foreach(line IN LISTS lines)
 // ${include_file}\n\
 // ------------------------------------\n\n\
 ${include_content}\n\n")
-
-            continue()
+        else()
+            file(APPEND "${DEST}" "${line}\n")
         endif()
+    else()
+        file(APPEND "${DEST}" "${line}\n")
     endif()
-
-    file(APPEND "${DEST}" "${line}\n")
 endforeach()

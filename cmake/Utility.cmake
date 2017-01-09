@@ -46,19 +46,23 @@ else()
     endfunction()
 endif()
 
-set(utility_source_dir "${CMAKE_CURRENT_LIST_DIR}")
+set(utility_list_dir "${CMAKE_CURRENT_LIST_DIR}")
 function(add_amalgamated_file TARGET DEST SRC)
     cmake_parse_arguments("OPT" "" "" "EXCLUDE" ${ARGN})
 
-    get_filename_component(DEST "${DEST}" REALPATH BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-    get_filename_component(SRC "${SRC}" REALPATH BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+    if(NOT IS_ABSOLUTE "${DEST}")
+        set(DEST "${CMAKE_CURRENT_BINARY_DIR}/${DEST}")
+    endif()
+    if(NOT IS_ABSOLUTE "${SRC}")
+        set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SRC}")
+    endif()
 
     # Without that the semicolons are turned into spaces... Fuck CMake.
     string(REPLACE ";" "\\;" opt_exclude_escaped "${OPT_EXCLUDE}")
     add_custom_command(
         TARGET "${TARGET}" POST_BUILD
         COMMAND ${CMAKE_COMMAND}
-            -DEXCLUDE="${opt_exclude_escaped}" -P "${utility_source_dir}/AmalgamateSourceFiles.cmake" "${SRC}" "${DEST}")
+            -DEXCLUDE="${opt_exclude_escaped}" -P "${utility_list_dir}/AmalgamateSourceFiles.cmake" "${SRC}" "${DEST}")
 
     target_sources(${TARGET} PRIVATE "${SRC}")
     set_source_files_properties("${SRC}" PROPERTIES HEADER_FILE_ONLY 1)
