@@ -28,38 +28,31 @@
 #include "common_priv.h"
 #include <stdarg.h>
 
-#ifdef HAVE_CONFIG_H
+#ifdef _HS_HAVE_CONFIG_H
     #include "config.h"
 #else
     /* This file is used when building with qmake, otherwise CMake detects
        these features. */
-    #if defined(__MINGW32__)
-        /* #undef HAVE_STPCPY */
-        #define HAVE_ASPRINTF
-    #elif defined(_MSC_VER)
-        /* #undef HAVE_STPCPY */
-        /* #undef HAVE_ASPRINTF */
-    #elif defined(__APPLE__)
-        #define HAVE_STPCPY
-        #define HAVE_ASPRINTF
-    #elif defined(__linux__)
-        #define HAVE_STPCPY
-        #define HAVE_ASPRINTF
-    #else
-        #error "Unknown platform, build with CMake instead"
+    #if defined(_GNU_SOURCE) || _POSIX_C_SOURCE >= 200809L
+        #define _HS_HAVE_STPCPY
+    #endif
+    #ifdef _GNU_SOURCE
+        #define _HS_HAVE_ASPRINTF
     #endif
 #endif
 
-#ifndef HAVE_STPCPY
+#ifdef _HS_HAVE_STPCPY
+    #define _hs_stpcpy stpcpy
+#else
 char *_hs_stpcpy(char *dest, const char *src);
-    #define stpcpy _hs_stpcpy
 #endif
 
-#ifndef HAVE_ASPRINTF
+#ifdef _HS_HAVE_ASPRINTF
+    #define _hs_asprintf asprintf
+    #define _hs_vasprintf vasprintf
+#else
 int _hs_asprintf(char **strp, const char *fmt, ...) HS_PRINTF_FORMAT(2, 3);
-    #define asprintf _hs_asprintf
 int _hs_vasprintf(char **strp, const char *fmt, va_list ap);
-    #define vasprintf _hs_vasprintf
 #endif
 
 #endif

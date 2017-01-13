@@ -180,7 +180,7 @@ static int build_device_path(const char *id, const GUID *guid, char **rpath)
     if (!path)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
-    ptr = stpcpy(path, "\\\\.\\");
+    ptr = _hs_stpcpy(path, "\\\\.\\");
     while (*id) {
         if (*id == '\\') {
             *ptr++ = '#';
@@ -816,7 +816,7 @@ static int get_device_comport(DEVINST inst, char **rnode)
         buf[len + 1] = 0;
 
     // You need the \\.\ prefix to open COM ports beyond COM9
-    r = asprintf(&node, "%s%s", len > 4 ? "\\\\.\\" : "", buf);
+    r = _hs_asprintf(&node, "%s%s", len > 4 ? "\\\\.\\" : "", buf);
     if (r < 0)
         return hs_error(HS_ERROR_MEMORY, NULL);
 

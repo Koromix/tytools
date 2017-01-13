@@ -310,7 +310,7 @@ static int fill_device_details(struct service_aggregate *agg, hs_device *dev)
 #undef GET_MANDATORY_PROPERTY_NUMBER
 #undef GET_OPTIONAL_PROPERTY_STRING
 
-    r = asprintf(&dev->key, "%"PRIx64, session);
+    r = _hs_asprintf(&dev->key, "%"PRIx64, session);
     if (r < 0)
         return hs_error(HS_ERROR_MEMORY, NULL);
 

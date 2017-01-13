@@ -22,5 +22,5 @@
  * THE SOFTWARE.
  */
 
-#cmakedefine HAVE_STPCPY
-#cmakedefine HAVE_ASPRINTF
+#cmakedefine _HS_HAVE_STPCPY
+#cmakedefine _HS_HAVE_ASPRINTF

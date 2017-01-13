@@ -24,7 +24,7 @@
 
 #include "common_priv.h"
 
-#ifndef HAVE_STPCPY
+#ifndef _HS_HAVE_STPCPY
 char *_hs_stpcpy(char *dest, const char *src)
 {
     while ((*dest++ = *src++))
@@ -33,14 +33,14 @@ char *_hs_stpcpy(char *dest, const char *src)
 }
 #endif
 
-#ifndef HAVE_ASPRINTF
+#ifndef _HS_HAVE_ASPRINTF
 int _hs_asprintf(char **strp, const char *fmt, ...)
 {
     va_list ap;
     int r;
 
     va_start(ap, fmt);
-    r = vasprintf(strp, fmt, ap);
+    r = _hs_vasprintf(strp, fmt, ap);
     va_end(ap);
 
     return r;

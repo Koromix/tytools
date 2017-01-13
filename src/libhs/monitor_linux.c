@@ -64,6 +64,10 @@ static pthread_mutex_t udev_init_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct udev *udev;
 static int common_eventfd = -1;
 
+#ifndef _GNU_SOURCE
+int dup3(int oldfd, int newfd, int flags);
+#endif
+
 static int compute_device_location(struct udev_device *dev, char **rlocation)
 {
     const char *busnum, *devpath;
@@ -76,7 +80,7 @@ static int compute_device_location(struct udev_device *dev, char **rlocation)
     if (!busnum || !devpath)
         return 0;
 
-    r = asprintf(&location, "usb-%s-%s", busnum, devpath);
+    r = _hs_asprintf(&location, "usb-%s-%s", busnum, devpath);
     if (r < 0)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
