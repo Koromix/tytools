@@ -128,7 +128,6 @@ endif()
 enable_unity_build(libhs)
 
 add_amalgamated_file(libhs "${CMAKE_BINARY_DIR}/libhs.h" libhs.h)
-add_amalgamated_file(libhs "${CMAKE_BINARY_DIR}/libhs.c" libhs.c EXCLUDE libhs.h)
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/enumerate_devices)
