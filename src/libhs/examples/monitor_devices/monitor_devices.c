@@ -37,7 +37,7 @@ static int device_callback(hs_device *dev, void *udata)
 {
     (void)(udata);
 
-    const char *event = "?", *type = "?";
+    const char *event = "?";
 
     /* Use hs_device_get_status() to differenciate between added and removed devices,
        when called from hs_monitor_list() it is always HS_DEVICE_STATUS_ONLINE. */
@@ -50,28 +50,16 @@ static int device_callback(hs_device *dev, void *udata)
         break;
     }
 
-    switch (dev->type) {
-    case HS_DEVICE_TYPE_HID:
-        type = "hid";
-        break;
-    case HS_DEVICE_TYPE_SERIAL:
-        type = "serial";
-        break;
-    }
-
     printf("%s %s@%"PRIu8" %04"PRIx16":%04"PRIx16" (%s)\n",
-           event, dev->location, dev->iface_number, dev->vid, dev->pid, type);
-
-#define PRINT_PROPERTY(name, prop) \
-        if (dev->prop) \
-            printf("  - " name " %s\n", dev->prop);
-
-    PRINT_PROPERTY("device node:  ", path);
-    PRINT_PROPERTY("manufacturer: ", manufacturer_string);
-    PRINT_PROPERTY("product:      ", product_string);
-    PRINT_PROPERTY("serial number:", serial_number_string);
-
-#undef PRINT_PROPERTY
+           event, dev->location, dev->iface_number, dev->vid, dev->pid,
+           hs_device_type_strings[dev->type]);
+    printf("  - device node:   %s\n", dev->path);
+    if (dev->manufacturer_string)
+        printf("  - manufacturer:  %s\n", dev->manufacturer_string);
+    if (dev->product_string)
+        printf("  - product:       %s\n", dev->product_string);
+    if (dev->serial_number_string)
+        printf("  - serial number: %s\n", dev->serial_number_string);
 
     /* If you return a non-zero value, the enumeration/refresh is aborted and this value
        is returned from the calling function. */
