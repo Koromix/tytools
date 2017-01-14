@@ -55,6 +55,7 @@ typedef enum hs_device_status {
  * @brief Device type.
  *
  * @sa hs_device
+ * @sa hs_device_type_strings
  */
 typedef enum hs_device_type {
     /** HID device. */
@@ -62,6 +63,22 @@ typedef enum hs_device_type {
     /** Serial device. */
     HS_DEVICE_TYPE_SERIAL
 } hs_device_type;
+
+/**
+ * @ingroup device
+ * @brief Device type strings
+ *
+ * Use hs_device_type_strings[dev->type] to get a string representation:
+ * - HS_DEVICE_TYPE_HID = "hid"
+ * - HS_DEVICE_TYPE_SERIAL = "serial"
+ *
+ * @sa hs_device_type
+ */
+static const char *const hs_device_type_strings[] = {
+    NULL,
+    "hid",
+    "serial"
+};
 
 /**
  * @ingroup device
