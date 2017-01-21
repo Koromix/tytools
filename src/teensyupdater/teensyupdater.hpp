@@ -8,31 +8,31 @@
 
    See the LICENSE file for more details. */
 
-#ifndef UPTY_HH
-#define UPTY_HH
+#ifndef TEENSYUPDATER_HH
+#define TEENSYUPDATER_HH
 
 #include <QApplication>
 
 #include <memory>
 
-#define upTy (UpTy::instance())
+#define teensyUpdater (TeensyUpdater::instance())
 
 class LogDialog;
 class Monitor;
 
-class UpTy: public QApplication {
+class TeensyUpdater: public QApplication {
     Q_OBJECT
 
     std::unique_ptr<Monitor> monitor_;
     std::unique_ptr<LogDialog> log_dialog_;
 
 public:
-    UpTy(int &argc, char *argv[]);
-    virtual ~UpTy();
+    TeensyUpdater(int &argc, char *argv[]);
+    virtual ~TeensyUpdater();
 
     static int exec();
 
-    static UpTy *instance() { return qobject_cast<UpTy *>(QCoreApplication::instance()); }
+    static TeensyUpdater *instance() { return qobject_cast<TeensyUpdater *>(QCoreApplication::instance()); }
     Monitor *monitor() { return monitor_.get(); }
 
     int run();

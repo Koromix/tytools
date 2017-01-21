@@ -16,8 +16,8 @@
 #include "../libty/common.h"
 #include "../tyqt/log_dialog.hpp"
 #include "../tyqt/monitor.hpp"
+#include "teensyupdater.hpp"
 #include "updater_window.hpp"
-#include "upty.hpp"
 
 #ifdef QT_STATIC
     #include <QtPlugin>
@@ -30,11 +30,11 @@
 
 using namespace std;
 
-UpTy::UpTy(int &argc, char *argv[])
+TeensyUpdater::TeensyUpdater(int &argc, char *argv[])
     : QApplication(argc, argv)
 {
     setOrganizationName("ty");
-    setApplicationName(TY_CONFIG_UPTY_NAME);
+    setApplicationName(TY_CONFIG_TEENSYUPDATER_NAME);
     setApplicationVersion(ty_version_string());
 
     ty_message_redirect([](const ty_message_data *msg, void *) {
@@ -42,46 +42,46 @@ UpTy::UpTy(int &argc, char *argv[])
 
         if (msg->type == TY_MESSAGE_LOG) {
             if (msg->u.log.level <= TY_LOG_WARNING) {
-                upTy->reportError(msg->u.log.msg, msg->ctx);
+                teensyUpdater->reportError(msg->u.log.msg, msg->ctx);
             } else {
-                upTy->reportDebug(msg->u.log.msg, msg->ctx);
+                teensyUpdater->reportDebug(msg->u.log.msg, msg->ctx);
             }
         }
     }, nullptr);
 
     log_dialog_ = unique_ptr<LogDialog>(new LogDialog());
     log_dialog_->setAttribute(Qt::WA_QuitOnClose, false);
-    log_dialog_->setWindowIcon(QIcon(":/upty"));
-    connect(this, &UpTy::globalError, log_dialog_.get(), &LogDialog::appendError);
-    connect(this, &UpTy::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
+    log_dialog_->setWindowIcon(QIcon(":/teensyupdater"));
+    connect(this, &TeensyUpdater::globalError, log_dialog_.get(), &LogDialog::appendError);
+    connect(this, &TeensyUpdater::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
 }
 
-UpTy::~UpTy()
+TeensyUpdater::~TeensyUpdater()
 {
     ty_message_redirect(ty_message_default_handler, nullptr);
 }
 
-void UpTy::showLogWindow()
+void TeensyUpdater::showLogWindow()
 {
     log_dialog_->show();
 }
 
-void UpTy::reportError(const QString &msg, const QString &ctx)
+void TeensyUpdater::reportError(const QString &msg, const QString &ctx)
 {
     emit globalError(msg, ctx);
 }
 
-void UpTy::reportDebug(const QString &msg, const QString &ctx)
+void TeensyUpdater::reportDebug(const QString &msg, const QString &ctx)
 {
     emit globalDebug(msg, ctx);
 }
 
-int UpTy::exec()
+int TeensyUpdater::exec()
 {
-    return upTy->run();
+    return teensyUpdater->run();
 }
 
-int UpTy::run()
+int TeensyUpdater::run()
 {
     monitor_.reset(new Monitor());
     monitor_->setSerialByDefault(false);
@@ -107,6 +107,6 @@ int main(int argc, char *argv[])
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
     qRegisterMetaType<uint64_t>("uint64_t");
 
-    UpTy app(argc, argv);
+    TeensyUpdater app(argc, argv);
     return app.exec();
 }

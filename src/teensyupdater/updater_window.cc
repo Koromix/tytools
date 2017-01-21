@@ -15,8 +15,8 @@
 #include "../tyqt/board.hpp"
 #include "../tyqt/monitor.hpp"
 #include "../tyqt/task.hpp"
+#include "teensyupdater.hpp"
 #include "updater_window.hpp"
-#include "upty.hpp"
 
 using namespace std;
 
@@ -31,7 +31,7 @@ QVariant UpdaterWindowModelFilter::data(const QModelIndex &index, int role) cons
 }
 
 UpdaterWindow::UpdaterWindow(QWidget *parent)
-    : QMainWindow(parent), monitor_(upTy->monitor())
+    : QMainWindow(parent), monitor_(teensyUpdater->monitor())
 {
     setupUi(this);
     setWindowTitle(QApplication::applicationName());
@@ -42,9 +42,9 @@ UpdaterWindow::UpdaterWindow(QWidget *parent)
 
     connect(actionUpload, &QAction::triggered, this, &UpdaterWindow::uploadNewToCurrent);
     connect(actionReset, &QAction::triggered, this, &UpdaterWindow::resetCurrent);
-    connect(actionQuit, &QAction::triggered, this, &UpTy::quit);
+    connect(actionQuit, &QAction::triggered, this, &TeensyUpdater::quit);
 
-    connect(actionOpenLog, &QAction::triggered, upTy, &UpTy::showLogWindow);
+    connect(actionOpenLog, &QAction::triggered, teensyUpdater, &TeensyUpdater::showLogWindow);
 #ifdef TY_CONFIG_URL_WEBSITE
     connect(actionWebsite, &QAction::triggered, this, &UpdaterWindow::openWebsite);
 #else
@@ -64,7 +64,7 @@ UpdaterWindow::UpdaterWindow(QWidget *parent)
     connect(resetButton, &QToolButton::clicked, this, &UpdaterWindow::resetCurrent);
 
     // Error messages
-    connect(upTy, &UpTy::globalError, this, &UpdaterWindow::showErrorMessage);
+    connect(teensyUpdater, &TeensyUpdater::globalError, this, &UpdaterWindow::showErrorMessage);
 
     if (!current_board_)
         changeCurrentBoard(nullptr);
