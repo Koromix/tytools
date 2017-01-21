@@ -113,11 +113,15 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(qtpng_LIBRARIES qtpng
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
 
             target_link_libraries(EasyQt5 INTERFACE
                 Qt5::QCocoaIntegrationPlugin Qt5::PrintSupport
                 Qt5::Core Qt5::Widgets Qt5::Network
-                ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES}
+                ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES} ${qtpng_LIBRARIES}
                 ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${SECURITY_LIBRARIES}
                 ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES} ${OPENGL_LIBRARIES})
         endif()
