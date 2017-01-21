@@ -183,7 +183,6 @@ if(WIN32)
     set(CPACK_WIX_PRODUCT_ICON "${CPACK_PACKAGE_ICON}")
     set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/images/wix_banner.jpg")
     set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/images/wix_dialog.jpg")
-    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
 
     if(CONFIG_TEENSYCOMMANDER_BUILD OR CONFIG_TYCMD_BUILD)
         # Someday, notepad will support LF newlines and this won't be necessary anymore
