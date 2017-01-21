@@ -1,7 +1,12 @@
-# ty, a collection of GUI and command-line tools to manage Teensy devices
-#
-# Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
-# Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
+# Teensy Tools - public domain
+# Niels Martignène <niels.martignene@gmail.com>
+# https://neodd.com/teensytools
+
+# This software is in the public domain. Where that dedication is not
+# recognized, you are granted a perpetual, irrevocable license to copy,
+# distribute, and modify this file as you see fit.
+
+# See the LICENSE file for more details.
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "")
 cmake_minimum_required(VERSION 3.1)
@@ -24,30 +29,31 @@ endif()
 set(VERSION_DEFAULT "0.8.0" CACHE STRING "Default version number")
 set(VERSION_WITH_GIT ON CACHE BOOL "Compute version using git tags (fallback)")
 
-set(CONFIG_TYC_BUILD ON CACHE BOOL "Build tyc (Teensy command-line manager)")
-set(CONFIG_TYC_EXECUTABLE "tyc" CACHE STRING "Rename tyc executable")
-set(CONFIG_TYC_NAME "tyc" CACHE STRING "Rename tyc application")
+set(CONFIG_TYCMD_BUILD ON CACHE BOOL "Build tycmd (Teensy command-line manager)")
+set(CONFIG_TYCMD_EXECUTABLE "tycmd" CACHE STRING "Rename tycmd executable")
+set(CONFIG_TYCMD_NAME "tycmd" CACHE STRING "Rename tycmd application")
 
-set(CONFIG_TYQT_BUILD ON CACHE BOOL "Build TyQt (Teensy GUI manager)")
+set(CONFIG_TEENSYCOMMANDER_BUILD ON CACHE BOOL "Build Teensy Commander (Teensy GUI manager)")
 if(WIN32 OR APPLE)
-    set(CONFIG_TYQT_EXECUTABLE "TyQt" CACHE STRING "Rename TyQt executable")
+    set(CONFIG_TEENSYCOMMANDER_EXECUTABLE "TeensyCommander" CACHE STRING "Rename Teensy Commander executable")
 else()
-    set(CONFIG_TYQT_EXECUTABLE "tyqt" CACHE STRING "Rename TyQt executable")
+    set(CONFIG_TEENSYCOMMANDER_EXECUTABLE "teensycommander" CACHE STRING "Rename Teensy Commander executable")
 endif()
-set(CONFIG_TYQT_NAME "TyQt" CACHE STRING "Rename TyQt application")
+set(CONFIG_TEENSYCOMMANDER_NAME "Teensy Commander" CACHE STRING "Rename Teensy Commander application")
 
-set(CONFIG_UPTY_BUILD ON CACHE BOOL "Build UpTy (Teensy GUI updater)")
+set(CONFIG_TEENSYUPDATER_BUILD ON CACHE BOOL "Build Teensy Updater (Teensy GUI updater)")
 if(WIN32 OR APPLE)
-    set(CONFIG_UPTY_EXECUTABLE "UpTy" CACHE STRING "Rename UpTy executable")
+    set(CONFIG_TEENSYUPDATER_EXECUTABLE "TeensyUpdater" CACHE STRING "Rename Teensy Updater executable")
 else()
-    set(CONFIG_UPTY_EXECUTABLE "upty" CACHE STRING "Rename UpTy executable")
+    set(CONFIG_TEENSYUPDATER_EXECUTABLE "teensyupdater" CACHE STRING "Rename Teensy Updater executable")
 endif()
-set(CONFIG_UPTY_NAME "UpTy" CACHE STRING "Rename UpTy application")
+set(CONFIG_TEENSYUPDATER_NAME "Teensy Updater" CACHE STRING "Rename Teensy Updater application")
 
 set(CONFIG_URL_WEBSITE "https://github.com/Koromix/ty" CACHE STRING "Project website")
 set(CONFIG_URL_BUGS "https://github.com/Koromix/ty/issues" CACHE STRING "Project bug report page")
 
-set(CONFIG_PACKAGE_NAME "TyQt" CACHE STRING "Package / installer name")
+set(CONFIG_PACKAGE_NAME "Teensy Tools" CACHE STRING "Package / installer name")
+set(CONFIG_PACKAGE_FILENAME "TeensyTools" CACHE STRING "Package / installer filename")
 
 if(CMAKE_C_COMPILER_ID MATCHES "[Cc]lang")
     set(CMAKE_COMPILER_IS_CLANG 1)
@@ -134,16 +140,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 add_subdirectory(src/libhs)
 add_subdirectory(src/libty)
-if(CONFIG_TYC_BUILD)
-    add_subdirectory(src/tyc)
+if(CONFIG_TYCMD_BUILD)
+    add_subdirectory(src/tycmd)
 endif()
-if(CONFIG_TYQT_BUILD)
-    add_subdirectory(src/tyqt)
-    list(APPEND CPACK_PACKAGE_EXECUTABLES tyqt "${CONFIG_TYQT_NAME}")
+if(CONFIG_TEENSYCOMMANDER_BUILD)
+    add_subdirectory(src/teensycommander)
+    list(APPEND CPACK_PACKAGE_EXECUTABLES teensycommander "${CONFIG_TEENSYCOMMANDER_NAME}")
 endif()
-if(CONFIG_UPTY_BUILD)
-    add_subdirectory(src/upty)
-    list(APPEND CPACK_PACKAGE_EXECUTABLES upty "${CONFIG_UPTY_NAME}")
+if(CONFIG_TEENSYUPDATER_BUILD)
+    add_subdirectory(src/teensyupdater)
+    list(APPEND CPACK_PACKAGE_EXECUTABLES teensyupdater "${CONFIG_TEENSYUPDATER_NAME}")
 endif()
 
 set(BUILD_TESTS ON CACHE BOOL "Build unit tests and enable CTest")
@@ -154,18 +160,18 @@ endif()
 
 set(CPACK_PACKAGE_NAME "${CONFIG_PACKAGE_NAME}")
 string(REGEX REPLACE "\\-.*$" "" CPACK_PACKAGE_VERSION "${VERSION}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CONFIG_PACKAGE_FILENAME}")
 
 if(WIN32)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION}-win64")
+        set(CPACK_PACKAGE_FILE_NAME "${CONFIG_PACKAGE_FILENAME}-${VERSION}-win64")
     else()
-        set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION}-win32")
+        set(CPACK_PACKAGE_FILE_NAME "${CONFIG_PACKAGE_FILENAME}-${VERSION}-win32")
     endif()
-    if(CONFIG_TYQT_BUILD)
-        set(CPACK_PACKAGE_ICON "${TYQT_ICON_FILE_PREFIX}.ico")
-    elseif(CONFIG_UPTY_BUILD)
-        set(CPACK_PACKAGE_ICON "${UPTY_ICON_FILE_PREFIX}.ico")
+    if(CONFIG_TEENSYCOMMANDER_BUILD)
+        set(CPACK_PACKAGE_ICON "${TEENSYCOMMANDER_ICON_FILE_PREFIX}.ico")
+    elseif(CONFIG_TEENSYUPDATER_BUILD)
+        set(CPACK_PACKAGE_ICON "${TEENSYUPDATER_ICON_FILE_PREFIX}.ico")
     endif()
     if (NOT CONFIG_VARIANT AND NOT CMAKE_CROSSCOMPILING)
         set(CPACK_GENERATOR ZIP WIX)
@@ -177,9 +183,8 @@ if(WIN32)
     set(CPACK_WIX_PRODUCT_ICON "${CPACK_PACKAGE_ICON}")
     set(CPACK_WIX_UI_BANNER "${CMAKE_SOURCE_DIR}/contrib/images/wix_banner.jpg")
     set(CPACK_WIX_UI_DIALOG "${CMAKE_SOURCE_DIR}/contrib/images/wix_dialog.jpg")
-    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
 
-    if(CONFIG_TYQT_BUILD OR CONFIG_TYC_BUILD)
+    if(CONFIG_TEENSYCOMMANDER_BUILD OR CONFIG_TYCMD_BUILD)
         # Someday, notepad will support LF newlines and this won't be necessary anymore
         file(WRITE "${CMAKE_BINARY_DIR}/dos2unix.cmake" "configure_file(\${IN} \${OUT} NEWLINE_STYLE CRLF)")
         add_custom_command(OUTPUT README_crlf.md COMMAND ${CMAKE_COMMAND}
@@ -199,15 +204,15 @@ if(WIN32)
 
     include(CPack)
 elseif(APPLE)
-    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION}-osx")
-    if(CONFIG_TYQT_BUILD)
-        set(CPACK_PACKAGE_ICON "${TYQT_ICON_FILE_PREFIX}.icns")
-    elseif(CONFIG_UPTY_BUILD)
-        set(CPACK_PACKAGE_ICON "${UPTY_ICON_FILE_PREFIX}.icns")
+    set(CPACK_PACKAGE_FILE_NAME "${CONFIG_PACKAGE_FILENAME}-${VERSION}-osx")
+    if(CONFIG_TEENSYCOMMANDER_BUILD)
+        set(CPACK_PACKAGE_ICON "${TEENSYCOMMANDER_ICON_FILE_PREFIX}.icns")
+    elseif(CONFIG_TEENSYUPDATER_BUILD)
+        set(CPACK_PACKAGE_ICON "${TEENSYUPDATER_ICON_FILE_PREFIX}.icns")
     endif()
     set(CPACK_GENERATOR DragNDrop)
 
-    if(CONFIG_TYQT_BUILD OR CONFIG_TYC_BUILD)
+    if(CONFIG_TEENSYCOMMANDER_BUILD OR CONFIG_TYCMD_BUILD)
         install(FILES README.md DESTINATION . RENAME README.txt)
         install(FILES LICENSE.txt DESTINATION .)
     endif()

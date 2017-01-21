@@ -44,8 +44,8 @@ deploy:
     api_key:
       secure: "SV8zwvJsQsGbojZy6Z8CHeRGmZse3AOoohPIiog2o5/6tH191ei3GakTEpHsfYe2"
     subject: koromix
-    repo: ty
-    package: ty
+    repo: teensytools
+    package: teensytools
     version: $(APPVEYOR_REPO_BRANCH)
     publish: true
   - provider: GitHub
