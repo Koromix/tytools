@@ -19,7 +19,7 @@
 
 TY_C_BEGIN
 
-extern const char *tyc_executable_name;
+extern const char *tycmd_executable_name;
 
 void print_common_options(FILE *f);
 bool parse_common_option(ty_optline_context *optl, char *arg);

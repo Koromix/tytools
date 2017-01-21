@@ -17,7 +17,7 @@ static bool identify_output_json = false;
 
 static void print_identify_usage(FILE *f)
 {
-    fprintf(f, "usage: %s identify [options] <firmwares>\n\n", tyc_executable_name);
+    fprintf(f, "usage: %s identify [options] <firmwares>\n\n", tycmd_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");

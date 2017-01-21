@@ -37,7 +37,7 @@ static const struct command commands[] = {
     {0}
 };
 
-const char *tyc_executable_name;
+const char *tycmd_executable_name;
 
 static const char *main_board_tag = NULL;
 
@@ -46,12 +46,12 @@ static ty_board *main_board;
 
 static void print_version(FILE *f)
 {
-    fprintf(f, "%s %s\n", tyc_executable_name, ty_version_string());
+    fprintf(f, "%s %s\n", tycmd_executable_name, ty_version_string());
 }
 
 static void print_main_usage(FILE *f)
 {
-    fprintf(f, "usage: %s <command> [options]\n\n", tyc_executable_name);
+    fprintf(f, "usage: %s <command> [options]\n\n", tycmd_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
@@ -182,14 +182,14 @@ int main(int argc, char *argv[])
     int r;
 
     if (argc && *argv[0]) {
-        tyc_executable_name = argv[0] + strlen(argv[0]);
-        while (tyc_executable_name > argv[0] && !strchr(TY_PATH_SEPARATORS, tyc_executable_name[-1]))
-            tyc_executable_name--;
+        tycmd_executable_name = argv[0] + strlen(argv[0]);
+        while (tycmd_executable_name > argv[0] && !strchr(TY_PATH_SEPARATORS, tycmd_executable_name[-1]))
+            tycmd_executable_name--;
     } else {
 #ifdef _WIN32
-        tyc_executable_name = TY_CONFIG_TYC_EXECUTABLE ".exe";
+        tycmd_executable_name = TY_CONFIG_TYCMD_EXECUTABLE ".exe";
 #else
-        tyc_executable_name = TY_CONFIG_TYC_EXECUTABLE;
+        tycmd_executable_name = TY_CONFIG_TYCMD_EXECUTABLE;
 #endif
     }
 

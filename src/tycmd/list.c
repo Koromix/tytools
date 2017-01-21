@@ -31,7 +31,7 @@ static bool list_collection_started;
 
 static void print_list_usage(FILE *f)
 {
-    fprintf(f, "usage: %s list [options]\n\n", tyc_executable_name);
+    fprintf(f, "usage: %s list [options]\n\n", tycmd_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");

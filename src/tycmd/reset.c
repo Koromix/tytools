@@ -15,7 +15,7 @@ static bool reset_bootloader = false;
 
 static void print_reset_usage(FILE *f)
 {
-    fprintf(f, "usage: %s reset\n\n", tyc_executable_name);
+    fprintf(f, "usage: %s reset\n\n", tycmd_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");

@@ -17,7 +17,7 @@ static const char *upload_firmware_format = NULL;
 
 static void print_upload_usage(FILE *f)
 {
-    fprintf(f, "usage: %s upload [options] <firmwares>\n\n", tyc_executable_name);
+    fprintf(f, "usage: %s upload [options] <firmwares>\n\n", tycmd_executable_name);
 
     print_common_options(f);
     fprintf(f, "\n");
