@@ -79,6 +79,10 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(qtpng_LIBRARIES qtpng
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
             find_library(qtfreetype_LIBRARIES qtfreetype
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
@@ -91,7 +95,7 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
             target_link_libraries(EasyQt5 INTERFACE
                 Qt5::QWindowsIntegrationPlugin imm32 winmm
                 Qt5::Core Qt5::Widgets Qt5::Network
-                ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES} ${qtfreetype_LIBRARIES})
+                ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES} ${qtpng_LIBRARIES} ${qtfreetype_LIBRARIES})
         elseif(APPLE)
             find_library(COCOA_LIBRARIES Cocoa)
             find_library(CARBON_LIBRARIES Carbon)

@@ -25,7 +25,9 @@ configure -platform win32-msvc2015 \
     -no-cups \
     -qt-pcre \
     -qt-zlib \
-    -qt-freetype
+    -qt-freetype \
+    -qt-libpng \
+    -qt-libjpeg
 nmake
 ```
 
@@ -57,7 +59,9 @@ configure -platform win32-msvc2015 \
     -no-cups \
     -qt-pcre \
     -qt-zlib \
-    -qt-freetype
+    -qt-freetype \
+    -qt-libpng \
+    -qt-libjpeg
 nmake
 ```
 
@@ -122,7 +126,9 @@ configure -xplatform win32-g++ \
     -no-cups \
     -qt-pcre \
     -qt-zlib \
-    -qt-freetype
+    -qt-freetype \
+    -qt-libpng \
+    -qt-libjpeg
 make
 ```
 
@@ -154,7 +160,9 @@ configure -xplatform win32-g++ \
     -no-cups \
     -qt-pcre \
     -qt-zlib \
-    -qt-freetype
+    -qt-freetype \
+    -qt-libpng \
+    -qt-libjpeg
 make
 ```
 
