@@ -29,37 +29,37 @@
 #include "main_window.hpp"
 #include "../libty/optline.h"
 #include "task.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 struct ClientCommand {
     const char *name;
 
-    int (TyQt::*f)(int argc, char *argv[]);
+    int (TeensyCommander::*f)(int argc, char *argv[]);
 
     const char *arg;
     const char *description;
 };
 
 static const ClientCommand commands[] = {
-    {"run",       &TyQt::runMainInstance,      NULL,                        NULL},
-    {"open",      &TyQt::executeRemoteCommand, NULL,                        QT_TR_NOOP("Open a new window (default)")},
-    {"reset",     &TyQt::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reset board")},
-    {"reboot",    &TyQt::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reboot board")},
-    {"upload",    &TyQt::executeRemoteCommand, QT_TR_NOOP("[<firmwares>]"), QT_TR_NOOP("Upload current or new firmware")},
-    {"integrate", &TyQt::integrateArduino,     NULL,                        NULL},
-    {"restore",   &TyQt::integrateArduino,     NULL,                        NULL},
+    {"run",       &TeensyCommander::runMainInstance,      NULL,                        NULL},
+    {"open",      &TeensyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Open a new window (default)")},
+    {"reset",     &TeensyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reset board")},
+    {"reboot",    &TeensyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reboot board")},
+    {"upload",    &TeensyCommander::executeRemoteCommand, QT_TR_NOOP("[<firmwares>]"), QT_TR_NOOP("Upload current or new firmware")},
+    {"integrate", &TeensyCommander::integrateArduino,     NULL,                        NULL},
+    {"restore",   &TeensyCommander::integrateArduino,     NULL,                        NULL},
     // Hidden command for Arduino 1.0.6 integration
-    {"avrdude",   &TyQt::fakeAvrdudeUpload,    NULL,                        NULL},
+    {"avrdude",   &TeensyCommander::fakeAvrdudeUpload,    NULL,                        NULL},
     {0}
 };
 
 using namespace std;
 
-TyQt::TyQt(int &argc, char *argv[])
+TeensyCommander::TeensyCommander(int &argc, char *argv[])
     : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
     setOrganizationName("ty");
-    setApplicationName(TY_CONFIG_TYQT_NAME);
+    setApplicationName(TY_CONFIG_TEENSYCOMMANDER_NAME);
     setApplicationVersion(ty_version_string());
 
     // This can be triggered from multiple threads, but Qt can queue signals appropriately
@@ -68,15 +68,15 @@ TyQt::TyQt(int &argc, char *argv[])
 
         if (msg->type == TY_MESSAGE_LOG) {
             if (msg->u.log.level <= TY_LOG_WARNING) {
-                tyQt->reportError(msg->u.log.msg, msg->ctx);
+                teensyCommander->reportError(msg->u.log.msg, msg->ctx);
             } else {
-                tyQt->reportDebug(msg->u.log.msg, msg->ctx);
+                teensyCommander->reportDebug(msg->u.log.msg, msg->ctx);
             }
         }
     }, nullptr);
 
-    initDatabase("tyqt", tyqt_db_);
-    setDatabase(&tyqt_db_);
+    initDatabase("tyqt", teensycommander_db_);
+    setDatabase(&teensycommander_db_);
     loadSettings();
 
     action_visible_ = new QAction(tr("&Visible"), this);
@@ -89,31 +89,31 @@ TyQt::TyQt(int &argc, char *argv[])
     tray_menu_.addSeparator();
     tray_menu_.addAction(action_quit_);
 
-    tray_icon_.setIcon(QIcon(":/tyqt"));
+    tray_icon_.setIcon(QIcon(":/teensycommander"));
     tray_icon_.setContextMenu(&tray_menu_);
 
-    connect(&tray_icon_, &QSystemTrayIcon::activated, this, &TyQt::trayActivated);
-    connect(action_visible_, &QAction::toggled, this, &TyQt::setVisible);
-    connect(action_quit_, &QAction::triggered, this, &TyQt::quit);
+    connect(&tray_icon_, &QSystemTrayIcon::activated, this, &TeensyCommander::trayActivated);
+    connect(action_visible_, &QAction::toggled, this, &TeensyCommander::setVisible);
+    connect(action_quit_, &QAction::triggered, this, &TeensyCommander::quit);
 
     channel_.init();
 }
 
-TyQt::~TyQt()
+TeensyCommander::~TeensyCommander()
 {
     ty_message_redirect(ty_message_default_handler, nullptr);
 }
 
-QString TyQt::clientFilePath()
+QString TeensyCommander::clientFilePath()
 {
 #ifdef _WIN32
-    return applicationDirPath() + "/tyqtc.exe";
+    return applicationDirPath() + "/" TY_CONFIG_TEENSYCOMMANDER_EXECUTABLE "C.exe";
 #else
     return applicationFilePath();
 #endif
 }
 
-void TyQt::loadSettings()
+void TeensyCommander::loadSettings()
 {
     /* FIXME: Fix (most likely) broken behavior of hideOnStartup with
        Cmd+H on OSX when my MacBook is repaired. */
@@ -128,27 +128,27 @@ void TyQt::loadSettings()
     emit settingsChanged();
 }
 
-int TyQt::exec()
+int TeensyCommander::exec()
 {
-    return tyQt->run(tyQt->argc_, tyQt->argv_);
+    return teensyCommander->run(teensyCommander->argc_, teensyCommander->argv_);
 }
 
-void TyQt::showLogWindow()
+void TeensyCommander::showLogWindow()
 {
     log_dialog_->show();
 }
 
-void TyQt::reportError(const QString &msg, const QString &ctx)
+void TeensyCommander::reportError(const QString &msg, const QString &ctx)
 {
     emit globalError(msg, ctx);
 }
 
-void TyQt::reportDebug(const QString &msg, const QString &ctx)
+void TeensyCommander::reportDebug(const QString &msg, const QString &ctx)
 {
     emit globalDebug(msg, ctx);
 }
 
-void TyQt::setVisible(bool visible)
+void TeensyCommander::setVisible(bool visible)
 {
     if (visible) {
         for (auto widget: topLevelWidgets()) {
@@ -169,7 +169,7 @@ void TyQt::setVisible(bool visible)
     action_visible_->setChecked(visible);
 }
 
-void TyQt::setShowTrayIcon(bool show_tray_icon)
+void TeensyCommander::setShowTrayIcon(bool show_tray_icon)
 {
     show_tray_icon_ = show_tray_icon;
     tray_icon_.setVisible(show_tray_icon);
@@ -178,7 +178,7 @@ void TyQt::setShowTrayIcon(bool show_tray_icon)
     emit settingsChanged();
 }
 
-void TyQt::setHideOnStartup(bool hide_on_startup)
+void TeensyCommander::setHideOnStartup(bool hide_on_startup)
 {
     hide_on_startup_ = hide_on_startup;
 
@@ -186,7 +186,7 @@ void TyQt::setHideOnStartup(bool hide_on_startup)
     emit settingsChanged();
 }
 
-int TyQt::run(int argc, char *argv[])
+int TeensyCommander::run(int argc, char *argv[])
 {
     if (argc >= 2) {
         if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "help") == 0) {
@@ -207,7 +207,7 @@ int TyQt::run(int argc, char *argv[])
     }
 
 #ifdef _WIN32
-    // tyqtc should not launch TyQt, it's only a console interface
+    // TeensyCommanderC should not launch Teensy Commander, it's only a console interface
     if (command_.isEmpty() && client_console_) {
         showClientMessage(helpText());
         return EXIT_SUCCESS;
@@ -231,7 +231,7 @@ int TyQt::run(int argc, char *argv[])
     return EXIT_FAILURE;
 }
 
-int TyQt::runMainInstance(int argc, char *argv[])
+int TeensyCommander::runMainInstance(int argc, char *argv[])
 {
     ty_optline_context optl;
     char *opt;
@@ -255,7 +255,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    connect(&channel_, &SessionChannel::newConnection, this, &TyQt::acceptClient);
+    connect(&channel_, &SessionChannel::newConnection, this, &TeensyCommander::acceptClient);
 
     initDatabase("boards", monitor_db_);
     monitor_.setDatabase(&monitor_db_);
@@ -265,9 +265,9 @@ int TyQt::runMainInstance(int argc, char *argv[])
 
     log_dialog_ = unique_ptr<LogDialog>(new LogDialog());
     log_dialog_->setAttribute(Qt::WA_QuitOnClose, false);
-    log_dialog_->setWindowIcon(QIcon(":/tyqt"));
-    connect(this, &TyQt::globalError, log_dialog_.get(), &LogDialog::appendError);
-    connect(this, &TyQt::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
+    log_dialog_->setWindowIcon(QIcon(":/teensycommander"));
+    connect(this, &TeensyCommander::globalError, log_dialog_.get(), &LogDialog::appendError);
+    connect(this, &TeensyCommander::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
 
     if (show_tray_icon_)
         tray_icon_.show();
@@ -280,7 +280,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
     /* Some environments (such as KDE Plasma) keep the application running when a tray
        icon/status notifier exists, and we don't want that. Not sure I get why that
        happens because quitWhenLastClosed is true, but this works. */
-    connect(this, &TyQt::lastWindowClosed, this, &TyQt::quit);
+    connect(this, &TeensyCommander::lastWindowClosed, this, &TeensyCommander::quit);
 
     if (!monitor_.start()) {
         showClientError(ty_error_last_message());
@@ -293,7 +293,7 @@ int TyQt::runMainInstance(int argc, char *argv[])
     return QApplication::exec();
 }
 
-int TyQt::executeRemoteCommand(int argc, char *argv[])
+int TeensyCommander::executeRemoteCommand(int argc, char *argv[])
 {
     ty_optline_context optl;
     char *opt;
@@ -345,7 +345,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
     if (!client) {
         if (autostart) {
             if (!QProcess::startDetached(applicationFilePath(), {"-qqq"})) {
-                showClientError(tr("Failed to start TyQt main instance"));
+                showClientError(tr("Failed to start Teensy Commander main instance"));
                 return EXIT_FAILURE;
             }
 
@@ -363,7 +363,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
         }
     }
 
-    connect(client.get(), &SessionPeer::received, this, &TyQt::processServerAnswer);
+    connect(client.get(), &SessionPeer::received, this, &TeensyCommander::processServerAnswer);
 
     // Hack for Arduino integration, see option loop above
     if (!usbtype.isEmpty() && !usbtype.contains("_SERIAL"))
@@ -389,7 +389,7 @@ int TyQt::executeRemoteCommand(int argc, char *argv[])
     return QApplication::exec();
 }
 
-int TyQt::integrateArduino(int argc, char *argv[])
+int TeensyCommander::integrateArduino(int argc, char *argv[])
 {
     if (argc < 2) {
         showClientError(helpText());
@@ -413,7 +413,7 @@ int TyQt::integrateArduino(int argc, char *argv[])
     }
 }
 
-int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
+int TeensyCommander::fakeAvrdudeUpload(int argc, char *argv[])
 {
     ty_optline_context optl;
     char *opt;
@@ -463,7 +463,7 @@ int TyQt::fakeAvrdudeUpload(int argc, char *argv[])
     return executeRemoteCommand(fake_argc, const_cast<char **>(fake_argv));
 }
 
-void TyQt::resetMonitor()
+void TeensyCommander::resetMonitor()
 {
     monitor_cache_.clear();
     monitor_.stop();
@@ -471,9 +471,9 @@ void TyQt::resetMonitor()
     monitor_.start();
 }
 
-void TyQt::clearSettingsAndReset()
+void TeensyCommander::clearSettingsAndReset()
 {
-    tyqt_db_.clear();
+    teensycommander_db_.clear();
     loadSettings();
 
     monitor_db_.clear();
@@ -483,7 +483,7 @@ void TyQt::clearSettingsAndReset()
     monitor_.start();
 }
 
-void TyQt::clearSettingsAndResetWithConfirmation(QWidget *parent)
+void TeensyCommander::clearSettingsAndResetWithConfirmation(QWidget *parent)
 {
     QMessageBox msgbox(parent);
 
@@ -498,10 +498,10 @@ void TyQt::clearSettingsAndResetWithConfirmation(QWidget *parent)
     if (msgbox.clickedButton() != reset)
         return;
 
-    tyQt->clearSettingsAndReset();
+    teensyCommander->clearSettingsAndReset();
 }
 
-void TyQt::initDatabase(const QString &name, SettingsDatabase &db)
+void TeensyCommander::initDatabase(const QString &name, SettingsDatabase &db)
 {
     auto settings = new QSettings(QSettings::IniFormat, QSettings::UserScope,
                                   organizationName(), name, this);
@@ -509,7 +509,7 @@ void TyQt::initDatabase(const QString &name, SettingsDatabase &db)
     db.setSettings(settings);
 }
 
-void TyQt::initCache(const QString &name, SettingsDatabase &cache)
+void TeensyCommander::initCache(const QString &name, SettingsDatabase &cache)
 {
     /* QStandardPaths adds organizationName()/applicationName() to the generic OS cache path,
        but we put our files in organizationName() to share them with tycmd. On Windows, Qt uses
@@ -526,7 +526,7 @@ void TyQt::initCache(const QString &name, SettingsDatabase &cache)
     cache.setSettings(settings);
 }
 
-QString TyQt::helpText()
+QString TeensyCommander::helpText()
 {
     QString help = tr("usage: %1 <command> [options]\n\n"
                       "General options:\n"
@@ -554,7 +554,7 @@ QString TyQt::helpText()
     return help;
 }
 
-void TyQt::showClientMessage(const QString &msg)
+void TeensyCommander::showClientMessage(const QString &msg)
 {
     if (client_console_) {
         printf("%s\n", msg.toLocal8Bit().constData());
@@ -563,7 +563,7 @@ void TyQt::showClientMessage(const QString &msg)
     }
 }
 
-void TyQt::showClientError(const QString &msg)
+void TeensyCommander::showClientError(const QString &msg)
 {
     if (client_console_) {
         fprintf(stderr, "%s\n", msg.toLocal8Bit().constData());
@@ -572,7 +572,7 @@ void TyQt::showClientError(const QString &msg)
     }
 }
 
-void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
+void TeensyCommander::trayActivated(QSystemTrayIcon::ActivationReason reason)
 {
 #ifndef __APPLE__
     if (reason == QSystemTrayIcon::Trigger)
@@ -582,14 +582,14 @@ void TyQt::trayActivated(QSystemTrayIcon::ActivationReason reason)
 #endif
 }
 
-void TyQt::acceptClient()
+void TeensyCommander::acceptClient()
 {
     auto peer = channel_.nextPendingConnection();
     auto client = new ClientHandler(move(peer), this);
     connect(client, &ClientHandler::closed, client, &ClientHandler::deleteLater);
 }
 
-void TyQt::processServerAnswer(const QStringList &arguments)
+void TeensyCommander::processServerAnswer(const QStringList &arguments)
 {
     QStringList parameters = arguments;
     QString cmd;
@@ -643,9 +643,10 @@ void TyQt::processServerAnswer(const QStringList &arguments)
 
         /* The server may show a window for some commands, such as the board dialog. Executables
            launched from an application with focus can pop on top, so this instance can probably
-           do it but the TyQt main instance cannot unless we call AllowSetForegroundWindow(). It
-           also works if this instance is run through tyqtc (to provide console I/O) because
-           tyqtc calls AllowSetForegroundWindow() for this process too.
+           do it but the Teensy Commander main instance cannot unless we call
+           AllowSetForegroundWindow(). It also works if this instance is run through tyqtc
+           (to provide console I/O) because tyqtc calls AllowSetForegroundWindow() for this
+           process too.
 
            We could use GetNamedPipeServerProcessId() instead of sending the PID through the
            channel, but it is not available on XP. */

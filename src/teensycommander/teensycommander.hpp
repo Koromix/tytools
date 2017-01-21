@@ -8,8 +8,8 @@
 
    See the LICENSE file for more details. */
 
-#ifndef TYQT_HH
-#define TYQT_HH
+#ifndef TEENSYCOMMANDER_HH
+#define TEENSYCOMMANDER_HH
 
 #include <QAction>
 #include <QApplication>
@@ -26,9 +26,9 @@ class LogDialog;
 class MainWindow;
 class SelectorDialog;
 
-#define tyQt (TyQt::instance())
+#define teensyCommander (TeensyCommander::instance())
 
-class TyQt : public QApplication {
+class TeensyCommander : public QApplication {
     Q_OBJECT
 
     int argc_;
@@ -40,7 +40,7 @@ class TyQt : public QApplication {
 
     Monitor monitor_;
 
-    SettingsDatabase tyqt_db_;
+    SettingsDatabase teensycommander_db_;
     SettingsDatabase monitor_db_;
     SettingsDatabase monitor_cache_;
 
@@ -63,8 +63,8 @@ class TyQt : public QApplication {
     std::unique_ptr<LogDialog> log_dialog_;
 
 public:
-    TyQt(int &argc, char *argv[]);
-    virtual ~TyQt();
+    TeensyCommander(int &argc, char *argv[]);
+    virtual ~TeensyCommander();
 
     static QString clientFilePath();
 
@@ -74,7 +74,7 @@ public:
 
     static int exec();
 
-    static TyQt *instance() { return static_cast<TyQt *>(QCoreApplication::instance()); }
+    static TeensyCommander *instance() { return static_cast<TeensyCommander *>(QCoreApplication::instance()); }
     Monitor *monitor() { return &monitor_; }
 
     bool visible() const { return action_visible_->isChecked(); }

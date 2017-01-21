@@ -77,7 +77,7 @@ static bool start_echo_thread(HANDLE desc, echo_direction dir, char *path, size_
         unsigned int rnd;
 
         rand_s(&rnd);
-        snprintf(path, path_size, "\\\\.\\pipe\\tyqtc-pipe-%04x", rnd);
+        snprintf(path, path_size, "\\\\.\\pipe\\teensycommanderc-pipe-%04x", rnd);
 
         ctx->pipe = CreateNamedPipe(path, PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
                                     PIPE_TYPE_BYTE | PIPE_READMODE_BYTE, 1, 512, 512, 0, NULL);
@@ -129,13 +129,13 @@ static bool setup_pipes(void)
 
 #undef START_ECHO_THREAD
 
-    snprintf(env, sizeof(env), "_TYQTC_PIPES=%s:%s:%s", paths[0], paths[1], paths[2]);
+    snprintf(env, sizeof(env), "_TEENSYCOMMANDERC_PIPES=%s:%s:%s", paths[0], paths[1], paths[2]);
     _putenv(env);
 
     return true;
 }
 
-static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *rret)
+static bool execute_teensycommander(LPSTR cmdline, const STARTUPINFO *si, DWORD *rret)
 {
     char path[MAX_PATH + 1], *ptr;
     PROCESS_INFORMATION proc;
@@ -146,7 +146,7 @@ static bool execute_tyqt(LPSTR cmdline, const STARTUPINFO *si, DWORD *rret)
     ptr = strrchr(path, '\\');
     if (!ptr)
         return false;
-    strncpy(ptr, "\\tyqt.exe", (size_t)(path + sizeof(path) - ptr));
+    strncpy(ptr, "\\teensycommander.exe", (size_t)(path + sizeof(path) - ptr));
     path[MAX_PATH] = 0;
 
     success = CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL, (STARTUPINFO *)si, &proc);
@@ -174,7 +174,7 @@ int main(void)
 
     if (!setup_pipes())
         goto error;
-    if (!execute_tyqt(GetCommandLine(), &si, &ret))
+    if (!execute_teensycommander(GetCommandLine(), &si, &ret))
         goto error;
 
     // Small delay to avoid dropping unread output/error data
@@ -184,6 +184,6 @@ int main(void)
 
 error:
     // No kidding
-    fprintf(stderr, "tyqtc failed\n");
+    fprintf(stderr, "TeensyCommanderC failed\n");
     return 2;
 }

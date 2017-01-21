@@ -18,7 +18,7 @@
 #endif
 
 #include "../libhs/common.h"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 #ifdef QT_STATIC
     #include <QtPlugin>
@@ -43,12 +43,12 @@ static bool reopen_stream(FILE *fp, const QString &path, const char *mode)
     return true;
 }
 
-static bool open_tyqtc_bridge()
+static bool open_teensycommanderc_bridge()
 {
-    auto parts = QString(getenv("_TYQTC_PIPES")).split(':');
+    auto parts = QString(getenv("_TEENSYCOMMANDERC_PIPES")).split(':');
     if (parts.count() != 3)
         return false;
-    _putenv("_TYQTC_PIPES=");
+    _putenv("_TEENSYCOMMANDERC_PIPES=");
 
 #define REOPEN_STREAM(fp, path, mode) \
         if (!reopen_stream((fp), (path), (mode))) \
@@ -75,9 +75,9 @@ int main(int argc, char *argv[])
     qRegisterMetaType<SessionPeer::CloseReason>("SessionPeer::CloseReason");
     qRegisterMetaType<uint64_t>("uint64_t");
 
-    TyQt app(argc, argv);
+    TeensyCommander app(argc, argv);
 #ifdef _WIN32
-    app.setClientConsole(open_tyqtc_bridge());
+    app.setClientConsole(open_teensycommanderc_bridge());
 #else
     app.setClientConsole(ty_standard_get_modes(TY_STANDARD_OUTPUT) != TY_DESCRIPTOR_MODE_DEVICE);
 #endif

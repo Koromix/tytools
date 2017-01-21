@@ -11,11 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>TyQt Preferences</string>
+   <string>Teensy Commander Preferences</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="tyqt.qrc">
-    <normaloff>:/tyqt</normaloff>:/tyqt</iconset>
+   <iconset resource="../../resources/resources.qrc">
+    <normaloff>:/teensycommander</normaloff>:/teensycommander</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -181,7 +181,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="tyqt.qrc"/>
+  <include location="../../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

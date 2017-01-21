@@ -31,8 +31,9 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
         QDesktopServices::openUrl(QUrl(link));
     });
 
-    versionLabel->setText(QString("%1 %2").arg(QCoreApplication::applicationName(),
-                                               QCoreApplication::applicationVersion()));
+    versionLabel->setText(QString("%1\n%2")
+                          .arg(QCoreApplication::applicationName(),
+                               QCoreApplication::applicationVersion()));
     if (TY_CONFIG_URL_WEBSITE[0])
         websiteLabel->setText(QString("<a href=\"%1\">%1</a>").arg(TY_CONFIG_URL_WEBSITE));
 }

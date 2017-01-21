@@ -12,7 +12,7 @@
 #include <QSystemTrayIcon>
 
 #include "preferences_dialog.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 using namespace std;
 
@@ -41,10 +41,10 @@ void PreferencesDialog::done(int result)
 
 void PreferencesDialog::apply()
 {
-    tyQt->setShowTrayIcon(showTrayIconCheck->isChecked());
-    tyQt->setHideOnStartup(hideOnStartupCheck->isChecked());
+    teensyCommander->setShowTrayIcon(showTrayIconCheck->isChecked());
+    teensyCommander->setHideOnStartup(hideOnStartupCheck->isChecked());
 
-    auto monitor = tyQt->monitor();
+    auto monitor = teensyCommander->monitor();
     monitor->setSerialByDefault(serialByDefaultCheck->isChecked());
     monitor->setSerialLogSize(serialLogSizeDefaultSpin->value() * 1000);
     monitor->setMaxTasks(maxTasksSpin->value());
@@ -52,22 +52,22 @@ void PreferencesDialog::apply()
 
 void PreferencesDialog::reset()
 {
-    tyQt->clearSettingsAndResetWithConfirmation(this);
+    teensyCommander->clearSettingsAndResetWithConfirmation(this);
     refresh();
 }
 
 void PreferencesDialog::refresh()
 {
     showTrayIconCheck->setEnabled(QSystemTrayIcon::isSystemTrayAvailable());
-    showTrayIconCheck->setChecked(tyQt->showTrayIcon());
+    showTrayIconCheck->setChecked(teensyCommander->showTrayIcon());
 #ifndef __APPLE__
     if (!showTrayIconCheck->isChecked())
         hideOnStartupCheck->setEnabled(false);
     connect(showTrayIconCheck, &QCheckBox::toggled, hideOnStartupCheck, &QCheckBox::setEnabled);
 #endif
-    hideOnStartupCheck->setChecked(tyQt->hideOnStartup());
+    hideOnStartupCheck->setChecked(teensyCommander->hideOnStartup());
 
-    auto monitor = tyQt->monitor();
+    auto monitor = teensyCommander->monitor();
     serialByDefaultCheck->setChecked(monitor->serialByDefault());
     serialLogSizeDefaultSpin->setValue(monitor->serialLogSize() / 1000);
     maxTasksSpin->setValue(monitor->maxTasks());

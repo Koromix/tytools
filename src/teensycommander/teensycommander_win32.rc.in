@@ -2,5 +2,5 @@
    PlatformToolset (e.g. v140_xp) with a cryptic error message. */
 
 // CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST
-1 24 "tyqt_win32.manifest"
-IDR_MAINFRAME ICON "@TYQT_ICON_FILE_PREFIX@.ico"
+1 24 "teensycommander_win32.manifest"
+IDR_MAINFRAME ICON "@TEENSYCOMMANDER_ICON_FILE_PREFIX@.ico"

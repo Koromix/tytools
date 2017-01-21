@@ -14,8 +14,8 @@
 
 #include "../libhs/common.h"
 #include "../libty/common.h"
-#include "../tyqt/log_dialog.hpp"
-#include "../tyqt/monitor.hpp"
+#include "../teensycommander/log_dialog.hpp"
+#include "../teensycommander/monitor.hpp"
 #include "teensyupdater.hpp"
 #include "updater_window.hpp"
 

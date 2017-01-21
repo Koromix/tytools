@@ -15,7 +15,7 @@
 #include "board.hpp"
 #include "monitor.hpp"
 #include "selector_dialog.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 using namespace std;
 
@@ -76,7 +76,7 @@ QSize SelectorDialogItemDelegate::sizeHint(const QStyleOptionViewItem &option,
 }
 
 SelectorDialog::SelectorDialog(QWidget *parent)
-    : QDialog(parent), monitor_(tyQt->monitor())
+    : QDialog(parent), monitor_(teensyCommander->monitor())
 {
     setupUi(this);
 

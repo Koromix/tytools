@@ -12,9 +12,9 @@
 #include <QFileDialog>
 #include <QUrl>
 
-#include "../tyqt/board.hpp"
-#include "../tyqt/monitor.hpp"
-#include "../tyqt/task.hpp"
+#include "../teensycommander/board.hpp"
+#include "../teensycommander/monitor.hpp"
+#include "../teensycommander/task.hpp"
 #include "teensyupdater.hpp"
 #include "updater_window.hpp"
 

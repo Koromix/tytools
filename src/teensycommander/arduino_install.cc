@@ -17,7 +17,7 @@
 #include <QTextStream>
 
 #include "arduino_install.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 using namespace std;
 
@@ -43,7 +43,7 @@ bool ArduinoInstallation::integrate()
     if (arduino_legacy_)
         return integrateLegacy();
 
-    emit log(tr("Integrate TyQt to '%1'").arg(QDir::toNativeSeparators(dir_.path())));
+    emit log(tr("Integrate Teensy Commander to '%1'").arg(QDir::toNativeSeparators(dir_.path())));
 
     auto filename = arduinoPath("hardware/teensy/avr/platform.txt");
     emit log(tr("Rewrite '%1' (to temporary file)").arg(nicePath(filename)));
@@ -73,9 +73,9 @@ bool ArduinoInstallation::integrate()
         out << line << "\n";
 
         if (line.startsWith("tools.teensyloader.upload.pattern") && !integrated) {
-            emit log(tr(" + Integrate TyQt instructions after line %1").arg(i));
+            emit log(tr(" + Integrate Teensy Commander instructions after line %1").arg(i));
             out << QString("\n## TyQt\n"
-                           "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(TyQt::clientFilePath()));
+                           "tools.teensyloader.cmd.path=%1\n").arg(QDir::toNativeSeparators(TeensyCommander::clientFilePath()));
             out << "tools.teensyloader.upload.params.quiet=--quiet\n"
                    "tools.teensyloader.upload.params.verbose=\n"
                    "recipe.objcopy.tyqt.pattern=\"{compiler.path}{build.toolchain}{build.command.objcopy}\" {compiler.elf2hex.flags} \"{build.path}/{build.project_name}.elf\" \"{build.path}/{build.project_name}.{build.board}.hex\"\n"
@@ -85,7 +85,7 @@ bool ArduinoInstallation::integrate()
         }
     }
     if (!integrated) {
-        emit error(tr("Failed to add TyQt instructions"));
+        emit error(tr("Failed to add Teensy Commander instructions"));
         return false;
     }
 
@@ -112,7 +112,7 @@ bool ArduinoInstallation::integrate()
 
 bool ArduinoInstallation::restore()
 {
-    emit log(tr("Remove TyQt integration from '%1'").arg(QDir::toNativeSeparators(dir_.path())));
+    emit log(tr("Remove Teensy Commander integration from '%1'").arg(QDir::toNativeSeparators(dir_.path())));
 
     QString filename;
     if (arduino_legacy_) {
@@ -121,7 +121,7 @@ bool ArduinoInstallation::restore()
         filename = arduinoPath("hardware/teensy/avr/platform.txt");
     }
     if (!findMarker(filename, "TyQt")) {
-        emit error(tr("This installation is not using TyQt"));
+        emit error(tr("This installation is not using Teensy Commander"));
         return false;
     }
 
@@ -145,7 +145,7 @@ bool ArduinoInstallation::restore()
 
 bool ArduinoInstallation::integrateLegacy()
 {
-    emit log(tr("Integrate TyQt to '%1' (legacy)").arg(QDir::toNativeSeparators(dir_.path())));
+    emit log(tr("Integrate Teensy Commander to '%1' (legacy)").arg(QDir::toNativeSeparators(dir_.path())));
 
     auto filename = arduinoPath("hardware/teensy/boards.txt");
     emit log(tr("Rewrite '%1' (to temporary file)").arg(nicePath(filename)));
@@ -180,13 +180,13 @@ bool ArduinoInstallation::integrateLegacy()
         out << line << "\n";
     }
     if (models.isEmpty()) {
-        emit error(tr("Failed to add TyQt instructions"));
+        emit error(tr("Failed to add Teensy Commander instructions"));
         return false;
     }
 
     out << "\n## TyQt (legacy Arduino)\n";
     for (auto &model: models) {
-        emit log(tr(" + Add TyQt instructions for '%1'").arg(model));
+        emit log(tr(" + Add Teensy Commander instructions for '%1'").arg(model));
 #ifdef _WIN32
         out << QString("%1.upload.avrdude_wrapper=tyqt_avrdude.bat\n").arg(model);
 #else

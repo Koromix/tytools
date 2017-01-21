@@ -14,11 +14,11 @@
    <enum>Qt::NoContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>TyQt</string>
+   <string>Teensy Commander</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="tyqt.qrc">
-    <normaloff>:/tyqt</normaloff>:/tyqt</iconset>
+   <iconset resource="../../resources/resources.qrc">
+    <normaloff>:/teensycommander</normaloff>:/teensycommander</iconset>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
    <bool>true</bool>
@@ -708,7 +708,7 @@
   </widget>
   <action name="actionUpload">
    <property name="icon">
-    <iconset resource="../libtyqt/libtyqt.qrc">
+    <iconset resource="../../resources/resources.qrc">
      <normaloff>:/upload</normaloff>:/upload</iconset>
    </property>
    <property name="text">
@@ -720,7 +720,7 @@
   </action>
   <action name="actionReset">
    <property name="icon">
-    <iconset resource="../libtyqt/libtyqt.qrc">
+    <iconset resource="../../resources/resources.qrc">
      <normaloff>:/reset</normaloff>:/reset</iconset>
    </property>
    <property name="text">
@@ -745,7 +745,7 @@
   </action>
   <action name="actionReboot">
    <property name="icon">
-    <iconset resource="../libtyqt/libtyqt.qrc">
+    <iconset resource="../../resources/resources.qrc">
      <normaloff>:/reboot</normaloff>:/reboot</iconset>
    </property>
    <property name="text">
@@ -816,7 +816,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../libtyqt/libtyqt.qrc">
+    <iconset resource="../../resources/resources.qrc">
      <normaloff>:/monitor</normaloff>:/monitor</iconset>
    </property>
    <property name="text">
@@ -914,8 +914,7 @@
   <tabstop>serialLogSizeSpin</tabstop>
  </tabstops>
  <resources>
-  <include location="tyqt.qrc"/>
-  <include location="../libtyqt/libtyqt.qrc"/>
+  <include location="../../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

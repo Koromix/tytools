@@ -23,7 +23,7 @@
 #include "main_window.hpp"
 #include "monitor.hpp"
 #include "preferences_dialog.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 using namespace std;
 
@@ -33,7 +33,7 @@ QStringList MainWindow::codecs_;
 QHash<QString, int> MainWindow::codec_indexes_;
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), monitor_(tyQt->monitor())
+    : QMainWindow(parent), monitor_(teensyCommander->monitor())
 {
     setupUi(this);
     setWindowTitle(QApplication::applicationName());
@@ -127,7 +127,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(actionReset, &QAction::triggered, this, &MainWindow::resetSelection);
     connect(actionReboot, &QAction::triggered, this, &MainWindow::rebootSelection);
     connect(actionSendFile, &QAction::triggered, this, &MainWindow::sendFileToSelection);
-    connect(actionQuit, &QAction::triggered, tyQt, &TyQt::quit);
+    connect(actionQuit, &QAction::triggered, teensyCommander, &TeensyCommander::quit);
 
     // View menu
     connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openCloneWindow);
@@ -136,10 +136,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Tools menu
     connect(actionArduinoTool, &QAction::triggered, this, &MainWindow::openArduinoTool);
-    connect(actionOpenLog, &QAction::triggered, tyQt, &TyQt::showLogWindow);
-    connect(actionResetApp, &QAction::triggered, tyQt, &TyQt::resetMonitor);
+    connect(actionOpenLog, &QAction::triggered, teensyCommander, &TeensyCommander::showLogWindow);
+    connect(actionResetApp, &QAction::triggered, teensyCommander, &TeensyCommander::resetMonitor);
     connect(actionResetSettingsApp, &QAction::triggered, this,
-            [=]() { tyQt->clearSettingsAndResetWithConfirmation(this); });
+            [=]() { teensyCommander->clearSettingsAndResetWithConfirmation(this); });
     connect(actionPreferences, &QAction::triggered, this, &MainWindow::openPreferences);
 
     // About menu
@@ -291,8 +291,8 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-    // TyQt errors
-    connect(tyQt, &TyQt::globalError, this, &MainWindow::showErrorMessage);
+    // Teensy Commander errors
+    connect(teensyCommander, &TeensyCommander::globalError, this, &MainWindow::showErrorMessage);
 
     if (monitor_->rowCount()) {
         boardList->setCurrentIndex(monitor_->index(0, 0));
@@ -396,7 +396,7 @@ void MainWindow::uploadToSelection()
         }
     }
     if (!fws_count)
-        tyQt->reportError(tr("No board has a set firmware, try using 'Upload New Firmware'"));
+        teensyCommander->reportError(tr("No board has a set firmware, try using 'Upload New Firmware'"));
 }
 
 void MainWindow::uploadNewToSelection()
@@ -1057,7 +1057,7 @@ void MainWindow::validateAndSetFirmwarePath()
     if (!firmwarePath->text().isEmpty()) {
         filename = QFileInfo(firmwarePath->text()).canonicalFilePath();
         if (filename.isEmpty()) {
-            tyQt->reportError(tr("Path '%1' does not exist").arg(firmwarePath->text()));
+            teensyCommander->reportError(tr("Path '%1' does not exist").arg(firmwarePath->text()));
             return;
         }
         filename = QDir::toNativeSeparators(filename);

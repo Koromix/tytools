@@ -22,7 +22,7 @@
 #include "main_window.hpp"
 #include "selector_dialog.hpp"
 #include "monitor.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 using namespace std;
 
@@ -134,7 +134,7 @@ void ClientHandler::reboot(const QStringList &)
 
 void ClientHandler::upload(const QStringList &filenames)
 {
-    auto monitor = tyQt->monitor();
+    auto monitor = teensyCommander->monitor();
 
     QStringList filenames2;
     filenames2.reserve(filenames.count());
@@ -278,7 +278,7 @@ vector<TaskInterface> ClientHandler::makeUploadTasks(const vector<shared_ptr<Boa
 
 vector<shared_ptr<Board>> ClientHandler::selectedBoards()
 {
-    auto monitor = tyQt->monitor();
+    auto monitor = teensyCommander->monitor();
 
     if (!monitor->boardCount()) {
         notifyLog(TY_LOG_ERROR, tr("No board available"));

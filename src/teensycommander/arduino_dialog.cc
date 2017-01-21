@@ -17,7 +17,7 @@
 #include <QWinEventNotifier>
 
 #include "arduino_dialog.hpp"
-#include "tyqt.hpp"
+#include "teensycommander.hpp"
 
 using namespace std;
 
@@ -63,15 +63,15 @@ void ArduinoDialog::refresh()
 
     if (install_.isIntegrated()) {
         color = "green";
-        text = tr("Arduino %1 / Teensyduino %2\nAlready using TyQt").arg(install_.arduinoVersion(),
-                                                                         install_.teensyduinoVersion());
+        text = tr("Arduino %1 / Teensyduino %2\nAlready using Teensy Commander")
+               .arg(install_.arduinoVersion(), install_.teensyduinoVersion());
 
         if (!background_process_)
             restoreButton->setEnabled(true);
     } else if (install_.isValid()) {
         color = "orange";
-        text = tr("Arduino %1 / Teensyduino %2\nNot using TyQt").arg(install_.arduinoVersion(),
-                                                                     install_.teensyduinoVersion());
+        text = tr("Arduino %1 / Teensyduino %2\nNot using Teensy Commander")
+               .arg(install_.arduinoVersion(), install_.teensyduinoVersion());
 
         if (!background_process_)
             integrateButton->setEnabled(true);
@@ -163,7 +163,7 @@ void ArduinoDialog::executeAsRoot(const QString &command)
 
     appendMessage("");
     appendMessage(tr("Try to restart this command as root with :"));
-    appendMessage(tr("\"%1\" %2 \"%3\"").arg(QDir::toNativeSeparators(TyQt::clientFilePath()),
+    appendMessage(tr("\"%1\" %2 \"%3\"").arg(QDir::toNativeSeparators(TeensyCommander::clientFilePath()),
                                              command, install_.absolutePath()), fmt);
 }
 
@@ -181,8 +181,9 @@ void ArduinoDialog::installWithUAC(const QString &command)
     info.lpFile = "cmd";
     info.nShow = SW_SHOW;
 
-    auto parameters = QString("/C \"\"%1\" %2 \"%3\" & pause\"").arg(QDir::toNativeSeparators(TyQt::clientFilePath()), command,
-                                                                     QDir::toNativeSeparators(install_.absolutePath())).toLocal8Bit();
+    auto parameters = QString("/C \"\"%1\" %2 \"%3\" & pause\"")
+                      .arg(QDir::toNativeSeparators(TeensyCommander::clientFilePath()), command,
+                           QDir::toNativeSeparators(install_.absolutePath())).toLocal8Bit();
     info.lpParameters = parameters.constData();
 
     BOOL success = ShellExecuteEx(&info);

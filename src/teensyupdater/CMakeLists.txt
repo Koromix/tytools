@@ -10,23 +10,23 @@
 
 find_package(EasyQt5)
 
-set(TEENSYUPDATER_SOURCES ../tyqt/board.cc
-                          ../tyqt/board.hpp
-                          ../tyqt/database.cc
-                          ../tyqt/database.hpp
-                          ../tyqt/descriptor_notifier.cc
-                          ../tyqt/descriptor_notifier.hpp
-                          ../tyqt/firmware.cc
-                          ../tyqt/firmware.hpp
-                          ../tyqt/log_dialog.cc
-                          ../tyqt/log_dialog.hpp
-                          ../tyqt/monitor.cc
-                          ../tyqt/monitor.hpp
-                          ../tyqt/task.cc
-                          ../tyqt/task.hpp
+set(TEENSYUPDATER_SOURCES ../teensycommander/board.cc
+                          ../teensycommander/board.hpp
+                          ../teensycommander/database.cc
+                          ../teensycommander/database.hpp
+                          ../teensycommander/descriptor_notifier.cc
+                          ../teensycommander/descriptor_notifier.hpp
+                          ../teensycommander/firmware.cc
+                          ../teensycommander/firmware.hpp
+                          ../teensycommander/log_dialog.cc
+                          ../teensycommander/log_dialog.hpp
+                          ../teensycommander/monitor.cc
+                          ../teensycommander/monitor.hpp
+                          ../teensycommander/task.cc
+                          ../teensycommander/task.hpp
                           teensyupdater.cc
                           updater_window.cc)
-set(TEENSYUPDATER_FORMS ../tyqt/log_dialog.ui
+set(TEENSYUPDATER_FORMS ../teensycommander/log_dialog.ui
                         updater_window.ui)
 
 set(TEENSYUPDATER_ICON_FILE_PREFIX "${CMAKE_SOURCE_DIR}/resources/images/teensyupdater")
