@@ -11,22 +11,22 @@ this directory.
 ```batch
 cd i686-win32-msvc2015-mt
 REM Now we are in ty/qt5/i686-win32-msvc2015-mt
-configure -platform win32-msvc2015 \
-    -opensource \
-    -confirm-license \
-    -static \
-    -static-runtime \
-    -release \
-    -nomake examples \
-    -nomake tests \
-    -no-opengl \
-    -no-harfbuzz \
-    -no-icu \
-    -no-cups \
-    -qt-pcre \
-    -qt-zlib \
-    -qt-freetype \
-    -qt-libpng \
+configure -platform win32-msvc2015 ^
+    -opensource ^
+    -confirm-license ^
+    -static ^
+    -static-runtime ^
+    -release ^
+    -nomake examples ^
+    -nomake tests ^
+    -no-opengl ^
+    -no-harfbuzz ^
+    -no-icu ^
+    -no-cups ^
+    -qt-pcre ^
+    -qt-zlib ^
+    -qt-freetype ^
+    -qt-libpng ^
     -qt-libjpeg
 nmake
 ```
@@ -45,22 +45,22 @@ this directory.
 ```batch
 cd x86_64-win32-msvc2015-mt
 REM Now we are in ty/qt5/x86_64-win32-msvc2015-mt
-configure -platform win32-msvc2015 \
-    -opensource \
-    -confirm-license \
-    -static \
-    -static-runtime \
-    -release \
-    -nomake examples \
-    -nomake tests \
-    -no-opengl \
-    -no-harfbuzz \
-    -no-icu \
-    -no-cups \
-    -qt-pcre \
-    -qt-zlib \
-    -qt-freetype \
-    -qt-libpng \
+configure -platform win32-msvc2015 ^
+    -opensource ^
+    -confirm-license ^
+    -static ^
+    -static-runtime ^
+    -release ^
+    -nomake examples ^
+    -nomake tests ^
+    -no-opengl ^
+    -no-harfbuzz ^
+    -no-icu ^
+    -no-cups ^
+    -qt-pcre ^
+    -qt-zlib ^
+    -qt-freetype ^
+    -qt-libpng ^
     -qt-libjpeg
 nmake
 ```
