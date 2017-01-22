@@ -10,7 +10,7 @@
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "")
 cmake_minimum_required(VERSION 3.1)
-project(ty C CXX)
+project(TeensyTools C CXX)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 include("cmake/Utility.cmake")
