@@ -65,13 +65,7 @@ typedef struct hs_match hs_match;
         #define HS_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
     #endif
 #elif _MSC_VER >= 1900
-    #if defined(HS_STATIC)
-        #define HS_PUBLIC
-    #elif defined(_HS_UTIL_H)
-        #define HS_PUBLIC __declspec(dllexport)
-    #else
-        #define HS_PUBLIC __declspec(dllimport)
-    #endif
+    #define HS_PUBLIC
 
     #define HS_PRINTF_FORMAT(fmt, first)
 

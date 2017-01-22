@@ -110,9 +110,6 @@ target_link_libraries(libhs ${LIBHS_LINK_LIBRARIES})
 # We need that for auto-generated file config.h
 target_include_directories(libhs PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(libhs PUBLIC _HS_HAVE_CONFIG_H)
-if(MSVC)
-    target_compile_definitions(libhs PUBLIC HS_STATIC)
-endif()
 enable_unity_build(libhs)
 
 add_amalgamated_file(libhs "${CMAKE_BINARY_DIR}/libhs.h" libhs.h)
