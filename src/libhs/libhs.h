@@ -20,9 +20,9 @@
    libhs depends on **a few OS-provided libraries** that you need to link:
 
    OS                  | Dependencies
-   ------------------- | ------------------------------------------------
+   ------------------- | --------------------------------------------------------------------------------
    Windows (MSVC)      | Nothing to do, libhs uses `#pragma comment(lib)`
-   Windows (MinGW-w64) | Link _setupapi and hid_ `-lsetupapi -lhid`
+   Windows (MinGW-w64) | Link _user32, advapi32, setupapi and hid_ `-luser32 -ladvapi32 -lsetupapi -lhid`
    OSX (Clang)         | Link _CoreFoundation and IOKit_
    Linux (GCC)         | Link _libudev_ `-ludev`
 
@@ -40,6 +40,8 @@
 
 #ifdef HS_IMPLEMENTATION
     #ifdef _MSC_VER
+        #pragma comment(lib, "user32.lib")
+        #pragma comment(lib, "advapi32.lib")
         #pragma comment(lib, "setupapi.lib")
         #pragma comment(lib, "hid.lib")
     #endif
