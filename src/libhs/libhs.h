@@ -27,6 +27,11 @@
 #include "serial.h"
 
 #ifdef HS_IMPLEMENTATION
+    #ifdef _MSC_VER
+        #pragma comment(lib, "setupapi.lib")
+        #pragma comment(lib, "hid.lib")
+    #endif
+
     #include "compat_priv.h"
     #include "common_priv.h"
     #include "device_priv.h"
