@@ -43,7 +43,7 @@ matrix:
         - QT_PACKAGE=qtbase-5.7.1-x86_64-darwin-clang-static.txz
 
 install:
-  - contrib/ci/install-$INSTALLER.sh
+  - source contrib/ci/install-$INSTALLER.sh
 
 before_script:
   - mkdir build && cd build
