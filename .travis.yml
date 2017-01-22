@@ -26,7 +26,7 @@ matrix:
       dist: trusty
       env:
         - INSTALLER=win32
-        - QT_PACKAGE=qtbase-5.5.1-i686-w64-mingw32-static.txz
+        - QT_PACKAGE=qtbase-5.7.1-i686-w64-mingw32-static.txz
         - CMAKE_FLAGS="-DCMAKE_TOOLCHAIN_FILE=../contrib/cmake/i686-w64-mingw32.cmake"
     - os: linux
       compiler: gcc
@@ -34,7 +34,7 @@ matrix:
       dist: trusty
       env:
         - INSTALLER=win64
-        - QT_PACKAGE=qtbase-5.5.1-x86_64-w64-mingw32-static.txz
+        - QT_PACKAGE=qtbase-5.7.1-x86_64-w64-mingw32-static.txz
         - CMAKE_FLAGS="-DCMAKE_TOOLCHAIN_FILE=../contrib/cmake/x86_64-w64-mingw32.cmake"
     - os: osx
       compiler: clang
