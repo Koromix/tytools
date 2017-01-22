@@ -111,7 +111,7 @@ Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.
 ```sh
 cd i686-w64-mingw32
 # Now we are in ty/qt5/i686-w64-mingw32
-configure -xplatform win32-g++ \
+./configure -xplatform win32-g++ \
     -device-option CROSS_COMPILE=i686-w64-mingw32- \
     -opensource \
     -confirm-license \
@@ -145,7 +145,7 @@ Extract the directory inside it to "ty/qt5" and rename "qtbase-opensource-src-5.
 ```sh
 cd x86_64-w64-mingw32
 # Now we are in ty/qt5/x86_64-w64-mingw32
-configure -xplatform win32-g++ \
+./configure -xplatform win32-g++ \
     -device-option CROSS_COMPILE=x86_64-w64-mingw32- \
     -opensource \
     -confirm-license \
