@@ -28,6 +28,13 @@
 
    Other systems are not supported at the moment. */
 
+#if defined(HS_IMPLEMENTATION) && defined(_MSC_VER)
+    #pragma comment(lib, "user32.lib")
+    #pragma comment(lib, "advapi32.lib")
+    #pragma comment(lib, "setupapi.lib")
+    #pragma comment(lib, "hid.lib")
+#endif
+
 #include "common.h"
 #include "htable.h"
 #include "list.h"
@@ -39,13 +46,6 @@
 #include "serial.h"
 
 #ifdef HS_IMPLEMENTATION
-    #ifdef _MSC_VER
-        #pragma comment(lib, "user32.lib")
-        #pragma comment(lib, "advapi32.lib")
-        #pragma comment(lib, "setupapi.lib")
-        #pragma comment(lib, "hid.lib")
-    #endif
-
     #include "compat_priv.h"
     #include "common_priv.h"
     #include "device_priv.h"
