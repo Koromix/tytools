@@ -12,9 +12,21 @@
 #define HS_LIBHS_H
 
 /* This file provides both the interface and the implementation.
+
    To instantiate the implementation,
         #define HS_IMPLEMENTATION
-   in *ONE* source file, before #including this file. */
+   in *ONE* source file, before #including this file.
+
+   libhs depends on **a few OS-provided libraries** that you need to link:
+
+   OS                  | Dependencies
+   ------------------- | ------------------------------------------------
+   Windows (MSVC)      | Nothing to do, libhs uses `#pragma comment(lib)`
+   Windows (MinGW-w64) | Link _setupapi and hid_ `-lsetupapi -lhid`
+   OSX (Clang)         | Link _CoreFoundation and IOKit_
+   Linux (GCC)         | Link _libudev_ `-ludev`
+
+   Other systems are not supported at the moment. */
 
 #include "common.h"
 #include "htable.h"

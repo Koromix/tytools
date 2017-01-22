@@ -17,6 +17,9 @@
     #include <termios.h>
     #include <unistd.h>
 #endif
+
+/* For single-file use you need a tiny bit more than that, see libhs.h for
+   more information. */
 #include "../../libhs.h"
 
 static int device_callback(hs_device *dev, void *udata)

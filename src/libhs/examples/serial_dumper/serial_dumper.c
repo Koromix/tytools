@@ -18,6 +18,9 @@
     #include <termios.h>
     #include <unistd.h>
 #endif
+
+/* For single-file use you need a tiny bit more than that, see libhs.h for
+   more information. */
 #include "../../libhs.h"
 
 static hs_poll_source sources[HS_POLL_MAX_SOURCES];
