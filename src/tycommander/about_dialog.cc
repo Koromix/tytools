@@ -50,5 +50,5 @@ void AboutDialog::openBugReports()
 
 void AboutDialog::openLicense()
 {
-    QDesktopServices::openUrl(QUrl("https://opensource.org/licenses/MIT"));
+    QDesktopServices::openUrl(QUrl("http://unlicense.org/"));
 }
