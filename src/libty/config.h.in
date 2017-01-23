@@ -1,6 +1,6 @@
-/* Teensy Tools - public domain
+/* TyTools - public domain
    Niels Martignène <niels.martignene@gmail.com>
-   https://neodd.com/teensytools
+   https://neodd.com/tytools
 
    This software is in the public domain. Where that dedication is not
    recognized, you are granted a perpetual, irrevocable license to copy,
@@ -16,10 +16,10 @@
 
 #define TY_CONFIG_TYCMD_NAME "@CONFIG_TYCMD_NAME@"
 #define TY_CONFIG_TYCMD_EXECUTABLE "@CONFIG_TYCMD_EXECUTABLE@"
-#define TY_CONFIG_TEENSYCOMMANDER_NAME "@CONFIG_TEENSYCOMMANDER_NAME@"
-#define TY_CONFIG_TEENSYCOMMANDER_EXECUTABLE "@CONFIG_TEENSYCOMMANDER_EXECUTABLE@"
-#define TY_CONFIG_TEENSYUPDATER_NAME "@CONFIG_TEENSYUPDATER_NAME@"
-#define TY_CONFIG_TEENSYUPDATER_EXECUTABLE "@CONFIG_TEENSYUPDATER_EXECUTABLE@"
+#define TY_CONFIG_TYCOMMANDER_NAME "@CONFIG_TYCOMMANDER_NAME@"
+#define TY_CONFIG_TYCOMMANDER_EXECUTABLE "@CONFIG_TYCOMMANDER_EXECUTABLE@"
+#define TY_CONFIG_TYUPDATER_NAME "@CONFIG_TYUPDATER_NAME@"
+#define TY_CONFIG_TYUPDATER_EXECUTABLE "@CONFIG_TYUPDATER_EXECUTABLE@"
 
 #define TY_CONFIG_URL_WEBSITE "@CONFIG_URL_WEBSITE@"
 #define TY_CONFIG_URL_BUGS "@CONFIG_URL_BUGS@"

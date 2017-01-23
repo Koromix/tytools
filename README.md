@@ -1,25 +1,25 @@
-You can find these instructions on the [official web page](http://neodd.com/teensytools).
+You can find these instructions on the [official web page](http://neodd.com/tytools).
 
 # Overview
 
-Teensy Tools is a collection of **independent tools** and you only need one executable to use
+TyTools is a collection of **independent tools** and you only need one executable to use
 any of them. The Qt-based GUI tools are statically compiled to make that possible.
 
-Tool             | Type                      | Description
----------------- | ------------------------- | ----------------------------------------------------
-Teensy Commander | Qt GUI (static)           | Upload, monitor and communicate with multiple boards
-Teensy Updater   | Qt GUI (static)           | Simple firmware / sketch uploader
-tycmd            | Command-line<br>_No Qt !_ | Command-line tool to manage Teensy boards
+Tool        | Type                      | Description
+----------- | ------------------------- | ----------------------------------------------------
+TyCommander | Qt GUI (static)           | Upload, monitor and communicate with multiple boards
+TyUpdater   | Qt GUI (static)           | Simple firmware / sketch uploader
+tycmd       | Command-line<br>_No Qt !_ | Command-line tool to manage Teensy boards
 
-Download the [latest release from GitHub](https://github.com/Koromix/teensytools/releases). You can find
-[development builds on BinTray](https://bintray.com/koromix/teensytools/teensytools/view#files).
+Download the [latest release from GitHub](https://github.com/Koromix/tytools/releases). You can find
+[development builds on BinTray](https://bintray.com/koromix/tytools/tytools/view#files).
 
 All the code related to these programs is under **public domain**, you can do whatever you want
 with it. See the LICENSE file or [unlicense.org](https://unlicense.org/) more more information.
 
 # Using tycmd
 
-You can manage multiple devices connected simultaneously, tycmd (and the other Teensy Tools) uniquely
+You can manage multiple devices connected simultaneously, tycmd (and the other tools) uniquely
 identifies each device by its position in the host USB topology. Meaning if it stays on the same USB
 port, it is handled as the same device. That's necessary because across reboots and resets, Teensies
 look completely different to the host.
@@ -104,7 +104,7 @@ without programming anything.
 You can also use `tycmd reset -b` to start the bootloader. This is the same as pushing the button on
 your Teensy.
 
-# Hacking Teensy Tools
+# Hacking TyTools
 
 ## Build on Windows
 
@@ -115,14 +115,14 @@ You need to install [CMake](http://www.cmake.org/) to build the project files be
 use Visual Studio or MinGW.
 
 If **you don't have Qt, only the libraries and command-line tools** will be compiled. There
-are two options to enable Qt in Teensy Tools:
+are two options to enable Qt in TyTools:
 
 - _dynamic Qt build_: Easiest option, you only need to install the pre-built Qt DLLs for
   your compiler with the official Qt installer. The binaries need the Qt DLLs to work.
 - _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the [qt5
-  directory](https://github.com/Koromix/teensytools/tree/master/qt5) for instructions.
+  directory](https://github.com/Koromix/tytools/tree/master/qt5) for instructions.
 
-To build Teensy Tools with MSVC 2015 32-bit, launch _VS2015 x86 Native Tools Command Prompt_,
+To build TyTools with MSVC 2015 32-bit, launch _VS2015 x86 Native Tools Command Prompt_,
 navigate to the project directory and execute CMake:
 
 ```batch
@@ -134,24 +134,24 @@ cmake ../..
 ```
 
 This will create Visual Studio project and solution files in _build/win32_. You can then open
-the _solution TeensyTools.sln_.
+the _solution TyTools.sln_.
 
 To build 64-bit binaries, you should use _VS2015 x64 Native Tools Command Prompt_ instead.
 
 ## Build on Mac OS X
 
 Install Xcode, the developer command-line tools and [CMake](http://www.cmake.org/). The native
-Clang compiler can build Teensy Tools.
+Clang compiler can build TyTools.
 
 If **you don't have Qt, only the libraries and command-line tools** will be compiled. There
-are two options to enable Qt in Teensy Tools:
+are two options to enable Qt in TyTools:
 
 - _dynamic Qt build_: Easiest option, you only need to install the pre-built Qt DLLs for
   your compiler with the official Qt installer. The binaries need the Qt DLLs to work.
 - _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the [qt5
-  directory](https://github.com/Koromix/teensytools/tree/master/qt5) for instructions.
+  directory](https://github.com/Koromix/tytools/tree/master/qt5) for instructions.
 
-After Qt is ready, you can build Teensy Tools by executing the following commands in the
+After Qt is ready, you can build TyTools by executing the following commands in the
 project directory:
 
 ```bash
@@ -169,7 +169,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug ../..
 
 ## Build on Linux
 
-Teensy Tools can be built with GCC or Clang.
+TyTools can be built with GCC or Clang.
 
 ### Prerequisites
 

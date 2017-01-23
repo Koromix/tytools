@@ -1,6 +1,6 @@
-# Teensy Tools - public domain
+# TyTools - public domain
 # Niels Martignène <niels.martignene@gmail.com>
-# https://neodd.com/teensytools
+# https://neodd.com/tytools
 
 # This software is in the public domain. Where that dedication is not
 # recognized, you are granted a perpetual, irrevocable license to copy,
@@ -23,8 +23,8 @@ enable_unity_build(tycmd)
 if(WIN32)
     install(TARGETS tycmd DESTINATION .)
 elseif(APPLE)
-    if(CONFIG_TEENSYCOMMANDER_BUILD)
-        install(TARGETS tycmd RUNTIME DESTINATION "${CONFIG_TEENSYCOMMANDER_EXECUTABLE}.app/Contents/MacOS")
+    if(CONFIG_TYCOMMANDER_BUILD)
+        install(TARGETS tycmd RUNTIME DESTINATION "${CONFIG_TYCOMMANDER_EXECUTABLE}.app/Contents/MacOS")
     endif()
 else()
     install(TARGETS tycmd RUNTIME DESTINATION bin)

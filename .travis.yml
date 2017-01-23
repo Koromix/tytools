@@ -45,14 +45,14 @@ deploy:
       secure: "pLCdSDU/CtceBXeqy8BDbOAuZwAwerMLm4SxuGRTak/j/tOt6+D03ZLQ0JzeJ2QkJ9HldalbhxV8N2dLdu4/nDZnUO4MICUpfHDo+XUjiONG0TDfZnSeQr4XGcMufZ0vXvjLKhASQlRQLAT0fdvkJ8o89fbXNr062SpxK28Yi+FVOEFQnvMFJux8gcqxMPY4FWTiZk7hSvKRgdSSBgAPLoLYWveG6DJJ3kmD604A/G8JJ3VHSVueqzBVc8bXhuBXeAZT+7SQq4ToSHMNNUBalmwbXlo4KklYDrGsJBMl8ppX7WYIx3mEK8QTXDvS8snjBcx/F8teWalPN88gLFiiExYVQzrVIKIPm3ReAaLrW46zfPrqs9SPH+x6JOYCyC4zcLqwD1hfc5yc55jtxxDwlF4YPmAA3STsFDFL+E1EnwMXhI6C+yZ5MUBcQB/A2rVssPk5Cq393JvJ9TF4v7MZB/LU8toNNzKO2YXqjutV3jbzvI0L+/CFCUPrOg9X59qS84hmTsytUtbKJRCJJL1KBvGH1oGu+wOoDDmigrEH2vMpYqDmr2/CPGpY4uhWhJ3RywYNNAx0M5BGwShJWxXTa9K4bityrc7rneayYzAU5Hv+XtJl6O3dPHuPUTpzEG4So+SDyz+crcvIPrf2Am+8r0X2KJb+MLP/Dvt2MjrIrPY="
     file: deploy-bintray.json
     on:
-      repo: Koromix/teensytools
+      repo: Koromix/tytools
       all_branches: true
   - provider: releases
     api_key:
       secure: rf2xKEN/HM5sV+QGswfSPQiXXGSRkhz4hx9szt4zBH//PcsQmrKiaphOE+whMOz5crKWjruaFbWBXkxqYGKdVlQ4xZVyAHE1CcQGjBN7ZXZh3bcjtkD4iyqlpJJ/wQBIuNn71whFp73LEQrggzigUuWs5j+cZBd3U73ZiETZ9RKaShw2DkX7FkDj7++nyDy3RFamO5SLGhr65RtCdX7tr83lqU6q6Cv6IwYK9aBVWSMcgtH0lucO/5s3l6WHCiWUJInrovvrSebh2x/0gscS5/XfZC9HvBrsqyZA3W9fA8ioAVUZUYEx7zQDCMqKquN1bhGKd0sz9EmSsE3+08gfY2ghZ6Q6fwuslxxqctTnweWlqwxGK6D2PQHznRZmYaomvkUwSK/tlCRZdzfM133pPrYdsG6A/fgY55jIhjrkBpr/wGyl1ZQImVpH/nrKIDbkiQzAqZmev3/r3UlpNkSuAFk9TbSQF2C1mHDhUqu1gDlhp4GPDGNnUndzXgkZ0DKZOe1AZDWAkmvqDEulRh2ydYJx6yWa6FTrcxRdnHe031MJNMOk2gef6DTuK+31kc3FuBh49h40TBVjsQDL+r0RS/XduMNnWy+M2dCy8Hb8+SC1WU9ViyuHJD5zYPaStfSGfBma1aGR8kd2cwgpBX6qCC2Cedh7eWt/bp7A946rwAM=
-    file: TeensyTools-*.*
+    file: TyTools-*.*
     file_glob: true
     skip_cleanup: true
     on:
-      repo: Koromix/teensytools
+      repo: Koromix/tytools
       tags: true

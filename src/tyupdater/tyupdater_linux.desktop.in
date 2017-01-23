@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=@VERSION@
+Name=@CONFIG_TYUPDATER_NAME@
+Comment=GUI tool to flash Teensy devices
+TryExec=@CONFIG_TYUPDATER_EXECUTABLE@
+Icon=tyupdater
+Exec=@CONFIG_TYUPDATER_EXECUTABLE@
+Terminal=false
+Type=Application
+Categories=Development;

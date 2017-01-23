@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="teensycommander">images/teensycommander.png</file>
-        <file alias="teensyupdater">images/teensyupdater.png</file>
+        <file alias="tycommander">images/tycommander.png</file>
+        <file alias="tyupdater">images/tyupdater.png</file>
 
         <file alias="board_attached">images/board_attached.png</file>
         <file alias="board_detached">images/board_detached.png</file>
