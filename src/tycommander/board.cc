@@ -72,7 +72,15 @@ void Board::loadSettings(Monitor *monitor)
     serial_decoder_.reset(serial_codec_->makeDecoder());
     clear_on_reset_ = db_.get("clearOnReset", false).toBool();
     serial_document_.setMaximumBlockCount(db_.get("scrollBackLimit", 200000).toInt());
-    enable_serial_ = db_.get("enableSerial", monitor ? monitor->serialByDefault() : false).toBool();
+    {
+        bool default_serial;
+        if (model() != TY_MODEL_GENERIC && monitor) {
+            default_serial = monitor->serialByDefault();
+        } else {
+            default_serial = false;
+        }
+        enable_serial_ = db_.get("enableSerial", default_serial).toBool();
+    }
     serial_log_size_ = db_.get(
         "serialLogSize",
         static_cast<quint64>(monitor ? monitor->serialLogSize() : 0)).toULongLong();
