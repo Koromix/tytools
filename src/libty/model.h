@@ -23,8 +23,11 @@ typedef struct ty_model_info {
 } ty_model_info;
 
 // Keep these enums and ty_models (below) in sync
+typedef enum ty_model_generic {
+    TY_MODEL_GENERIC = 1
+} ty_model_generic;
 typedef enum ty_model_teensy {
-    TY_MODEL_TEENSY = 1,
+    TY_MODEL_TEENSY = 2,
     TY_MODEL_TEENSY_PP_10,
     TY_MODEL_TEENSY_20,
     TY_MODEL_TEENSY_PP_20,
@@ -39,6 +42,7 @@ typedef enum ty_model_teensy {
 static const ty_model_info ty_models[] = {
     {"(unknown)"},
 
+    {"Generic"},
     {"Teensy"},
     {"Teensy++ 1.0", "at90usb646", 64512},
     {"Teensy 2.0", "atmega32u4", 32256},

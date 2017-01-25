@@ -11,6 +11,7 @@
 set(LIBTY_SOURCES board.c
                   board.h
                   board_priv.h
+                  class_generic.c
                   class_teensy.c
                   common.c
                   common.h
