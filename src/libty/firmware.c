@@ -165,6 +165,9 @@ unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
         ty_model partial_guesses[16];
         unsigned int partial_count;
 
+        if (!_ty_model_vtables[i]->identify_models)
+            continue;
+
         partial_count = (*_ty_model_vtables[i]->identify_models)(fw, partial_guesses,
                                                                  TY_COUNTOF(partial_guesses));
 
