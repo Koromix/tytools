@@ -29,7 +29,7 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
-const struct _ty_model_vtable _ty_teensy_model_vtable;
+extern const struct _ty_model_vtable _ty_teensy_model_vtable;
 static const struct _ty_board_interface_vtable teensy_iface_vtable;
 
 static ty_model identify_model(uint16_t usage)
@@ -229,7 +229,7 @@ static int change_baudrate(hs_port *port, unsigned int baudrate)
     return ty_libhs_translate_error(hs_serial_set_config(port, &config));
 }
 
-int teensy_open_interface(ty_board_interface *iface)
+static int teensy_open_interface(ty_board_interface *iface)
 {
     int r;
 
@@ -246,7 +246,7 @@ int teensy_open_interface(ty_board_interface *iface)
     return 0;
 }
 
-void teensy_close_interface(ty_board_interface *iface)
+static void teensy_close_interface(ty_board_interface *iface)
 {
     hs_port_close(iface->port);
     iface->port = NULL;
