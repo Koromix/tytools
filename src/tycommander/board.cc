@@ -193,12 +193,14 @@ void Board::updateStatus()
         if (hasCapability(TY_BOARD_CAPABILITY_RUN)) {
             status_text_ = status_firmware_.isEmpty() ? tr("(running)") : status_firmware_;
             icon_name = serialOpen() ? ":/board_attached" : ":/board_detached";
-            break;
         } else if (hasCapability(TY_BOARD_CAPABILITY_UPLOAD)) {
             status_text_ = tr("(bootloader)");
             icon_name = ":/board_bootloader";
-            break;
+        } else {
+            status_text_ = tr("(available)");
+            icon_name = serialOpen() ? ":/board_attached" : ":/board_detached";
         }
+        break;
     case TY_BOARD_STATE_MISSING:
     case TY_BOARD_STATE_DROPPED:
         status_text_ = tr("(missing)");
