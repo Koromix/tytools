@@ -44,7 +44,7 @@ static ty_model identify_model(uint16_t usage)
         case 0x20: model = TY_MODEL_TEENSY_LC; break;
         case 0x21: model = TY_MODEL_TEENSY_32; break;
         case 0x1F: model = TY_MODEL_TEENSY_35; break;
-        case 0x23: model = TY_MODEL_TEENSY_36; break;
+        case 0x22: model = TY_MODEL_TEENSY_36; break;
     }
 
     if (model != 0) {
