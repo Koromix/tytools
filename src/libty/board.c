@@ -76,7 +76,38 @@ void ty_board_unref(ty_board *board)
     free(board);
 }
 
-static int match_interface(ty_board_interface *iface, void *udata)
+struct board_id_part {
+    const char *ptr;
+    size_t len;
+};
+
+static void parse_board_id(const char *id, const char *delimiters, struct board_id_part parts[])
+{
+    size_t part_offset = 0;
+    size_t delim_offset = 0;
+    size_t i = 0;
+    do {
+        const char *d = strchr(delimiters + delim_offset, id[i]);
+        if (d || !id[i]) {
+            if (i - part_offset) {
+                parts[delim_offset].ptr = id + part_offset;
+                parts[delim_offset].len = i - part_offset;
+            }
+            part_offset = i + 1;
+            delim_offset = (size_t)(d - delimiters + 1);
+        }
+    } while (id[i++]);
+}
+
+static bool compare_board_id_parts(const struct board_id_part *part1,
+                                   const struct board_id_part *part2)
+{
+    if (!part1->ptr || !part2->ptr)
+        return true;
+    return part1->len == part2->len && memcmp(part1->ptr, part2->ptr, part1->len) == 0;
+}
+
+static int match_board_interface(ty_board_interface *iface, void *udata)
 {
     return ty_compare_paths(ty_board_interface_get_path(iface), udata);
 }
@@ -85,42 +116,25 @@ bool ty_board_matches_tag(ty_board *board, const char *id)
 {
     assert(board);
 
-    uint64_t serial;
-    char *ptr, *family = NULL, *location = NULL;
-
     if (!id)
         return true;
     if (board->tag != board->id && strcmp(id, board->tag) == 0)
         return true;
 
-    serial = strtoull(id, &ptr, 10);
-    if (*ptr == '-') {
-        location = strchr(++ptr, '@');
-        if (location > ptr) {
-            size_t len = (size_t)(location - ptr);
-            if (len > 32)
-                len = 32;
-            family = alloca(len + 1);
-            memcpy(family, ptr, len);
-            family[len] = 0;
-        } else if (!location && ptr[1]) {
-            family = ptr;
-        }
-        if (location && !*++location)
-            location = NULL;
-    } else if (*ptr == '@') {
-        if (ptr[1])
-            location = ptr + 1;
-    } else if (*ptr) {
-        return false;
-    }
+    struct board_id_part parts1[3] = {0};
+    struct board_id_part parts2[2] = {0};
 
-    if (serial && serial != board->serial)
+    parse_board_id(id, "-@", parts1);
+    parse_board_id(board->id, "-", parts2);
+
+    if (!compare_board_id_parts(&parts1[0], &parts2[0]))
         return false;
-    if (family && strcmp(family, strchr(board->id, '-') + 1) != 0)
+    if (!compare_board_id_parts(&parts1[1], &parts2[1]))
         return false;
-    if (location && strcmp(location, board->location) != 0 &&
-            !ty_board_list_interfaces(board, match_interface, location))
+    /* The last part is necessarily NUL-terminated so we can just use regular
+       C string functions. */
+    if (parts1[2].ptr && strcmp(parts1[2].ptr, board->location) != 0 &&
+            !ty_board_list_interfaces(board, match_board_interface, (void *)parts1[2].ptr))
         return false;
 
     return true;
