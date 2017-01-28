@@ -56,7 +56,7 @@ static ty_model identify_model(uint16_t usage)
     return model;
 }
 
-static uint64_t parse_bootloader_serial(const char *s)
+static uint64_t parse_bootloader_serial_number(const char *s)
 {
     uint64_t serial;
 
@@ -152,7 +152,7 @@ static int teensy_load_interface(ty_board_interface *iface)
 
 static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 {
-    uint64_t serial = 0;
+    uint64_t new_serial_number = 0;
     int r;
 
     if (ty_models[iface->model].code_size) {
@@ -161,7 +161,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
         board->model = iface->model;
 
         if (iface->dev->serial_number_string)
-            serial = parse_bootloader_serial(iface->dev->serial_number_string);
+            new_serial_number = parse_bootloader_serial_number(iface->dev->serial_number_string);
 
         if (!board->description) {
             board->description = strdup("Teensy (HalfKay)");
@@ -173,7 +173,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
             board->model = iface->model;
 
         if (iface->dev->serial_number_string)
-            serial = strtoull(iface->dev->serial_number_string, NULL, 10);
+            new_serial_number = strtoull(iface->dev->serial_number_string, NULL, 10);
 
         free(board->description);
         board->description = strdup(iface->dev->product_string ? iface->dev->product_string
@@ -182,19 +182,19 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
             return ty_error(TY_ERROR_MEMORY, NULL);
     }
 
-    if (serial && serial != UINT32_MAX) {
-        if (!board->serial) {
-            board->serial = serial;
+    if (new_serial_number && new_serial_number != UINT32_MAX) {
+        if (!board->serial_number) {
+            board->serial_number = new_serial_number;
 
             /* Update the board ID with a real serial number */
             free(board->id);
             board->id = NULL;
-        } else if (serial != board->serial) {
+        } else if (new_serial_number != board->serial_number) {
             /* Let boards using an old Teensyduino (before 1.19) firmware pass with a warning
                because there is no way to interpret the serial number correctly, and the board
                will show up as a different board if it is first plugged in bootloader mode.
                The only way to fix this is to use Teensyduino >= 1.19. */
-            if (ty_models[iface->model].code_size && serial * 10 == board->serial) {
+            if (ty_models[iface->model].code_size && new_serial_number * 10 == board->serial_number) {
                 ty_log(TY_LOG_WARNING, "Upgrade board '%s' to use a recent Teensyduino version",
                        board->tag);
             } else {
@@ -204,12 +204,12 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 
         /* We cannot uniquely identify AVR Teensy boards because the S/N is always 12345,
            or custom ARM Teensy boards without a valid MAC address. */
-        if (serial != 12345)
+        if (new_serial_number != 12345)
             iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
     }
 
     if (!board->id) {
-        r = asprintf(&board->id, "%"PRIu64"-Teensy", serial);
+        r = asprintf(&board->id, "%"PRIu64"-Teensy", new_serial_number);
         if (r < 0) {
             board->id = NULL;
             return ty_error(TY_ERROR_MEMORY, NULL);

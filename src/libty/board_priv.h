@@ -55,7 +55,7 @@ struct ty_board {
     char *tag;
     uint16_t vid;
     uint16_t pid;
-    uint64_t serial;
+    uint64_t serial_number;
     char *description;
     char *location;
 

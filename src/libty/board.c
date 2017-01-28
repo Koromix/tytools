@@ -206,7 +206,7 @@ const char *ty_board_get_location(const ty_board *board)
 uint64_t ty_board_get_serial_number(const ty_board *board)
 {
     assert(board);
-    return board->serial;
+    return board->serial_number;
 }
 
 const char *ty_board_get_description(const ty_board *board)

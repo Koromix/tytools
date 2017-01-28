@@ -35,7 +35,7 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
 {
     const char *manufacturer_string;
     const char *product_string;
-    uint64_t new_serial = 0;
+    uint64_t new_serial_number = 0;
     char new_id[256];
 
     manufacturer_string = iface->dev->manufacturer_string;
@@ -50,10 +50,10 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     if (board->description && strcmp(board->description, product_string) != 0)
         return 0;
     if (iface->dev->serial_number_string)
-        new_serial = strtoull(iface->dev->serial_number_string, NULL, 10);
-    if (board->serial && new_serial != board->serial)
+        new_serial_number = strtoull(iface->dev->serial_number_string, NULL, 10);
+    if (board->serial_number && new_serial_number != board->serial_number)
         return 0;
-    snprintf(new_id, sizeof(new_id), "%"PRIu64"-%s", new_serial, manufacturer_string);
+    snprintf(new_id, sizeof(new_id), "%"PRIu64"-%s", new_serial_number, manufacturer_string);
     for (size_t i = 0; new_id[i]; i++) {
         if (!(new_id[i] == '-' || new_id[i] == '_' ||
               new_id[i] == ':' || new_id[i] == '.' ||
@@ -71,7 +71,7 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
         if (!board->description)
             return ty_error(TY_ERROR_MEMORY, NULL);
     }
-    board->serial = new_serial;
+    board->serial_number = new_serial_number;
     if (!board->id) {
         board->id = strdup(new_id);
         if (!board->id)
