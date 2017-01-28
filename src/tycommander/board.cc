@@ -360,10 +360,12 @@ TaskInterface Board::sendFile(const QString &filename)
 
 void Board::appendFakeSerialRead(const QString &s)
 {
-    auto buf = serial_codec_->fromUnicode(s);
-    QMutexLocker locker(&serial_lock_);
-    writeToSerialLog(buf.constData(), buf.size());
-    locker.unlock();
+    if (serial_log_file_.isOpen()) {
+        auto buf = serial_codec_->fromUnicode(s);
+        QMutexLocker locker(&serial_lock_);
+        writeToSerialLog(buf.constData(), buf.size());
+        locker.unlock();
+    }
 
     QTextCursor cursor(&serial_document_);
     cursor.movePosition(QTextCursor::End);
