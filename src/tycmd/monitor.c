@@ -193,6 +193,9 @@ static int open_serial_interface(ty_board *board, ty_board_interface **riface)
     r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_SERIAL, &iface);
     if (r < 0)
         return r;
+    if (!r)
+        return ty_error(TY_ERROR_MODE, "Board '%s' is not available for serial I/O",
+                        ty_board_get_tag(board));
 
     if (ty_board_interface_get_device(iface)->type == HS_DEVICE_TYPE_SERIAL) {
         r = hs_serial_set_config(ty_board_interface_get_handle(iface), &monitor_serial_config);
