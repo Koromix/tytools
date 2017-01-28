@@ -179,11 +179,12 @@ MainWindow::MainWindow(QWidget *parent)
             &MainWindow::openBoardListContextMenu);
     connect(boardList->selectionModel(), &QItemSelectionModel::selectionChanged, this,
             &MainWindow::selectionChanged);
-    connect(monitor_, &Monitor::boardAdded, this, [=]() {
-        // Select this board if there were none available before
-        if (monitor_->rowCount() == 1)
-            boardList->setCurrentIndex(monitor_->index(0, 0));
-    });
+    /* Select board on insertion and removal if nothing is selected. Use Qt::QueuedConnection
+       for removals to make sure we get the insertion before the removal when a board is
+       replaced by the user. */
+    connect(monitor_, &Monitor::rowsInserted, this, &MainWindow::fixEmptySelection);
+    connect(monitor_, &Monitor::rowsRemoved, this, &MainWindow::fixEmptySelection,
+            Qt::QueuedConnection);
     /* serialEdit->setFocus() is not called in selectionChanged() if the board list
        has the focus to prevent stealing keyboard focus. We need to do it here. */
     connect(boardList, &QListView::clicked, this, &MainWindow::autoFocusBoardWidgets);
@@ -624,6 +625,18 @@ void MainWindow::initCodecList()
     int index = 0;
     for (auto codec: codecs_)
         codec_indexes_.insert(codec, index++);
+}
+
+void MainWindow::fixEmptySelection(const QModelIndex &parent, int start, int end)
+{
+    Q_UNUSED(parent);
+    Q_UNUSED(end);
+
+    if (selected_boards_.empty() && monitor_->rowCount()) {
+        if (start >= monitor_->rowCount())
+            start = monitor_->rowCount() - 1;
+        boardList->setCurrentIndex(monitor_->index(start, 0));
+    }
 }
 
 void MainWindow::enableBoardWidgets()

@@ -105,6 +105,7 @@ public slots:
 private:
     static void initCodecList();
 
+    void fixEmptySelection(const QModelIndex &parent, int start, int end);
     void enableBoardWidgets();
     void disableBoardWidgets();
     void updateWindowTitle();
