@@ -343,7 +343,7 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeou
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
+        return ty_error(TY_ERROR_MODE, "Board '%s' is not available for serial I/O", board->tag);
 
     r = (*iface->class_vtable->serial_read)(iface, buf, size, timeout);
 
@@ -363,7 +363,7 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
+        return ty_error(TY_ERROR_MODE, "Board '%s' is not available for serial I/O", board->tag);
 
     r = (*iface->class_vtable->serial_write)(iface, buf, size);
 
@@ -383,7 +383,7 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
     if (r < 0)
         goto cleanup;
     if (!r) {
-        r = ty_error(TY_ERROR_MODE, "Firmware upload is not available for '%s", board->tag);
+        r = ty_error(TY_ERROR_MODE, "Cannot upload to board '%s'", board->tag);
         goto cleanup;
     }
     assert(board->model);
@@ -411,7 +411,7 @@ int ty_board_reset(ty_board *board)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot reset '%s' in this mode", board->tag);
+        return ty_error(TY_ERROR_MODE, "Cannot reset board '%s'", board->tag);
 
     r = (*iface->class_vtable->reset)(iface);
 
@@ -430,7 +430,7 @@ int ty_board_reboot(ty_board *board)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot reboot '%s' in this mode", board->tag);
+        return ty_error(TY_ERROR_MODE, "Cannot reboot board '%s'", board->tag);
 
     r = (*iface->class_vtable->reboot)(iface);
 
