@@ -35,50 +35,88 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
 {
     const char *manufacturer_string;
     const char *product_string;
-    uint64_t new_serial_number = 0;
-    char new_id[256];
+    ty_model model = 0;
+    uint64_t serial_number = 0;
+    char *description = NULL;
+    char *id = NULL;
+    int r;
 
     manufacturer_string = iface->dev->manufacturer_string;
     if (!manufacturer_string)
-        manufacturer_string = "Generic";
+        manufacturer_string = "Unknown";
     product_string = iface->dev->product_string;
     if (!product_string)
         product_string = "Unknown";
 
-    if (board->model && board->model != iface->model)
-        return 0;
-    if (board->description && strcmp(board->description, product_string) != 0)
-        return 0;
-    if (iface->dev->serial_number_string)
-        new_serial_number = strtoull(iface->dev->serial_number_string, NULL, 10);
-    if (board->serial_number && new_serial_number != board->serial_number)
-        return 0;
-    snprintf(new_id, sizeof(new_id), "%"PRIu64"-%s", new_serial_number, manufacturer_string);
-    for (size_t i = 0; new_id[i]; i++) {
-        if (!(new_id[i] == '-' || new_id[i] == '_' ||
-              new_id[i] == ':' || new_id[i] == '.' ||
-              (new_id[i] >= 'a' && new_id[i] <= 'z') ||
-              (new_id[i] >= 'A' && new_id[i] <= 'Z') ||
-              (new_id[i] >= '0' && new_id[i] <= '9')))
-            new_id[i] = '_';
+    // Check and update board model
+    if (board->model && board->model != iface->model) {
+        r = 0;
+        goto error;
     }
-    if (board->id && strcmp(new_id, board->id))
-        return 0;
+    model = iface->model;
 
-    board->model = iface->model;
-    if (!board->description) {
-        board->description = strdup(product_string);
-        if (!board->description)
-            return ty_error(TY_ERROR_MEMORY, NULL);
+    // Check and update board serial number
+    if (iface->dev->serial_number_string) {
+        serial_number = strtoull(iface->dev->serial_number_string, NULL, 10);
+
+        if (board->serial_number && serial_number != board->serial_number) {
+            r = 0;
+            goto error;
+        }
     }
-    board->serial_number = new_serial_number;
+
+    // Check and update board description
+    if (board->description && strcmp(board->description, product_string) != 0) {
+        r = 0;
+        goto error;
+    }
+    description = strdup(product_string);
+    if (!description) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+
+    // Create new board unique identifier
+    r = asprintf(&id, "%"PRIu64"-%s", serial_number, manufacturer_string);
+    if (r < 0) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
+    }
+    for (size_t i = 0; id[i]; i++) {
+        if (!(id[i] == '-' || id[i] == '_' ||
+              id[i] == ':' || id[i] == '.' ||
+              (id[i] >= 'a' && id[i] <= 'z') ||
+              (id[i] >= 'A' && id[i] <= 'Z') ||
+              (id[i] >= '0' && id[i] <= '9')))
+            id[i] = '_';
+    }
+
+    // Check board unique identifier
+    if (board->id && strcmp(id, board->id) != 0) {
+        r = 0;
+        goto error;
+    }
+
+    // Everything is alright, we can commit changes
+    if (model)
+        board->model = model;
+    if (serial_number)
+        board->serial_number = serial_number;
+    if (description) {
+        free(board->description);
+        board->description = description;
+    }
     if (!board->id) {
-        board->id = strdup(new_id);
-        if (!board->id)
-            return ty_error(TY_ERROR_MEMORY, NULL);
+        free(board->id);
+        board->id = id;
     }
 
     return 1;
+
+error:
+    free(id);
+    free(description);
+    return r;
 }
 
 static int generic_open_interface(ty_board_interface *iface)
