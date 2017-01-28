@@ -212,7 +212,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 
     // Update board description
     {
-        const char *product_string;
+        const char *product_string = NULL;
 
         if (ty_models[iface->model].code_size) {
             if (!board->description)

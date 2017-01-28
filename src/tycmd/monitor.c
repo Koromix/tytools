@@ -209,7 +209,7 @@ static int open_serial_interface(ty_board *board, ty_board_interface **riface)
 
 static int fill_descriptor_set(ty_descriptor_set *set, ty_board *board)
 {
-    ty_board_interface *iface;
+    ty_board_interface *iface = NULL;
     int r;
 
     ty_descriptor_set_clear(set);
