@@ -74,7 +74,7 @@ TY_PUBLIC int ty_board_set_tag(ty_board *board, const char *tag);
 TY_PUBLIC const char *ty_board_get_tag(const ty_board *board);
 
 TY_PUBLIC const char *ty_board_get_location(const ty_board *board);
-TY_PUBLIC uint64_t ty_board_get_serial_number(const ty_board *board);
+TY_PUBLIC const char *ty_board_get_serial_number(const ty_board *board);
 TY_PUBLIC const char *ty_board_get_description(const ty_board *board);
 
 TY_PUBLIC void ty_board_set_model(ty_board *board, ty_model model);

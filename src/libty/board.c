@@ -60,6 +60,7 @@ void ty_board_unref(ty_board *board)
         if (board->tag != board->id)
             free(board->tag);
         free(board->id);
+        free(board->serial_number);
         free(board->location);
         free(board->description);
 
@@ -203,7 +204,7 @@ const char *ty_board_get_location(const ty_board *board)
     return board->location;
 }
 
-uint64_t ty_board_get_serial_number(const ty_board *board)
+const char *ty_board_get_serial_number(const ty_board *board)
 {
     assert(board);
     return board->serial_number;

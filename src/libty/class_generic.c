@@ -35,8 +35,9 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
 {
     const char *manufacturer_string;
     const char *product_string;
+    const char *serial_number_string;
     ty_model model = 0;
-    uint64_t serial_number = 0;
+    char *serial_number = NULL;
     char *description = NULL;
     char *id = NULL;
     int r;
@@ -47,6 +48,9 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     product_string = iface->dev->product_string;
     if (!product_string)
         product_string = "Unknown";
+    serial_number_string = iface->dev->serial_number_string;
+    if (!serial_number_string)
+        serial_number_string = "?";
 
     // Check and update board model
     if (board->model && board->model != iface->model) {
@@ -56,13 +60,14 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     model = iface->model;
 
     // Check and update board serial number
-    if (iface->dev->serial_number_string) {
-        serial_number = strtoull(iface->dev->serial_number_string, NULL, 10);
-
-        if (board->serial_number && serial_number != board->serial_number) {
-            r = 0;
-            goto error;
-        }
+    if (board->serial_number && strcmp(board->serial_number, serial_number_string) != 0) {
+        r = 0;
+        goto error;
+    }
+    serial_number = strdup(serial_number_string);
+    if (!serial_number) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
+        goto error;
     }
 
     // Check and update board description
@@ -77,7 +82,7 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     }
 
     // Create new board unique identifier
-    r = asprintf(&id, "%"PRIu64"-%s", serial_number, manufacturer_string);
+    r = asprintf(&id, "%s-%s", serial_number, manufacturer_string);
     if (r < 0) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
@@ -116,6 +121,7 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
 error:
     free(id);
     free(description);
+    free(serial_number);
     return r;
 }
 

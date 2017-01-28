@@ -161,7 +161,7 @@ QString Board::location() const
     return ty_board_get_location(board_);
 }
 
-uint64_t Board::serialNumber() const
+QString Board::serialNumber() const
 {
     return ty_board_get_serial_number(board_);
 }

@@ -153,7 +153,7 @@ static int teensy_load_interface(ty_board_interface *iface)
 static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 {
     ty_model model = 0;
-    uint64_t serial_number = 0;
+    char *serial_number = NULL;
     char *description = NULL;
     char *id = NULL;
     int r;
@@ -172,29 +172,40 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 
     // Check and update board serial number
     if (iface->dev->serial_number_string) {
+        uint64_t serial_value;
         if (ty_models[iface->model].code_size) {
-            serial_number = parse_bootloader_serial_number(iface->dev->serial_number_string);
+            serial_value = parse_bootloader_serial_number(iface->dev->serial_number_string);
         } else {
-            serial_number = strtoull(iface->dev->serial_number_string, NULL, 10);
+            serial_value = strtoull(iface->dev->serial_number_string, NULL, 10);
         }
 
-        /* We cannot uniquely identify AVR Teensy boards because the S/N is always 12345,
-           or custom ARM Teensy boards without a valid MAC address. Kind of dirty to
-           change iface in this function but it should not be a problem. */
-        if (serial_number && serial_number != 12345)
-            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
+        if (serial_value) {
+            /* We cannot uniquely identify AVR Teensy boards because the S/N is always 12345,
+               or custom ARM Teensy boards without a valid MAC address. Kind of dirty to
+               change iface in this function but it should not be a problem. */
+            if (serial_value != 12345)
+                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
 
-        if (board->serial_number && serial_number && serial_number != board->serial_number) {
-            /* Let boards using an old Teensyduino (before 1.19) firmware pass with a warning
-               because there is no way to interpret the serial number correctly, and the board
-               will show up as a different board if it is first plugged in bootloader mode.
-               The only way to fix this is to use Teensyduino >= 1.19. */
-            if (ty_models[iface->model].code_size && serial_number * 10 == board->serial_number) {
-                ty_log(TY_LOG_WARNING, "Upgrade board '%s' to use a recent Teensyduino version",
-                       board->tag);
-            } else {
-                r = 0;
+            r = asprintf(&serial_number, "%"PRIu64, serial_value);
+            if (r < 0) {
+                r = ty_error(TY_ERROR_MEMORY, NULL);
                 goto error;
+            }
+
+            if (board->serial_number && strcmp(serial_number, board->serial_number) != 0) {
+                uint64_t board_serial_value = strtoull(board->serial_number, NULL, 10);
+
+                /* Let boards using an old Teensyduino (before 1.19) firmware pass with a warning
+                   because there is no way to interpret the serial number correctly, and the board
+                   will show up as a different board if it is first plugged in bootloader mode.
+                   The only way to fix this is to use Teensyduino >= 1.19. */
+                if (ty_models[iface->model].code_size && serial_value == board_serial_value * 10) {
+                    ty_log(TY_LOG_WARNING, "Upgrade board '%s' with recent Teensyduino version",
+                           board->tag);
+                } else {
+                    r = 0;
+                    goto error;
+                }
             }
         }
     }
@@ -224,7 +235,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 
     // Update board unique identifier
     if (!board->id || serial_number) {
-        r = asprintf(&id, "%"PRIu64"-Teensy", serial_number);
+        r = asprintf(&id, "%s-Teensy", serial_number ? serial_number : "?");
         if (r < 0) {
             r = ty_error(TY_ERROR_MEMORY, NULL);
             goto error;
@@ -250,6 +261,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board)
 error:
     free(id);
     free(description);
+    free(serial_number);
     return r;
 }
 

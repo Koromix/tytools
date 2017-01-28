@@ -968,7 +968,7 @@ void MainWindow::refreshInfo()
     idText->setText(current_board_->id());
     modelText->setText(current_board_->modelName());
     locationText->setText(current_board_->location());
-    serialNumberText->setText(QString::number(current_board_->serialNumber()));
+    serialNumberText->setText(current_board_->serialNumber());
     descriptionText->setText(current_board_->description());
 }
 

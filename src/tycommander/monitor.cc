@@ -284,7 +284,7 @@ QVariant Monitor::data(const QModelIndex &index, int role) const
         case COLUMN_LOCATION:
             return board->location();
         case COLUMN_SERIAL_NUMBER:
-            return static_cast<quint64>(board->serialNumber());
+            return board->serialNumber();
         case COLUMN_DESCRIPTION:
             return board->description();
         }
