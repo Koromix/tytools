@@ -12,7 +12,7 @@
 #include "../libhs/device.h"
 #include "../libhs/monitor.h"
 #include "board_priv.h"
-#include "model_priv.h"
+#include "class_priv.h"
 #include "monitor.h"
 #include "system.h"
 #include "timer.h"
@@ -97,7 +97,7 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     board->vid = iface->dev->vid;
     board->pid = iface->dev->pid;
 
-    r = (*iface->model_vtable->update_board)(iface, board);
+    r = (*iface->class_vtable->update_board)(iface, board);
     if (r <= 0)
         goto error;
     board->tag = board->id;
@@ -197,9 +197,9 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
     iface->dev = hs_device_ref(dev);
 
     r = 0;
-    for (unsigned int i = 0; i < _ty_model_vtables_count && !r; i++) {
+    for (unsigned int i = 0; i < _ty_class_vtables_count && !r; i++) {
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*_ty_model_vtables[i]->load_interface)(iface);
+        r = (*_ty_class_vtables[i]->load_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
             if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
@@ -247,7 +247,7 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
-        r = (*iface->model_vtable->update_board)(iface, board);
+        r = (*iface->class_vtable->update_board)(iface, board);
         if (r < 0)
             goto error;
         if (update_tag_pointer)

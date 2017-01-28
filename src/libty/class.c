@@ -9,17 +9,17 @@
    See the LICENSE file for more details. */
 
 #include "common_priv.h"
+#include "class_priv.h"
 #include "firmware.h"
-#include "model_priv.h"
 
-extern const struct _ty_model_vtable _ty_teensy_model_vtable;
-extern const struct _ty_model_vtable _ty_generic_model_vtable;
+extern const struct _ty_class_vtable _ty_teensy_class_vtable;
+extern const struct _ty_class_vtable _ty_generic_class_vtable;
 
-const struct _ty_model_vtable *_ty_model_vtables[] = {
-    &_ty_teensy_model_vtable,
-    &_ty_generic_model_vtable
+const struct _ty_class_vtable *_ty_class_vtables[] = {
+    &_ty_teensy_class_vtable,
+    &_ty_generic_class_vtable
 };
-const unsigned int _ty_model_vtables_count = TY_COUNTOF(_ty_model_vtables);
+const unsigned int _ty_class_vtables_count = TY_COUNTOF(_ty_class_vtables);
 
 ty_model ty_model_find(const char *name)
 {

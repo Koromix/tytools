@@ -11,6 +11,9 @@
 set(LIBTY_SOURCES board.c
                   board.h
                   board_priv.h
+                  class.c
+                  class.h
+                  class_priv.h
                   class_generic.c
                   class_teensy.c
                   common.c
@@ -25,9 +28,6 @@ set(LIBTY_SOURCES board.c
                   htable.c
                   htable.h
                   list.h
-                  model.c
-                  model.h
-                  model_priv.h
                   monitor.c
                   monitor.h
                   optline.c

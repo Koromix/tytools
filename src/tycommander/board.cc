@@ -15,7 +15,7 @@
 #include <QTextCursor>
 
 #include "board.hpp"
-#include "../libty/model.h"
+#include "../libty/class.h"
 #include "database.hpp"
 #include "monitor.hpp"
 

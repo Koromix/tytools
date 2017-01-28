@@ -12,7 +12,7 @@
 #define TY_BOARD_H
 
 #include "common.h"
-#include "model.h"
+#include "class.h"
 
 TY_C_BEGIN
 

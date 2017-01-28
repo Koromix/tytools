@@ -8,8 +8,8 @@
 
    See the LICENSE file for more details. */
 
-#ifndef TY_MODEL_H
-#define TY_MODEL_H
+#ifndef TY_CLASS_H
+#define TY_CLASS_H
 
 #include "common.h"
 

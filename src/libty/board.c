@@ -14,8 +14,8 @@
 #endif
 #include "../libhs/device.h"
 #include "board_priv.h"
+#include "class_priv.h"
 #include "firmware.h"
-#include "model_priv.h"
 #include "monitor.h"
 #include "system.h"
 #include "task.h"
@@ -330,7 +330,7 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeou
     if (!r)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
 
-    r = (*iface->vtable->serial_read)(iface, buf, size, timeout);
+    r = (*iface->class_vtable->serial_read)(iface, buf, size, timeout);
 
     ty_board_interface_close(iface);
     return r;
@@ -350,7 +350,7 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     if (!r)
         return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
 
-    r = (*iface->vtable->serial_write)(iface, buf, size);
+    r = (*iface->class_vtable->serial_write)(iface, buf, size);
 
     ty_board_interface_close(iface);
     return r;
@@ -378,7 +378,7 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
         goto cleanup;
     }
 
-    r = (*iface->vtable->upload)(iface, fw, pf, udata);
+    r = (*iface->class_vtable->upload)(iface, fw, pf, udata);
 
 cleanup:
     ty_board_interface_close(iface);
@@ -398,7 +398,7 @@ int ty_board_reset(ty_board *board)
     if (!r)
         return ty_error(TY_ERROR_MODE, "Cannot reset '%s' in this mode", board->tag);
 
-    r = (*iface->vtable->reset)(iface);
+    r = (*iface->class_vtable->reset)(iface);
 
     ty_board_interface_close(iface);
     return r;
@@ -417,7 +417,7 @@ int ty_board_reboot(ty_board *board)
     if (!r)
         return ty_error(TY_ERROR_MODE, "Cannot reboot '%s' in this mode", board->tag);
 
-    r = (*iface->vtable->reboot)(iface);
+    r = (*iface->class_vtable->reboot)(iface);
 
     ty_board_interface_close(iface);
     return r;
@@ -455,7 +455,7 @@ int ty_board_interface_open(ty_board_interface *iface)
     ty_mutex_lock(&iface->open_lock);
 
     if (!iface->port) {
-        r = (*iface->vtable->open_interface)(iface);
+        r = (*iface->class_vtable->open_interface)(iface);
         if (r < 0)
             goto cleanup;
     }
@@ -476,7 +476,7 @@ void ty_board_interface_close(ty_board_interface *iface)
 
     ty_mutex_lock(&iface->open_lock);
     if (!--iface->open_count)
-        (*iface->vtable->close_interface)(iface);
+        (*iface->class_vtable->close_interface)(iface);
     ty_mutex_unlock(&iface->open_lock);
 
     ty_board_interface_unref(iface);

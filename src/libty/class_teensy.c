@@ -14,8 +14,8 @@
 #include "../libhs/serial.h"
 #include "board.h"
 #include "board_priv.h"
+#include "class_priv.h"
 #include "firmware.h"
-#include "model_priv.h"
 #include "system.h"
 
 #define TEENSY_VID 0x16C0
@@ -29,8 +29,7 @@ enum {
     TEENSY_USAGE_PAGE_SEREMU = 0xFFC9
 };
 
-extern const struct _ty_model_vtable _ty_teensy_model_vtable;
-static const struct _ty_board_interface_vtable teensy_iface_vtable;
+extern const struct _ty_class_vtable _ty_teensy_class_vtable;
 
 static ty_model identify_model(uint16_t usage)
 {
@@ -144,8 +143,7 @@ static int teensy_load_interface(ty_board_interface *iface)
         break;
     }
 
-    iface->model_vtable = &_ty_teensy_model_vtable;
-    iface->vtable = &teensy_iface_vtable;
+    iface->class_vtable = &_ty_teensy_class_vtable;
     if (!iface->model)
         iface->model = TY_MODEL_TEENSY;
 
@@ -605,22 +603,16 @@ static int teensy_reboot(ty_board_interface *iface)
     return r;
 }
 
-const struct _ty_model_vtable _ty_teensy_model_vtable = {
+const struct _ty_class_vtable _ty_teensy_class_vtable = {
     .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
+    .identify_models = teensy_identify_models,
 
-    .identify_models = teensy_identify_models
-};
-
-static const struct _ty_board_interface_vtable teensy_iface_vtable = {
     .open_interface = teensy_open_interface,
     .close_interface = teensy_close_interface,
-
     .serial_read = teensy_serial_read,
     .serial_write = teensy_serial_write,
-
     .upload = teensy_upload,
     .reset = teensy_reset,
-
     .reboot = teensy_reboot
 };

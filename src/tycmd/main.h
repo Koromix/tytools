@@ -13,7 +13,7 @@
 
 #include "../libty/common.h"
 #include "../libty/board.h"
-#include "../libty/model.h"
+#include "../libty/class.h"
 #include "../libty/monitor.h"
 #include "../libty/optline.h"
 

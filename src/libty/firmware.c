@@ -9,8 +9,8 @@
    See the LICENSE file for more details. */
 
 #include "common_priv.h"
+#include "class_priv.h"
 #include "firmware.h"
-#include "model_priv.h"
 #include "system.h"
 
 const ty_firmware_format ty_firmware_formats[] = {
@@ -161,14 +161,14 @@ unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
 
     unsigned int guesses_count = 0;
 
-    for (unsigned int i = 0; i < _ty_model_vtables_count; i++) {
+    for (unsigned int i = 0; i < _ty_class_vtables_count; i++) {
         ty_model partial_guesses[16];
         unsigned int partial_count;
 
-        if (!_ty_model_vtables[i]->identify_models)
+        if (!_ty_class_vtables[i]->identify_models)
             continue;
 
-        partial_count = (*_ty_model_vtables[i]->identify_models)(fw, partial_guesses,
+        partial_count = (*_ty_class_vtables[i]->identify_models)(fw, partial_guesses,
                                                                  TY_COUNTOF(partial_guesses));
 
         for (unsigned int j = 0; j < partial_count; j++) {

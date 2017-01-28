@@ -13,11 +13,10 @@
 #include "../libhs/serial.h"
 #include "board.h"
 #include "board_priv.h"
-#include "model_priv.h"
+#include "class_priv.h"
 #include "system.h"
 
-extern const struct _ty_model_vtable _ty_generic_model_vtable;
-static const struct _ty_board_interface_vtable generic_iface_vtable;
+extern const struct _ty_class_vtable _ty_generic_class_vtable;
 
 static int generic_load_interface(ty_board_interface *iface)
 {
@@ -26,9 +25,8 @@ static int generic_load_interface(ty_board_interface *iface)
 
     iface->name = "Serial";
     iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
+    iface->class_vtable = &_ty_generic_class_vtable;
     iface->model = TY_MODEL_GENERIC;
-    iface->model_vtable = &_ty_generic_model_vtable;
-    iface->vtable = &generic_iface_vtable;
 
     return 1;
 }
@@ -113,14 +111,12 @@ static ssize_t generic_serial_write(ty_board_interface *iface, const char *buf, 
     return r;
 }
 
-const struct _ty_model_vtable _ty_generic_model_vtable = {
+const struct _ty_class_vtable _ty_generic_class_vtable = {
     .load_interface = generic_load_interface,
     .update_board = generic_update_board,
-};
 
-static const struct _ty_board_interface_vtable generic_iface_vtable = {
     .open_interface = generic_open_interface,
     .close_interface = generic_close_interface,
     .serial_read = generic_serial_read,
-    .serial_write = generic_serial_write,
+    .serial_write = generic_serial_write
 };

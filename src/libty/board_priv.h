@@ -13,7 +13,7 @@
 
 #include "common_priv.h"
 #include "board.h"
-#include "model_priv.h"
+#include "class_priv.h"
 #include "../libhs/device.h"
 #include "htable.h"
 #include "list.h"
@@ -22,21 +22,8 @@
 
 TY_C_BEGIN
 
-struct _ty_board_interface_vtable {
-    int (*open_interface)(ty_board_interface *iface);
-    void (*close_interface)(ty_board_interface *iface);
-
-    ssize_t (*serial_read)(ty_board_interface *iface, char *buf, size_t size, int timeout);
-    ssize_t (*serial_write)(ty_board_interface *iface, const char *buf, size_t size);
-
-    int (*upload)(ty_board_interface *iface, struct ty_firmware *fw, ty_board_upload_progress_func *pf, void *udata);
-    int (*reset)(ty_board_interface *iface);
-    int (*reboot)(ty_board_interface *iface);
-};
-
 struct ty_board_interface {
-    const struct _ty_model_vtable *model_vtable;
-    const struct _ty_board_interface_vtable *vtable;
+    const struct _ty_class_vtable *class_vtable;
     unsigned int refcount;
 
     ty_htable_head monitor_hnode;
