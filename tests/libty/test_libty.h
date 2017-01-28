@@ -27,7 +27,6 @@ TY_C_BEGIN
         report_test(strcmp(a, b) == 0, __FILE__, __LINE__, __func__, "'%s' == '%s'", a, b); \
     } while (0)
 
-bool safe_strcmp(const char *s1, const char *s2);
 void report_test(bool pred, const char *file, unsigned int line, const char *fn,
                  const char *pred_fmt, ...) TY_PRINTF_FORMAT(5, 6);
 
