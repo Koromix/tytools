@@ -1,12 +1,15 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
-#include "firmware_priv.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
+#include "firmware.h"
 
 struct parser_context {
     ty_firmware *fw;
@@ -78,7 +81,7 @@ static int parse_line(struct parser_context *ctx, const char *line)
     switch (type) {
     case 0: // data record
         address += ctx->base_offset;
-        r = _ty_firmware_expand_image(ctx->fw, address + length);
+        r = ty_firmware_expand_image(ctx->fw, address + length);
         if (r < 0)
             return r;
         for (unsigned int i = 0; i < length; i++)
@@ -124,37 +127,41 @@ static int parse_line(struct parser_context *ctx, const char *line)
     return type == 1;
 }
 
-int _ty_firmware_load_ihex(ty_firmware *fw)
+int ty_firmware_load_ihex(const char *filename, ty_firmware **rfw)
 {
-    assert(fw);
+    assert(filename);
+    assert(rfw);
 
     struct parser_context ctx = {0};
     FILE *fp = NULL;
     char buf[1024];
     int r;
 
-    ctx.fw = fw;
+    r = ty_firmware_new(filename, &ctx.fw);
+    if (r < 0)
+        goto cleanup;
 
 #ifdef _WIN32
-    fp = fopen(fw->filename, "r");
+    fp = fopen(ctx.fw->filename, "r");
 #else
-    fp = fopen(fw->filename, "re");
+    fp = fopen(ctx.fw->filename, "re");
 #endif
     if (!fp) {
         switch (errno) {
         case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", fw->filename);
+            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
             break;
         case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", fw->filename);
+            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", ctx.fw->filename);
             break;
         case ENOENT:
         case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", fw->filename);
+            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
             break;
 
         default:
-            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", fw->filename, strerror(errno));
+            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
+                         strerror(errno));
             break;
         }
         goto cleanup;
@@ -165,7 +172,7 @@ int _ty_firmware_load_ihex(ty_firmware *fw)
             if (feof(fp)) {
                 r = parse_error(&ctx);
             } else {
-                r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", fw->filename);
+                r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", ctx.fw->filename);
             }
             goto cleanup;
         }
@@ -177,9 +184,13 @@ int _ty_firmware_load_ihex(ty_firmware *fw)
             goto cleanup;
     } while (!r);
 
+    *rfw = ctx.fw;
+    ctx.fw = NULL;
+
     r = 0;
 cleanup:
     if (fp)
         fclose(fp);
+    ty_firmware_unref(ctx.fw);
     return r;
 }

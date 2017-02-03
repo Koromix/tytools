@@ -1,12 +1,15 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
-#include "ty/optline.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
+#include "optline.h"
 
 void ty_optline_init(ty_optline_context *ctx, char **args, unsigned int args_count)
 {
@@ -158,7 +161,7 @@ char *ty_optline_get_value(ty_optline_context *ctx)
             ctx->current_value = arg + 2;
             ctx->index++;
         /* Support '-f bar' and '--foo bar', see ty_optline_next_option() for '--foo=bar'. */
-        } else if (!ctx->smallopt_offset && ctx->index < ctx->count &&
+        } else if (!ctx->smallopt_offset && ctx->index < ctx->limit &&
                    !is_opt(ctx->args[ctx->index])) {
             ctx->current_value = ctx->args[ctx->index];
             ctx->index++;

@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="tycommander">images/tycommander.png</file>
+        <file alias="tyupdater">images/tyupdater.png</file>
+
+        <file alias="board_attached">images/board_attached.png</file>
+        <file alias="board_detached">images/board_detached.png</file>
+        <file alias="board_bootloader">images/board_bootloader.png</file>
+        <file alias="board_other">images/board_other.png</file>
+        <file alias="board_pending">images/board_pending.png</file>
+        <file alias="board_working">images/board_working.png</file>
+        <file alias="board_error">images/board_error.png</file>
+        <file alias="reset">images/reset.png</file>
+        <file alias="upload">images/upload.png</file>
+        <file alias="reboot">images/reboot.png</file>
+        <file alias="monitor">images/monitor.png</file>
+    </qresource>
+</RCC>

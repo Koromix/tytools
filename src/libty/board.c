@@ -1,56 +1,25 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
 #ifndef _WIN32
     #include <sys/stat.h>
 #endif
-#include "hs/device.h"
+#include "../libhs/device.h"
 #include "board_priv.h"
-#include "ty/firmware.h"
-#include "ty/monitor.h"
-#include "ty/system.h"
-#include "task_priv.h"
-#include "ty/timer.h"
-
-struct ty_board_model {
-    TY_BOARD_MODEL
-};
-
-struct ty_task {
-    TY_TASK
-
-    ty_board *board;
-    union {
-        struct {
-            ty_firmware **fws;
-            unsigned int fws_count;
-            int flags;
-        } upload;
-
-        struct {
-            char *buf;
-            size_t size;
-        } send;
-
-        struct {
-            FILE *fp;
-            size_t size;
-            char *filename;
-        } send_file;
-    };
-};
-
-extern const ty_board_family _ty_teensy_family;
-
-const ty_board_family *ty_board_families[] = {
-    &_ty_teensy_family,
-    NULL
-};
+#include "class_priv.h"
+#include "firmware.h"
+#include "monitor.h"
+#include "system.h"
+#include "task.h"
+#include "timer.h"
 
 static const char *capability_names[] = {
     "unique",
@@ -63,109 +32,10 @@ static const char *capability_names[] = {
 
 #ifdef _WIN32
     #define MANUAL_REBOOT_DELAY 15000
-    #define FINAL_TASK_TIMEOUT 8000
 #else
-    #define MANUAL_REBOOT_DELAY 5000
-    #define FINAL_TASK_TIMEOUT 5000
+    #define MANUAL_REBOOT_DELAY 8000
 #endif
-
-const char *ty_board_family_get_name(const ty_board_family *family)
-{
-    assert(family);
-    return family->name;
-}
-
-int ty_board_model_list(ty_board_model_list_func *f, void *udata)
-{
-    assert(f);
-
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
-
-        for (const ty_board_model **cur2 = family->models; *cur2; cur2++) {
-            const ty_board_model *model = *cur2;
-
-            int r = (*f)(model, udata);
-            if (r)
-                return r;
-        }
-    }
-
-    return 0;
-}
-
-const ty_board_model *ty_board_model_find(const char *name)
-{
-    assert(name);
-
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
-
-        for (const ty_board_model **cur2 = family->models; *cur2; cur2++) {
-            const ty_board_model *model = *cur2;
-
-            if (strcmp(model->name, name) == 0)
-                return model;
-        }
-    }
-
-    return NULL;
-}
-
-bool ty_board_model_is_real(const ty_board_model *model)
-{
-    return model && model->code_size;
-}
-
-bool ty_board_model_test_firmware(const ty_board_model *model, const ty_firmware *fw,
-                                   const ty_board_model **rguesses, unsigned int *rcount)
-{
-    assert(fw);
-    assert(!!rguesses == !!rcount);
-    if (rguesses)
-        assert(*rcount);
-
-    bool compatible = false;
-    unsigned int count = 0;
-
-    for (const ty_board_family **cur = ty_board_families; *cur; cur++) {
-        const ty_board_family *family = *cur;
-
-        const ty_board_model *family_guesses[8];
-        unsigned int family_count;
-
-        family_count = (*family->guess_models)(fw, family_guesses, TY_COUNTOF(family_guesses));
-
-        for (unsigned int i = 0; i < family_count; i++) {
-            if (family_guesses[i] == model)
-                compatible = true;
-            if (rguesses && count < *rcount)
-                rguesses[count++] = family_guesses[i];
-        }
-    }
-
-    if (rcount)
-        *rcount = count;
-    return compatible;
-}
-
-const char *ty_board_model_get_name(const ty_board_model *model)
-{
-    assert(model);
-    return model->name;
-}
-
-const char *ty_board_model_get_mcu(const ty_board_model *model)
-{
-    assert(model);
-    return model->mcu;
-}
-
-size_t ty_board_model_get_code_size(const ty_board_model *model)
-{
-    assert(model);
-    return model->code_size;
-}
+#define FINAL_TASK_TIMEOUT 8000
 
 const char *ty_board_capability_get_name(ty_board_capability cap)
 {
@@ -190,6 +60,7 @@ void ty_board_unref(ty_board *board)
         if (board->tag != board->id)
             free(board->tag);
         free(board->id);
+        free(board->serial_number);
         free(board->location);
         free(board->description);
 
@@ -206,7 +77,38 @@ void ty_board_unref(ty_board *board)
     free(board);
 }
 
-static int match_interface(ty_board_interface *iface, void *udata)
+struct board_id_part {
+    const char *ptr;
+    size_t len;
+};
+
+static void parse_board_id(const char *id, const char *delimiters, struct board_id_part parts[])
+{
+    size_t part_offset = 0;
+    size_t delim_offset = 0;
+    size_t i = 0;
+    do {
+        const char *d = strchr(delimiters + delim_offset, id[i]);
+        if (d || !id[i]) {
+            if (i - part_offset) {
+                parts[delim_offset].ptr = id + part_offset;
+                parts[delim_offset].len = i - part_offset;
+            }
+            part_offset = i + 1;
+            delim_offset = (size_t)(d - delimiters + 1);
+        }
+    } while (id[i++]);
+}
+
+static bool compare_board_id_parts(const struct board_id_part *part1,
+                                   const struct board_id_part *part2)
+{
+    if (!part1->ptr || !part2->ptr)
+        return true;
+    return part1->len == part2->len && memcmp(part1->ptr, part2->ptr, part1->len) == 0;
+}
+
+static int match_board_interface(ty_board_interface *iface, void *udata)
 {
     return ty_compare_paths(ty_board_interface_get_path(iface), udata);
 }
@@ -215,42 +117,25 @@ bool ty_board_matches_tag(ty_board *board, const char *id)
 {
     assert(board);
 
-    uint64_t serial;
-    char *ptr, *family = NULL, *location = NULL;
-
     if (!id)
         return true;
     if (board->tag != board->id && strcmp(id, board->tag) == 0)
         return true;
 
-    serial = strtoull(id, &ptr, 10);
-    if (*ptr == '-') {
-        location = strchr(++ptr, '@');
-        if (location > ptr) {
-            size_t len = (size_t)(location - ptr);
-            if (len > 32)
-                len = 32;
-            family = alloca(len + 1);
-            memcpy(family, ptr, len);
-            family[len] = 0;
-        } else if (!location && ptr[1]) {
-            family = ptr;
-        }
-        if (location && !*++location)
-            location = NULL;
-    } else if (*ptr == '@') {
-        if (ptr[1])
-            location = ptr + 1;
-    } else if (*ptr) {
-        return false;
-    }
+    struct board_id_part parts1[3] = {0};
+    struct board_id_part parts2[2] = {0};
 
-    if (serial && serial != board->serial)
+    parse_board_id(id, "-@", parts1);
+    parse_board_id(board->id, "-", parts2);
+
+    if (!compare_board_id_parts(&parts1[0], &parts2[0]))
         return false;
-    if (family && strcmp(family, board->model->family->name) != 0)
+    if (!compare_board_id_parts(&parts1[1], &parts2[1]))
         return false;
-    if (location && strcmp(location, board->location) != 0 &&
-            !ty_board_list_interfaces(board, match_interface, location))
+    /* The last part is necessarily NUL-terminated so we can just use regular
+       C string functions. */
+    if (parts1[2].ptr && strcmp(parts1[2].ptr, board->location) != 0 &&
+            !ty_board_list_interfaces(board, match_board_interface, (void *)parts1[2].ptr))
         return false;
 
     return true;
@@ -319,10 +204,10 @@ const char *ty_board_get_location(const ty_board *board)
     return board->location;
 }
 
-uint64_t ty_board_get_serial_number(const ty_board *board)
+const char *ty_board_get_serial_number(const ty_board *board)
 {
     assert(board);
-    return board->serial;
+    return board->serial_number;
 }
 
 const char *ty_board_get_description(const ty_board *board)
@@ -331,35 +216,24 @@ const char *ty_board_get_description(const ty_board *board)
     return board->description;
 }
 
-void ty_board_set_model(ty_board *board, const ty_board_model *model)
+void ty_board_set_model(ty_board *board, ty_model model)
 {
     assert(board);
     assert(board->model);
 
-    if (board->model && board->model->code_size && board->model != model) {
+    if (board->model && ty_models[board->model].code_size && board->model != model) {
         ty_log(TY_LOG_WARNING, "Cannot set model '%s' for incompatible board '%s'",
-               model->name, board->tag);
+               ty_models[model].name, board->tag);
         return;
     }
 
     board->model = model;
 }
 
-const ty_board_model *ty_board_get_model(const ty_board *board)
+ty_model ty_board_get_model(const ty_board *board)
 {
     assert(board);
     return board->model;
-}
-
-const char *ty_board_get_model_name(const ty_board *board)
-{
-    assert(board);
-
-    const ty_board_model *model = board->model;
-    if (!model)
-        return NULL;
-
-    return model->name;
 }
 
 int ty_board_get_capabilities(const ty_board *board)
@@ -469,9 +343,9 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeou
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
+        return ty_error(TY_ERROR_MODE, "Board '%s' is not available for serial I/O", board->tag);
 
-    r = (*iface->vtable->serial_read)(iface, buf, size, timeout);
+    r = (*iface->class_vtable->serial_read)(iface, buf, size, timeout);
 
     ty_board_interface_close(iface);
     return r;
@@ -489,9 +363,9 @@ ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Serial transfer is not available for '%s", board->tag);
+        return ty_error(TY_ERROR_MODE, "Board '%s' is not available for serial I/O", board->tag);
 
-    r = (*iface->vtable->serial_write)(iface, buf, size);
+    r = (*iface->class_vtable->serial_write)(iface, buf, size);
 
     ty_board_interface_close(iface);
     return r;
@@ -509,17 +383,17 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
     if (r < 0)
         goto cleanup;
     if (!r) {
-        r = ty_error(TY_ERROR_MODE, "Firmware upload is not available for '%s", board->tag);
+        r = ty_error(TY_ERROR_MODE, "Cannot upload to board '%s'", board->tag);
         goto cleanup;
     }
     assert(board->model);
 
-    if (ty_firmware_get_size(fw) > board->model->code_size) {
-        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", board->model->name);
+    if (fw->size > ty_models[board->model].code_size) {
+        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", ty_models[board->model].name);
         goto cleanup;
     }
 
-    r = (*iface->vtable->upload)(iface, fw, pf, udata);
+    r = (*iface->class_vtable->upload)(iface, fw, pf, udata);
 
 cleanup:
     ty_board_interface_close(iface);
@@ -537,9 +411,9 @@ int ty_board_reset(ty_board *board)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot reset '%s' in this mode", board->tag);
+        return ty_error(TY_ERROR_MODE, "Cannot reset board '%s'", board->tag);
 
-    r = (*iface->vtable->reset)(iface);
+    r = (*iface->class_vtable->reset)(iface);
 
     ty_board_interface_close(iface);
     return r;
@@ -556,9 +430,9 @@ int ty_board_reboot(ty_board *board)
     if (r < 0)
         return r;
     if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot reboot '%s' in this mode", board->tag);
+        return ty_error(TY_ERROR_MODE, "Cannot reboot board '%s'", board->tag);
 
-    r = (*iface->vtable->reboot)(iface);
+    r = (*iface->class_vtable->reboot)(iface);
 
     ty_board_interface_close(iface);
     return r;
@@ -578,7 +452,7 @@ void ty_board_interface_unref(ty_board_interface *iface)
         if (_ty_refcount_decrease(&iface->refcount))
             return;
 
-        hs_handle_close(iface->h);
+        hs_port_close(iface->port);
         hs_device_unref(iface->dev);
 
         ty_mutex_release(&iface->open_lock);
@@ -595,8 +469,8 @@ int ty_board_interface_open(ty_board_interface *iface)
 
     ty_mutex_lock(&iface->open_lock);
 
-    if (!iface->h) {
-        r = (*iface->vtable->open_interface)(iface);
+    if (!iface->port) {
+        r = (*iface->class_vtable->open_interface)(iface);
         if (r < 0)
             goto cleanup;
     }
@@ -617,7 +491,7 @@ void ty_board_interface_close(ty_board_interface *iface)
 
     ty_mutex_lock(&iface->open_lock);
     if (!--iface->open_count)
-        (*iface->vtable->close_interface)(iface);
+        (*iface->class_vtable->close_interface)(iface);
     ty_mutex_unlock(&iface->open_lock);
 
     ty_board_interface_unref(iface);
@@ -638,13 +512,13 @@ int ty_board_interface_get_capabilities(const ty_board_interface *iface)
 const char *ty_board_interface_get_path(const ty_board_interface *iface)
 {
     assert(iface);
-    return hs_device_get_path(iface->dev);
+    return iface->dev->path;
 }
 
 uint8_t ty_board_interface_get_interface_number(const ty_board_interface *iface)
 {
     assert(iface);
-    return hs_device_get_interface_number(iface->dev);
+    return iface->dev->iface_number;
 }
 
 hs_device *ty_board_interface_get_device(const ty_board_interface *iface)
@@ -653,10 +527,10 @@ hs_device *ty_board_interface_get_device(const ty_board_interface *iface)
     return iface->dev;
 }
 
-hs_handle *ty_board_interface_get_handle(const ty_board_interface *iface)
+hs_port *ty_board_interface_get_handle(const ty_board_interface *iface)
 {
     assert(iface);
-    return iface->h;
+    return iface->port;
 }
 
 void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct ty_descriptor_set *set, int id)
@@ -664,12 +538,12 @@ void ty_board_interface_get_descriptors(const ty_board_interface *iface, struct 
     assert(iface);
     assert(set);
 
-    if (iface->h)
-        ty_descriptor_set_add(set, hs_handle_get_descriptor(iface->h), id);
+    if (iface->port)
+        ty_descriptor_set_add(set, hs_port_get_poll_handle(iface->port), id);
 }
 
-static int new_task(ty_board *board, const char *action, const struct _ty_task_vtable *vtable,
-                    ty_task **rtask)
+static int new_board_task(ty_board *board, const char *action, int (*run)(ty_task *task),
+                          ty_task **rtask)
 {
     char task_name_buf[64];
     ty_task *task = NULL;
@@ -677,63 +551,61 @@ static int new_task(ty_board *board, const char *action, const struct _ty_task_v
 
     if (board->current_task)
         return ty_error(TY_ERROR_BUSY, "Board '%s' is busy on task '%s'", board->tag,
-                        ty_task_get_name(board->current_task));
+                        board->current_task->name);
 
     snprintf(task_name_buf, sizeof(task_name_buf), "%s@%s", action, board->tag);
-    r = _ty_task_new(task_name_buf, sizeof(*task), vtable, &task);
+    r = ty_task_new(task_name_buf, run, &task);
     if (r < 0)
         return r;
 
-    board->current_task = task;
-    task->board = ty_board_ref(board);
+    board->current_task = ty_task_ref(task);
 
     *rtask = task;
     return 0;
 }
 
-static void cleanup_task(ty_task *task)
+static void cleanup_task_board(ty_board **board_ptr)
 {
-    task->board->current_task = NULL;
-    ty_board_unref(task->board);
+    ty_task_unref((*board_ptr)->current_task);
+    (*board_ptr)->current_task = NULL;
+    ty_board_unref(*board_ptr);
+    *board_ptr = NULL;
 }
 
-static int get_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned int fws_count,
-                                   ty_firmware **rfw)
+static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsigned int fws_count,
+                                      ty_firmware **rfw)
 {
-    if (fws_count > 1) {
-        for (unsigned int i = 0; i < fws_count; i++) {
-            if (ty_board_model_test_firmware(board->model, fws[i], NULL, 0)) {
+    ty_model fw_models[64];
+    unsigned int fw_models_count = 0;
+
+    for (unsigned int i = 0; i < fws_count; i++) {
+        fw_models_count = ty_firmware_identify(fws[i], fw_models, TY_COUNTOF(fw_models));
+
+        for (unsigned int j = 0; j < fw_models_count; j++) {
+            if (fw_models[j] == board->model) {
                 *rfw = fws[i];
                 return 0;
             }
         }
+    }
 
+    if (fws_count > 1) {
         return ty_error(TY_ERROR_FIRMWARE, "No firmware is compatible with '%s' (%s)",
-                        board->tag, board->model->name);
+                        board->tag, ty_models[board->model].name);
+    } else if (fw_models_count) {
+        char buf[256], *ptr;
+
+        ptr = buf;
+        for (unsigned int i = 0; i < fw_models_count && ptr < buf + sizeof(buf); i++)
+            ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
+                            i ? (i + 1 < fw_models_count ? ", " : " and ") : "",
+                            ty_models[fw_models[i]].name);
+
+        return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
+                        fws[0]->name, buf);
     } else {
-        const ty_board_model *guesses[8];
-        unsigned int count;
-
-        count = TY_COUNTOF(guesses);
-        if (ty_board_model_test_firmware(board->model, fws[0], guesses, &count)) {
-            *rfw = fws[0];
-            return 0;
-        }
-
-        if (count) {
-            char buf[256], *ptr;
-
-            ptr = buf;
-            for (unsigned int i = 0; i < count && ptr < buf + sizeof(buf); i++)
-                ptr += snprintf(ptr, (size_t)(buf + sizeof(buf) - ptr), "%s%s",
-                                i ? (i + 1 < count ? ", " : " and ") : "", guesses[i]->name);
-
-            return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
-                            ty_firmware_get_name(fws[0]), buf);
-        } else {
-            return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
-                            ty_firmware_get_name(fws[0]), board->tag);
-        }
+        return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
+                        fws[0]->name, board->tag);
     }
 }
 
@@ -743,7 +615,7 @@ static int upload_progress_callback(const ty_board *board, const ty_firmware *fw
     TY_UNUSED(board);
     TY_UNUSED(udata);
 
-    ty_progress("Uploading", uploaded, ty_firmware_get_size(fw));
+    ty_progress("Uploading", uploaded, fw->size);
     return 0;
 }
 
@@ -754,15 +626,14 @@ static void unref_upload_firmware(void *ptr)
 
 static int run_upload(ty_task *task)
 {
-    ty_board *board = task->board;
+    ty_board *board = task->u.upload.board;
     ty_firmware *fw;
-    size_t fw_size;
-    int flags = task->upload.flags, r;
+    int flags = task->u.upload.flags, r;
 
     if (flags & TY_UPLOAD_NOCHECK) {
-        fw = task->upload.fws[0];
-    } else if (ty_board_model_is_real(board->model)) {
-        r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
+        fw = task->u.upload.fws[0];
+    } else if (ty_model_is_real(board->model)) {
+        r = select_compatible_firmware(board, task->u.upload.fws, task->u.upload.fws_count, &fw);
         if (r < 0)
             return r;
     } else {
@@ -770,7 +641,7 @@ static int run_upload(ty_task *task)
         fw = NULL;
     }
 
-    ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, board->model->name);
+    ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, ty_models[board->model].name);
 
     // Can't upload directly, should we try to reboot or wait?
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
@@ -797,21 +668,20 @@ wait:
     }
 
     if (!fw) {
-        r = get_compatible_firmware(board, task->upload.fws, task->upload.fws_count, &fw);
+        r = select_compatible_firmware(board, task->u.upload.fws, task->u.upload.fws_count, &fw);
         if (r < 0)
             return r;
     }
 
-    ty_log(TY_LOG_INFO, "Firmware: %s", ty_firmware_get_name(fw));
-    fw_size = ty_firmware_get_size(fw);
-    if (fw_size >= 1024) {
+    ty_log(TY_LOG_INFO, "Firmware: %s", fw->name);
+    if (fw->size >= 1024) {
         ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
-               (fw_size + 1023) / 1024,
-               (double)fw_size / (double)ty_board_model_get_code_size(board->model) * 100.0);
+               (fw->size + 1023) / 1024,
+               (double)fw->size / (double)ty_models[board->model].code_size * 100.0);
     } else {
         ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
-               fw_size,
-               (double)fw_size / (double)ty_board_model_get_code_size(board->model) * 100.0);
+               fw->size,
+               (double)fw->size / (double)ty_models[board->model].code_size * 100.0);
     }
 
     r = ty_board_upload(board, fw, upload_progress_callback, NULL);
@@ -833,23 +703,19 @@ wait:
         ty_log(TY_LOG_INFO, "Firmware uploaded, reset the board to use it");
     }
 
-    _ty_task_set_result(task, ty_firmware_ref(fw), unref_upload_firmware);
+    task->result = ty_firmware_ref(fw);
+    task->result_cleanup = unref_upload_firmware;
     return 0;
 }
 
-static void cleanup_upload(ty_task *task)
+static void finalize_upload(ty_task *task)
 {
-    for (unsigned int i = 0; i < task->upload.fws_count; i++)
-        ty_firmware_unref(task->upload.fws[i]);
-    free(task->upload.fws);
+    for (unsigned int i = 0; i < task->u.upload.fws_count; i++)
+        ty_firmware_unref(task->u.upload.fws[i]);
+    free(task->u.upload.fws);
 
-    cleanup_task(task);
+    cleanup_task_board(&task->u.upload.board);
 }
-
-static const struct _ty_task_vtable upload_task_vtable = {
-    .run = run_upload,
-    .cleanup = cleanup_upload
-};
 
 int ty_upload(ty_board *board, ty_firmware **fws, unsigned int fws_count, int flags,
                ty_task **rtask)
@@ -862,9 +728,11 @@ int ty_upload(ty_board *board, ty_firmware **fws, unsigned int fws_count, int fl
     ty_task *task = NULL;
     int r;
 
-    r = new_task(board, "upload", &upload_task_vtable, &task);
+    r = new_board_task(board, "upload", run_upload, &task);
     if (r < 0)
         goto error;
+    task->u.upload.board = ty_board_ref(board);
+    task->task_finalize = finalize_upload;
 
     if (fws_count > TY_UPLOAD_MAX_FIRMWARES) {
         ty_log(TY_LOG_WARNING, "Cannot select more than %d firmwares per upload",
@@ -874,15 +742,15 @@ int ty_upload(ty_board *board, ty_firmware **fws, unsigned int fws_count, int fl
     if (flags & TY_UPLOAD_NOCHECK)
         fws_count = 1;
 
-    task->upload.fws = malloc(fws_count * sizeof(ty_firmware *));
-    if (!task->upload.fws) {
+    task->u.upload.fws = malloc(fws_count * sizeof(ty_firmware *));
+    if (!task->u.upload.fws) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
     for (unsigned int i = 0; i < fws_count; i++)
-        task->upload.fws[i] = ty_firmware_ref(fws[i]);
-    task->upload.fws_count = fws_count;
-    task->upload.flags = flags;
+        task->u.upload.fws[i] = ty_firmware_ref(fws[i]);
+    task->u.upload.fws_count = fws_count;
+    task->u.upload.flags = flags;
 
     *rtask = task;
     return 0;
@@ -894,10 +762,10 @@ error:
 
 static int run_reset(ty_task *task)
 {
-    ty_board *board = task->board;
+    ty_board *board = task->u.reset.board;
     int r;
 
-    ty_log(TY_LOG_INFO, "Resetting board '%s' (%s)", board->tag, board->model->name);
+    ty_log(TY_LOG_INFO, "Resetting board '%s' (%s)", board->tag, ty_models[board->model].name);
 
     if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
         ty_log(TY_LOG_INFO, "Triggering board reboot");
@@ -924,25 +792,35 @@ static int run_reset(ty_task *task)
     return 0;
 }
 
-static const struct _ty_task_vtable reset_task_vtable = {
-    .run = run_reset,
-    .cleanup = cleanup_task
-};
+static void finalize_reset(ty_task *task)
+{
+    cleanup_task_board(&task->u.reset.board);
+}
 
 int ty_reset(ty_board *board, ty_task **rtask)
 {
     assert(board);
     assert(rtask);
 
-    return new_task(board, "reset", &reset_task_vtable, rtask);
+    ty_task *task = NULL;
+    int r;
+
+    r = new_board_task(board, "reset", run_reset, &task);
+    if (r < 0)
+        return r;
+    task->u.reset.board = ty_board_ref(board);
+    task->task_finalize = finalize_reset;
+
+    *rtask = task;
+    return 0;
 }
 
 static int run_reboot(ty_task *task)
 {
-    ty_board *board = task->board;
+    ty_board *board = task->u.reboot.board;
     int r;
 
-    ty_log(TY_LOG_INFO, "Rebooting board '%s' (%s)", board->tag, board->model->name);
+    ty_log(TY_LOG_INFO, "Rebooting board '%s' (%s)", board->tag, ty_models[board->model].name);
 
     if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_UPLOAD)) {
         ty_log(TY_LOG_INFO, "Board is already in bootloader mode");
@@ -963,24 +841,34 @@ static int run_reboot(ty_task *task)
     return 0;
 }
 
-static const struct _ty_task_vtable reboot_task_vtable = {
-    .run = run_reboot,
-    .cleanup = cleanup_task
-};
+static void finalize_reboot(ty_task *task)
+{
+    cleanup_task_board(&task->u.reboot.board);
+}
 
 int ty_reboot(ty_board *board, ty_task **rtask)
 {
     assert(board);
     assert(rtask);
 
-    return new_task(board, "reboot", &reboot_task_vtable, rtask);
+    ty_task *task = NULL;
+    int r;
+
+    r = new_board_task(board, "reboot", run_reboot, &task);
+    if (r < 0)
+        return r;
+    task->u.reboot.board = ty_board_ref(board);
+    task->task_finalize = finalize_reboot;
+
+    *rtask = task;
+    return 0;
 }
 
 static int run_send(ty_task *task)
 {
-    ty_board *board = task->board;
-    const char *buf = task->send.buf;
-    size_t size = task->send.size;
+    ty_board *board = task->u.send.board;
+    const char *buf = task->u.send.buf;
+    size_t size = task->u.send.size;
     size_t written;
 
     written = 0;
@@ -1000,16 +888,11 @@ static int run_send(ty_task *task)
     return 0;
 }
 
-static void cleanup_send(ty_task *task)
+static void finalize_send(ty_task *task)
 {
-    free(task->send.buf);
-    cleanup_task(task);
+    free(task->u.send.buf);
+    cleanup_task_board(&task->u.send.board);
 }
-
-static const struct _ty_task_vtable send_task_vtable = {
-    .run = run_send,
-    .cleanup = cleanup_send
-};
 
 int ty_send(ty_board *board, const char *buf, size_t size, ty_task **rtask)
 {
@@ -1020,17 +903,19 @@ int ty_send(ty_board *board, const char *buf, size_t size, ty_task **rtask)
     ty_task *task = NULL;
     int r;
 
-    r = new_task(board, "send", &send_task_vtable, &task);
+    r = new_board_task(board, "send", run_send, &task);
     if (r < 0)
         goto error;
+    task->u.send.board = ty_board_ref(board);
+    task->task_finalize = finalize_send;
 
-    task->send.buf = malloc(size);
-    if (!task->send.buf) {
+    task->u.send.buf = malloc(size);
+    if (!task->u.send.buf) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
-    memcpy(task->send.buf, buf, size);
-    task->send.size = size;
+    memcpy(task->u.send.buf, buf, size);
+    task->u.send.size = size;
 
     *rtask = task;
     return 0;
@@ -1042,10 +927,10 @@ error:
 
 static int run_send_file(ty_task *task)
 {
-    ty_board *board = task->board;
-    FILE *fp = task->send_file.fp;
-    size_t size = task->send_file.size;
-    const char *filename = task->send_file.filename;
+    ty_board *board = task->u.send_file.board;
+    FILE *fp = task->u.send_file.fp;
+    size_t size = task->u.send_file.size;
+    const char *filename = task->u.send_file.filename;
     size_t written;
 
     written = 0;
@@ -1081,18 +966,13 @@ static int run_send_file(ty_task *task)
     return 0;
 }
 
-static void cleanup_send_file(ty_task *task)
+static void finalize_send_file(ty_task *task)
 {
-    free(task->send_file.filename);
-    if (task->send_file.fp)
-        fclose(task->send_file.fp);
-    cleanup_task(task);
+    free(task->u.send_file.filename);
+    if (task->u.send_file.fp)
+        fclose(task->u.send_file.fp);
+    cleanup_task_board(&task->u.send_file.board);
 }
-
-static const struct _ty_task_vtable send_file_task_vtable = {
-    .run = run_send_file,
-    .cleanup = cleanup_send_file
-};
 
 int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
 {
@@ -1103,16 +983,18 @@ int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
     ty_task *task = NULL;
     int r;
 
-    r = new_task(board, "send", &send_file_task_vtable, &task);
+    r = new_board_task(board, "send", run_send_file, &task);
     if (r < 0)
         goto error;
+    task->u.send_file.board = ty_board_ref(board);
+    task->task_finalize = finalize_send_file;
 
 #ifdef _WIN32
-    task->send_file.fp = fopen(filename, "rb");
+    task->u.send_file.fp = fopen(filename, "rb");
 #else
-    task->send_file.fp = fopen(filename, "rbe");
+    task->u.send_file.fp = fopen(filename, "rbe");
 #endif
-    if (!task->send_file.fp) {
+    if (!task->u.send_file.fp) {
         switch (errno) {
         case EACCES:
             r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
@@ -1132,21 +1014,21 @@ int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
         goto error;
     }
 
-    fseek(task->send_file.fp, 0, SEEK_END);
+    fseek(task->u.send_file.fp, 0, SEEK_END);
 #ifdef _WIN32
-    task->send_file.size = (size_t)_ftelli64(task->send_file.fp);
+    task->u.send_file.size = (size_t)_ftelli64(task->u.send_file.fp);
 #else
-    task->send_file.size = (size_t)ftello(task->send_file.fp);
+    task->u.send_file.size = (size_t)ftello(task->u.send_file.fp);
 #endif
-    rewind(task->send_file.fp);
-    if (!task->send_file.size) {
+    rewind(task->u.send_file.fp);
+    if (!task->u.send_file.size) {
         r = ty_error(TY_ERROR_UNSUPPORTED, "Failed to read size of '%s', is it a regular file?",
                      filename);
         goto error;
     }
 
-    task->send_file.filename = strdup(filename);
-    if (!task->send_file.filename) {
+    task->u.send_file.filename = strdup(filename);
+    if (!task->u.send_file.filename) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }

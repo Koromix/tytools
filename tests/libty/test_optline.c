@@ -1,12 +1,15 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
+
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
 
 #include "test_libty.h"
-#include "ty/optline.h"
+#include "../../src/libty/optline.h"
 
 static void test_optline_empty(void)
 {
@@ -144,6 +147,18 @@ static void test_optline_value(void)
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
         ASSERT_STR_EQUAL(ty_optline_get_value(&ctx), "bar");
         ASSERT(!ty_optline_next_option(&ctx));
+        ASSERT(!ty_optline_consume_non_option(&ctx));
+    }
+
+    {
+        char *args[] = {"bar", "--foo"};
+        ty_optline_context ctx;
+        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+
+        ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
+        ASSERT(!ty_optline_get_value(&ctx));
+        ASSERT(!ty_optline_next_option(&ctx));
+        ASSERT_STR_EQUAL(ty_optline_consume_non_option(&ctx), "bar");
         ASSERT(!ty_optline_consume_non_option(&ctx));
     }
 }

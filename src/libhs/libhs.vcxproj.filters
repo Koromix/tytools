@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="device_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="platform_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="serial_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="common.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="htable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="compat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="platform.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="device.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hid_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="monitor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="monitor_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filter.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common_priv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="compat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="device_priv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="device_win32_priv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="htable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libhs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="match.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="monitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="monitor_priv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="serial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

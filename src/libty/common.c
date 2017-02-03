@@ -1,34 +1,37 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
+#ifdef _WIN32
+    // Need that for InterlockedX functions
+    #include <windows.h>
+#endif
 #include <stdarg.h>
-#include "hs/common.h"
-#include "ty/system.h"
+#include "../libhs/common.h"
+#include "system.h"
 #include "version.h"
-#include "task_priv.h"
-
-struct ty_task {
-    TY_TASK
-};
+#include "task.h"
 
 int ty_config_verbosity = TY_LOG_INFO;
 
-static ty_message_func *handler = ty_message_default_handler;
-static void *handler_udata = NULL;
+static ty_message_func *message_handler = ty_message_default_handler;
+static void *message_handler_udata = NULL;
 
-static TY_THREAD_LOCAL ty_err mask[16];
-static TY_THREAD_LOCAL unsigned int mask_count;
+static TY_THREAD_LOCAL ty_err error_masks[16];
+static TY_THREAD_LOCAL unsigned int error_masks_count;
 
 static TY_THREAD_LOCAL char last_error_msg[512];
 
 const char *ty_version_string(void)
 {
-    return TY_CONFIG_VERSION;
+    return TY_VERSION;
 }
 
 static bool log_level_is_enabled(ty_log_level level)
@@ -108,8 +111,8 @@ void ty_message_redirect(ty_message_func *f, void *udata)
     assert(f);
     assert(f != ty_message_default_handler || !udata);
 
-    handler = f;
-    handler_udata = udata;
+    message_handler = f;
+    message_handler_udata = udata;
 }
 
 void ty_log(ty_log_level level, const char *fmt, ...)
@@ -175,16 +178,16 @@ static const char *generic_error(int err)
 
 void ty_error_mask(ty_err err)
 {
-    assert(mask_count < TY_COUNTOF(mask));
+    assert(error_masks_count < TY_COUNTOF(error_masks));
 
-    mask[mask_count++] = err;
+    error_masks[error_masks_count++] = err;
 }
 
 void ty_error_unmask(void)
 {
-    assert(mask_count);
+    assert(error_masks_count);
 
-    mask_count--;
+    error_masks_count--;
 }
 
 bool ty_error_is_masked(int err)
@@ -192,8 +195,8 @@ bool ty_error_is_masked(int err)
     if (err >= 0)
         return false;
 
-    for (unsigned int i = 0; i < mask_count; i++) {
-        if (mask[i] == err)
+    for (unsigned int i = 0; i < error_masks_count; i++) {
+        if (error_masks[i] == err)
             return true;
     }
 
@@ -254,15 +257,15 @@ void ty_message(ty_message_data *msg)
 {
     ty_task *task = msg->task;
     if (!task) {
-        task = _ty_task_get_current();
+        task = ty_task_get_current();
         msg->task = task;
     }
     if (!msg->ctx && task)
-        msg->ctx = ty_task_get_name(task);
+        msg->ctx = task->name;
 
-    (*handler)(msg, handler_udata);
-    if (task && task->callback)
-        (*task->callback)(msg, task->callback_udata);
+    (*message_handler)(msg, message_handler_udata);
+    if (task && task->user_callback)
+        (*task->user_callback)(msg, task->user_callback_udata);
 }
 
 int ty_libhs_translate_error(int err)

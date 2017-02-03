@@ -1,14 +1,17 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
 #include <time.h>
-#include "ty/system.h"
-#include "ty/thread.h"
+#include "system.h"
+#include "thread.h"
 
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t thread_cond = PTHREAD_COND_INITIALIZER;
@@ -78,30 +81,12 @@ void ty_thread_detach(ty_thread *thread)
     thread->init = false;
 }
 
-int ty_mutex_init(ty_mutex *mutex, ty_mutex_type type)
+int ty_mutex_init(ty_mutex *mutex)
 {
-    pthread_mutexattr_t attr;
-    int ptype, r;
+    int r;
 
     mutex->init = false;
-
-    ptype = PTHREAD_MUTEX_NORMAL;
-    switch (type) {
-    case TY_MUTEX_FAST:
-        ptype = PTHREAD_MUTEX_NORMAL;
-        break;
-    case TY_MUTEX_RECURSIVE:
-        ptype = PTHREAD_MUTEX_RECURSIVE;
-        break;
-    }
-
-    r = pthread_mutexattr_init(&attr);
-    assert(!r);
-    r = pthread_mutexattr_settype(&attr, ptype);
-    assert(!r);
-
-    r = pthread_mutex_init(&mutex->mutex, &attr);
-    pthread_mutexattr_destroy(&attr);
+    r = pthread_mutex_init(&mutex->mutex, NULL);
     if (r)
         return ty_error(TY_ERROR_SYSTEM, "pthread_mutex_init() failed: %s", strerror(r));
     mutex->init = true;

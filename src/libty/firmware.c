@@ -1,22 +1,23 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
-#include "firmware_priv.h"
-#include "ty/system.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
 
-int _ty_firmware_load_elf(ty_firmware *fw);
-int _ty_firmware_load_ihex(ty_firmware *fw);
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
+#include "class_priv.h"
+#include "firmware.h"
+#include "system.h"
 
 const ty_firmware_format ty_firmware_formats[] = {
-    {"elf",  ".elf", _ty_firmware_load_elf},
-    {"ihex", ".hex", _ty_firmware_load_ihex},
-    {0}
+    {"elf",  ".elf", ty_firmware_load_elf},
+    {"ihex", ".hex", ty_firmware_load_ihex}
 };
+const unsigned int ty_firmware_formats_count = TY_COUNTOF(ty_firmware_formats);
 
 #define FIRMWARE_STEP_SIZE 32768
 
@@ -35,53 +36,26 @@ static const char *get_basename(const char *filename)
     return basename;
 }
 
-int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfw)
+int ty_firmware_new(const char *filename, ty_firmware **rfw)
 {
     assert(filename);
     assert(rfw);
 
-    const ty_firmware_format *format;
-    ty_firmware *fw = NULL;
+    ty_firmware *fw;
     int r;
 
-    if (format_name) {
-        for (format = ty_firmware_formats; format->name; format++) {
-            if (strcasecmp(format->name, format_name) == 0)
-                break;
-        }
-        if (!format->name) {
-            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
-            goto error;
-        }
-    } else {
-        const char *ext = strrchr(filename, '.');
-        if (!ext) {
-            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
-            goto error;
-        }
-
-        for (format = ty_firmware_formats; format->name; format++) {
-            if (strcmp(format->ext, ext) == 0)
-                break;
-        }
-        if (!format->name) {
-            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized file format", filename);
-            goto error;
-        }
-    }
-
-    fw = malloc(sizeof(ty_firmware) + strlen(filename) + 1);
+    fw = calloc(1, sizeof(ty_firmware));
     if (!fw) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
-    memset(fw, 0, sizeof(*fw));
     fw->refcount = 1;
-    strcpy(fw->filename, filename);
 
-    r = (*format->load)(fw);
-    if (r < 0)
+    fw->filename = strdup(filename);
+    if (!fw->filename) {
+        r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
+    }
 
     if (!fw->name) {
         fw->name = strdup(get_basename(filename));
@@ -97,6 +71,41 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
 error:
     ty_firmware_unref(fw);
     return r;
+}
+
+int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfw)
+{
+    assert(filename);
+    assert(rfw);
+
+    const ty_firmware_format *format = NULL;
+
+    if (format_name) {
+        for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
+            if (strcasecmp(ty_firmware_formats[i].name, format_name) == 0) {
+                format = &ty_firmware_formats[i];
+                break;
+            }
+        }
+        if (!format)
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
+    } else {
+        const char *ext = strrchr(filename, '.');
+        if (!ext)
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
+
+        for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
+            if (strcmp(ty_firmware_formats[i].ext, ext) == 0) {
+                format = &ty_firmware_formats[i];
+                break;
+            }
+        }
+        if (!format)
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized file format",
+                            filename);
+    }
+
+    return (*format->load)(filename, rfw);
 }
 
 ty_firmware *ty_firmware_ref(ty_firmware *fw)
@@ -115,36 +124,13 @@ void ty_firmware_unref(ty_firmware *fw)
 
         free(fw->image);
         free(fw->name);
+        free(fw->filename);
     }
 
     free(fw);
 }
 
-const char *ty_firmware_get_filename(const ty_firmware *fw)
-{
-    assert(fw);
-    return fw->filename;
-}
-
-const char *ty_firmware_get_name(const ty_firmware *fw)
-{
-    assert(fw);
-    return fw->name;
-}
-
-size_t ty_firmware_get_size(const ty_firmware *fw)
-{
-    assert(fw);
-    return fw->size;
-}
-
-const uint8_t *ty_firmware_get_image(const ty_firmware *fw)
-{
-    assert(fw);
-    return fw->image;
-}
-
-int _ty_firmware_expand_image(ty_firmware *fw, size_t size)
+int ty_firmware_expand_image(ty_firmware *fw, size_t size)
 {
     if (size > fw->alloc_size) {
         uint8_t *tmp;
@@ -159,10 +145,37 @@ int _ty_firmware_expand_image(ty_firmware *fw, size_t size)
         if (!tmp)
             return ty_error(TY_ERROR_MEMORY, NULL);
         fw->image = tmp;
-
-        fw->alloc_size = size;
-        fw->size = size;
+        fw->alloc_size = alloc_size;
     }
+    fw->size = size;
 
     return 0;
+}
+
+unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
+                                  unsigned int max_models)
+{
+    assert(fw);
+    assert(rmodels);
+    assert(max_models);
+
+    unsigned int guesses_count = 0;
+
+    for (unsigned int i = 0; i < _ty_class_vtables_count; i++) {
+        ty_model partial_guesses[16];
+        unsigned int partial_count;
+
+        if (!_ty_class_vtables[i]->identify_models)
+            continue;
+
+        partial_count = (*_ty_class_vtables[i]->identify_models)(fw, partial_guesses,
+                                                                 TY_COUNTOF(partial_guesses));
+
+        for (unsigned int j = 0; j < partial_count; j++) {
+            if (rmodels && guesses_count < max_models)
+                rmodels[guesses_count++] = partial_guesses[j];
+        }
+    }
+
+    return guesses_count;
 }

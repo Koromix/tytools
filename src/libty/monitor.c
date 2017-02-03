@@ -1,17 +1,21 @@
-/*
- * ty, a collection of GUI and command-line tools to manage Teensy devices
- *
- * Distributed under the MIT license (see LICENSE.txt or http://opensource.org/licenses/MIT)
- * Copyright (c) 2015 Niels Martignène <niels.martignene@gmail.com>
- */
+/* TyTools - public domain
+   Niels Martignène <niels.martignene@gmail.com>
+   https://neodd.com/tytools
 
-#include "util.h"
-#include "hs/device.h"
-#include "hs/monitor.h"
+   This software is in the public domain. Where that dedication is not
+   recognized, you are granted a perpetual, irrevocable license to copy,
+   distribute, and modify this file as you see fit.
+
+   See the LICENSE file for more details. */
+
+#include "common_priv.h"
+#include "../libhs/device.h"
+#include "../libhs/monitor.h"
 #include "board_priv.h"
-#include "ty/monitor.h"
-#include "ty/system.h"
-#include "ty/timer.h"
+#include "class_priv.h"
+#include "monitor.h"
+#include "system.h"
+#include "timer.h"
 
 struct ty_monitor {
     int flags;
@@ -32,10 +36,6 @@ struct ty_monitor {
     ty_htable interfaces;
 
     void *udata;
-};
-
-struct ty_board_model {
-    TY_BOARD_MODEL
 };
 
 struct callback {
@@ -82,22 +82,22 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     }
     board->refcount = 1;
 
-    board->location = strdup(hs_device_get_location(iface->dev));
+    board->location = strdup(iface->dev->location);
     if (!board->location) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
 
-    r = ty_mutex_init(&board->interfaces_lock, TY_MUTEX_FAST);
+    r = ty_mutex_init(&board->interfaces_lock);
     if (r < 0)
         goto error;
 
     ty_list_init(&board->interfaces);
 
-    board->vid = hs_device_get_vid(iface->dev);
-    board->pid = hs_device_get_pid(iface->dev);
+    board->vid = iface->dev->vid;
+    board->pid = iface->dev->pid;
 
-    r = (*iface->model->family->update_board)(iface, board);
+    r = (*iface->class_vtable->update_board)(iface, board);
     if (r <= 0)
         goto error;
     board->tag = board->id;
@@ -190,18 +190,16 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
     }
     iface->refcount = 1;
 
-    r = ty_mutex_init(&iface->open_lock, TY_MUTEX_FAST);
+    r = ty_mutex_init(&iface->open_lock);
     if (r < 0)
         goto error;
 
     iface->dev = hs_device_ref(dev);
 
     r = 0;
-    for (const ty_board_family **cur = ty_board_families; *cur && !r; cur++) {
-        const ty_board_family *family = *cur;
-
+    for (unsigned int i = 0; i < _ty_class_vtables_count && !r; i++) {
         ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*family->load_interface)(iface);
+        r = (*_ty_class_vtables[i]->load_interface)(iface);
         ty_error_unmask();
         if (r < 0) {
             if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
@@ -243,30 +241,30 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
     if (r <= 0)
         goto error;
 
-    board = find_board(monitor, hs_device_get_location(dev));
+    board = find_board(monitor, dev->location);
 
     if (board) {
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
-        r = (*iface->model->family->update_board)(iface, board);
+        r = (*iface->class_vtable->update_board)(iface, board);
         if (r < 0)
             goto error;
         if (update_tag_pointer)
             board->tag = board->id;
 
-        /* The family function update_board() returns 1 if the interface is compatible with
+        /* The model function update_board() returns 1 if the interface is compatible with
            this board, or 0 if not. In the latter case, the old board is dropped and a new
            one is used. */
         if (r) {
-            if (board->vid != hs_device_get_vid(dev) || board->pid != hs_device_get_pid(dev)) {
+            if (board->vid != dev->vid || board->pid != dev->pid) {
                 /* Theoretically, this should not happen unless device removal notifications
                    where dropped somewhere. */
                 if (board->state == TY_BOARD_STATE_ONLINE)
                     close_board(board);
 
-                board->vid = hs_device_get_vid(dev);
-                board->pid = hs_device_get_pid(dev);
+                board->vid = dev->vid;
+                board->pid = dev->pid;
             }
 
             event = TY_MONITOR_EVENT_CHANGED;
@@ -363,7 +361,7 @@ static int device_callback(hs_device *dev, void *udata)
 {
     ty_monitor *monitor = udata;
 
-    switch (hs_device_get_status(dev)) {
+    switch (dev->status) {
     case HS_DEVICE_STATUS_ONLINE:
         monitor->refresh_callback_ret = add_interface(monitor, dev);
         return !!monitor->refresh_callback_ret;
@@ -403,7 +401,7 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
     if (r < 0)
         goto error;
 
-    r = ty_mutex_init(&monitor->refresh_mutex, TY_MUTEX_FAST);
+    r = ty_mutex_init(&monitor->refresh_mutex);
     if (r < 0)
         goto error;
 
@@ -525,7 +523,7 @@ void ty_monitor_get_descriptors(const ty_monitor *monitor, ty_descriptor_set *se
     assert(monitor);
     assert(set);
 
-    ty_descriptor_set_add(set, hs_monitor_get_descriptor(monitor->device_monitor), id);
+    ty_descriptor_set_add(set, hs_monitor_get_poll_handle(monitor->device_monitor), id);
     ty_timer_get_descriptors(monitor->timer, set, id);
 }
 
