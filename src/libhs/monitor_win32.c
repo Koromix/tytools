@@ -818,7 +818,7 @@ static int find_device_node(DEVINST inst, hs_device *dev)
     /* GUID_DEVINTERFACE_COMPORT only works for real COM ports... Haven't found any way to
        list virtual (USB) serial device interfaces, so instead list USB devices and consider
        them serial if registry key "PortName" is available (and use its value as device node). */
-    if (strncmp(dev->key, "USB\\", 4) == 0) {
+    if (strncmp(dev->key, "USB\\", 4) == 0 || strncmp(dev->key, "FTDIBUS\\", 8) == 0) {
         r = get_device_comport(inst, &dev->path);
         if (!r) {
             hs_log(HS_LOG_DEBUG, "Device '%s' has no 'PortName' registry property", dev->key);
