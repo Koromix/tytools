@@ -340,8 +340,9 @@ static int find_device_port_ioctl(const char *hub_id, const char *child_key)
         goto cleanup;
 
     h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-    if (!h) {
-        r = hs_error(HS_ERROR_SYSTEM, "Failed to open USB hub '%s': %s", path, hs_win32_strerror(0));
+    if (h == INVALID_HANDLE_VALUE) {
+        hs_log(HS_LOG_DEBUG, "Failed to open USB hub '%s': %s", path, hs_win32_strerror(0));
+        r = 0;
         goto cleanup;
     }
 
@@ -543,7 +544,7 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
     int r;
 
     h = CreateFile(dev->path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-    if (!h) {
+    if (h == INVALID_HANDLE_VALUE) {
         hs_log(HS_LOG_WARNING, "Cannot open HID device '%s': %s", dev->path, hs_win32_strerror(0));
         r = 0;
         goto cleanup;
@@ -716,7 +717,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
         goto cleanup;
 
     hub = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-    if (!hub) {
+    if (hub == INVALID_HANDLE_VALUE) {
         hs_log(HS_LOG_DEBUG, "Cannot open parent hub device at '%s', ignoring device properties for '%s'",
                path, dev->key);
         r = 1;
