@@ -647,9 +647,11 @@ void MainWindow::enableBoardWidgets()
     optionsTab->setEnabled(true);
     actionEnableSerial->setEnabled(true);
 
-    serialText->setDocument(&current_board_->serialDocument());
+    QTextDocument *document = &current_board_->serialDocument();
+    serialText->setDocument(document);
     serialText->moveCursor(QTextCursor::End);
     serialText->verticalScrollBar()->setValue(serialText->verticalScrollBar()->maximum());
+    serialEdit->setFont(document->defaultFont());
 
     actionRenameBoard->setEnabled(true);
 }

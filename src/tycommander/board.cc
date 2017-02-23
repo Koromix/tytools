@@ -29,6 +29,9 @@ Board::Board(ty_board *board, QObject *parent)
 {
     serial_document_.setDocumentLayout(new QPlainTextDocumentLayout(&serial_document_));
     serial_document_.setUndoRedoEnabled(false);
+    /* Doing font changes in Board is ugly, but the whole shared serial document thing
+       we do is ugly and will need to change eventually. */
+    serial_document_.setDefaultFont(QFont("Monospace", 10));
 
     // The monitor will move the serial notifier to a dedicated thread
     connect(&serial_notifier_, &DescriptorNotifier::activated, this, &Board::serialReceived,

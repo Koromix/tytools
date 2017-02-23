@@ -18,8 +18,6 @@
 #include "firmware.h"
 #include "system.h"
 
-#define TEENSY_VID 0x16C0
-
 #define SEREMU_TX_SIZE 32
 #define SEREMU_RX_SIZE 64
 
@@ -87,23 +85,33 @@ static int teensy_load_interface(ty_board_interface *iface)
 {
     hs_device *dev = iface->dev;
 
-    if (dev->vid != TEENSY_VID)
-        return 0;
+#define MAKE_UINT32(high, low) (((high) << 16) | ((low) & 0xFFFF))
 
-    switch (dev->pid) {
-    case 0x478:
-    case 0x482:
-    case 0x483:
-    case 0x484:
-    case 0x485:
-    case 0x486:
-    case 0x487:
-    case 0x488:
+    switch (MAKE_UINT32(dev->vid, dev->pid)) {
+    case MAKE_UINT32(0x16C0, 0x0476):
+    case MAKE_UINT32(0x16C0, 0x0478):
+    case MAKE_UINT32(0x16C0, 0x0482):
+    case MAKE_UINT32(0x16C0, 0x0483):
+    case MAKE_UINT32(0x16C0, 0x0484):
+    case MAKE_UINT32(0x16C0, 0x0485):
+    case MAKE_UINT32(0x16C0, 0x0486):
+    case MAKE_UINT32(0x16C0, 0x0487):
+    case MAKE_UINT32(0x16C0, 0x0488):
+    case MAKE_UINT32(0x16C0, 0x0489):
+    case MAKE_UINT32(0x16C0, 0x048A):
+    case MAKE_UINT32(0x16C0, 0x04D0):
+    case MAKE_UINT32(0x16C0, 0x04D1):
+    case MAKE_UINT32(0x16C0, 0x04D2):
+    case MAKE_UINT32(0x16C0, 0x04D3):
+    case MAKE_UINT32(0x16C0, 0x04D4):
+    case MAKE_UINT32(0x16C0, 0x04D9):
         break;
 
     default:
         return 0;
     }
+
+#undef MAKE_UINT32
 
     switch (dev->type) {
     case HS_DEVICE_TYPE_SERIAL:
