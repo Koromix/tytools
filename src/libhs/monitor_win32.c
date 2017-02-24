@@ -962,14 +962,13 @@ static int populate_controllers(void)
         goto cleanup;
     }
 
-    DWORD i = 0;
     info.cbSize = sizeof(info);
-    for (i = 0; SetupDiEnumDeviceInfo(set, i, &info); i++) {
+    for (DWORD i = 0; SetupDiEnumDeviceInfo(set, i, &info); i++) {
         DEVINST roothub_inst;
         char roothub_id[256];
         CONFIGRET cret;
 
-        if (i == _HS_COUNTOF(controllers)) {
+        if (controllers_count == _HS_COUNTOF(controllers)) {
             hs_log(HS_LOG_WARNING, "Reached maximum controller ID %d, ignoring", UINT8_MAX);
             break;
         }
@@ -989,14 +988,14 @@ static int populate_controllers(void)
             continue;
         }
 
-        controllers[i] = strdup(roothub_id);
-        if (!controllers[i]) {
+        controllers[controllers_count] = strdup(roothub_id);
+        if (!controllers[controllers_count]) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
         }
-        hs_log(HS_LOG_DEBUG, "Found root USB hub '%s' with ID %lu", roothub_id, i);
+        hs_log(HS_LOG_DEBUG, "Found root USB hub '%s' with ID %lu", roothub_id, controllers_count);
+        controllers_count++;
     }
-    controllers_count = i;
 
     r = 0;
 cleanup:
