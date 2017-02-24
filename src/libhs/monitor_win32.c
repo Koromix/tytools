@@ -384,7 +384,7 @@ cleanup:
 static bool is_root_usb_controller(const char *id)
 {
     static const char *const root_needles[] = {
-        "\\ROOT_HUB",
+        "ROOT_HUB",
         "VMUSB\\HUB" // Microsoft Virtual PC
     };
 
