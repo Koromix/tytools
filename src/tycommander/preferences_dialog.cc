@@ -69,6 +69,6 @@ void PreferencesDialog::refresh()
 
     auto monitor = tyCommander->monitor();
     serialByDefaultCheck->setChecked(monitor->serialByDefault());
-    serialLogSizeDefaultSpin->setValue(monitor->serialLogSize() / 1000);
+    serialLogSizeDefaultSpin->setValue(static_cast<int>(monitor->serialLogSize() / 1000));
     maxTasksSpin->setValue(monitor->maxTasks());
 }

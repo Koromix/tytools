@@ -1010,7 +1010,7 @@ void MainWindow::refreshSettings()
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
     scrollBackLimitSpin->blockSignals(false);
     serialLogSizeSpin->blockSignals(true);
-    serialLogSizeSpin->setValue(current_board_->serialLogSize() / 1000);
+    serialLogSizeSpin->setValue(static_cast<int>(current_board_->serialLogSize() / 1000));
     serialLogSizeSpin->blockSignals(false);
 
     updateFirmwareMenus();

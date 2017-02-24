@@ -297,7 +297,8 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
     for (auto &fw: fws)
         fws2.push_back(fw->firmware());
 
-    r = ty_upload(board_, &fws2[0], fws2.size(), reset_after ? 0 : TY_UPLOAD_NORESET, &task);
+    r = ty_upload(board_, &fws2[0], static_cast<unsigned int>(fws2.size()),
+                  reset_after ? 0 : TY_UPLOAD_NORESET, &task);
     if (r < 0)
         return watchTask(make_task<FailedTask>(ty_error_last_message()));
     task->pool = pool_;
@@ -643,7 +644,7 @@ void Board::writeToSerialLog(const char *buf, size_t len)
 void Board::appendBufferToSerialDocument()
 {
     QMutexLocker locker(&serial_lock_);
-    auto str = serial_decoder_->toUnicode(serial_buf_, serial_buf_len_);
+    auto str = serial_decoder_->toUnicode(serial_buf_, static_cast<int>(serial_buf_len_));
     serial_buf_len_ = 0;
     locker.unlock();
 

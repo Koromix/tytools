@@ -161,7 +161,7 @@ void Monitor::stop()
     serial_thread_.wait();
 
     if (!boards_.empty()) {
-        beginRemoveRows(QModelIndex(), 0, boards_.size());
+        beginRemoveRows(QModelIndex(), 0, static_cast<int>(boards_.size()));
         boards_.clear();
         endRemoveRows();
     }
@@ -187,7 +187,7 @@ shared_ptr<Board> Monitor::board(unsigned int i)
 
 unsigned int Monitor::boardCount() const
 {
-    return boards_.size();
+    return static_cast<unsigned int>(boards_.size());
 }
 
 shared_ptr<Board> Monitor::boardFromModel(const QAbstractItemModel *model,
@@ -214,7 +214,7 @@ vector<shared_ptr<Board>> Monitor::find(function<bool(Board &board)> filter)
 int Monitor::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent);
-    return boards_.size();
+    return static_cast<int>(boards_.size());
 }
 
 int Monitor::columnCount(const QModelIndex &parent) const
@@ -380,7 +380,8 @@ void Monitor::handleAddedEvent(ty_board *board)
         removeBoardItem(findBoardIterator(board));
     });
 
-    beginInsertRows(QModelIndex(), boards_.size(), boards_.size());
+    beginInsertRows(QModelIndex(), static_cast<int>(boards_.size()),
+                    static_cast<int>(boards_.size()));
     boards_.push_back(board_wrapper_ptr);
     endInsertRows();
 

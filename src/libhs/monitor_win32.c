@@ -993,7 +993,7 @@ static int populate_controllers(void)
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
         }
-        hs_log(HS_LOG_DEBUG, "Found root USB hub '%s' with ID %lu", roothub_id, controllers_count);
+        hs_log(HS_LOG_DEBUG, "Found root USB hub '%s' with ID %u", roothub_id, controllers_count);
         controllers_count++;
     }
 
