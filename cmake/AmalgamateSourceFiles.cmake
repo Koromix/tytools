@@ -26,7 +26,7 @@ list(GET ARGV 1 DEST)
 file(REMOVE "${DEST}")
 
 get_filename_component(src_dir "${SRC}" DIRECTORY)
-file(STRINGS "${SRC}" lines)
+file(STRINGS "${SRC}" lines ENCODING "UTF-8")
 
 foreach(line IN LISTS lines)
     if(line MATCHES "#include \"([a-zA-Z0-9_\\-]+\\.[a-zA-Z]+)\"")
