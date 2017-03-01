@@ -448,6 +448,7 @@ static int resolve_usb_location_cfgmgr(struct device_cursor usb_cursor, uint8_t 
     do {
         char location_buf[256];
         DWORD location_len;
+        unsigned int location_port;
         CONFIGRET cret;
 
         // Extract port from CM_DRP_LOCATION_INFORMATION (Vista and later versions)
@@ -458,12 +459,12 @@ static int resolve_usb_location_cfgmgr(struct device_cursor usb_cursor, uint8_t 
             hs_log(HS_LOG_DEBUG, "No location information on this device node");
             return 0;
         }
-        ports[depth] = 0;
-        sscanf(location_buf, "Port_#%04"SCNu8, &ports[depth]);
-        if (!ports[depth])
+        location_port = 0;
+        sscanf(location_buf, "Port_#%04u", &location_port);
+        if (!location_port)
             return 0;
-        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor.id, ports[depth]);
-        depth++;
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor.id, location_port);
+        ports[depth++] = (uint8_t)location_port;
 
         // We need place for the root hub index
         if (depth == MAX_USB_DEPTH) {
@@ -655,6 +656,7 @@ static int get_string_descriptor(HANDLE hub, uint8_t port, uint8_t index, char *
 static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
 {
     char buf[256];
+    unsigned int vid, pid, iface_number;
     char *path = NULL;
     HANDLE hub = NULL;
     DWORD len;
@@ -682,13 +684,18 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
         goto cleanup;
     }
 
-    dev->iface_number = 0;
-    r = sscanf(buf, "USB\\VID_%04hx&PID_%04hx&MI_%02hhu", &dev->vid, &dev->pid, &dev->iface_number);
+    /* h and hh type modifier characters are not known to msvcrt, and MinGW issues warnings
+       if we try to use them. Use temporary unsigned int variables to get around that. */
+    iface_number = 0;
+    r = sscanf(buf, "USB\\VID_%04x&PID_%04x&MI_%02u", &vid, &pid, &iface_number);
     if (r < 2) {
         hs_log(HS_LOG_WARNING, "Failed to parse USB properties from '%s'", buf);
         r = 0;
         goto cleanup;
     }
+    dev->vid = (uint16_t)vid;
+    dev->pid = (uint16_t)pid;
+    dev->iface_number = (uint8_t)iface_number;
 
     // Now we need the device handle for the USB hub where the device is plugged
     if (r == 3) {
