@@ -166,7 +166,7 @@ struct hs_port;
  * @param dev Device object.
  * @return This function returns the device object, for convenience.
  */
-HS_PUBLIC hs_device *hs_device_ref(hs_device *dev);
+hs_device *hs_device_ref(hs_device *dev);
 /**
  * @ingroup device
  * @brief Decrease the device reference count.
@@ -175,7 +175,7 @@ HS_PUBLIC hs_device *hs_device_ref(hs_device *dev);
  *
  * @param dev Device object.
  */
-HS_PUBLIC void hs_device_unref(hs_device *dev);
+void hs_device_unref(hs_device *dev);
 
 /**
   * @{
@@ -194,14 +194,14 @@ HS_PUBLIC void hs_device_unref(hs_device *dev);
  * @param[out] rport Device handle, the value is changed only if the function succeeds.
  * @return This function returns 0 on success, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport);
+int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport);
 /**
  * @ingroup device
  * @brief Close a device, and free all used resources.
  *
  * @param port Device handle.
  */
-HS_PUBLIC void hs_port_close(hs_port *port);
+void hs_port_close(hs_port *port);
 
 /**
  * @ingroup device
@@ -210,7 +210,7 @@ HS_PUBLIC void hs_port_close(hs_port *port);
  * @param port Device handle.
  * @return Device object.
  */
-HS_PUBLIC hs_device *hs_port_get_device(const hs_port *port);
+hs_device *hs_port_get_device(const hs_port *port);
 /**
  * @ingroup device
  * @brief Get a pollable device handle.
@@ -231,7 +231,7 @@ HS_PUBLIC hs_device *hs_port_get_device(const hs_port *port);
  *
  * @sa hs_handle
  */
-HS_PUBLIC hs_handle hs_port_get_poll_handle(const hs_port *port);
+hs_handle hs_port_get_poll_handle(const hs_port *port);
 
 HS_END_C
 

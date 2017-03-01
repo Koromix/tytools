@@ -38,7 +38,7 @@ HS_BEGIN_C
  * @return This function returns the size of the report in bytes + 1 (report ID). It
  *     returns 0 on timeout, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout);
+ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout);
 /**
  * @ingroup hid
  * @brief Send an output report to the device.
@@ -52,7 +52,7 @@ HS_PUBLIC ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int time
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative error code.
  */
-HS_PUBLIC ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size);
+ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size);
 
 /**
  * @ingroup hid
@@ -69,8 +69,7 @@ HS_PUBLIC ssize_t hs_hid_write(hs_port *port, const uint8_t *buf, size_t size);
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id,
-                                            uint8_t *buf, size_t size);
+ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf, size_t size);
 /**
  * @ingroup hid
  * @brief Send a feature report to the device.
@@ -84,7 +83,7 @@ HS_PUBLIC ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id,
  * @return This function returns the size of the report in bytes + 1 (report ID),
  *     or a negative @ref hs_error_code value.
  */
-HS_PUBLIC ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size);
+ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size);
 
 HS_END_C
 

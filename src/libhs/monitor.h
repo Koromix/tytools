@@ -69,8 +69,7 @@ typedef int hs_enumerate_func(struct hs_device *dev, void *udata);
  * @sa hs_match Match specific devices.
  * @sa hs_enumerate_func() for more information about the callback.
  */
-HS_PUBLIC int hs_enumerate(const hs_match *matches, unsigned int count,
-                           hs_enumerate_func *f, void *udata);
+int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata);
 
 /**
  * @ingroup monitor
@@ -84,7 +83,7 @@ HS_PUBLIC int hs_enumerate(const hs_match *matches, unsigned int count,
  * @return This function returns 1 if a device is found, 0 if not or a negative @ref hs_error_code
  *     value.
  */
-HS_PUBLIC int hs_find(const hs_match *matches, unsigned int count, struct hs_device **rdev);
+int hs_find(const hs_match *matches, unsigned int count, struct hs_device **rdev);
 
 /**
  * @{
@@ -104,7 +103,7 @@ HS_PUBLIC int hs_find(const hs_match *matches, unsigned int count, struct hs_dev
  *
  * @sa hs_monitor_free()
  */
-HS_PUBLIC int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor);
+int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor);
 /**
  * @ingroup monitor
  * @brief Close a device monitor.
@@ -116,7 +115,7 @@ HS_PUBLIC int hs_monitor_new(const hs_match *matches, unsigned int count, hs_mon
  *
  * @sa hs_monitor_new()
  */
-HS_PUBLIC void hs_monitor_free(hs_monitor *monitor);
+void hs_monitor_free(hs_monitor *monitor);
 
 /**
  * @ingroup monitor
@@ -138,7 +137,7 @@ HS_PUBLIC void hs_monitor_free(hs_monitor *monitor);
  * @sa hs_handle
  * @sa hs_monitor_refresh()
  */
-HS_PUBLIC hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor);
+hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor);
 
 /**
  * @ingroup monitor
@@ -154,14 +153,14 @@ HS_PUBLIC hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor);
  * @param monitor Device monitor.
  * @return This function returns 0 on success, or a negative @ref hs_error_code value.
  */
-HS_PUBLIC int hs_monitor_start(hs_monitor *monitor);
+int hs_monitor_start(hs_monitor *monitor);
 /**
  * @ingroup monitor
  * @brief Stop listening to OS notifications.
  *
  * @param monitor Device monitor.
  */
-HS_PUBLIC void hs_monitor_stop(hs_monitor *monitor);
+void hs_monitor_stop(hs_monitor *monitor);
 
 /**
  * @ingroup monitor
@@ -180,7 +179,7 @@ HS_PUBLIC void hs_monitor_stop(hs_monitor *monitor);
  *
  * @sa hs_enumerate_func() for more information about the callback.
  */
-HS_PUBLIC int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata);
+int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata);
 
 /**
  * @ingroup monitor
@@ -198,7 +197,7 @@ HS_PUBLIC int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void
  * @sa hs_monitor_refresh()
  * @sa hs_enumerate_func() for more information about the callback.
  */
-HS_PUBLIC int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata);
+int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata);
 
 HS_END_C
 

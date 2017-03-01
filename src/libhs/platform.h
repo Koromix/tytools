@@ -77,7 +77,7 @@ typedef struct hs_poll_source {
  *
  * @return This function returns a mononotic time value in milliseconds.
  */
-HS_PUBLIC uint64_t hs_millis(void);
+uint64_t hs_millis(void);
 
 /**
  * @ingroup misc
@@ -104,7 +104,7 @@ HS_PUBLIC uint64_t hs_millis(void);
  *
  * @return This function returns the adjusted value, or -1 if @p timeout is negative.
  */
-HS_PUBLIC int hs_adjust_timeout(int timeout, uint64_t start);
+int hs_adjust_timeout(int timeout, uint64_t start);
 
 #ifdef __linux__
 /**
@@ -120,7 +120,7 @@ HS_PUBLIC int hs_adjust_timeout(int timeout, uint64_t start);
  *
  * @return This function returns the version number.
  */
-HS_PUBLIC uint32_t hs_linux_version(void);
+uint32_t hs_linux_version(void);
 #endif
 
 #ifdef _WIN32
@@ -135,7 +135,7 @@ HS_PUBLIC uint32_t hs_linux_version(void);
  * @return This function returns a private buffer containing the error string, valid until the
  *     next call to hs_win32_strerror().
  */
-HS_PUBLIC const char *hs_win32_strerror(unsigned long err);
+const char *hs_win32_strerror(unsigned long err);
 /**
  * @ingroup misc
  * @brief Get the Windows version as a composite decimal number.
@@ -148,7 +148,7 @@ HS_PUBLIC const char *hs_win32_strerror(unsigned long err);
  *
  * @return This function returns the version number.
  */
-HS_PUBLIC uint32_t hs_win32_version(void);
+uint32_t hs_win32_version(void);
 #endif
 
 #ifdef __APPLE__
@@ -161,7 +161,7 @@ HS_PUBLIC uint32_t hs_win32_version(void);
  *
  * @return This function returns the version number.
  */
-HS_PUBLIC uint32_t hs_darwin_version(void);
+uint32_t hs_darwin_version(void);
 #endif
 
 /**
@@ -184,7 +184,7 @@ HS_PUBLIC uint32_t hs_darwin_version(void);
  *
  * @sa hs_poll_source
  */
-HS_PUBLIC int hs_poll(hs_poll_source *sources, unsigned int count, int timeout);
+int hs_poll(hs_poll_source *sources, unsigned int count, int timeout);
 
 HS_END_C
 
