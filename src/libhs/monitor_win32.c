@@ -24,11 +24,23 @@
 #include <usbioctl.h>
 #include <usbuser.h>
 #include <wchar.h>
+#include "array.h"
 #include "device_priv.h"
 #include "filter_priv.h"
-#include "list.h"
 #include "monitor_priv.h"
 #include "platform.h"
+
+enum event_type {
+    DEVICE_EVENT_ADDED,
+    DEVICE_EVENT_REMOVED
+};
+
+struct event {
+    enum event_type type;
+    char device_key[256];
+};
+
+typedef _HS_ARRAY(struct event) event_array;
 
 struct hs_monitor {
     _hs_filter filter;
@@ -38,26 +50,16 @@ struct hs_monitor {
     HANDLE thread_hwnd;
 
     HANDLE thread_event;
-    CRITICAL_SECTION notifications_lock;
-    _hs_list_head notifications;
-    _hs_list_head pending_notifications;
+    CRITICAL_SECTION events_lock;
+    event_array events;
+    event_array thread_events;
+    event_array refresh_events;
     int thread_ret;
 };
 
 struct setup_class {
     const char *name;
     hs_device_type type;
-};
-
-enum notification_type {
-    DEVICE_EVENT_ADDED,
-    DEVICE_EVENT_REMOVED
-};
-
-struct notification {
-    enum notification_type event;
-    _hs_list_head node;
-    char device_key[];
 };
 
 struct device_cursor {
@@ -1116,12 +1118,14 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
     return r;
 }
 
-static int post_notification(hs_monitor *monitor, enum notification_type event,
-                             DEV_BROADCAST_DEVICEINTERFACE *msg)
+static int post_event(hs_monitor *monitor, enum event_type event_type,
+                      DEV_BROADCAST_DEVICEINTERFACE *msg)
 {
-    const char *id, *id_end;
-    struct notification *notif;
+    const char *id;
+    size_t id_len;
+    struct event *event;
     UINT_PTR timer;
+    int r;
 
     if (msg->dbcc_devicetype != DBT_DEVTYP_DEVICEINTERFACE)
         return 0;
@@ -1132,33 +1136,37 @@ static int post_notification(hs_monitor *monitor, enum notification_type event,
        You may notice that paths from RegisterDeviceNotification() seem to start with '\\?\',
        which according to MSDN is the file namespace, not the device namespace '\\.\'. Oh well. */
     id = msg->dbcc_name;
-    id_end = id + strlen(id);
     if (strncmp(id, "\\\\?\\", 4) == 0
             || strncmp(id, "\\\\.\\", 4) == 0
             || strncmp(id, "##.#", 4) == 0
             || strncmp(id, "##?#", 4) == 0)
         id += 4;
-    if (id_end - id >= 39 && id_end[-39] == '#' && id_end[-38] == '{' && id_end[-1] == '}')
-        id_end -= 39;
+    id_len = strlen(id);
+    if (id_len >= 39 && id[id_len - 39] == '#' && id[id_len - 38] == '{' && id[id_len - 1] == '}')
+        id_len -= 39;
 
-    notif = malloc(sizeof(*notif) + (size_t)(id_end - id + 1));
-    if (!notif)
-        return hs_error(HS_ERROR_MEMORY, NULL);
-    notif->event = event;
-    memcpy(notif->device_key, id, (size_t)(id_end - id));
-    notif->device_key[id_end - id] = 0;
+    if (id_len >= sizeof(event->device_key)) {
+        hs_log(HS_LOG_WARNING, "Device instance ID string '%s' is too long, ignoring", id);
+        return 0;
+    }
+    r = _hs_array_grow(&monitor->thread_events, 1);
+    if (r < 0)
+        return r;
+    event = &monitor->thread_events.values[monitor->thread_events.count];
+    event->type = event_type;
+    memcpy(event->device_key, id, id_len);
+    event->device_key[id_len] = 0;
+    monitor->thread_events.count++;
 
     /* Normalize device instance ID, uppercase and replace '#' with '\'. Could not do it on msg,
        Windows may not like it. Maybe, not sure so don't try. */
-    for (char *ptr = notif->device_key; *ptr; ptr++) {
+    for (char *ptr = event->device_key; *ptr; ptr++) {
         if (*ptr == '#') {
             *ptr = '\\';
         } else if (*ptr >= 97 && *ptr <= 122) {
             *ptr = (char)(*ptr - 32);
         }
     }
-
-    _hs_list_add_tail(&monitor->pending_notifications, &notif->node);
 
     timer = SetTimer(monitor->thread_hwnd, 1, 100, NULL);
     if (!timer)
@@ -1170,7 +1178,6 @@ static int post_notification(hs_monitor *monitor, enum notification_type event,
 static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     hs_monitor *monitor = (hs_monitor *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-
     int r;
 
     switch (msg) {
@@ -1178,19 +1185,19 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
         r = 0;
         switch (wparam) {
         case DBT_DEVICEARRIVAL:
-            r = post_notification(monitor, DEVICE_EVENT_ADDED,
+            r = post_event(monitor, DEVICE_EVENT_ADDED,
                                   (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
             break;
         case DBT_DEVICEREMOVECOMPLETE:
-            r = post_notification(monitor, DEVICE_EVENT_REMOVED,
+            r = post_event(monitor, DEVICE_EVENT_REMOVED,
                                   (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
             break;
         }
         if (r < 0) {
-            EnterCriticalSection(&monitor->notifications_lock);
+            EnterCriticalSection(&monitor->events_lock);
             monitor->thread_ret = r;
             SetEvent(monitor->thread_event);
-            LeaveCriticalSection(&monitor->notifications_lock);
+            LeaveCriticalSection(&monitor->events_lock);
         }
         break;
 
@@ -1198,10 +1205,19 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
         if (CMP_WaitNoPendingInstallEvents(0) == WAIT_OBJECT_0) {
             KillTimer(hwnd, 1);
 
-            EnterCriticalSection(&monitor->notifications_lock);
-            _hs_list_splice_tail(&monitor->notifications, &monitor->pending_notifications);
+            EnterCriticalSection(&monitor->events_lock);
+            r = _hs_array_grow(&monitor->events, monitor->thread_events.count);
+            if (r < 0) {
+                monitor->thread_ret = r;
+            } else {
+                memcpy(monitor->events.values + monitor->events.count,
+                       monitor->thread_events.values,
+                       monitor->thread_events.count * sizeof(*monitor->thread_events.values));
+                monitor->events.count += monitor->thread_events.count;
+                _hs_array_release(&monitor->thread_events);
+            }
             SetEvent(monitor->thread_event);
-            LeaveCriticalSection(&monitor->notifications_lock);
+            LeaveCriticalSection(&monitor->events_lock);
         }
         break;
 
@@ -1327,15 +1343,12 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     if (r < 0)
         goto error;
 
-    InitializeCriticalSection(&monitor->notifications_lock);
+    InitializeCriticalSection(&monitor->events_lock);
     monitor->thread_event = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!monitor->thread_event) {
         r = hs_error(HS_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
         goto error;
     }
-
-    _hs_list_init(&monitor->notifications);
-    _hs_list_init(&monitor->pending_notifications);
 
     *rmonitor = monitor;
     return 0;
@@ -1350,7 +1363,7 @@ void hs_monitor_free(hs_monitor *monitor)
     if (monitor) {
         hs_monitor_stop(monitor);
 
-        DeleteCriticalSection(&monitor->notifications_lock);
+        DeleteCriticalSection(&monitor->events_lock);
         if (monitor->thread_event)
             CloseHandle(monitor->thread_event);
 
@@ -1421,20 +1434,13 @@ void hs_monitor_stop(hs_monitor *monitor)
     CloseHandle(monitor->thread);
     monitor->thread = NULL;
 
-    _hs_list_foreach(cur, &monitor->notifications) {
-        struct notification *notif = _hs_container_of(cur, struct notification, node);
-        free(notif);
-    }
-    _hs_list_foreach(cur, &monitor->pending_notifications) {
-        struct notification *notif = _hs_container_of(cur, struct notification, node);
-        free(notif);
-    }
-    _hs_list_init(&monitor->notifications);
-    _hs_list_init(&monitor->pending_notifications);
+    _hs_array_release(&monitor->events);
+    _hs_array_release(&monitor->thread_events);
+    _hs_array_release(&monitor->refresh_events);
 }
 
-static int process_arrival_notification(hs_monitor *monitor, const char *key, hs_enumerate_func *f,
-                                        void *udata)
+static int process_arrival_event(hs_monitor *monitor, const char *key, hs_enumerate_func *f,
+                                 void *udata)
 {
     DEVINST inst;
     hs_device *dev = NULL;
@@ -1463,43 +1469,43 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 {
     assert(monitor);
 
-    _HS_LIST(notifications);
+    unsigned int event_idx = 0;
     int r;
 
     if (!monitor->thread)
         return 0;
 
-    /* We don't want to keep the lock for too long, so move all notifications to our own list
-       and let the background thread work and process Win32 events. */
-    EnterCriticalSection(&monitor->notifications_lock);
-    _hs_list_splice(&notifications, &monitor->notifications);
-    r = monitor->thread_ret;
-    monitor->thread_ret = 0;
-    LeaveCriticalSection(&monitor->notifications_lock);
+    if (!monitor->refresh_events.count) {
+        /* We don't want to keep the lock for too long, so move all device events to our
+           own array and let the background thread work and process Win32 events. */
+        EnterCriticalSection(&monitor->events_lock);
+        monitor->refresh_events = monitor->events;
+        monitor->events = (event_array){0};
+        r = monitor->thread_ret;
+        monitor->thread_ret = 0;
+        LeaveCriticalSection(&monitor->events_lock);
+    }
 
     if (r < 0)
         goto cleanup;
 
-    _hs_list_foreach(cur, &notifications) {
-        struct notification *notif = _hs_container_of(cur, struct notification, node);
+    for (; event_idx < monitor->refresh_events.count; event_idx++) {
+        struct event *event = &monitor->refresh_events.values[event_idx];
 
-        switch (notif->event) {
+        switch (event->type) {
         case DEVICE_EVENT_ADDED:
             hs_log(HS_LOG_DEBUG, "Received arrival notification for device '%s'",
-                   notif->device_key);
-            r = process_arrival_notification(monitor, notif->device_key, f, udata);
+                   event->device_key);
+            r = process_arrival_event(monitor, event->device_key, f, udata);
             break;
 
         case DEVICE_EVENT_REMOVED:
             hs_log(HS_LOG_DEBUG, "Received removal notification for device '%s'",
-                   notif->device_key);
-            _hs_monitor_remove(&monitor->devices, notif->device_key, f, udata);
+                   event->device_key);
+            _hs_monitor_remove(&monitor->devices, event->device_key, f, udata);
             r = 0;
             break;
         }
-
-        _hs_list_remove(&notif->node);
-        free(notif);
 
         if (r)
             goto cleanup;
@@ -1507,13 +1513,13 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 
     r = 0;
 cleanup:
-    /* If an error occurs, there maty be unprocessed notifications. We don't want to lose them so
-       put everything back in front of the notification list. */
-    EnterCriticalSection(&monitor->notifications_lock);
-    _hs_list_splice(&monitor->notifications, &notifications);
-    if (_hs_list_is_empty(&monitor->notifications))
+    /* If an error occurs, there may be unprocessed notifications. Keep them in
+       monitor->refresh_events for the next time this function is called. */
+    _hs_array_deque(&monitor->refresh_events, event_idx);
+    EnterCriticalSection(&monitor->events_lock);
+    if (!monitor->refresh_events.count && !monitor->events.count)
         ResetEvent(monitor->thread_event);
-    LeaveCriticalSection(&monitor->notifications_lock);
+    LeaveCriticalSection(&monitor->events_lock);
     return r;
 }
 
