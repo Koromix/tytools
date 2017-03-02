@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include "device_priv.h"
 #include "filter_priv.h"
-#include "list.h"
 #include "monitor_priv.h"
 #include "platform.h"
 
@@ -47,13 +46,6 @@ struct device_class {
     const char *new_stack;
 
     hs_device_type type;
-};
-
-struct usb_controller {
-    _hs_list_head list;
-
-    uint8_t index;
-    io_string_t path;
 };
 
 struct service_aggregate {
