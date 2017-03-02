@@ -13,6 +13,8 @@
 
 #include "common.h"
 
+HS_BEGIN_C
+
 typedef struct _hs_htable_head {
     // Keep first!
     struct _hs_htable_head *next;
@@ -62,5 +64,7 @@ static inline uint32_t _hs_htable_hash_ptr(const void *p)
         for (_hs_htable_head *_HS_UNIQUE_ID(head) = _hs_htable_get_head((table), (k)), *cur = _HS_UNIQUE_ID(head)->next, *_HS_UNIQUE_ID(next) = cur->next; \
              cur != _HS_UNIQUE_ID(head); cur = _HS_UNIQUE_ID(next), _HS_UNIQUE_ID(next) = cur->next) \
             if (cur->key == (k))
+
+HS_END_C
 
 #endif

@@ -13,6 +13,8 @@
 
 #include "common.h"
 
+HS_BEGIN_C
+
 typedef struct _hs_list_head {
     struct _hs_list_head *prev;
     struct _hs_list_head *next;
@@ -98,5 +100,7 @@ static inline void _hs_list_splice_tail(_hs_list_head *list, _hs_list_head *from
     if ((head)->next) \
         for (_hs_list_head *cur = (head)->next, *_HS_UNIQUE_ID(next) = cur->next; cur != (head); \
              cur = _HS_UNIQUE_ID(next), _HS_UNIQUE_ID(next) = cur->next)
+
+HS_END_C
 
 #endif
