@@ -105,8 +105,10 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     // Everything is alright, we can commit changes
     if (model)
         board->model = model;
-    if (serial_number)
+    if (serial_number) {
+        free(board->serial_number);
         board->serial_number = serial_number;
+    }
     if (description) {
         free(board->description);
         board->description = description;
