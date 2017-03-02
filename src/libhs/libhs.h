@@ -36,6 +36,7 @@
 #endif
 
 #include "common.h"
+#include "array.h"
 #include "htable.h"
 #include "list.h"
 #include "device.h"
@@ -53,6 +54,7 @@
 
     #include "common.c"
     #include "compat.c"
+    #include "array.c"
     #include "device.c"
     #include "filter.c"
     #include "htable.c"
