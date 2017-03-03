@@ -20,7 +20,6 @@
 #include "list.h"
 #include "platform.h"
 
-// Used for HID devices, see serial_posix.c for serial devices
 struct _hs_hid_darwin {
     io_service_t service;
     union {
@@ -48,16 +47,16 @@ struct _hs_hid_darwin {
     bool device_removed;
 };
 
-static void fire_device_event(hs_port *port)
+static void fire_hid_poll_handle(struct _hs_hid_darwin *hid)
 {
     char buf = '.';
-    write(port->u.hid->poll_pipe[1], &buf, 1);
+    write(hid->poll_pipe[1], &buf, 1);
 }
 
-static void reset_device_event(hs_port *port)
+static void reset_hid_poll_handle(hs_port *port)
 {
     char buf;
-    read(port->u.hid->poll_pipe[0], &buf, 1);
+    read(hid->poll_pipe[0], &buf, 1);
 }
 
 static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
@@ -66,13 +65,14 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     _HS_UNUSED(sender);
 
     hs_port *port = ctx;
+    struct _hs_hid_darwin *hid = port->u.hid;
 
-    pthread_mutex_lock(&port->u.hid->mutex);
-    port->u.hid->device_removed = true;
-    CFRunLoopSourceSignal(port->u.hid->shutdown_source);
-    pthread_mutex_unlock(&port->u.hid->mutex);
+    pthread_mutex_lock(&hid->mutex);
+    hid->device_removed = true;
+    CFRunLoopSourceSignal(hid->shutdown_source);
+    pthread_mutex_unlock(&hid->mutex);
 
-    fire_device_event(port);
+    fire_hid_poll_handle(hid);
 }
 
 struct hid_report {
@@ -93,95 +93,96 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
         return;
 
     hs_port *port = ctx;
-
+    struct _hs_hid_darwin *hid = port->u.hid;
     struct hid_report *report;
-    bool fire;
+    bool was_empty;
     int r;
 
-    pthread_mutex_lock(&port->u.hid->mutex);
+    pthread_mutex_lock(&hid->mutex);
 
-    fire = _hs_list_is_empty(&port->u.hid->reports);
+    fire = _hs_list_is_empty(&hid->reports);
 
-    report = _hs_list_get_first(&port->u.hid->free_reports, struct hid_report, list);
+    report = _hs_list_get_first(&hid->free_reports, struct hid_report, list);
     if (report) {
         _hs_list_remove(&report->list);
     } else {
-        if (port->u.hid->allocated_reports == 64) {
+        if (hid->allocated_reports == 64) {
             r = 0;
             goto cleanup;
         }
 
         // Don't forget the leading report ID
-        report = calloc(1, sizeof(struct hid_report) + port->u.hid->read_size + 1);
+        report = calloc(1, sizeof(struct hid_report) + hid->read_size + 1);
         if (!report) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
         }
-        port->u.hid->allocated_reports++;
+        hid->allocated_reports++;
     }
 
-    // You never know, even if port->u.hid->red_size is supposed to be the maximum input report size
-    if (report_size > (CFIndex)port->u.hid->read_size)
-        report_size = (CFIndex)port->u.hid->read_size;
+    /* You never know, even if hid->red_size is supposed to be the maximum
+       input report size. */
+    if (report_size > (CFIndex)hid->read_size)
+        report_size = (CFIndex)hid->read_size;
 
     report->data[0] = (uint8_t)report_id;
     memcpy(report->data + 1, report_data, report_size);
     report->size = (size_t)report_size + 1;
 
-    _hs_list_add_tail(&port->u.hid->reports, &report->list);
+    _hs_list_add_tail(&hid->reports, &report->list);
 
     r = 0;
 cleanup:
     if (r < 0)
-        port->u.hid->thread_ret = r;
-    pthread_mutex_unlock(&port->u.hid->mutex);
-    if (fire)
-        fire_device_event(port);
+        hid->thread_ret = r;
+    pthread_mutex_unlock(&hid->mutex);
+    if (was_empty)
+        fire_hid_poll_handle(hid);
 }
 
 static void *hid_read_thread(void *ptr)
 {
     hs_port *port = ptr;
+    struct _hs_hid_darwin *hid = port->u.hid;
     CFRunLoopSourceContext shutdown_ctx = {0};
     int r;
 
-    pthread_mutex_lock(&port->u.hid->mutex);
+    pthread_mutex_lock(&hid->mutex);
 
-    port->u.hid->thread_loop = CFRunLoopGetCurrent();
+    hid->thread_loop = CFRunLoopGetCurrent();
 
-    shutdown_ctx.info = port->u.hid->thread_loop;
+    shutdown_ctx.info = hid->thread_loop;
     shutdown_ctx.perform = (void (*)(void *))CFRunLoopStop;
     /* close_hid_device() could be called before the loop is running, while this thread is between
        pthread_barrier_wait() and CFRunLoopRun(). That's the purpose of the shutdown source. */
-    port->u.hid->shutdown_source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &shutdown_ctx);
-    if (!port->u.hid->shutdown_source) {
+    hid->shutdown_source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &shutdown_ctx);
+    if (!hid->shutdown_source) {
         r = hs_error(HS_ERROR_SYSTEM, "CFRunLoopSourceCreate() failed");
         goto error;
     }
 
-    CFRunLoopAddSource(port->u.hid->thread_loop, port->u.hid->shutdown_source, kCFRunLoopCommonModes);
-    IOHIDDeviceScheduleWithRunLoop(port->u.hid->hid_ref, port->u.hid->thread_loop, kCFRunLoopCommonModes);
+    CFRunLoopAddSource(hid->thread_loop, hid->shutdown_source, kCFRunLoopCommonModes);
+    IOHIDDeviceScheduleWithRunLoop(hid->hid_ref, hid->thread_loop, kCFRunLoopCommonModes);
 
     // This thread is ready, open_hid_device() can carry on
-    port->u.hid->thread_ret = 1;
-    pthread_cond_signal(&port->u.hid->cond);
-    pthread_mutex_unlock(&port->u.hid->mutex);
+    hid->thread_ret = 1;
+    pthread_cond_signal(&hid->cond);
+    pthread_mutex_unlock(&hid->mutex);
 
     CFRunLoopRun();
 
-    IOHIDDeviceUnscheduleFromRunLoop(port->u.hid->hid_ref, port->u.hid->thread_loop,
-                                     kCFRunLoopCommonModes);
+    IOHIDDeviceUnscheduleFromRunLoop(hid->hid_ref, hid->thread_loop, kCFRunLoopCommonModes);
 
-    pthread_mutex_lock(&port->u.hid->mutex);
-    port->u.hid->thread_loop = NULL;
-    pthread_mutex_unlock(&port->u.hid->mutex);
+    pthread_mutex_lock(&hid->mutex);
+    hid->thread_loop = NULL;
+    pthread_mutex_unlock(&hid->mutex);
 
     return NULL;
 
 error:
-    port->u.hid->thread_ret = r;
-    pthread_cond_signal(&port->u.hid->cond);
-    pthread_mutex_unlock(&port->u.hid->mutex);
+    hid->thread_ret = r;
+    pthread_cond_signal(&hid->cond);
+    pthread_mutex_unlock(&hid->mutex);
     return NULL;
 }
 
@@ -198,6 +199,7 @@ static bool get_hid_device_property_number(IOHIDDeviceRef ref, CFStringRef prop,
 int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 {
     hs_port *port;
+    struct _hs_hid_darwin *hid;
     kern_return_t kret;
     int r;
 
@@ -208,11 +210,12 @@ int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
         goto error;
     }
     port->type = dev->type;
-    port->u.hid->poll_pipe[0] = -1;
-    port->u.hid->poll_pipe[1] = -1;
-
     port->u.hid = (struct _hs_hid_darwin *)((char *)port +
                                             _HS_ALIGN_SIZE_FOR_TYPE(sizeof(*port), struct _hs_hid_darwin));
+    hid = port->u.hid;
+    hid->poll_pipe[0] = -1;
+    hid->poll_pipe[1] = -1;
+
     port->mode = mode;
     port->path = dev->path;
     port->dev = hs_device_ref(dev);
@@ -220,69 +223,67 @@ int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     _hs_list_init(&port->u.hid->reports);
     _hs_list_init(&port->u.hid->free_reports);
 
-    port->u.hid->service = IORegistryEntryFromPath(kIOMasterPortDefault, dev->path);
-    if (!port->u.hid->service) {
+    hid->service = IORegistryEntryFromPath(kIOMasterPortDefault, dev->path);
+    if (!hid->service) {
         r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
         goto error;
     }
 
-    port->u.hid->hid_ref = IOHIDDeviceCreate(kCFAllocatorDefault, port->u.hid->service);
-    if (!port->u.hid->hid_ref) {
+    hid->hid_ref = IOHIDDeviceCreate(kCFAllocatorDefault, hid->service);
+    if (!hid->hid_ref) {
         r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
         goto error;
     }
 
-    kret = IOHIDDeviceOpen(port->u.hid->hid_ref, 0);
+    kret = IOHIDDeviceOpen(hid->hid_ref, 0);
     if (kret != kIOReturnSuccess) {
         r = hs_error(HS_ERROR_SYSTEM, "Failed to open HID device '%s'", dev->path);
         goto error;
     }
 
-    IOHIDDeviceRegisterRemovalCallback(port->u.hid->hid_ref, hid_removal_callback, port);
+    IOHIDDeviceRegisterRemovalCallback(hid->hid_ref, hid_removal_callback, port);
 
     if (mode & HS_PORT_MODE_READ) {
-        r = get_hid_device_property_number(port->u.hid->hid_ref, CFSTR(kIOHIDMaxInputReportSizeKey),
-                                           kCFNumberSInt32Type, &port->u.hid->read_size);
+        r = get_hid_device_property_number(hid->hid_ref, CFSTR(kIOHIDMaxInputReportSizeKey),
+                                           kCFNumberSInt32Type, &hid->read_size);
         if (!r) {
             r = hs_error(HS_ERROR_SYSTEM, "HID device '%s' has no valid report size key", dev->path);
             goto error;
         }
-        port->u.hid->read_buf = malloc(port->u.hid->read_size);
-        if (!port->u.hid->read_buf) {
+        hid->read_buf = malloc(hid->read_size);
+        if (!hid->read_buf) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto error;
         }
 
-        IOHIDDeviceRegisterInputReportCallback(port->u.hid->hid_ref, port->u.hid->read_buf,
-                                               (CFIndex)port->u.hid->read_size, hid_report_callback, port);
+        IOHIDDeviceRegisterInputReportCallback(hid->hid_ref, hid->read_buf,
+                                               (CFIndex)hid->read_size, hid_report_callback, port);
 
-        r = pipe(port->u.hid->poll_pipe);
+        r = pipe(hid->poll_pipe);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "pipe() failed: %s", strerror(errno));
             goto error;
         }
-        fcntl(port->u.hid->poll_pipe[0], F_SETFL,
-                fcntl(port->u.hid->poll_pipe[0], F_GETFL, 0) | O_NONBLOCK);
-        fcntl(port->u.hid->poll_pipe[1], F_SETFL,
-                fcntl(port->u.hid->poll_pipe[1], F_GETFL, 0) | O_NONBLOCK);
+        fcntl(hid->poll_pipe[0], F_SETFL, fcntl(hid->poll_pipe[0], F_GETFL, 0) | O_NONBLOCK);
+        fcntl(hid->poll_pipe[1], F_SETFL, fcntl(hid->poll_pipe[1], F_GETFL, 0) | O_NONBLOCK);
 
-        r = pthread_mutex_init(&port->u.hid->mutex, NULL);
+        r = pthread_mutex_init(&hid->mutex, NULL);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "pthread_mutex_init() failed: %s", strerror(r));
             goto error;
         }
-        port->u.hid->mutex_init = true;
+        hid->mutex_init = true;
 
-        r = pthread_cond_init(&port->u.hid->cond, NULL);
+        r = pthread_cond_init(&hid->cond, NULL);
         if (r < 0) {
             r = hs_error(HS_ERROR_SYSTEM, "pthread_cond_init() failed: %s", strerror(r));
             goto error;
         }
-        port->u.hid->cond_init = true;
+        hid->cond_init = true;
 
-        pthread_mutex_lock(&port->u.hid->mutex);
+        pthread_mutex_lock(&hid->mutex);
 
-        r = pthread_create(&port->u.hid->read_thread, NULL, hid_read_thread, port);
+        r = pthread_create(&hid->read_thread, NULL, hid_read_thread, port);
         if (r) {
             r = hs_error(HS_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
             goto error;
@@ -290,11 +291,11 @@ int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 
         /* Barriers are great for this, but OSX doesn't have those... And since it's the only
            place we would use them, it's probably not worth it to have a custom implementation. */
-        while (!port->u.hid->thread_ret)
-            pthread_cond_wait(&port->u.hid->cond, &port->u.hid->mutex);
-        r = port->u.hid->thread_ret;
-        port->u.hid->thread_ret = 0;
-        pthread_mutex_unlock(&port->u.hid->mutex);
+        while (!hid->thread_ret)
+            pthread_cond_wait(&hid->cond, &hid->mutex);
+        r = hid->thread_ret;
+        hid->thread_ret = 0;
+        pthread_mutex_unlock(&hid->mutex);
         if (r < 0)
             goto error;
     }
@@ -310,42 +311,44 @@ error:
 void _hs_darwin_close_hid_port(hs_port *port)
 {
     if (port) {
-        if (port->u.hid->shutdown_source) {
-            pthread_mutex_lock(&port->u.hid->mutex);
+        struct _hd_hid_darwin *hid = port->u.hid;
 
-            if (port->u.hid->thread_loop) {
-                CFRunLoopSourceSignal(port->u.hid->shutdown_source);
-                CFRunLoopWakeUp(port->u.hid->thread_loop);
+        if (hid->shutdown_source) {
+            pthread_mutex_lock(&hid->mutex);
+
+            if (hid->thread_loop) {
+                CFRunLoopSourceSignal(hid->shutdown_source);
+                CFRunLoopWakeUp(hid->thread_loop);
             }
 
-            pthread_mutex_unlock(&port->u.hid->mutex);
-            pthread_join(port->u.hid->read_thread, NULL);
+            pthread_mutex_unlock(&hid->mutex);
+            pthread_join(hid->read_thread, NULL);
 
-            CFRelease(port->u.hid->shutdown_source);
+            CFRelease(hid->shutdown_source);
         }
 
-        if (port->u.hid->cond_init)
-            pthread_cond_destroy(&port->u.hid->cond);
-        if (port->u.hid->mutex_init)
-            pthread_mutex_destroy(&port->u.hid->mutex);
+        if (hid->cond_init)
+            pthread_cond_destroy(&hid->cond);
+        if (hid->mutex_init)
+            pthread_mutex_destroy(&hid->mutex);
 
-        _hs_list_splice(&port->u.hid->free_reports, &port->u.hid->reports);
-        _hs_list_foreach(cur, &port->u.hid->free_reports) {
+        _hs_list_splice(&hid->free_reports, &hid->reports);
+        _hs_list_foreach(cur, &hid->free_reports) {
             struct hid_report *report = _hs_container_of(cur, struct hid_report, list);
             free(report);
         }
 
-        close(port->u.hid->poll_pipe[0]);
-        close(port->u.hid->poll_pipe[1]);
+        close(hid->poll_pipe[0]);
+        close(hid->poll_pipe[1]);
 
-        free(port->u.hid->read_buf);
+        free(hid->read_buf);
 
-        if (port->u.hid->hid_ref) {
-            IOHIDDeviceClose(port->u.hid->hid_ref, 0);
-            CFRelease(port->u.hid->hid_ref);
+        if (hid->hid_ref) {
+            IOHIDDeviceClose(hid->hid_ref, 0);
+            CFRelease(hid->hid_ref);
         }
-        if (port->u.hid->service)
-            IOObjectRelease(port->u.hid->service);
+        if (hid->service)
+            IOObjectRelease(hid->service);
 
         hs_device_unref(port->dev);
     }
@@ -366,10 +369,11 @@ ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
     assert(buf);
     assert(size);
 
+    struct _hs_hid_darwin *hid = port->u.hid;
     struct hid_report *report;
     ssize_t r;
 
-    if (port->u.hid->device_removed)
+    if (hid->device_removed)
         return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->path);
 
     if (timeout) {
@@ -377,7 +381,7 @@ ssize_t hs_hid_read(hs_port *port, uint8_t *buf, size_t size, int timeout)
         uint64_t start;
 
         pfd.events = POLLIN;
-        pfd.fd = port->u.hid->poll_pipe[0];
+        pfd.fd = hid->poll_pipe[0];
 
         start = hs_millis();
 restart:
@@ -392,44 +396,42 @@ restart:
             return 0;
     }
 
-    pthread_mutex_lock(&port->u.hid->mutex);
+    pthread_mutex_lock(&hid->mutex);
 
-    if (port->u.hid->thread_ret < 0) {
-        r = port->u.hid->thread_ret;
-        port->u.hid->thread_ret = 0;
-
-        goto reset;
+    if (hid->thread_ret < 0) {
+        r = hid->thread_ret;
+        hid->thread_ret = 0;
+        goto cleanup;
     }
-
-    report = _hs_list_get_first(&port->u.hid->reports, struct hid_report, list);
+    report = _hs_list_get_first(&hid->reports, struct hid_report, list);
     if (!report) {
         r = 0;
         goto cleanup;
     }
 
+    report = &hid->reports.values[0];
     if (size > report->size)
         size = report->size;
     memcpy(buf, report->data, size);
     r = (ssize_t)size;
 
     _hs_list_remove(&report->list);
-    _hs_list_add(&port->u.hid->free_reports, &report->list);
-
-reset:
-    if (_hs_list_is_empty(&port->u.hid->reports))
-        reset_device_event(port);
+    _hs_list_add(&hid->free_reports, &report->list);
 
 cleanup:
-    pthread_mutex_unlock(&port->u.hid->mutex);
+    if (_hs_list_is_empty(&hid->reports)
+        reset_hid_poll_handle(hid);
+    pthread_mutex_unlock(&hid->mutex);
     return r;
 }
 
 static ssize_t send_report(hs_port *port, IOHIDReportType type, const uint8_t *buf, size_t size)
 {
+    struct _hs_hid_darwin *hid = port->u.hid;
     uint8_t report;
     kern_return_t kret;
 
-    if (port->u.hid->device_removed)
+    if (hid->device_removed)
         return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->path);
 
     if (size < 2)
@@ -446,7 +448,7 @@ static ssize_t send_report(hs_port *port, IOHIDReportType type, const uint8_t *b
        close the write side to drop out of IOHIDDeviceSetReport() after a few seconds? Or maybe
        we can call IOHIDDeviceSetReport() in another thread and kill it, but I don't trust OSX
        to behave well in that case. The HID API does like to crash OSX for no reason. */
-    kret = IOHIDDeviceSetReport(port->u.hid->hid_ref, type, report, buf, (CFIndex)size);
+    kret = IOHIDDeviceSetReport(hid->hid_ref, type, report, buf, (CFIndex)size);
     if (kret != kIOReturnSuccess)
         return hs_error(HS_ERROR_IO, "I/O error while writing to '%s'", port->path);
 
@@ -471,14 +473,15 @@ ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf
     assert(buf);
     assert(size);
 
+    struct _hs_hid_darwin *hid = port->u.hid;
     CFIndex len;
     kern_return_t kret;
 
-    if (port->u.hid->device_removed)
+    if (hid->device_removed)
         return hs_error(HS_ERROR_IO, "Device '%s' was removed", port->path);
 
     len = (CFIndex)size - 1;
-    kret = IOHIDDeviceGetReport(port->u.hid->hid_ref, kIOHIDReportTypeFeature, report_id,
+    kret = IOHIDDeviceGetReport(hid->hid_ref, kIOHIDReportTypeFeature, report_id,
                                 buf + 1, &len);
     if (kret != kIOReturnSuccess)
         return hs_error(HS_ERROR_IO, "IOHIDDeviceGetReport() failed on '%s'", port->path);
