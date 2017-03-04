@@ -32,6 +32,8 @@ int _hs_array_expand_(struct _hs_array *array, size_t value_size, size_t need)
         void *new_values;
 
         new_size = 4;
+        while (new_size < array->count)
+            new_size += new_size / 2;
         while (need > new_size - array->count)
             new_size += new_size / 2;
         new_values = realloc(array->values, new_size * value_size);
