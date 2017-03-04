@@ -69,7 +69,7 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     _HS_UNUSED(result);
     _HS_UNUSED(sender);
 
-    hs_port *port = ctx;
+    hs_port *port = (hs_port *)ctx;
     struct _hs_hid_darwin *hid = port->u.hid;
 
     pthread_mutex_lock(&hid->mutex);
@@ -90,7 +90,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     if (report_type != kIOHIDReportTypeInput)
         return;
 
-    hs_port *port = ctx;
+    hs_port *port = (hs_port *)ctx;
     struct _hs_hid_darwin *hid = port->u.hid;
     struct hid_report *report;
     bool was_empty;
@@ -110,7 +110,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     report = hid->reports.values + hid->reports.count;
     if (!report->data) {
         // Don't forget the leading report ID
-        report->data = malloc(hid->read_size + 1);
+        report->data = (uint8_t *)malloc(hid->read_size + 1);
         if (!report->data) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
@@ -139,7 +139,7 @@ cleanup:
 
 static void *hid_read_thread(void *ptr)
 {
-    hs_port *port = ptr;
+    hs_port *port = (hs_port *)ptr;
     struct _hs_hid_darwin *hid = port->u.hid;
     CFRunLoopSourceContext shutdown_ctx = {0};
     int r;
@@ -190,7 +190,7 @@ static bool get_hid_device_property_number(IOHIDDeviceRef ref, CFStringRef prop,
     if (!data || CFGetTypeID(data) != CFNumberGetTypeID())
         return false;
 
-    return CFNumberGetValue(data, type, rn);
+    return CFNumberGetValue((CFNumberRef)data, type, rn);
 }
 
 int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
@@ -200,8 +200,8 @@ int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     kern_return_t kret;
     int r;
 
-    port = calloc(1, _HS_ALIGN_SIZE_FOR_TYPE(sizeof(*port), struct _hs_hid_darwin) +
-                  sizeof(struct _hs_hid_darwin));
+    port = (hs_port *)calloc(1, _HS_ALIGN_SIZE_FOR_TYPE(sizeof(*port), struct _hs_hid_darwin) +
+                                sizeof(struct _hs_hid_darwin));
     if (!port) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
@@ -244,7 +244,7 @@ int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
             r = hs_error(HS_ERROR_SYSTEM, "HID device '%s' has no valid report size key", dev->path);
             goto error;
         }
-        hid->read_buf = malloc(hid->read_size);
+        hid->read_buf = (uint8_t *)malloc(hid->read_size);
         if (!hid->read_buf) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto error;

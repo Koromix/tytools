@@ -28,7 +28,7 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     DWORD access;
     int r;
 
-    port = calloc(1, sizeof(*port));
+    port = (hs_port *)calloc(1, sizeof(*port));
     if (!port) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
@@ -128,7 +128,7 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     }
 
     if (mode & HS_PORT_MODE_READ) {
-        port->u.handle.read_ov = calloc(1, sizeof(*port->u.handle.read_ov));
+        port->u.handle.read_ov = (OVERLAPPED *)calloc(1, sizeof(*port->u.handle.read_ov));
         if (!port->u.handle.read_ov) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto error;
@@ -140,7 +140,7 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
             goto error;
         }
 
-        port->u.handle.read_buf = malloc(READ_BUFFER_SIZE);
+        port->u.handle.read_buf = (uint8_t *)malloc(READ_BUFFER_SIZE);
         if (!port->u.handle.read_buf) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto error;
@@ -188,7 +188,7 @@ error:
 
 static unsigned int __stdcall overlapped_cleanup_thread(void *udata)
 {
-    hs_port *port = udata;
+    hs_port *port = (hs_port *)udata;
     DWORD ret;
 
     /* Give up if nothing happens, even if it means a leak; we'll get rid of this when XP

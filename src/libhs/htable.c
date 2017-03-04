@@ -13,7 +13,7 @@
 
 int _hs_htable_init(_hs_htable *table, unsigned int size)
 {
-    table->heads = malloc(size * sizeof(*table->heads));
+    table->heads = (void **)malloc(size * sizeof(*table->heads));
     if (!table->heads)
         return hs_error(HS_ERROR_MEMORY, NULL);
     table->size = size;

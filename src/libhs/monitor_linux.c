@@ -328,7 +328,7 @@ static int read_device_information(struct udev_device *udev_dev, hs_device **rde
         goto cleanup;
     }
 
-    dev = calloc(1, sizeof(*dev));
+    dev = (hs_device *)calloc(1, sizeof(*dev));
     if (!dev) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -472,7 +472,7 @@ struct enumerate_enumerate_context {
 
 static int enumerate_enumerate_callback(hs_device *dev, void *udata)
 {
-    struct enumerate_enumerate_context *ctx = udata;
+    struct enumerate_enumerate_context *ctx = (struct enumerate_enumerate_context *)udata;
 
     _hs_device_log(dev, "Enumerate");
     return (*ctx->f)(dev, ctx->udata);
@@ -511,7 +511,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     hs_monitor *monitor;
     int r;
 
-    monitor = calloc(1, sizeof(*monitor));
+    monitor = (hs_monitor *)calloc(1, sizeof(*monitor));
     if (!monitor) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
@@ -560,7 +560,7 @@ void hs_monitor_free(hs_monitor *monitor)
 
 static int monitor_enumerate_callback(hs_device *dev, void *udata)
 {
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     if (!_hs_filter_match_device(&monitor->filter, dev))
         return 0;

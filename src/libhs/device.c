@@ -56,8 +56,8 @@ void _hs_device_log(const hs_device *dev, const char *verb)
 {
     switch (dev->type) {
     case HS_DEVICE_TYPE_SERIAL:
-        hs_log(HS_LOG_DEBUG, "%s serial device '%s' on iface %"PRIu8"\n"
-                             "  - USB VID/PID = %04"PRIx16":%04"PRIx16", USB location = %s\n"
+        hs_log(HS_LOG_DEBUG, "%s serial device '%s' on iface %u\n"
+                             "  - USB VID/PID = %04x:%04x, USB location = %s\n"
                              "  - USB manufacturer = %s, product = %s, S/N = %s",
                verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
                dev->manufacturer_string ? dev->manufacturer_string : "(none)",
@@ -66,10 +66,10 @@ void _hs_device_log(const hs_device *dev, const char *verb)
         break;
 
     case HS_DEVICE_TYPE_HID:
-        hs_log(HS_LOG_DEBUG, "%s HID device '%s' on iface %"PRIu8"\n"
-                             "  - USB VID/PID = %04"PRIx16":%04"PRIx16", USB location = %s\n"
+        hs_log(HS_LOG_DEBUG, "%s HID device '%s' on iface %u\n"
+                             "  - USB VID/PID = %04x:%04x, USB location = %s\n"
                              "  - USB manufacturer = %s, product = %s, S/N = %s\n"
-                             "  - HID usage page = 0x%"PRIx16", HID usage = 0x%"PRIx16,
+                             "  - HID usage page = 0x%x, HID usage = 0x%x",
                verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
                dev->manufacturer_string ? dev->manufacturer_string : "(none)",
                dev->product_string ? dev->product_string : "(none)",

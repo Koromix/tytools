@@ -44,7 +44,7 @@ int _hs_vasprintf(char **strp, const char *fmt, va_list ap)
         return -1;
     va_end(ap_copy);
 
-    s = malloc((size_t)r + 1);
+    s = (char *)malloc((size_t)r + 1);
     if (!s)
         return -1;
 

@@ -14,8 +14,10 @@
 #include <cfgmgr32.h>
 #include <dbt.h>
 #include <devioctl.h>
-#include <hidsdi.h>
-#include <hidpi.h>
+HS_BEGIN_C
+    #include <hidsdi.h>
+    #include <hidpi.h>
+HS_END_C
 #include <initguid.h>
 #include <process.h>
 #include <setupapi.h>
@@ -47,7 +49,7 @@ struct hs_monitor {
     _hs_htable devices;
 
     HANDLE thread;
-    HANDLE thread_hwnd;
+    HWND thread_hwnd;
 
     HANDLE thread_event;
     CRITICAL_SECTION events_lock;
@@ -164,7 +166,7 @@ static int build_device_path(const char *id, const GUID *guid, char **rpath)
 {
     char *path, *ptr;
 
-    path = malloc(4 + strlen(id) + 41);
+    path = (char *)malloc(4 + strlen(id) + 41);
     if (!path)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
@@ -223,7 +225,7 @@ static int wide_to_cstring(const wchar_t *wide, size_t size, char **rs)
     char *s = NULL;
     int len, r;
 
-    tmp = calloc(1, size + sizeof(wchar_t));
+    tmp = (wchar_t *)calloc(1, size + sizeof(wchar_t));
     if (!tmp) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -238,7 +240,7 @@ static int wide_to_cstring(const wchar_t *wide, size_t size, char **rs)
         goto cleanup;
     }
 
-    s = malloc((size_t)len);
+    s = (char *)malloc((size_t)len);
     if (!s) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -271,7 +273,7 @@ static int get_port_driverkey(HANDLE hub, uint8_t port, char **rkey)
     int r;
 
     len = sizeof(node) + (sizeof(USB_PIPE_INFO) * 30);
-    node = calloc(1, len);
+    node = (USB_NODE_CONNECTION_INFORMATION_EX *)calloc(1, len);
     if (!node) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -301,7 +303,7 @@ static int get_port_driverkey(HANDLE hub, uint8_t port, char **rkey)
         goto cleanup;
     }
 
-    wide = calloc(1, pseudo.ActualLength);
+    wide = (USB_NODE_CONNECTION_DRIVERKEY_NAME *)calloc(1, pseudo.ActualLength);
     if (!wide) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -425,7 +427,7 @@ static int resolve_usb_location_ioctl(struct device_cursor usb_cursor, uint8_t p
         if (r <= 0)
             return r;
         ports[depth] = (uint8_t)r;
-        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor.id, ports[depth]);
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %u", usb_cursor.id, ports[depth]);
         depth++;
 
         // We need place for the root hub index
@@ -465,7 +467,7 @@ static int resolve_usb_location_cfgmgr(struct device_cursor usb_cursor, uint8_t 
         sscanf(location_buf, "Port_#%04u", &location_port);
         if (!location_port)
             return 0;
-        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %"PRIu8, usb_cursor.id, location_port);
+        hs_log(HS_LOG_DEBUG, "Found port number of '%s': %u", usb_cursor.id, location_port);
         ports[depth++] = (uint8_t)location_port;
 
         // We need place for the root hub index
@@ -528,7 +530,7 @@ static int find_device_location(DEVINST inst, uint8_t ports[])
         hs_log(HS_LOG_WARNING, "Unknown USB host controller '%s'", roothub_cursor.id);
         return 0;
     }
-    hs_log(HS_LOG_DEBUG, "Found controller ID for '%s': %"PRIu8, roothub_cursor.id, ports[depth]);
+    hs_log(HS_LOG_DEBUG, "Found controller ID for '%s': %u", roothub_cursor.id, ports[depth]);
     depth++;
 
     // The ports are in the wrong order
@@ -643,7 +645,7 @@ static int get_string_descriptor(HANDLE hub, uint8_t port, uint8_t index, char *
                               sizeof(rq), &rq, sizeof(rq), &desc_len, NULL);
     if (!success || desc_len < 2 || rq.desc.bDescriptorType != USB_STRING_DESCRIPTOR_TYPE ||
             rq.desc.bLength != desc_len - sizeof(rq.req) || rq.desc.bLength % 2 != 0) {
-        hs_log(HS_LOG_DEBUG, "Invalid string descriptor %"PRIu8, index);
+        hs_log(HS_LOG_DEBUG, "Invalid string descriptor %u", index);
         return 0;
     }
 
@@ -734,7 +736,7 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
     }
 
     len = sizeof(node) + (sizeof(USB_PIPE_INFO) * 30);
-    node = calloc(1, len);
+    node = (USB_NODE_CONNECTION_INFORMATION_EX *)calloc(1, len);
     if (!node) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -862,7 +864,7 @@ static int process_win32_device(DEVINST inst, const char *id, hs_device **rdev)
     unsigned int depth;
     int r;
 
-    dev = calloc(1, sizeof(*dev));
+    dev = (hs_device *)calloc(1, sizeof(*dev));
     if (!dev) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -1091,7 +1093,7 @@ struct enumerate_enumerate_context {
 
 static int enumerate_enumerate_callback(hs_device *dev, void *udata)
 {
-    struct enumerate_enumerate_context *ctx = udata;
+    struct enumerate_enumerate_context *ctx = (struct enumerate_enumerate_context *)udata;
 
     _hs_device_log(dev, "Enumerate");
     return (*ctx->f)(dev, ctx->udata);
@@ -1238,7 +1240,7 @@ static unsigned int __stdcall monitor_thread(void *udata)
 {
     _HS_UNUSED(udata);
 
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     WNDCLASSEX cls = {0};
     ATOM cls_atom;
@@ -1311,7 +1313,7 @@ cleanup:
 
 static int monitor_enumerate_callback(hs_device *dev, void *udata)
 {
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     if (!_hs_filter_match_device(&monitor->filter, dev))
         return 0;
@@ -1329,7 +1331,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     hs_monitor *monitor;
     int r;
 
-    monitor = calloc(1, sizeof(*monitor));
+    monitor = (hs_monitor *)calloc(1, sizeof(*monitor));
     if (!monitor) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;

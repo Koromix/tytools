@@ -27,7 +27,7 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     int fd_flags;
     int r;
 
-    port = calloc(1, sizeof(*port));
+    port = (hs_port *)calloc(1, sizeof(*port));
     if (!port) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;

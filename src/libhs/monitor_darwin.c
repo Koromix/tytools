@@ -90,15 +90,16 @@ static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, c
         goto cleanup;
     }
 
-    size = CFStringGetMaximumSizeForEncoding(CFStringGetLength(data), kCFStringEncodingUTF8) + 1;
+    size = CFStringGetMaximumSizeForEncoding(CFStringGetLength((CFStringRef)data),
+                                             kCFStringEncodingUTF8) + 1;
 
-    s = malloc((size_t)size);
+    s = (char *)malloc((size_t)size);
     if (!s) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
     }
 
-    r = CFStringGetCString(data, s, size, kCFStringEncodingUTF8);
+    r = CFStringGetCString((CFStringRef)data, s, size, kCFStringEncodingUTF8);
     if (!r) {
         r = 0;
         goto cleanup;
@@ -124,7 +125,7 @@ static bool get_ioregistry_value_number(io_service_t service, CFStringRef prop, 
         goto cleanup;
     }
 
-    r = CFNumberGetValue(data, type, rn);
+    r = CFNumberGetValue((CFNumberRef)data, type, rn);
 cleanup:
     if (data)
         CFRelease(data);
@@ -322,7 +323,7 @@ static int process_darwin_device(io_service_t service, hs_device **rdev)
         goto cleanup;
     }
 
-    dev = calloc(1, sizeof(*dev));
+    dev = (hs_device *)calloc(1, sizeof(*dev));
     if (!dev) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto cleanup;
@@ -389,7 +390,7 @@ static int process_iterator_devices(io_iterator_t it, const _hs_filter *filter,
 
 static int attached_callback(hs_device *dev, void *udata)
 {
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     if (!_hs_filter_match_device(&monitor->filter, dev))
         return 0;
@@ -398,7 +399,7 @@ static int attached_callback(hs_device *dev, void *udata)
 
 static void darwin_devices_attached(void *udata, io_iterator_t it)
 {
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     monitor->notify_ret = process_iterator_devices(it, &monitor->filter,
                                                    attached_callback, monitor);
@@ -406,7 +407,7 @@ static void darwin_devices_attached(void *udata, io_iterator_t it)
 
 static void darwin_devices_detached(void *udata, io_iterator_t it)
 {
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     io_service_t service;
     while ((service = IOIteratorNext(it))) {
@@ -432,7 +433,7 @@ struct enumerate_enumerate_context {
 
 static int enumerate_enumerate_callback(hs_device *dev, void *udata)
 {
-    struct enumerate_enumerate_context *ctx = udata;
+    struct enumerate_enumerate_context *ctx = (struct enumerate_enumerate_context *)udata;
 
     _hs_device_log(dev, "Enumerate");
     return (*ctx->f)(dev, ctx->udata);
@@ -512,7 +513,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     kern_return_t kret;
     int r;
 
-    monitor = calloc(1, sizeof(*monitor));
+    monitor = (hs_monitor *)calloc(1, sizeof(*monitor));
     if (!monitor) {
         r = hs_error(HS_ERROR_MEMORY, NULL);
         goto error;
@@ -599,7 +600,7 @@ hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor)
 
 static int start_enumerate_callback(hs_device *dev, void *udata)
 {
-    hs_monitor *monitor = udata;
+    hs_monitor *monitor = (hs_monitor *)udata;
 
     if (!_hs_filter_match_device(&monitor->filter, dev))
         return 0;

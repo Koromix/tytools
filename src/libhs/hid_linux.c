@@ -71,7 +71,7 @@ restart:
                 free(port->u.file.read_buf);
                 port->u.file.read_buf_size = 0;
 
-                port->u.file.read_buf = malloc(size + 1);
+                port->u.file.read_buf = (uint8_t *)malloc(size + 1);
                 if (!port->u.file.read_buf)
                     return hs_error(HS_ERROR_MEMORY, NULL);
                 port->u.file.read_buf_size = size + 1;

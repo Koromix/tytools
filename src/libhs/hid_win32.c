@@ -11,7 +11,9 @@
 #include "common_priv.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <hidsdi.h>
+HS_BEGIN_C
+    #include <hidsdi.h>
+HS_END_C
 #include <winioctl.h>
 #include "device_priv.h"
 #include "hid.h"

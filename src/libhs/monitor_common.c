@@ -15,7 +15,7 @@
 
 static int find_callback(hs_device *dev, void *udata)
 {
-    hs_device **rdev = udata;
+    hs_device **rdev = (hs_device **)udata;
 
     *rdev = hs_device_ref(dev);
     return 1;
