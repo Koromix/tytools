@@ -61,7 +61,9 @@ configure_file(config.h.in config.h)
 find_package(Threads)
 list(APPEND LIBHS_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 
-set(LIBHS_SOURCES common.c
+set(LIBHS_SOURCES array.c
+                  array.h
+                  common.c
                   common.h
                   common_priv.h
                   compat.c
@@ -73,7 +75,6 @@ set(LIBHS_SOURCES common.c
                   filter_priv.h
                   hid.h
                   htable.c
-                  list.h
                   match.h
                   monitor.h
                   monitor_common.c

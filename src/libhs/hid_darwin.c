@@ -15,10 +15,15 @@
 #include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
+#include "array.h"
 #include "device_priv.h"
 #include "hid.h"
-#include "list.h"
 #include "platform.h"
+
+struct hid_report {
+    size_t size;
+    uint8_t *data;
+};
 
 struct _hs_hid_darwin {
     io_service_t service;
@@ -34,9 +39,7 @@ struct _hs_hid_darwin {
     int poll_pipe[2];
     int thread_ret;
 
-    _hs_list_head reports;
-    unsigned int allocated_reports;
-    _hs_list_head free_reports;
+    _HS_ARRAY(struct hid_report) reports;
 
     pthread_t read_thread;
     pthread_cond_t cond;
@@ -47,13 +50,15 @@ struct _hs_hid_darwin {
     bool device_removed;
 };
 
+#define MAX_REPORT_QUEUE_SIZE 128
+
 static void fire_hid_poll_handle(struct _hs_hid_darwin *hid)
 {
     char buf = '.';
     write(hid->poll_pipe[1], &buf, 1);
 }
 
-static void reset_hid_poll_handle(hs_port *port)
+static void reset_hid_poll_handle(struct _hs_hid_darwin *hid)
 {
     char buf;
     read(hid->poll_pipe[0], &buf, 1);
@@ -75,13 +80,6 @@ static void hid_removal_callback(void *ctx, IOReturn result, void *sender)
     fire_hid_poll_handle(hid);
 }
 
-struct hid_report {
-    _hs_list_head list;
-
-    size_t size;
-    uint8_t data[];
-};
-
 static void hid_report_callback(void *ctx, IOReturn result, void *sender,
                                 IOHIDReportType report_type, uint32_t report_id,
                                 uint8_t *report_data, CFIndex report_size)
@@ -100,24 +98,23 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
 
     pthread_mutex_lock(&hid->mutex);
 
-    fire = _hs_list_is_empty(&hid->reports);
+    was_empty = !hid->reports.count;
+    if (hid->reports.count == MAX_REPORT_QUEUE_SIZE) {
+        r = 0;
+        goto cleanup;
+    }
 
-    report = _hs_list_get_first(&hid->free_reports, struct hid_report, list);
-    if (report) {
-        _hs_list_remove(&report->list);
-    } else {
-        if (hid->allocated_reports == 64) {
-            r = 0;
-            goto cleanup;
-        }
-
+    r = _hs_array_grow(&hid->reports, 1);
+    if (r < 0)
+        goto cleanup;
+    report = hid->reports.values + hid->reports.count;
+    if (!report->data) {
         // Don't forget the leading report ID
-        report = calloc(1, sizeof(struct hid_report) + hid->read_size + 1);
-        if (!report) {
+        report->data = malloc(hid->read_size + 1);
+        if (!report->data) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto cleanup;
         }
-        hid->allocated_reports++;
     }
 
     /* You never know, even if hid->red_size is supposed to be the maximum
@@ -129,7 +126,7 @@ static void hid_report_callback(void *ctx, IOReturn result, void *sender,
     memcpy(report->data + 1, report_data, report_size);
     report->size = (size_t)report_size + 1;
 
-    _hs_list_add_tail(&hid->reports, &report->list);
+    hid->reports.count++;
 
     r = 0;
 cleanup:
@@ -220,9 +217,6 @@ int _hs_darwin_open_hid_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     port->path = dev->path;
     port->dev = hs_device_ref(dev);
 
-    _hs_list_init(&port->u.hid->reports);
-    _hs_list_init(&port->u.hid->free_reports);
-
     hid->service = IORegistryEntryFromPath(kIOMasterPortDefault, dev->path);
     if (!hid->service) {
         r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
@@ -311,7 +305,7 @@ error:
 void _hs_darwin_close_hid_port(hs_port *port)
 {
     if (port) {
-        struct _hd_hid_darwin *hid = port->u.hid;
+        struct _hs_hid_darwin *hid = port->u.hid;
 
         if (hid->shutdown_source) {
             pthread_mutex_lock(&hid->mutex);
@@ -332,11 +326,11 @@ void _hs_darwin_close_hid_port(hs_port *port)
         if (hid->mutex_init)
             pthread_mutex_destroy(&hid->mutex);
 
-        _hs_list_splice(&hid->free_reports, &hid->reports);
-        _hs_list_foreach(cur, &hid->free_reports) {
-            struct hid_report *report = _hs_container_of(cur, struct hid_report, list);
-            free(report);
+        for (size_t i = 0; i < hid->reports.count; i++) {
+            struct hid_report *report = &hid->reports.values[i];
+            free(report->data);
         }
+        _hs_array_release(&hid->reports);
 
         close(hid->poll_pipe[0]);
         close(hid->poll_pipe[1]);
@@ -403,8 +397,7 @@ restart:
         hid->thread_ret = 0;
         goto cleanup;
     }
-    report = _hs_list_get_first(&hid->reports, struct hid_report, list);
-    if (!report) {
+    if (!hid->reports.count) {
         r = 0;
         goto cleanup;
     }
@@ -415,11 +408,11 @@ restart:
     memcpy(buf, report->data, size);
     r = (ssize_t)size;
 
-    _hs_list_remove(&report->list);
-    _hs_list_add(&hid->free_reports, &report->list);
+    // Circular buffer would be more appropriate. Later.
+    _hs_array_deque(&hid->reports, 1);
 
 cleanup:
-    if (_hs_list_is_empty(&hid->reports)
+    if (!hid->reports.count)
         reset_hid_poll_handle(hid);
     pthread_mutex_unlock(&hid->mutex);
     return r;
