@@ -33,7 +33,7 @@ struct ty_monitor {
 
     ty_list_head boards;
     ty_list_head missing_boards;
-    ty_htable interfaces;
+    _hs_htable interfaces;
 
     void *udata;
 };
@@ -132,7 +132,7 @@ static void close_board(ty_board *board)
         ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
 
         if (iface->monitor_hnode.next)
-            ty_htable_remove(&iface->monitor_hnode);
+            _hs_htable_remove(&iface->monitor_hnode);
 
         ty_board_interface_unref(iface);
     }
@@ -220,7 +220,7 @@ error:
 
 static ty_board_interface *find_interface(ty_monitor *monitor, hs_device *dev)
 {
-    ty_htable_foreach_hash(cur, &monitor->interfaces, ty_htable_hash_ptr(dev)) {
+   _hs_htable_foreach_hash(cur, &monitor->interfaces, _hs_htable_hash_ptr(dev)) {
         ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
 
         if (iface->dev == dev)
@@ -287,7 +287,7 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
     }
     iface->board = board;
 
-    ty_htable_add(&monitor->interfaces, ty_htable_hash_ptr(iface->dev), &iface->monitor_hnode);
+    _hs_htable_add(&monitor->interfaces, _hs_htable_hash_ptr(iface->dev), &iface->monitor_hnode);
 
     ty_mutex_lock(&board->interfaces_lock);
 
@@ -324,7 +324,7 @@ static int remove_interface(ty_monitor *monitor, hs_device *dev)
         return 0;
     board = iface->board;
 
-    ty_htable_remove(&iface->monitor_hnode);
+    _hs_htable_remove(&iface->monitor_hnode);
     ty_board_interface_unref(iface);
 
     ty_mutex_lock(&board->interfaces_lock);
@@ -412,7 +412,7 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
     ty_list_init(&monitor->boards);
     ty_list_init(&monitor->missing_boards);
 
-    r = ty_htable_init(&monitor->interfaces, 64);
+    r = _hs_htable_init(&monitor->interfaces, 64);
     if (r < 0)
         goto error;
 
@@ -442,7 +442,7 @@ void ty_monitor_free(ty_monitor *monitor)
             free(callback);
         }
 
-        ty_htable_release(&monitor->interfaces);
+        _hs_htable_release(&monitor->interfaces);
     }
 
     free(monitor);
@@ -495,13 +495,13 @@ void ty_monitor_stop(ty_monitor *monitor)
     ty_list_init(&monitor->boards);
     ty_list_init(&monitor->missing_boards);
 
-    ty_htable_foreach(cur, &monitor->interfaces) {
+    _hs_htable_foreach(cur, &monitor->interfaces) {
         ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
 
-        ty_htable_remove(&iface->monitor_hnode);
+        _hs_htable_remove(&iface->monitor_hnode);
         ty_board_interface_unref(iface);
     }
-    ty_htable_clear(&monitor->interfaces);
+    _hs_htable_clear(&monitor->interfaces);
 
     monitor->started = false;
 }

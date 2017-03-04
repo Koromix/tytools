@@ -15,7 +15,7 @@
 #include "board.h"
 #include "class_priv.h"
 #include "../libhs/device.h"
-#include "htable.h"
+#include "../libhs/htable.h"
 #include "list.h"
 #include "task.h"
 #include "thread.h"
@@ -26,7 +26,7 @@ struct ty_board_interface {
     const struct _ty_class_vtable *class_vtable;
     unsigned int refcount;
 
-    ty_htable_head monitor_hnode;
+    _hs_htable_head monitor_hnode;
     ty_board *board;
     ty_list_head board_node;
 
