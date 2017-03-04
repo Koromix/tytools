@@ -23,7 +23,7 @@
    ------------------- | --------------------------------------------------------------------------------
    Windows (MSVC)      | Nothing to do, libhs uses `#pragma comment(lib)`
    Windows (MinGW-w64) | Link _user32, advapi32, setupapi and hid_ `-luser32 -ladvapi32 -lsetupapi -lhid`
-   OSX (Clang)         | Link _CoreFoundation and IOKit_
+   OSX (Clang)         | Link _CoreFoundation and IOKit_ `-framework CoreFoundation -framework IOKit`
    Linux (GCC)         | Link _libudev_ `-ludev`
 
    Other systems are not supported at the moment. */
