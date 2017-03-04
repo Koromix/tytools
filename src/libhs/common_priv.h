@@ -41,7 +41,4 @@
 #define _HS_ALIGN_SIZE(size, align) (((size) + (align) - 1) / (align) * (align))
 #define _HS_ALIGN_SIZE_FOR_TYPE(size, type) _HS_ALIGN_SIZE((size), sizeof(type))
 
-#define _HS_CONCAT_HELPER(a, b) a ## b
-#define _HS_CONCAT(a, b) _HS_CONCAT_HELPER(a, b)
-
 #endif

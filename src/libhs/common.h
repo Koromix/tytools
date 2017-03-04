@@ -78,7 +78,11 @@ typedef long ssize_t;
     #error "This compiler is not supported"
 #endif
 
+#define _HS_CONCAT_HELPER(a, b) a ## b
+#define _HS_CONCAT(a, b) _HS_CONCAT_HELPER(a, b)
+
 #define _HS_UNIQUE_ID(prefix) _HS_CONCAT(prefix, __LINE__)
+
 #define _hs_container_of(head, type, member) \
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
