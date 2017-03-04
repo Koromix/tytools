@@ -75,7 +75,6 @@ set(LIBHS_SOURCES array.c
                   filter_priv.h
                   hid.h
                   htable.c
-                  list.h
                   match.h
                   monitor.h
                   monitor_common.c

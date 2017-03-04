@@ -38,7 +38,6 @@
 #include "common.h"
 #include "array.h"
 #include "htable.h"
-#include "list.h"
 #include "device.h"
 #include "hid.h"
 #include "match.h"
