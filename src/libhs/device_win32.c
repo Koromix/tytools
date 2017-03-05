@@ -39,6 +39,7 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     port->path = dev->path;
     port->dev = hs_device_ref(dev);
 
+    access = UINT32_MAX;
     switch (mode) {
     case HS_PORT_MODE_READ:
         access = GENERIC_READ;
@@ -50,9 +51,10 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
         access = GENERIC_READ | GENERIC_WRITE;
         break;
     }
+    assert(access != UINT32_MAX);
 
     port->u.handle.h = CreateFile(dev->path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                               NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+                                  NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (port->u.handle.h == INVALID_HANDLE_VALUE) {
         switch (GetLastError()) {
         case ERROR_FILE_NOT_FOUND:
