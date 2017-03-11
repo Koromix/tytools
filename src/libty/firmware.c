@@ -95,13 +95,13 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
             return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
 
         for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
-            if (strcmp(ty_firmware_formats[i].ext, ext) == 0) {
+            if (strcasecmp(ty_firmware_formats[i].ext, ext) == 0) {
                 format = &ty_firmware_formats[i];
                 break;
             }
         }
         if (!format)
-            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized file format",
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized extension",
                             filename);
     }
 
