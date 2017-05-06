@@ -19,6 +19,7 @@
 
 struct ty_monitor {
     int flags;
+    unsigned int drop_delay;
 
     bool started;
     hs_monitor *device_monitor;
@@ -150,7 +151,8 @@ static int add_missing_board(ty_board *board)
     // There may be other boards waiting to be dropped, set timeout for the next in line
     board = ty_list_get_first(&monitor->missing_boards, ty_board, missing_node);
 
-    return ty_timer_set(monitor->timer, ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since),
+    return ty_timer_set(monitor->timer,
+                        ty_adjust_timeout(monitor->drop_delay, board->missing_since),
                         TY_TIMER_ONESHOT);
 }
 
@@ -390,6 +392,11 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
     }
 
     monitor->flags = flags;
+    if (getenv("TYTOOLS_DROP_BOARD_DELAY")) {
+        monitor->drop_delay = strtoul(getenv("TYTOOLS_DROP_BOARD_DELAY"), NULL, 10);
+    } else {
+        monitor->drop_delay = DROP_BOARD_DELAY;
+    }
 
     r = hs_monitor_new(NULL, 0, &monitor->device_monitor);
     if (r < 0) {
@@ -570,7 +577,7 @@ int ty_monitor_refresh(ty_monitor *monitor)
             ty_board *board = ty_container_of(cur, ty_board, missing_node);
             int timeout;
 
-            timeout = ty_adjust_timeout(DROP_BOARD_DELAY, board->missing_since);
+            timeout = ty_adjust_timeout(monitor->drop_delay, board->missing_since);
             if (timeout) {
                 r = ty_timer_set(monitor->timer, timeout, TY_TIMER_ONESHOT);
                 if (r < 0)
