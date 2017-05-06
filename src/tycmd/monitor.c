@@ -27,7 +27,9 @@ enum {
 #define ERROR_IO_TIMEOUT 5000
 
 static int monitor_term_flags = 0;
-static hs_serial_config monitor_serial_config = {0};
+static hs_serial_config monitor_serial_config = {
+    .baudrate = 115200
+};
 static int monitor_directions = DIRECTION_INPUT | DIRECTION_OUTPUT;
 static bool monitor_reconnect = false;
 static int monitor_timeout_eof = 200;
@@ -63,6 +65,7 @@ static void print_monitor_usage(FILE *f)
 
     fprintf(f, "Serial settings:\n"
                "   -b, --baudrate <rate>    Use baudrate for serial port\n"
+               "                            Default: %u bauds\n"
                "   -d, --databits <bits>    Change number of bits for every character\n"
                "                            Must be one of: 5, 6, 7 or 8\n"
                "   -p, --stopbits <bits>    Change number of stop bits for every character\n"
@@ -72,7 +75,8 @@ static void print_monitor_usage(FILE *f)
                "   -y, --parity <bits>      Change parity mode to use for the serial port\n"
                "                            Must be one of: off, even, or odd\n\n"
                "These settings are mostly ignored by the USB serial emulation, but you can still\n"
-               "access them in your embedded code (e.g. the Serial object API on Teensy).\n");
+               "access them in your embedded code (e.g. the Serial object API on Teensy).\n",
+               monitor_serial_config.baudrate);
 }
 
 static int redirect_stdout(int *routfd)

@@ -18,6 +18,8 @@
 #include <QTextCursor>
 
 #include "board.hpp"
+#include "../libhs/device.h"
+#include "../libhs/serial.h"
 #include "../libty/class.h"
 #include "database.hpp"
 #include "monitor.hpp"
@@ -713,6 +715,15 @@ bool Board::openSerialInterface()
         return false;
     ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
+
+    // TODO: Make serial settings (mainly speed) configurable in the GUI
+    hs_device *dev = ty_board_interface_get_device(serial_iface_);
+    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
+        hs_port *port = ty_board_interface_get_handle(serial_iface_);
+        hs_serial_config config = {};
+        config.baudrate = 115200;
+        hs_serial_set_config(port, &config);
+    }
 
     return true;
 }
