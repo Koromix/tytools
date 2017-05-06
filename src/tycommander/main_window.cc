@@ -126,17 +126,21 @@ MainWindow::MainWindow(QWidget *parent)
             &MainWindow::dropAssociationForSelection);
     connect(actionReset, &QAction::triggered, this, &MainWindow::resetSelection);
     connect(actionReboot, &QAction::triggered, this, &MainWindow::rebootSelection);
-    connect(actionSendFile, &QAction::triggered, this, &MainWindow::sendFileToSelection);
     connect(actionQuit, &QAction::triggered, tyCommander, &TyCommander::quit);
+
+    // Serial menu
+    connect(actionEnableSerial, &QAction::triggered, this,
+            &MainWindow::setEnableSerialForSelection);
+    connect(actionSendFile, &QAction::triggered, this, &MainWindow::sendFileToSelection);
+    connect(actionClearSerial, &QAction::triggered, this, &MainWindow::clearSerialDocument);
 
     // View menu
     connect(actionNewWindow, &QAction::triggered, this, &MainWindow::openCloneWindow);
     connect(actionCompactMode, &QAction::triggered, this, &MainWindow::setCompactMode);
-    connect(actionClearSerial, &QAction::triggered, this, &MainWindow::clearSerialDocument);
+    connect(actionShowAppLog, &QAction::triggered, tyCommander, &TyCommander::showLogWindow);
 
     // Tools menu
     connect(actionArduinoTool, &QAction::triggered, this, &MainWindow::openArduinoTool);
-    connect(actionOpenLog, &QAction::triggered, tyCommander, &TyCommander::showLogWindow);
     connect(actionResetApp, &QAction::triggered, tyCommander, &TyCommander::resetMonitor);
     connect(actionResetSettingsApp, &QAction::triggered, this,
             [=]() { tyCommander->clearSettingsAndResetWithConfirmation(this); });
@@ -259,8 +263,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(firmwarePath, &QLineEdit::editingFinished, this, &MainWindow::validateAndSetFirmwarePath);
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
     firmwareBrowseButton->setMenu(menuBrowseFirmware);
-    connect(actionEnableSerial, &QAction::triggered, this,
-            &MainWindow::setEnableSerialForSelection);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
     connect(codecComboBox, &QComboBox::currentTextChanged, this, &MainWindow::setSerialCodecForSelection);
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);

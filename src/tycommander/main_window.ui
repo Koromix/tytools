@@ -609,13 +609,14 @@
     </property>
     <addaction name="actionNewWindow"/>
     <addaction name="actionCompactMode"/>
+    <addaction name="separator"/>
+    <addaction name="actionShowAppLog"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>&amp;Tools</string>
     </property>
     <addaction name="actionArduinoTool"/>
-    <addaction name="actionOpenLog"/>
     <addaction name="separator"/>
     <addaction name="actionResetApp"/>
     <addaction name="actionResetSettingsApp"/>
@@ -848,9 +849,12 @@
     <string>Reset Settings &amp; Application</string>
    </property>
   </action>
-  <action name="actionOpenLog">
+  <action name="actionShowAppLog">
    <property name="text">
-    <string>Open &amp;Log</string>
+    <string>Show Application &amp;Log</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Application Log</string>
    </property>
   </action>
   <action name="actionDropFirmware">
