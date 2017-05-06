@@ -68,6 +68,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     QString serial_codec_name_;
     bool clear_on_reset_;
     bool enable_serial_;
+    QString serial_log_dir_;
     size_t serial_log_size_;
 
     QString status_text_;

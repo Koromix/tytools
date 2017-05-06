@@ -24,6 +24,9 @@ public slots:
 
 private:
     void refresh();
+
+private slots:
+    void browseForSerialLogDir();
 };
 
 #endif

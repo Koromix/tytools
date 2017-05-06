@@ -57,6 +57,7 @@ void Monitor::loadSettings()
     ty_pool_set_max_threads(pool_, max_tasks);
     default_serial_ = db_.get("serialByDefault", true).toBool();
     serial_log_size_ = db_.get("serialLogSize", 20000000ull).toULongLong();
+    serial_log_dir_ = db_.get("serialLogDir", "").toString();
 
     emit settingsChanged();
 
@@ -109,6 +110,20 @@ void Monitor::setSerialLogSize(size_t default_size)
     }
 
     db_.put("serialLogSize", static_cast<qulonglong>(default_size));
+    emit settingsChanged();
+}
+
+void Monitor::setSerialLogDir(const QString &dir)
+{
+    serial_log_dir_ = dir;
+
+    for (auto &board: boards_) {
+        board->serial_log_dir_ = dir;
+        board->updateSerialLogState(true);
+        emit board->settingsChanged();
+    }
+
+    db_.put("serialLogDir", dir);
     emit settingsChanged();
 }
 
@@ -351,6 +366,7 @@ void Monitor::handleAddedEvent(ty_board *board)
 
     if (board_wrapper->hasCapability(TY_BOARD_CAPABILITY_UNIQUE))
         configureBoardDatabase(*board_wrapper);
+    board_wrapper->serial_log_dir_ = serial_log_dir_;
     board_wrapper->loadSettings(this);
 
     board_wrapper->setThreadPool(pool_);

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>426</width>
-    <height>359</height>
+    <height>397</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -89,6 +89,31 @@
           </property>
           <property name="singleStep">
            <number>100</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Log directory:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="serialLogDir">
+          <property name="placeholderText">
+           <string>(Defaults to temporary directory if empty)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="serialLogDirButton">
+          <property name="text">
+           <string>...</string>
           </property>
          </widget>
         </item>

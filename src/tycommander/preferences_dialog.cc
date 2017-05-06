@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#include <QDir>
+#include <QFileDialog>
 #include <QPushButton>
 #include <QSystemTrayIcon>
 
@@ -29,6 +31,9 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     connect(buttonBox->button(QDialogButtonBox::Reset), &QAbstractButton::clicked,
             this, &PreferencesDialog::reset);
 
+    connect(serialLogDirButton, &QToolButton::clicked, this,
+            &PreferencesDialog::browseForSerialLogDir);
+
     refresh();
 }
 
@@ -47,6 +52,7 @@ void PreferencesDialog::apply()
     auto monitor = tyCommander->monitor();
     monitor->setSerialByDefault(serialByDefaultCheck->isChecked());
     monitor->setSerialLogSize(serialLogSizeDefaultSpin->value() * 1000);
+    monitor->setSerialLogDir(serialLogDir->text());
     monitor->setMaxTasks(maxTasksSpin->value());
 }
 
@@ -70,5 +76,16 @@ void PreferencesDialog::refresh()
     auto monitor = tyCommander->monitor();
     serialByDefaultCheck->setChecked(monitor->serialByDefault());
     serialLogSizeDefaultSpin->setValue(static_cast<int>(monitor->serialLogSize() / 1000));
+    serialLogDir->setText(monitor->serialLogDir());
     maxTasksSpin->setValue(monitor->maxTasks());
+}
+
+void PreferencesDialog::browseForSerialLogDir()
+{
+    auto dir = QFileDialog::getExistingDirectory(this);
+    if (dir.isEmpty())
+        return;
+
+    dir = QDir::toNativeSeparators(dir);
+    serialLogDir->setText(dir);
 }

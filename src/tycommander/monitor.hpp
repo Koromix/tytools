@@ -40,6 +40,7 @@ class Monitor : public QAbstractListModel {
 
     bool default_serial_;
     size_t serial_log_size_;
+    QString serial_log_dir_;
 
     std::vector<std::shared_ptr<Board>> boards_;
 
@@ -78,6 +79,8 @@ public:
     bool serialByDefault() const { return default_serial_; }
     void setSerialLogSize(size_t default_size);
     size_t serialLogSize() const { return serial_log_size_; }
+    void setSerialLogDir(const QString &dir);
+    QString serialLogDir() const { return serial_log_dir_; }
 
     bool start();
     void stop();

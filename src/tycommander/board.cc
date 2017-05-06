@@ -799,8 +799,8 @@ QString Board::findLogFilename(const QString &id, unsigned int max)
     QDateTime oldest_mtime;
     QString oldest_filename;
 
-    auto prefix = QString("%1/%2-%3")
-                  .arg(QDir::tempPath(), QCoreApplication::applicationName(), id);
+    auto dir = serial_log_dir_.isEmpty() ? QDir::tempPath() : serial_log_dir_;
+    auto prefix = QString("%1/%2-%3").arg(dir, QCoreApplication::applicationName(), id);
     for (unsigned int i = 1; i <= max; i++) {
         auto filename = QString("%1-%2.txt").arg(prefix).arg(i);
         QFileInfo info(filename);
