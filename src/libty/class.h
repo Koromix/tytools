@@ -17,6 +17,7 @@ TY_C_BEGIN
 
 typedef unsigned int ty_model;
 typedef struct ty_model_info {
+    unsigned int priority;
     const char *name;
     const char *mcu;
     size_t code_size;
@@ -40,19 +41,19 @@ typedef enum ty_model_teensy {
 } ty_model_teensy;
 
 static const ty_model_info ty_models[] = {
-    {"(unknown)"},
+    {0, "(unknown)"},
 
-    {"Generic"},
-    {"Teensy"},
-    {"Teensy++ 1.0", "at90usb646", 64512},
-    {"Teensy 2.0", "atmega32u4", 32256},
-    {"Teensy++ 2.0", "at90usb1286", 130048},
-    {"Teensy 3.0", "mk20dx128", 131072},
-    {"Teensy 3.1", "mk20dx256", 262144},
-    {"Teensy LC", "mkl26z64", 63488},
-    {"Teensy 3.2", "mk20dx256", 262144},
-    {"Teensy 3.5", "mk64fx512", 524288},
-    {"Teensy 3.6", "mk66fx1m0", 1048576}
+    {1, "Generic"},
+    {2, "Teensy"},
+    {2, "Teensy++ 1.0", "at90usb646", 64512},
+    {2, "Teensy 2.0", "atmega32u4", 32256},
+    {2, "Teensy++ 2.0", "at90usb1286", 130048},
+    {2, "Teensy 3.0", "mk20dx128", 131072},
+    {2, "Teensy 3.1", "mk20dx256", 262144},
+    {2, "Teensy LC", "mkl26z64", 63488},
+    {2, "Teensy 3.2", "mk20dx256", 262144},
+    {2, "Teensy 3.5", "mk64fx512", 524288},
+    {2, "Teensy 3.6", "mk66fx1m0", 1048576}
 };
 static const unsigned int ty_models_count = TY_COUNTOF(ty_models);
 

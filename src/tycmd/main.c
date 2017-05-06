@@ -77,14 +77,22 @@ void print_common_options(FILE *f)
                "   -q, --quiet              Disable output, use -qqq to silence errors\n");
 }
 
+static inline unsigned int get_board_priority(ty_board *board)
+{
+    return ty_models[ty_board_get_model(board)].priority;
+}
+
 static int board_callback(ty_board *board, ty_monitor_event event, void *udata)
 {
     TY_UNUSED(udata);
 
     switch (event) {
     case TY_MONITOR_EVENT_ADDED:
-        if (!main_board && ty_board_matches_tag(board, main_board_tag))
+        if ((!main_board || get_board_priority(board) > get_board_priority(main_board))
+                && ty_board_matches_tag(board, main_board_tag)) {
+            ty_board_unref(main_board);
             main_board = ty_board_ref(board);
+        }
         break;
 
     case TY_MONITOR_EVENT_CHANGED:
