@@ -762,13 +762,19 @@ void MainWindow::updateFirmwareMenus()
 void MainWindow::updateSerialLogLink()
 {
     auto log_filename = current_board_->serialLogFilename();
+    auto font = serialLogFileLabel->font();
     if (current_board_->serialLogSize() && !log_filename.isEmpty()) {
-        serialLogFileLabel->setText(QString("<a href=\"%1\">%1</a>").arg(log_filename));
+        auto native_log_filename = QDir::toNativeSeparators(log_filename);
+        serialLogFileLabel->setText(QString("<a href=\"%1\">%2</a>").arg(log_filename,
+                                                                         native_log_filename));
         serialLogFileLabel->setToolTip(log_filename);
+        font.setItalic(false);
     } else {
         serialLogFileLabel->setText(tr("No serial log available"));
         serialLogFileLabel->setToolTip("");
+        font.setItalic(true);
     }
+    serialLogFileLabel->setFont(font);
 }
 
 void MainWindow::sendToSelectedBoards(const QString &s)

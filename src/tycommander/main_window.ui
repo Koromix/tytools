@@ -432,12 +432,6 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="font">
-               <font>
-                <pointsize>8</pointsize>
-                <italic>true</italic>
-               </font>
-              </property>
               <property name="text">
                <string notr="true">Serial log in '?'</string>
               </property>
