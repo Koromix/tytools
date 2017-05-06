@@ -761,9 +761,11 @@ void MainWindow::updateSerialLogLink()
 {
     auto log_filename = current_board_->serialLogFilename();
     if (current_board_->serialLogSize() && !log_filename.isEmpty()) {
-        serialLogFileLabel->setText(log_filename);
+        serialLogFileLabel->setText(QString("<a href=\"%1\">%1</a>").arg(log_filename));
+        serialLogFileLabel->setToolTip(log_filename);
     } else {
         serialLogFileLabel->setText(tr("No serial log available"));
+        serialLogFileLabel->setToolTip("");
     }
 }
 

@@ -441,6 +441,9 @@
               <property name="text">
                <string notr="true">Serial log in '?'</string>
               </property>
+              <property name="openExternalLinks">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
             <item>
