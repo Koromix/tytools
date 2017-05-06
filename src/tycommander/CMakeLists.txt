@@ -24,6 +24,7 @@ set(TYCOMMANDER_SOURCES about_dialog.cc
                         client_handler.cc
                         enhanced_group_box.cc
                         enhanced_plain_text.cc
+                        enhanced_line_edit.cc
                         firmware.cc
                         firmware.hpp
                         log_dialog.cc

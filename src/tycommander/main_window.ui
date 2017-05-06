@@ -250,7 +250,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <widget class="QLineEdit" name="serialEdit">
+            <widget class="EnhancedLineEdit" name="serialEdit">
              <property name="placeholderText">
               <string>Send data...</string>
              </property>
@@ -621,13 +621,7 @@
     <property name="title">
      <string>&amp;Serial</string>
     </property>
-    <widget class="QMenu" name="menuSendHistory">
-     <property name="title">
-      <string>Send &amp;Recent</string>
-     </property>
-    </widget>
     <addaction name="actionEnableSerial"/>
-    <addaction name="menuSendHistory"/>
     <addaction name="actionSendFile"/>
     <addaction name="actionClearSerial"/>
    </widget>
@@ -889,6 +883,11 @@
    <extends>QGroupBox</extends>
    <header>enhanced_group_box.hpp</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>EnhancedLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>enhanced_line_edit.hpp</header>
   </customwidget>
  </customwidgets>
  <tabstops>

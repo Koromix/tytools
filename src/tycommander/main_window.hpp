@@ -36,18 +36,14 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
     QMenu *menuBoardContext;
     QMenu *menuEnableSerial;
     QAction *actionClearRecentFirmwares = nullptr;
-    QAction *actionClearSerialHistory = nullptr;
 
 #ifdef __APPLE__
     // See MainWindow::MainWindow() in main_window.cc for more information about that
     QMenu *menuRecentFirmwares2;
     QMenu *menuRecentFirmwares3;
-    QMenu *menuSendHistory2;
-    QMenu *menuSendHistory3;
 #endif
 
     QMenu *menuSerialOptions;
-    QMenu *menuBrowseHistory;
     QAction *actionSerialEcho;
     QActionGroup *actionSerialEOLGroup;
 
@@ -65,8 +61,6 @@ class MainWindow : public QMainWindow, private Ui::MainWindow {
 
     ArduinoDialog *arduino_dialog_ = nullptr;
     AboutDialog *about_dialog_ = nullptr;
-
-    QStringList serial_history_;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -100,7 +94,6 @@ public slots:
     void sendSerialInput();
     void sendFileToSelection();
     void clearSerialDocument();
-    void clearSerialHistory();
 
 private:
     static void initCodecList();
@@ -113,7 +106,6 @@ private:
     void updateSerialLogLink();
 
     void sendToSelectedBoards(const QString &s);
-    void appendToSerialHistory(const QString &s);
 
     QString browseFirmwareDirectory() const;
     QString browseFirmwareFilter() const;

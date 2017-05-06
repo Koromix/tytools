@@ -14,6 +14,8 @@
 #include <QPlainTextEdit>
 
 class EnhancedPlainText: public QPlainTextEdit {
+    Q_OBJECT
+
     bool monitor_autoscroll_ = true;
     QTextCursor monitor_cursor_;
 
