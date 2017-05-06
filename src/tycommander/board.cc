@@ -735,7 +735,7 @@ void Board::updateSerialLogState(bool new_file)
 
     if (serial_log_file_.fileName().isEmpty() || new_file) {
         serial_log_file_.close();
-        serial_log_file_.setFileName(findLogFilename(id(), 3));
+        serial_log_file_.setFileName(findLogFilename(id(), 4));
     }
 
     if (serial_log_size_) {
