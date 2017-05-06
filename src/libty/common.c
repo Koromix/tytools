@@ -39,7 +39,7 @@ static bool log_level_is_enabled(ty_log_level level)
     static bool init, debug;
 
     if (!init) {
-        debug = getenv("TY_DEBUG");
+        debug = getenv("TYTOOLS_DEBUG");
         init = true;
     }
 
