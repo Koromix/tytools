@@ -733,6 +733,8 @@ void Board::updateSerialLogState(bool new_file)
         return;
     }
 
+    QMutexLocker locker(&serial_lock_);
+
     if (serial_log_file_.fileName().isEmpty() || new_file) {
         serial_log_file_.close();
         serial_log_file_.setFileName(findLogFilename(id(), 4));

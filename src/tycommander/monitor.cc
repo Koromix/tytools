@@ -103,6 +103,7 @@ void Monitor::setSerialLogSize(size_t default_size)
 
         if (!db.get("serialLogSize").isValid()) {
             board->setSerialLogSize(default_size);
+            board->updateSerialLogState(false);
             db.remove("serialLogSize");
         }
     }
