@@ -27,9 +27,6 @@ AboutDialog::AboutDialog(QWidget *parent, Qt::WindowFlags f)
         reportBugButton->hide();
     }
     connect(licenseButton, &QPushButton::clicked, &AboutDialog::openLicense);
-    connect(websiteLabel, &QLabel::linkActivated, this, [](const QString &link) {
-        QDesktopServices::openUrl(QUrl(link));
-    });
 
     versionLabel->setText(QString("%1\n%2")
                           .arg(QCoreApplication::applicationName(),
