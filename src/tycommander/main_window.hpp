@@ -110,6 +110,7 @@ private:
     void disableBoardWidgets();
     void updateWindowTitle();
     void updateFirmwareMenus();
+    void updateSerialLogLink();
 
     void sendToSelectedBoards(const QString &s);
     void appendToSerialHistory(const QString &s);

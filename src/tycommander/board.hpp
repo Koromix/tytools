@@ -122,7 +122,7 @@ public:
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
     bool enableSerial() const { return enable_serial_; }
     size_t serialLogSize() const { return serial_log_size_; }
-    QString serialLogFilename() const { return serial_log_file_.isOpen() ? serial_log_file_.fileName() : ""; }
+    QString serialLogFilename() const { return serial_log_file_.fileName(); }
 
     bool serialOpen() const { return serial_iface_; }
     QTextDocument &serialDocument() { return serial_document_; }
@@ -187,6 +187,7 @@ private slots:
 private:
     Board(ty_board *board, QObject *parent = nullptr);
     void loadSettings(Monitor *monitor);
+    QString findLogFilename(const QString &id, unsigned int max);
 
     void setThreadPool(ty_pool *pool) { pool_ = pool; }
 
@@ -196,7 +197,7 @@ private:
     bool updateSerialInterface();
     bool openSerialInterface();
     void closeSerialInterface();
-    void updateSerialLogState();
+    void updateSerialLogState(bool new_file);
 
     void addUploadedFirmware(ty_firmware *fw);
 

@@ -757,6 +757,16 @@ void MainWindow::updateFirmwareMenus()
 #endif
 }
 
+void MainWindow::updateSerialLogLink()
+{
+    auto log_filename = current_board_->serialLogFilename();
+    if (current_board_->serialLogSize() && !log_filename.isEmpty()) {
+        serialLogFileLabel->setText(log_filename);
+    } else {
+        serialLogFileLabel->setText(tr("No serial log available"));
+    }
+}
+
 void MainWindow::sendToSelectedBoards(const QString &s)
 {
     auto newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
@@ -986,19 +996,14 @@ void MainWindow::refreshInfo()
     locationText->setText(current_board_->location());
     serialNumberText->setText(current_board_->serialNumber());
     descriptionText->setText(current_board_->description());
+
+    updateSerialLogLink();
 }
 
 void MainWindow::refreshSettings()
 {
     actionEnableSerial->setChecked(current_board_->enableSerial());
     serialEdit->setEnabled(current_board_->serialOpen());
-
-    auto log_filename = current_board_->serialLogFilename();
-    if (!log_filename.isEmpty()) {
-        serialLogFileLabel->setText(log_filename);
-    } else {
-        serialLogFileLabel->setText(tr("No serial log available"));
-    }
 
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
@@ -1009,6 +1014,7 @@ void MainWindow::refreshSettings()
     scrollBackLimitSpin->blockSignals(true);
     scrollBackLimitSpin->setValue(current_board_->scrollBackLimit());
     scrollBackLimitSpin->blockSignals(false);
+    updateSerialLogLink();
     serialLogSizeSpin->blockSignals(true);
     serialLogSizeSpin->setValue(static_cast<int>(current_board_->serialLogSize() / 1000));
     serialLogSizeSpin->blockSignals(false);

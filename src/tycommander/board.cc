@@ -8,6 +8,9 @@
 
    See the LICENSE file for more details. */
 
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QDir>
 #include <QFileInfo>
 #include <QMutexLocker>
 #include <QPlainTextDocumentLayout>
@@ -109,8 +112,7 @@ void Board::loadSettings(Monitor *monitor)
     }
 
     updateSerialInterface();
-    serial_log_file_.close();
-    updateSerialLogState();
+    updateSerialLogState(false);
 
     updateStatus();
     emit infoChanged();
@@ -491,7 +493,7 @@ void Board::setSerialLogSize(size_t size)
         return;
 
     serial_log_size_ = size;
-    updateSerialLogState();
+    updateSerialLogState(false);
 
     db_.put("serialLogSize", static_cast<quint64>(size));
     emit settingsChanged();
@@ -675,8 +677,10 @@ void Board::refreshBoard()
 
     if (clear_on_reset_) {
         if (hasCapability(TY_BOARD_CAPABILITY_SERIAL)) {
-            if (serial_clear_when_available_)
+            if (serial_clear_when_available_) {
                 serial_document_.clear();
+                updateSerialLogState(true);
+            }
             serial_clear_when_available_ = false;
         } else {
             serial_clear_when_available_ = true;
@@ -723,15 +727,26 @@ void Board::closeSerialInterface()
     serial_iface_ = nullptr;
 }
 
-void Board::updateSerialLogState()
+void Board::updateSerialLogState(bool new_file)
 {
-    if (serial_log_file_.fileName().isEmpty())
+    if (!hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         return;
+    }
+
+    if (serial_log_file_.fileName().isEmpty() || new_file) {
+        serial_log_file_.close();
+        serial_log_file_.setFileName(findLogFilename(id(), 3));
+    }
 
     if (serial_log_size_) {
-        if (!serial_log_file_.isOpen())
-            serial_log_file_.open(QIODevice::WriteOnly);
-        if (serial_log_file_.isOpen() && static_cast<size_t>(serial_log_file_.size()) > serial_log_size_)
+        if (!serial_log_file_.isOpen()) {
+            if (!serial_log_file_.open(QIODevice::WriteOnly)) {
+                ty_log(TY_LOG_ERROR, "Cannot open board log '%s' for writing",
+                       serial_log_file_.fileName().toUtf8().constData());
+            }
+        }
+        if (serial_log_file_.isOpen() &&
+                static_cast<size_t>(serial_log_file_.size()) > serial_log_size_)
             serial_log_file_.resize(serial_log_size_);
     } else {
         serial_log_file_.close();
@@ -775,4 +790,26 @@ void Board::addUploadedFirmware(ty_firmware *fw)
 
     updateStatus();
     emit settingsChanged();
+}
+
+QString Board::findLogFilename(const QString &id, unsigned int max)
+{
+    QDateTime oldest_mtime;
+    QString oldest_filename;
+
+    auto prefix = QString("%1/%2-%3")
+                  .arg(QDir::tempPath(), QCoreApplication::applicationName(), id);
+    for (unsigned int i = 1; i <= max; i++) {
+        auto filename = QString("%1-%2.txt").arg(prefix).arg(i);
+        QFileInfo info(filename);
+
+        if (!info.exists())
+            return filename;
+        if (oldest_filename.isEmpty() || info.lastModified() < oldest_mtime) {
+            oldest_filename = filename;
+            oldest_mtime = info.lastModified();
+        }
+    }
+
+    return oldest_filename;
 }

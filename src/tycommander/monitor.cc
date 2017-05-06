@@ -9,9 +9,6 @@
    See the LICENSE file for more details. */
 
 #include <QBrush>
-#include <QCoreApplication>
-#include <QDateTime>
-#include <QDir>
 #include <QIcon>
 
 #include "board.hpp"
@@ -415,27 +412,4 @@ void Monitor::configureBoardDatabase(Board &board)
 {
     board.setDatabase(db_.subDatabase(board.id()));
     board.setCache(cache_.subDatabase(board.id()));
-    board.serial_log_file_.setFileName(findLogFilename(board.id(), 3));
-}
-
-QString Monitor::findLogFilename(const QString &id, unsigned int max)
-{
-    QDateTime oldest_mtime;
-    QString oldest_filename;
-
-    auto prefix = QString("%1/%2-%3")
-                  .arg(QDir::tempPath(), QCoreApplication::applicationName(), id);
-    for (unsigned int i = 1; i <= max; i++) {
-        auto filename = QString("%1-%2.txt").arg(prefix).arg(i);
-        QFileInfo info(filename);
-
-        if (!info.exists())
-            return filename;
-        if (oldest_filename.isEmpty() || info.lastModified() < oldest_mtime) {
-            oldest_filename = filename;
-            oldest_mtime = info.lastModified();
-        }
-    }
-
-    return oldest_filename;
 }
