@@ -661,7 +661,7 @@ void MainWindow::disableBoardWidgets()
     actionClearSerial->setEnabled(false);
     optionsTab->setEnabled(false);
     actionEnableSerial->setEnabled(false);
-    serialLogFileLabel->clear();
+    updateSerialLogLink();
     ambiguousBoardLabel->setVisible(false);
 
     actionRenameBoard->setEnabled(false);
@@ -744,20 +744,31 @@ void MainWindow::updateFirmwareMenus()
 
 void MainWindow::updateSerialLogLink()
 {
-    auto log_filename = current_board_->serialLogFilename();
-    auto font = serialLogFileLabel->font();
-    if (current_board_->serialLogSize() && !log_filename.isEmpty()) {
-        auto native_log_filename = QDir::toNativeSeparators(log_filename);
-        serialLogFileLabel->setText(QString("<a href=\"%1\">%2</a>").arg(log_filename,
-                                                                         native_log_filename));
-        serialLogFileLabel->setToolTip(log_filename);
-        font.setItalic(false);
+    QString log_filename;
+    if (current_board_ && current_board_->serialLogSize())
+        log_filename = current_board_->serialLogFilename();
+
+    QFont link_font = serialLogFileLabel->font();
+    if (!log_filename.isEmpty()) {
+        QFileInfo log_info(log_filename);
+        serialLogDirLabel->setText(QString("<a href=\"%1\">%2</a>")
+                                   .arg(QUrl::fromLocalFile(log_info.path()).toString(),
+                                        QDir::toNativeSeparators(log_info.dir().dirName() + '/')));
+        serialLogDirLabel->setToolTip(QDir::toNativeSeparators(log_info.path()));
+        serialLogFileLabel->setText(QString("<a href=\"%1\">%2</a>")
+                                    .arg(QUrl::fromLocalFile(log_filename).toString(),
+                                         log_info.fileName()));
+        serialLogFileLabel->setToolTip(QDir::toNativeSeparators(log_filename));
+        link_font.setItalic(false);
     } else {
-        serialLogFileLabel->setText(tr("No serial log available"));
+        serialLogDirLabel->setText(tr("No serial log available"));
+        serialLogDirLabel->setToolTip("");
+        serialLogFileLabel->setText("");
         serialLogFileLabel->setToolTip("");
-        font.setItalic(true);
+        link_font.setItalic(true);
     }
-    serialLogFileLabel->setFont(font);
+    serialLogDirLabel->setFont(link_font);
+    serialLogFileLabel->setFont(link_font);
 }
 
 void MainWindow::sendToSelectedBoards(const QString &s)
