@@ -661,7 +661,7 @@ void MainWindow::disableBoardWidgets()
     actionClearSerial->setEnabled(false);
     optionsTab->setEnabled(false);
     actionEnableSerial->setEnabled(false);
-    serialLogFileLabel->clear();
+    updateSerialLogLink();
     ambiguousBoardLabel->setVisible(false);
 
     actionRenameBoard->setEnabled(false);
@@ -744,19 +744,28 @@ void MainWindow::updateFirmwareMenus()
 
 void MainWindow::updateSerialLogLink()
 {
-    auto log_filename = current_board_->serialLogFilename();
+    auto log_filename = current_board_ ? current_board_->serialLogFilename() : "";
     auto font = serialLogFileLabel->font();
-    if (current_board_->serialLogSize() && !log_filename.isEmpty()) {
-        auto native_log_filename = QDir::toNativeSeparators(log_filename);
-        serialLogFileLabel->setText(QString("<a href=\"%1\">%2</a>").arg(log_filename,
-                                                                         native_log_filename));
-        serialLogFileLabel->setToolTip(log_filename);
+    if (current_board_ && current_board_->serialLogSize() && !log_filename.isEmpty()) {
+        auto log_foldername = QFileInfo(log_filename).path();
+        auto native_log_foldername = QDir::toNativeSeparators(QFileInfo(log_filename).path() + '/');
+        serialLogFolderLabel->setText(QString("<a href=\"%1\">%2</a>")
+                                     .arg(QUrl::fromLocalFile(log_foldername).toString(), native_log_foldername));
+        serialLogFolderLabel->setToolTip(native_log_foldername);
+        auto native_log_filename = QDir::toNativeSeparators(QFileInfo(log_filename).fileName());
+        auto native_log_filepath = QDir::toNativeSeparators(log_filename);
+        serialLogFileLabel->setText(QString("<a href=\"%1\">%2</a>")
+                                   .arg(QUrl::fromLocalFile(log_filename).toString(), native_log_filename));
+        serialLogFileLabel->setToolTip(native_log_filepath);
         font.setItalic(false);
     } else {
+        serialLogFolderLabel->setText("");
+        serialLogFolderLabel->setToolTip("");
         serialLogFileLabel->setText(tr("No serial log available"));
         serialLogFileLabel->setToolTip("");
         font.setItalic(true);
     }
+    serialLogFolderLabel->setFont(font);
     serialLogFileLabel->setFont(font);
 }
 
