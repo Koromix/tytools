@@ -466,9 +466,7 @@ int TyCommander::fakeAvrdudeUpload(int argc, char *argv[])
 void TyCommander::resetMonitor()
 {
     monitor_cache_.clear();
-    monitor_.stop();
     monitor_.loadSettings();
-    monitor_.start();
 }
 
 void TyCommander::clearSettingsAndReset()
@@ -478,9 +476,7 @@ void TyCommander::clearSettingsAndReset()
 
     monitor_db_.clear();
     monitor_cache_.clear();
-    monitor_.stop();
     monitor_.loadSettings();
-    monitor_.start();
 }
 
 void TyCommander::clearSettingsAndResetWithConfirmation(QWidget *parent)

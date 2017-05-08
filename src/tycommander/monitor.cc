@@ -61,8 +61,10 @@ void Monitor::loadSettings()
 
     emit settingsChanged();
 
-    for (auto &board: boards_)
-        board->loadSettings(this);
+    if (started_) {
+        stop();
+        start();
+    }
 }
 
 void Monitor::setMaxTasks(unsigned int max_tasks)
