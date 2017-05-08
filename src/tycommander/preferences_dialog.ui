@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>426</width>
-    <height>397</height>
+    <height>399</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,6 +47,13 @@
       <string>Board options</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <widget class="QCheckBox" name="ignoreGenericCheck">
+        <property name="text">
+         <string>Ignore generic boards</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QCheckBox" name="serialByDefaultCheck">
         <property name="text">

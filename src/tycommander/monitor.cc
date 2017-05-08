@@ -55,6 +55,7 @@ void Monitor::loadSettings()
 #endif
     }
     ty_pool_set_max_threads(pool_, max_tasks);
+    ignore_generic_ = db_.get("ignoreGeneric", false).toBool();
     default_serial_ = db_.get("serialByDefault", true).toBool();
     serial_log_size_ = db_.get("serialLogSize", 20000000ull).toULongLong();
     serial_log_dir_ = db_.get("serialLogDir", "").toString();
@@ -69,9 +70,37 @@ void Monitor::loadSettings()
 
 void Monitor::setMaxTasks(unsigned int max_tasks)
 {
+    if (max_tasks == ty_pool_get_max_threads(pool_))
+        return;
+
     ty_pool_set_max_threads(pool_, max_tasks);
 
     db_.put("maxTasks", max_tasks);
+    emit settingsChanged();
+}
+
+void Monitor::setIgnoreGeneric(bool ignore_generic)
+{
+    if (ignore_generic == ignore_generic_)
+        return;
+
+    ignore_generic_ = ignore_generic;
+
+    if (ignore_generic) {
+        for (size_t i = 0; i < boards_.size(); i++) {
+            auto &board = boards_[i];
+            if (board->model() == TY_MODEL_GENERIC) {
+                beginRemoveRows(QModelIndex(), static_cast<int>(i), static_cast<int>(i));
+                boards_.erase(boards_.begin() + static_cast<int>(i));
+                endRemoveRows();
+                i--;
+            }
+        }
+    } else {
+        ty_monitor_list(monitor_, handleEvent, this);
+    }
+
+    db_.put("ignoreGeneric", ignore_generic);
     emit settingsChanged();
 }
 
@@ -367,6 +396,11 @@ Monitor::iterator Monitor::findBoardIterator(ty_board *board)
 
 void Monitor::handleAddedEvent(ty_board *board)
 {
+    if (ignore_generic_ && ty_board_get_model(board) == TY_MODEL_GENERIC)
+        return;
+    if (findBoardIterator(board) != boards_.end())
+        return;
+
     // Work around the private constructor for make_shared()
     struct BoardSharedEnabler : public Board {
         BoardSharedEnabler(ty_board *board)

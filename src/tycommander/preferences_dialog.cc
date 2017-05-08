@@ -50,6 +50,7 @@ void PreferencesDialog::apply()
     tyCommander->setHideOnStartup(hideOnStartupCheck->isChecked());
 
     auto monitor = tyCommander->monitor();
+    monitor->setIgnoreGeneric(ignoreGenericCheck->isChecked());
     monitor->setSerialByDefault(serialByDefaultCheck->isChecked());
     monitor->setSerialLogSize(serialLogSizeDefaultSpin->value() * 1000);
     monitor->setSerialLogDir(serialLogDir->text());
@@ -74,6 +75,7 @@ void PreferencesDialog::refresh()
     hideOnStartupCheck->setChecked(tyCommander->hideOnStartup());
 
     auto monitor = tyCommander->monitor();
+    ignoreGenericCheck->setChecked(monitor->ignoreGeneric());
     serialByDefaultCheck->setChecked(monitor->serialByDefault());
     serialLogSizeDefaultSpin->setValue(static_cast<int>(monitor->serialLogSize() / 1000));
     serialLogDir->setText(monitor->serialLogDir());
