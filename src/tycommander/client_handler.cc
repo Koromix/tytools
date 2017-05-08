@@ -29,11 +29,14 @@ using namespace std;
 const QHash<QString, void (ClientHandler::*)(const QStringList &)> ClientHandler::commands_ = {
     {"workdir", &ClientHandler::setWorkingDirectory},
     {"multi",   &ClientHandler::setMultiSelection},
+    {"persist", &ClientHandler::setPersistOption},
     {"select",  &ClientHandler::selectBoard},
     {"open",    &ClientHandler::openMainWindow},
     {"reset",   &ClientHandler::reset},
     {"reboot",  &ClientHandler::reboot},
-    {"upload",  &ClientHandler::upload}
+    {"upload",  &ClientHandler::upload},
+    {"attach",  &ClientHandler::attach},
+    {"detach",  &ClientHandler::detach}
 };
 
 ClientHandler::ClientHandler(unique_ptr<SessionPeer> peer, QObject *parent)
@@ -82,6 +85,11 @@ void ClientHandler::setWorkingDirectory(const QStringList &parameters)
 void ClientHandler::setMultiSelection(const QStringList &parameters)
 {
     multi_ = QVariant(parameters.value(0, "1")).toBool();
+}
+
+void ClientHandler::setPersistOption(const QStringList &parameters)
+{
+    persist_ = QVariant(parameters.value(0, "1")).toBool();
 }
 
 void ClientHandler::selectBoard(const QStringList &filters)
@@ -220,6 +228,32 @@ void ClientHandler::upload(const QStringList &filenames)
     for (auto &task: tasks)
         addTask(task);
     executeTasks();
+}
+
+void ClientHandler::attach(const QStringList &)
+{
+    auto boards = selectedBoards();
+    if (boards.empty())
+        return;
+
+    bool ret = true;
+    for (auto &board: boards) {
+        board->setEnableSerial(true, persist_);
+        if (board->hasCapability(TY_BOARD_CAPABILITY_SERIAL) && !board->serialOpen())
+            ret = false;
+    }
+    notifyFinished(ret);
+}
+
+void ClientHandler::detach(const QStringList &)
+{
+    auto boards = selectedBoards();
+    if (boards.empty())
+        return;
+
+    for (auto &board: boards)
+        board->setEnableSerial(false, persist_);
+    notifyFinished(true);
 }
 
 /* This function is static because it can be called after the client is gone (and the

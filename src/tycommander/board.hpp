@@ -154,7 +154,7 @@ public slots:
     void setSerialCodecName(QString codec_name);
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
-    void setEnableSerial(bool enable);
+    void setEnableSerial(bool enable, bool persist = true);
     void setSerialLogSize(size_t size);
 
     TaskInterface startUpload(const QString &filename = QString());

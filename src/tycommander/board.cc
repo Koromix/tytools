@@ -476,13 +476,13 @@ void Board::setScrollBackLimit(unsigned int limit)
     emit settingsChanged();
 }
 
-void Board::setEnableSerial(bool enable)
+void Board::setEnableSerial(bool enable, bool persist)
 {
     if (enable == enable_serial_)
         return;
 
     enable_serial_ = enable;
-    if (updateSerialInterface())
+    if (updateSerialInterface() && persist)
         db_.put("enableSerial", enable);
 
     updateStatus();

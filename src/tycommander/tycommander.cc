@@ -46,6 +46,8 @@ static const ClientCommand commands[] = {
     {"reset",     &TyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reset board")},
     {"reboot",    &TyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Reboot board")},
     {"upload",    &TyCommander::executeRemoteCommand, QT_TR_NOOP("[<firmwares>]"), QT_TR_NOOP("Upload current or new firmware")},
+    {"attach",    &TyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Attach serial monitor")},
+    {"detach",    &TyCommander::executeRemoteCommand, NULL,                        QT_TR_NOOP("Detach serial monitor")},
     {"integrate", &TyCommander::integrateArduino,     NULL,                        NULL},
     {"restore",   &TyCommander::integrateArduino,     NULL,                        NULL},
     // Hidden command for Arduino 1.0.6 integration
@@ -299,6 +301,7 @@ int TyCommander::executeRemoteCommand(int argc, char *argv[])
     char *opt;
     bool autostart = false;
     bool multi = false;
+    bool persist = false;
     QStringList filters;
     QString usbtype;
 
@@ -316,6 +319,8 @@ int TyCommander::executeRemoteCommand(int argc, char *argv[])
             wait_ = true;
         } else if (opt2 == "--multi" || opt2 == "-m") {
             multi = true;
+        } else if (opt2 == "--persist" || opt2 == "-p") {
+            persist = true;
         } else if (opt2 == "--board" || opt2 == "-B") {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
@@ -371,7 +376,9 @@ int TyCommander::executeRemoteCommand(int argc, char *argv[])
 
     client->send({"workdir", QDir::currentPath()});
     if (multi)
-        client->send({"multi"});
+        client->send("multi");
+    if (persist)
+        client->send("persist");
     if (!filters.isEmpty())
         client->send(QStringList{"select"} + filters);
     QStringList command_arglist = {command_};
@@ -531,9 +538,10 @@ QString TyCommander::helpText()
                       "   -q, --quiet              Disable output, use -qqq to silence errors\n\n"
                       "Client options:\n"
                       "       --autostart          Start main instance if it is not available\n"
-                      "   -w, --wait               Wait until full completion\n"
+                      "   -w, --wait               Wait until full completion\n\n"
                       "   -B, --board <tag>        Work with board <tag> instead of first detected\n"
-                      "   -m, --multi              Select all matching boards (first match by default)\n\n"
+                      "   -m, --multi              Select all matching boards (first match by default)\n"
+                      "   -p, --persist            Save new board settings (e.g. command attach)\n\n"
                       "Commands:\n").arg(QFileInfo(QApplication::applicationFilePath()).fileName());
 
     for (auto cmd = commands; cmd->name; cmd++) {
