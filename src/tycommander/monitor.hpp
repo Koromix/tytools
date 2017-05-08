@@ -73,13 +73,10 @@ public:
     DatabaseInterface cache() const { return cache_; }
     void loadSettings();
 
-    void setMaxTasks(unsigned int max_tasks);
     unsigned int maxTasks() const;
-    void setSerialByDefault(bool default_serial);
+
     bool serialByDefault() const { return default_serial_; }
-    void setSerialLogSize(size_t default_size);
     size_t serialLogSize() const { return serial_log_size_; }
-    void setSerialLogDir(const QString &dir);
     QString serialLogDir() const { return serial_log_dir_; }
 
     bool start();
@@ -112,6 +109,12 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+
+public slots:
+    void setMaxTasks(unsigned int max_tasks);
+    void setSerialByDefault(bool default_serial);
+    void setSerialLogSize(size_t default_size);
+    void setSerialLogDir(const QString &dir);
 
 signals:
     void settingsChanged();
