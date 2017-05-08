@@ -767,7 +767,8 @@ static int run_reset(ty_task *task)
 
     ty_log(TY_LOG_INFO, "Resetting board '%s' (%s)", board->tag, ty_models[board->model].name);
 
-    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET)) {
+    if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_RESET) &&
+            ty_board_has_capability(board, TY_BOARD_CAPABILITY_REBOOT)) {
         ty_log(TY_LOG_INFO, "Triggering board reboot");
         r = ty_board_reboot(board);
         if (r < 0)
