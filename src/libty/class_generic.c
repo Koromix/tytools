@@ -38,6 +38,7 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     const char *serial_number_string;
     ty_model model = 0;
     char *serial_number = NULL;
+    bool unique = false;
     char *description = NULL;
     char *id = NULL;
     int r;
@@ -69,6 +70,10 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
+
+    // Does the unique serial number look unique?
+    if (iface->dev->serial_number_string)
+        unique = iface->dev->serial_number_string[strspn(iface->dev->serial_number_string, "0_ ")];
 
     // Check and update board description
     if (board->description && strcmp(board->description, product_string) != 0) {
@@ -109,6 +114,8 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
         free(board->serial_number);
         board->serial_number = serial_number;
     }
+    if (unique)
+        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
     if (description) {
         free(board->description);
         board->description = description;
