@@ -82,6 +82,9 @@ unsigned int Monitor::maxTasks() const
 
 void Monitor::setSerialByDefault(bool default_serial)
 {
+    if (default_serial == default_serial_)
+        return;
+
     default_serial_ = default_serial;
 
     for (auto &board: boards_) {
@@ -99,6 +102,9 @@ void Monitor::setSerialByDefault(bool default_serial)
 
 void Monitor::setSerialLogSize(size_t default_size)
 {
+    if (default_size == serial_log_size_)
+        return;
+
     serial_log_size_ = default_size;
 
     for (auto &board: boards_) {
@@ -117,6 +123,9 @@ void Monitor::setSerialLogSize(size_t default_size)
 
 void Monitor::setSerialLogDir(const QString &dir)
 {
+    if (dir == serial_log_dir_)
+        return;
+
     serial_log_dir_ = dir;
 
     for (auto &board: boards_) {
