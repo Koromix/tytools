@@ -12,29 +12,20 @@
 #define ENHANCED_LINE_EDIT_HH
 
 #include <QStringList>
-#include <QLineEdit>
+#include <QComboBox>
 
-class EnhancedLineEdit: public QLineEdit {
+class EnhancedLineEdit: public QComboBox {
     Q_OBJECT
-
-    int history_limit_ = 100;
-
-    QStringList history_;
-    int history_idx_ = 0;
 
 public:
     EnhancedLineEdit(QWidget *parent = nullptr)
-        : QLineEdit(parent) {}
-    EnhancedLineEdit(const QString &contents, QWidget *parent = nullptr)
-        : QLineEdit(contents, parent) {}
+        : QComboBox(parent) {}
 
 public:
-    int historyLimit() const { return history_limit_; }
-    QStringList history() const { return history_; }
+    int historyLimit() const { return maxCount(); }
 
 public slots:
     void setHistoryLimit(int limit);
-    void setHistory(const QStringList &history);
     void appendHistory(const QString &str);
 
     QString commitAndClearText();
@@ -43,8 +34,7 @@ protected:
     void keyPressEvent(QKeyEvent *ev) override;
 
 private:
-    void moveInHistory(int idx);
-    void clearOldHistory();
+    void moveInHistory(int movement);
 };
 
 #endif

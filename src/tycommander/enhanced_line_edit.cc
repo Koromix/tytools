@@ -9,42 +9,33 @@
    See the LICENSE file for more details. */
 
 #include <QKeyEvent>
+#include <QLineEdit>
 
 #include "enhanced_line_edit.hpp"
 
 void EnhancedLineEdit::setHistoryLimit(int limit)
 {
-    history_limit_ = limit;
-    clearOldHistory();
-}
-
-void EnhancedLineEdit::setHistory(const QStringList &history)
-{
-    history_ = history;
-    clearOldHistory();
-    history_idx_ = history.count();
+    setMaxCount(limit);
 }
 
 void EnhancedLineEdit::appendHistory(const QString &str)
 {
-    history_.append(str);
-    if (history_idx_ == history_.count() - 1)
-        history_idx_++;
+    addItem(str);
+    setCurrentIndex(-1);
 }
 
 QString EnhancedLineEdit::commitAndClearText()
 {
-    auto str = text();
-    setText("");
+    auto str = lineEdit()->text();
+    lineEdit()->setText("");
 
-    if (history_limit_ != 0 && !str.isEmpty() &&
-            (history_.isEmpty() || history_idx_ != history_.count() - 1 ||
-             str != history_.last())) {
-        clearOldHistory();
-        history_.append(str);
+    if (!str.isEmpty()) {
+        if(currentIndex() >= 0) {
+            removeItem(currentIndex());
+        }
+        addItem(str);
+        setCurrentIndex(-1);
     }
-    history_idx_ = history_.count();
-
     return str;
 }
 
@@ -52,52 +43,54 @@ void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
 {
     switch (ev->key()) {
     case Qt::Key_Up:
-        if (history_idx_)
-            moveInHistory(history_idx_ - 1);
+        moveInHistory(-1);
         break;
     case Qt::Key_Down:
-        if (history_idx_ < history_.count())
-            moveInHistory(history_idx_ + 1);
+        moveInHistory(1);
         break;
 
     default:
-        QLineEdit::keyPressEvent(ev);
+        QComboBox::keyPressEvent(ev);
         break;
     }
 }
 
-void EnhancedLineEdit::moveInHistory(int idx)
+void EnhancedLineEdit::moveInHistory(int movement)
 {
-    Q_ASSERT(idx >= 0);
+    if (movement != -1 && movement != 1) return;
 
-    auto str = text();
-    if (!str.isEmpty()) {
-        if (history_idx_ >= history_.count()) {
-            history_.append(str);
+    auto str = lineEdit()->text();
+
+    if (movement == -1) {
+        if (currentIndex() == -1) {
+            int go_to_pos = count() >= 1 ? count() - 1 : count();
+            if (!str.isEmpty()) addItem(str);
+            setCurrentIndex(go_to_pos);
+            lineEdit()->setText(itemText(go_to_pos));
         } else {
-            history_[history_idx_] = str;
+            if (!str.isEmpty()) setItemText(currentIndex(), str);
+            auto go_to_pos = currentIndex() > 0 ? currentIndex() - 1 : 0;
+            setCurrentIndex(go_to_pos);
+            lineEdit()->setText(itemText(go_to_pos));
         }
     }
-
-    if (idx < history_.count()) {
-        setText(history_[idx]);
-    } else {
-        setText("");
-    }
-    history_idx_ = idx;
-}
-
-void EnhancedLineEdit::clearOldHistory()
-{
-    if (history_limit_ > 0) {
-        while (history_.count() >= history_limit_) {
-            history_.removeFirst();
-            history_idx_--;
+    if (movement == 1 && !str.isEmpty()) {
+        if (currentIndex() == -1) {
+            addItem(str);
+            setCurrentIndex(-1);
+            lineEdit()->setText("");
+        } else {
+            setItemText(currentIndex(), str);
+            setCurrentIndex(currentIndex() + 1);
         }
-        if (history_idx_ < 0)
-            history_idx_ = history_.count();
-    } else if (!history_limit_) {
-        history_.clear();
-        history_idx_ = 0;
+    }
+    if (movement == 1 && str.isEmpty()) {
+        if (currentIndex() == -1) {
+            // do nothing
+        } else {
+            setItemText(currentIndex(), str);
+            setCurrentIndex(currentIndex() + 1);
+            lineEdit()->setText(itemText(currentIndex()));
+        }
     }
 }
