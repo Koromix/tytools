@@ -12,11 +12,6 @@
 
 #include "enhanced_line_edit.hpp"
 
-EnhancedLineEdit::EnhancedLineEdit(const QString &contents, QWidget *parent)
-    : QLineEdit(contents, parent)
-{
-}
-
 void EnhancedLineEdit::setHistoryLimit(int limit)
 {
     history_limit_ = limit;

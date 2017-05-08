@@ -24,8 +24,9 @@ class EnhancedLineEdit: public QLineEdit {
 
 public:
     EnhancedLineEdit(QWidget *parent = nullptr)
-        : EnhancedLineEdit(QString(), parent) {}
-    EnhancedLineEdit(const QString &contents, QWidget *parent = nullptr);
+        : QLineEdit(parent) {}
+    EnhancedLineEdit(const QString &contents, QWidget *parent = nullptr)
+        : QLineEdit(contents, parent) {}
 
 public:
     int historyLimit() const { return history_limit_; }
