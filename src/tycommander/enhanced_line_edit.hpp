@@ -22,6 +22,8 @@ class EnhancedLineEdit: public QLineEdit {
     QStringList history_;
     int history_idx_ = 0;
 
+    int wheel_delta_ = 0;
+
 public:
     EnhancedLineEdit(QWidget *parent = nullptr)
         : QLineEdit(parent) {}
@@ -41,9 +43,10 @@ public slots:
 
 protected:
     void keyPressEvent(QKeyEvent *ev) override;
+    void wheelEvent(QWheelEvent *ev) override;
 
 private:
-    void moveInHistory(int idx);
+    void moveInHistory(int relative_idx);
     void clearOldHistory();
 };
 

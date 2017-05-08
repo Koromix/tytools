@@ -9,6 +9,7 @@
    See the LICENSE file for more details. */
 
 #include <QKeyEvent>
+#include <QWheelEvent>
 
 #include "enhanced_line_edit.hpp"
 
@@ -52,12 +53,10 @@ void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
 {
     switch (ev->key()) {
     case Qt::Key_Up:
-        if (history_idx_)
-            moveInHistory(history_idx_ - 1);
+        moveInHistory(-1);
         break;
     case Qt::Key_Down:
-        if (history_idx_ < history_.count())
-            moveInHistory(history_idx_ + 1);
+        moveInHistory(1);
         break;
 
     default:
@@ -66,9 +65,26 @@ void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
     }
 }
 
-void EnhancedLineEdit::moveInHistory(int idx)
+void EnhancedLineEdit::wheelEvent(QWheelEvent *ev)
 {
-    Q_ASSERT(idx >= 0);
+    int delta = ev->angleDelta().y();
+    if (delta && (delta > 0) == (wheel_delta_ < 0))
+        wheel_delta_ = 0;
+    wheel_delta_ += delta;
+
+    int relative_idx = -(wheel_delta_ / 120);
+    wheel_delta_ %= 120;
+    moveInHistory(relative_idx);
+}
+
+void EnhancedLineEdit::moveInHistory(int relative_idx)
+{
+    int new_idx = history_idx_ + relative_idx;
+    if (new_idx < 0) {
+        new_idx = 0;
+    } else if (new_idx > history_.count()) {
+        new_idx = history_.count();
+    }
 
     auto str = text();
     if (!str.isEmpty()) {
@@ -79,12 +95,12 @@ void EnhancedLineEdit::moveInHistory(int idx)
         }
     }
 
-    if (idx < history_.count()) {
-        setText(history_[idx]);
+    if (new_idx < history_.count()) {
+        setText(history_[new_idx]);
     } else {
         setText("");
     }
-    history_idx_ = idx;
+    history_idx_ = new_idx;
 }
 
 void EnhancedLineEdit::clearOldHistory()
