@@ -68,8 +68,6 @@ private slots:
 class EnhancedLineInput: public QComboBox {
     Q_OBJECT
 
-    int wheel_delta_ = 0;
-
 public:
     EnhancedLineInput(QWidget *parent = nullptr);
 
