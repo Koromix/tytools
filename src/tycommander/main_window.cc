@@ -219,8 +219,9 @@ MainWindow::MainWindow(QWidget *parent)
     serialText->setWordWrapMode(QTextOption::NoWrap);
     connect(serialText, &QPlainTextEdit::customContextMenuRequested, this,
             &MainWindow::openSerialContextMenu);
-    connect(serialEdit, &QLineEdit::returnPressed, this, &MainWindow::sendSerialInput);
+    connect(serialEdit->lineEdit(), &QLineEdit::returnPressed, this, &MainWindow::sendSerialInput);
     connect(sendButton, &QToolButton::clicked, this, &MainWindow::sendSerialInput);
+    serialEdit->lineEdit()->setPlaceholderText(tr("Send data..."));
 
     auto add_eol_action = [=](const QString &title, const QString &eol) {
         auto action = new QAction(title, actionSerialEOLGroup);
