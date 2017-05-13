@@ -909,18 +909,18 @@
   <customwidget>
    <class>EnhancedPlainText</class>
    <extends>QPlainTextEdit</extends>
-   <header>enhanced_plain_text.hpp</header>
+   <header>enhanced_widgets.hpp</header>
   </customwidget>
   <customwidget>
    <class>EnhancedGroupBox</class>
    <extends>QGroupBox</extends>
-   <header>enhanced_group_box.hpp</header>
+   <header>enhanced_widgets.hpp</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>EnhancedLineEdit</class>
    <extends>QComboBox</extends>
-   <header>enhanced_line_edit.hpp</header>
+   <header>enhanced_widgets.hpp</header>
   </customwidget>
  </customwidgets>
  <tabstops>

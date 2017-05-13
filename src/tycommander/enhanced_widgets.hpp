@@ -8,13 +8,18 @@
 
    See the LICENSE file for more details. */
 
-#ifndef ENHANCED_GROUP_BOX_HH
-#define ENHANCED_GROUP_BOX_HH
+#ifndef ENHANCED_WIDGETS_HH
+#define ENHANCED_WIDGETS_HH
 
+#include <QComboBox>
 #include <QGroupBox>
+#include <QPlainTextEdit>
 #include <QProxyStyle>
+#include <QStringList>
 
-class EnhancedGroupBoxStyle;
+// --------------------------------------------------------
+// EnhancedGroupBox
+// --------------------------------------------------------
 
 class EnhancedGroupBoxStyle: public QProxyStyle {
 public:
@@ -54,6 +59,60 @@ private:
 
 private slots:
     void changeExpanded(bool expand);
+};
+
+// --------------------------------------------------------
+// EnhancedLineEdit
+// --------------------------------------------------------
+
+class EnhancedLineEdit: public QComboBox {
+    Q_OBJECT
+
+    int wheel_delta_ = 0;
+
+public:
+    EnhancedLineEdit(QWidget *parent = nullptr);
+
+public slots:
+    void appendHistory(const QString &text);
+    void commit();
+
+signals:
+    void textCommitted(const QString &text);
+
+protected:
+    void keyPressEvent(QKeyEvent *ev) override;
+    void wheelEvent(QWheelEvent *ev) override;
+
+private:
+    void moveInHistory(int movement);
+};
+
+// --------------------------------------------------------
+// EnhancedPlainText
+// --------------------------------------------------------
+
+class EnhancedPlainText: public QPlainTextEdit {
+    Q_OBJECT
+
+    bool monitor_autoscroll_ = true;
+    QTextCursor monitor_cursor_;
+
+public:
+    EnhancedPlainText(QWidget *parent = nullptr)
+        : EnhancedPlainText(QString(), parent) {}
+    EnhancedPlainText(const QString &text, QWidget *parent = nullptr);
+
+protected:
+    void showEvent(QShowEvent *e) override;
+    void scrollContentsBy(int dx, int dy) override;
+    void keyPressEvent(QKeyEvent *e) override;
+
+private slots:
+    void fixScrollValue();
+
+private:
+    void updateScrollInfo();
 };
 
 #endif
