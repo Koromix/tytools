@@ -80,10 +80,10 @@ void EnhancedGroupBox::changeExpanded(bool checked)
 }
 
 // --------------------------------------------------------
-// EnhancedLineEdit
+// EnhancedLineInput
 // --------------------------------------------------------
 
-EnhancedLineEdit::EnhancedLineEdit(QWidget *parent)
+EnhancedLineInput::EnhancedLineInput(QWidget *parent)
     : QComboBox(parent)
 {
     setFocusPolicy(Qt::StrongFocus);
@@ -91,10 +91,10 @@ EnhancedLineEdit::EnhancedLineEdit(QWidget *parent)
     setEditable(true);
     setMaxCount(10000);
 
-    connect(lineEdit(), &QLineEdit::returnPressed, this, &EnhancedLineEdit::commit);
+    connect(lineEdit(), &QLineEdit::returnPressed, this, &EnhancedLineInput::commit);
 }
 
-void EnhancedLineEdit::appendHistory(const QString &text)
+void EnhancedLineInput::appendHistory(const QString &text)
 {
     if (text.isEmpty())
         return;
@@ -112,7 +112,7 @@ void EnhancedLineEdit::appendHistory(const QString &text)
     addItem(text);
 }
 
-void EnhancedLineEdit::commit()
+void EnhancedLineInput::commit()
 {
     auto text = currentText();
     appendHistory(text);
@@ -120,7 +120,7 @@ void EnhancedLineEdit::commit()
     emit textCommitted(text);
 }
 
-void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
+void EnhancedLineInput::keyPressEvent(QKeyEvent *ev)
 {
     switch (ev->key()) {
     case Qt::Key_Up:
@@ -136,7 +136,7 @@ void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
     }
 }
 
-void EnhancedLineEdit::wheelEvent(QWheelEvent *ev)
+void EnhancedLineInput::wheelEvent(QWheelEvent *ev)
 {
     if (ev->delta() > 0) {
         moveInHistory(-1);
@@ -145,7 +145,7 @@ void EnhancedLineEdit::wheelEvent(QWheelEvent *ev)
     }
 }
 
-void EnhancedLineEdit::moveInHistory(int movement)
+void EnhancedLineInput::moveInHistory(int movement)
 {
     int current_idx = currentIndex();
     int new_idx = current_idx;

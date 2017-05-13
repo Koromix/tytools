@@ -250,7 +250,7 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <widget class="EnhancedLineEdit" name="serialEdit">
+            <widget class="EnhancedLineInput" name="serialEdit">
              <property name="editable">
               <bool>true</bool>
              </property>
@@ -918,7 +918,7 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>EnhancedLineEdit</class>
+   <class>EnhancedLineInput</class>
    <extends>QComboBox</extends>
    <header>enhanced_widgets.hpp</header>
   </customwidget>

@@ -65,13 +65,13 @@ private slots:
 // EnhancedLineEdit
 // --------------------------------------------------------
 
-class EnhancedLineEdit: public QComboBox {
+class EnhancedLineInput: public QComboBox {
     Q_OBJECT
 
     int wheel_delta_ = 0;
 
 public:
-    EnhancedLineEdit(QWidget *parent = nullptr);
+    EnhancedLineInput(QWidget *parent = nullptr);
 
 public slots:
     void appendHistory(const QString &text);
