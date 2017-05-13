@@ -20,6 +20,7 @@ extern const struct _ty_class_vtable _ty_generic_class_vtable;
 
 static int generic_load_interface(ty_board_interface *iface)
 {
+    // TODO: Detect devices in DFU mode to show and keep alive during programming
     if (iface->dev->type != HS_DEVICE_TYPE_SERIAL)
         return 0;
 
