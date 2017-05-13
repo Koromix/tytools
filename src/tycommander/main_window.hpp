@@ -83,6 +83,7 @@ public slots:
     void dropAssociationForSelection();
     void resetSelection();
     void rebootSelection();
+    void sendToSelectedBoards(const QString &s);
 
     void setCompactMode(bool enable);
 
@@ -91,7 +92,6 @@ public slots:
     void openPreferences();
     void openAboutDialog();
 
-    void sendSerialInput();
     void sendFileToSelection();
     void clearSerialDocument();
 
@@ -104,8 +104,6 @@ private:
     void updateWindowTitle();
     void updateFirmwareMenus();
     void updateSerialLogLink();
-
-    void sendToSelectedBoards(const QString &s);
 
     QString browseFirmwareDirectory() const;
     QString browseFirmwareFilter() const;

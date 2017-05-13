@@ -18,18 +18,16 @@ class EnhancedLineEdit: public QComboBox {
     Q_OBJECT
 
     int wheel_delta_ = 0;
-public:
-    EnhancedLineEdit(QWidget *parent = nullptr)
-        : QComboBox(parent) {}
 
 public:
-    int historyLimit() const { return maxCount(); }
+    EnhancedLineEdit(QWidget *parent = nullptr);
 
 public slots:
-    void setHistoryLimit(int limit);
-    void appendHistory(const QString &str);
+    void appendHistory(const QString &text);
+    void commit();
 
-    QString commitAndClearText();
+signals:
+    void textCommitted(const QString &text);
 
 protected:
     void keyPressEvent(QKeyEvent *ev) override;

@@ -13,32 +13,41 @@
 
 #include "enhanced_line_edit.hpp"
 
-void EnhancedLineEdit::setHistoryLimit(int limit)
+EnhancedLineEdit::EnhancedLineEdit(QWidget *parent)
+    : QComboBox(parent)
 {
-    setMaxCount(limit);
+    setFocusPolicy(Qt::StrongFocus);
+    setInsertPolicy(QComboBox::NoInsert);
+    setEditable(true);
+    setMaxCount(10000);
+
+    connect(lineEdit(), &QLineEdit::returnPressed, this, &EnhancedLineEdit::commit);
 }
 
-void EnhancedLineEdit::appendHistory(const QString &str)
+void EnhancedLineEdit::appendHistory(const QString &text)
 {
-    if (count() >= maxCount()) removeItem(0);
-    addItem(str);
-    setCurrentIndex(-1);
-}
+    if (text.isEmpty())
+        return;
+    if (count() && text == itemText(count() - 1))
+        return;
 
-QString EnhancedLineEdit::commitAndClearText()
-{
-    auto str = lineEdit()->text();
-    lineEdit()->setText("");
-
-    if (!str.isEmpty()) {
-        if (currentIndex() >= 0)
-            removeItem(currentIndex());
-        if (count() >= maxCount())
-            removeItem(0);
-        addItem(str);
-        setCurrentIndex(-1);
+    if (count() >= maxCount()) {
+        if (currentIndex() == 0) {
+            auto text = currentText();
+            setCurrentIndex(-1);
+            setCurrentText(text);
+        }
+        removeItem(0);
     }
-    return str;
+    addItem(text);
+}
+
+void EnhancedLineEdit::commit()
+{
+    auto text = currentText();
+    appendHistory(text);
+    setCurrentIndex(-1);
+    emit textCommitted(text);
 }
 
 void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
@@ -57,68 +66,42 @@ void EnhancedLineEdit::keyPressEvent(QKeyEvent *ev)
     }
 }
 
-
 void EnhancedLineEdit::wheelEvent(QWheelEvent *ev)
 {
-    int delta = ev->angleDelta().y();
-    if (delta && (delta > 0) == (wheel_delta_ < 0))
-        wheel_delta_ = 0;
-    wheel_delta_ += delta;
-
-    int relative_idx = -(wheel_delta_ / 120);
-    wheel_delta_ %= 120;
-
-    if (!relative_idx)
-        return;
-    int sign = relative_idx > 0 ? 1 : -1;
-    while (relative_idx) {
-        moveInHistory(sign);
-        relative_idx -= sign;
+    if (ev->delta() > 0) {
+        moveInHistory(-1);
+    } else if (ev->delta() < 0) {
+        moveInHistory(1);
     }
 }
 
 void EnhancedLineEdit::moveInHistory(int movement)
 {
-    if (movement != -1 && movement != 1) return;
-
-    auto str = lineEdit()->text();
-
-    if (movement == -1) {
-        if (currentIndex() == -1) {
-            if (count() >= maxCount() && !str.isEmpty())
-                removeItem(0);
-            int go_to_pos = count() >= 1 ? count() - 1 : count();
-            if (!str.isEmpty())
-                addItem(str);
-            setCurrentIndex(go_to_pos);
-            lineEdit()->setText(itemText(go_to_pos));
+    int current_idx = currentIndex();
+    int new_idx = current_idx;
+    if (movement < 0) {
+        if (current_idx == -1) {
+            new_idx = count() + movement;
         } else {
-            if (!str.isEmpty())
-                setItemText(currentIndex(), str);
-            auto go_to_pos = currentIndex() > 0 ? currentIndex() - 1 : 0;
-            setCurrentIndex(go_to_pos);
-            lineEdit()->setText(itemText(go_to_pos));
+            new_idx = current_idx + movement;
+        }
+        if (new_idx < 0)
+            new_idx = 0;
+    } else if (movement > 0) {
+        if (current_idx == -1) {
+            new_idx = -1;
+        } else {
+            new_idx = current_idx + movement;
+            if (new_idx >= count())
+                new_idx = -1;
         }
     }
-    if (movement == 1 && !str.isEmpty()) {
-        if (currentIndex() == -1) {
-            if(count() >= maxCount())
-                removeItem(0);
-            addItem(str);
-            setCurrentIndex(-1);
-            lineEdit()->setText("");
-        } else {
-            setItemText(currentIndex(), str);
-            setCurrentIndex(currentIndex() + 1);
-        }
-    }
-    if (movement == 1 && str.isEmpty()) {
-        if (currentIndex() == -1) {
-            // do nothing
-        } else {
-            setItemText(currentIndex(), str);
-            setCurrentIndex(currentIndex() + 1);
-            lineEdit()->setText(itemText(currentIndex()));
-        }
+
+    auto text = currentText();
+    setCurrentIndex(new_idx);
+    if (current_idx == -1) {
+        appendHistory(text);
+    } else {
+        setItemText(current_idx, text);
     }
 }

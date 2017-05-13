@@ -254,15 +254,6 @@
              <property name="editable">
               <bool>true</bool>
              </property>
-             <property name="maxVisibleItems">
-              <number>15</number>
-             </property>
-             <property name="maxCount">
-              <number>100</number>
-             </property>
-             <property name="duplicatesEnabled">
-              <bool>false</bool>
-             </property>
             </widget>
            </item>
            <item>
@@ -928,7 +919,7 @@
   </customwidget>
   <customwidget>
    <class>EnhancedLineEdit</class>
-   <extends>QLineEdit</extends>
+   <extends>QComboBox</extends>
    <header>enhanced_line_edit.hpp</header>
   </customwidget>
  </customwidgets>

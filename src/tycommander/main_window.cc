@@ -219,8 +219,8 @@ MainWindow::MainWindow(QWidget *parent)
     serialText->setWordWrapMode(QTextOption::NoWrap);
     connect(serialText, &QPlainTextEdit::customContextMenuRequested, this,
             &MainWindow::openSerialContextMenu);
-    connect(serialEdit->lineEdit(), &QLineEdit::returnPressed, this, &MainWindow::sendSerialInput);
-    connect(sendButton, &QToolButton::clicked, this, &MainWindow::sendSerialInput);
+    connect(serialEdit, &EnhancedLineEdit::textCommitted, this, &MainWindow::sendToSelectedBoards);
+    connect(sendButton, &QToolButton::clicked, serialEdit, &EnhancedLineEdit::commit);
     serialEdit->lineEdit()->setPlaceholderText(tr("Send data..."));
 
     auto add_eol_action = [=](const QString &title, const QString &eol) {
@@ -435,6 +435,26 @@ void MainWindow::rebootSelection()
         board->startReboot();
 }
 
+void MainWindow::sendToSelectedBoards(const QString &s)
+{
+    auto newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
+    auto s2 = s + newline;
+
+    if (s.startsWith('@')) {
+        auto filename = s.mid(1);
+        for (auto &board: selected_boards_)
+            board->startSendFile(filename);
+    } else {
+        for (auto &board: selected_boards_)
+            board->startSendSerial(s2);
+    }
+
+    if (actionSerialEcho->isChecked()) {
+        for (auto &board: selected_boards_)
+            board->appendFakeSerialRead(s2);
+    }
+}
+
 void MainWindow::setCompactMode(bool enable)
 {
     actionCompactMode->setChecked(enable);
@@ -566,11 +586,6 @@ void MainWindow::openAboutDialog()
     }
 
     about_dialog_->show();
-}
-
-void MainWindow::sendSerialInput()
-{
-    sendToSelectedBoards(serialEdit->commitAndClearText());
 }
 
 void MainWindow::sendFileToSelection()
@@ -772,26 +787,6 @@ void MainWindow::updateSerialLogLink()
     serialLogFileLabel->setFont(link_font);
 }
 
-void MainWindow::sendToSelectedBoards(const QString &s)
-{
-    auto newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
-    auto s2 = s + newline;
-
-    if (s.startsWith('@')) {
-        auto filename = s.mid(1);
-        for (auto &board: selected_boards_)
-            board->startSendFile(filename);
-    } else {
-        for (auto &board: selected_boards_)
-            board->startSendSerial(s2);
-    }
-
-    if (actionSerialEcho->isChecked()) {
-        for (auto &board: selected_boards_)
-            board->appendFakeSerialRead(s2);
-    }
-}
-
 QString MainWindow::browseFirmwareDirectory() const
 {
     if (selected_boards_.empty())
@@ -894,14 +889,13 @@ void MainWindow::refreshActions()
 {
     bool upload = false, reset = false, reboot = false, send = false;
     for (auto &board: selected_boards_) {
-        if (board->taskStatus() != TY_TASK_STATUS_READY)
-            continue;
-
-        upload |= board->hasCapability(TY_BOARD_CAPABILITY_UPLOAD) ||
-                  board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
-        reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
-                 board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
-        reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+        if (board->taskStatus() == TY_TASK_STATUS_READY) {
+            upload |= board->hasCapability(TY_BOARD_CAPABILITY_UPLOAD) ||
+                      board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+            reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
+                     board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+            reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+        }
         send |= board->serialOpen();
     }
 
