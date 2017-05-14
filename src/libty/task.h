@@ -12,7 +12,6 @@
 #define TY_TASK_H
 
 #include "common.h"
-#include "list.h"
 #include "thread.h"
 
 TY_C_BEGIN
@@ -41,7 +40,6 @@ typedef struct ty_task {
     int (*task_run)(struct ty_task *task);
     void (*task_finalize)(struct ty_task *task);
 
-    ty_list_head list;
     ty_mutex mutex;
     ty_cond cond;
 

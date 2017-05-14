@@ -9,7 +9,7 @@
    See the LICENSE file for more details. */
 
 #include "common_priv.h"
-#include "list.h"
+#include "../libhs/array.h"
 #include "system.h"
 #include "task.h"
 
@@ -19,22 +19,13 @@ struct ty_pool {
 
     ty_mutex mutex;
 
-    ty_list_head threads;
-    unsigned int started;
-    unsigned int busy;
+    _HS_ARRAY(ty_thread) worker_threads;
+    size_t busy_workers;
 
-    ty_list_head pending_tasks;
+    _HS_ARRAY(ty_task *) pending_tasks;
     ty_cond pending_cond;
 
     bool init;
-};
-
-struct pool_thread {
-    ty_pool *pool;
-    ty_list_head list;
-
-    ty_thread thread;
-    bool run;
 };
 
 static ty_pool *default_pool;
@@ -63,9 +54,6 @@ int ty_pool_new(ty_pool **rpool)
     if (r < 0)
         goto error;
 
-    ty_list_init(&pool->threads);
-    ty_list_init(&pool->pending_tasks);
-
     pool->init = true;
 
     *rpool = pool;
@@ -82,11 +70,11 @@ void ty_pool_free(ty_pool *pool)
         if (pool->init) {
             ty_mutex_lock(&pool->mutex);
 
-            ty_list_foreach(cur, &pool->pending_tasks) {
-                ty_task *task = ty_container_of(cur, ty_task, list);
+            for (size_t i = 0; i < pool->pending_tasks.count; i++) {
+                ty_task *task = pool->pending_tasks.values[i];
                 ty_task_unref(task);
             }
-            ty_list_init(&pool->pending_tasks);
+            _hs_array_release(&pool->pending_tasks);
             pool->max_threads = 0;
             ty_cond_broadcast(&pool->pending_cond);
 
@@ -96,12 +84,11 @@ void ty_pool_free(ty_pool *pool)
 
             ty_mutex_unlock(&pool->mutex);
 
-            ty_list_foreach(cur, &pool->threads) {
-                struct pool_thread *thread = ty_container_of(cur, struct pool_thread, list);
-
-                ty_thread_join(&thread->thread);
-                free(thread);
+            for (size_t i = 0; i < pool->worker_threads.count; i++) {
+                ty_thread *thread = &pool->worker_threads.values[i];
+                ty_thread_join(thread);
             }
+            _hs_array_release(&pool->worker_threads);
         }
 
         ty_cond_release(&pool->pending_cond);
@@ -111,7 +98,7 @@ void ty_pool_free(ty_pool *pool)
     free(pool);
 }
 
-static int start_thread(ty_pool *pool);
+static int start_worker_thread(ty_pool *pool);
 int ty_pool_set_max_threads(ty_pool *pool, unsigned int max)
 {
     assert(pool);
@@ -121,13 +108,13 @@ int ty_pool_set_max_threads(ty_pool *pool, unsigned int max)
     ty_mutex_lock(&pool->mutex);
 
     if (max > pool->max_threads) {
-        ty_list_foreach(cur, &pool->pending_tasks) {
-            if (pool->started >= max)
-                break;
-
-            r = start_thread(pool);
+        size_t need_threads = pool->pending_tasks.count;
+        if (need_threads > (size_t)pool->max_threads - pool->worker_threads.count)
+            need_threads = (size_t)pool->max_threads - pool->worker_threads.count;
+        for (size_t i = 0; i < need_threads; i++) {
+            r = start_worker_thread(pool);
             if (r < 0) {
-                if (pool->started)
+                if (pool->worker_threads.count)
                     r = 0;
                 goto cleanup;
             }
@@ -254,7 +241,7 @@ void ty_task_unref(ty_task *task)
     free(task);
 }
 
-static void change_status(ty_task *task, ty_task_status status)
+static void change_task_status(ty_task *task, ty_task_status status)
 {
     ty_message_data msg = {0};
 
@@ -280,21 +267,20 @@ static void run_task(ty_task *task)
     previous_task = current_task;
     current_task = task;
 
-    change_status(task, TY_TASK_STATUS_RUNNING);
+    change_task_status(task, TY_TASK_STATUS_RUNNING);
     task->ret = (*task->task_run)(task);
     if (task->task_finalize) {
         (*task->task_finalize)(task);
         task->task_finalize = NULL;
     }
-    change_status(task, TY_TASK_STATUS_FINISHED);
+    change_task_status(task, TY_TASK_STATUS_FINISHED);
 
     current_task = previous_task;
 }
 
-static int task_thread(void *udata)
+static int worker_thread_main(void *udata)
 {
-    struct pool_thread *thread = udata;
-    ty_pool *pool = thread->pool;
+    ty_pool *pool = udata;
 
     while (true) {
         uint64_t start;
@@ -302,16 +288,16 @@ static int task_thread(void *udata)
         ty_task *task;
 
         ty_mutex_lock(&pool->mutex);
-        pool->busy--;
+        pool->busy_workers--;
 
         run = true;
         start = ty_millis();
         while (true) {
-            if (pool->started > pool->max_threads)
+            if (pool->worker_threads.count > pool->max_threads)
                 goto timeout;
-            task = ty_list_get_first(&pool->pending_tasks, ty_task, list);
-            if (task) {
-                ty_list_remove(&task->list);
+            if (pool->pending_tasks.count) {
+                task = pool->pending_tasks.values[0];
+                _hs_array_remove(&pool->pending_tasks, 0, 1);
                 break;
             }
             if (!run)
@@ -321,7 +307,7 @@ static int task_thread(void *udata)
                                ty_adjust_timeout(pool->unused_timeout, start));
         }
 
-        pool->busy++;
+        pool->busy_workers++;
         ty_mutex_unlock(&pool->mutex);
 
         run_task(task);
@@ -329,11 +315,17 @@ static int task_thread(void *udata)
     }
 
 timeout:
-    pool->started--;
     if (pool->init) {
-        ty_list_remove(&thread->list);
-        ty_thread_detach(&thread->thread);
-        free(thread);
+        for (size_t i = 0; i < pool->worker_threads.count; i++) {
+            ty_thread *thread = &pool->worker_threads.values[i];
+            if (thread->thread_id == ty_thread_get_self_id()) {
+                ty_thread_detach(thread);
+                pool->worker_threads.values[i] =
+                    pool->worker_threads.values[pool->worker_threads.count - 1];
+                _hs_array_pop(&pool->worker_threads, 1);
+                break;
+            }
+        }
     }
     ty_mutex_unlock(&pool->mutex);
 
@@ -341,32 +333,25 @@ timeout:
 }
 
 // Call with pool->mutex locked
-static int start_thread(ty_pool *pool)
+static int start_worker_thread(ty_pool *pool)
 {
-    struct pool_thread *thread;
+    ty_thread *thread;
     int r;
 
-    thread = calloc(1, sizeof(*thread));
-    if (!thread) {
-        r = ty_error(TY_ERROR_MEMORY, NULL);
-        goto cleanup;
-    }
-
-    thread->pool = pool;
-
-    r = ty_thread_create(&thread->thread, task_thread, thread);
+    // Can't handle failure after ty_thread_create() so grow the array first
+    r = _hs_array_grow(&pool->worker_threads, 1);
     if (r < 0)
-        goto cleanup;
+        return r;
+    thread = &pool->worker_threads.values[pool->worker_threads.count];
 
-    ty_list_add(&pool->threads, &thread->list);
-    pool->started++;
-    pool->busy++;
+    r = ty_thread_create(thread, worker_thread_main, pool);
+    if (r < 0)
+        return r;
+
+    pool->worker_threads.count++;
+    pool->busy_workers++;
 
     return 0;
-
-cleanup:
-    free(thread);
-    return r;
 }
 
 int ty_task_start(ty_task *task)
@@ -386,17 +371,20 @@ int ty_task_start(ty_task *task)
 
     ty_mutex_lock(&pool->mutex);
 
-    if (pool->busy == pool->started && pool->started < pool->max_threads) {
-        r = start_thread(pool);
+    if (pool->busy_workers == pool->worker_threads.count &&
+            pool->worker_threads.count < pool->max_threads) {
+        r = start_worker_thread(pool);
         if (r < 0)
             goto cleanup;
     }
 
+    r = _hs_array_push(&pool->pending_tasks, task);
+    if (r < 0)
+        goto cleanup;
     ty_task_ref(task);
-    ty_list_add(&pool->pending_tasks, &task->list);
     ty_cond_signal(&pool->pending_cond);
 
-    change_status(task, TY_TASK_STATUS_PENDING);
+    change_task_status(task, TY_TASK_STATUS_PENDING);
 
     r = 0;
 cleanup:
@@ -416,14 +404,21 @@ int ty_task_wait(ty_task *task, ty_task_status status, int timeout)
        to execute the task in this thread if it's not running already. */
     if (status == TY_TASK_STATUS_FINISHED && timeout < 0) {
         if (task->status == TY_TASK_STATUS_PENDING) {
-            ty_mutex_lock(&task->pool->mutex);
+            ty_pool *pool = task->pool;
+
+            ty_mutex_lock(&pool->mutex);
             if (task->status == TY_TASK_STATUS_PENDING) {
-                ty_list_remove(&task->list);
+                for (size_t i = 0; i < pool->pending_tasks.count; i++) {
+                    if (pool->pending_tasks.values[i] == task) {
+                        _hs_array_remove(&pool->pending_tasks, i, 1);
+                        break;
+                    }
+                }
                 ty_task_unref(task);
 
                 task->status = TY_TASK_STATUS_READY;
             }
-            ty_mutex_unlock(&task->pool->mutex);
+            ty_mutex_unlock(&pool->mutex);
         }
 
         if (task->status == TY_TASK_STATUS_READY) {
