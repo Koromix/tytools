@@ -57,6 +57,14 @@ struct _hs_array {
         _hs_array_pop((Array), _HS_UNIQUE_ID(count)); \
     } while (0)
 
+#define _hs_array_move(Src, Dest) \
+    do { \
+        (Dest)->values = (Src)->values; \
+        (Dest)->count = (Src)->count; \
+        (Dest)->allocated = (Src)->allocated; \
+        memset((Src), 0, sizeof(*(Src))); \
+    } while (0)
+
 void _hs_array_release_(struct _hs_array *array);
 
 int _hs_array_expand_(struct _hs_array *array, size_t value_size, size_t need);
