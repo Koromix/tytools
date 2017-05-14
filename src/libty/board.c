@@ -64,14 +64,13 @@ void ty_board_unref(ty_board *board)
         free(board->location);
         free(board->description);
 
-        ty_mutex_release(&board->interfaces_lock);
+        ty_mutex_release(&board->ifaces_lock);
 
-        ty_list_foreach(cur, &board->interfaces) {
-            ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
-
-            ty_list_remove(&iface->board_node);
+        for (size_t i = 0; i < board->ifaces.count; i++) {
+            ty_board_interface *iface = board->ifaces.values[i];
             ty_board_interface_unref(iface);
         }
+        _hs_array_release(&board->ifaces);
     }
 
     free(board);
@@ -249,18 +248,18 @@ int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, 
 
     int r;
 
-    ty_mutex_lock(&board->interfaces_lock);
+    ty_mutex_lock(&board->ifaces_lock);
 
     r = 0;
-    ty_list_foreach(cur, &board->interfaces) {
-        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
+    for (size_t i = 0; i < board->ifaces.count; i++) {
+        ty_board_interface *iface = board->ifaces.values[i];
 
         r = (*f)(iface, udata);
         if (r)
             break;
     }
 
-    ty_mutex_unlock(&board->interfaces_lock);
+    ty_mutex_unlock(&board->ifaces_lock);
     return r;
 }
 
@@ -273,7 +272,7 @@ int ty_board_open_interface(ty_board *board, ty_board_capability cap, ty_board_i
     ty_board_interface *iface;
     int r;
 
-    ty_mutex_lock(&board->interfaces_lock);
+    ty_mutex_lock(&board->ifaces_lock);
 
     iface = board->cap2iface[cap];
     if (!iface) {
@@ -289,7 +288,7 @@ int ty_board_open_interface(ty_board *board, ty_board_capability cap, ty_board_i
     r = 1;
 
 cleanup:
-    ty_mutex_unlock(&board->interfaces_lock);
+    ty_mutex_unlock(&board->ifaces_lock);
     return r;
 }
 

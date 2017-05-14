@@ -10,6 +10,7 @@
 
 #include "common_priv.h"
 #include "../libhs/device.h"
+#include "../libhs/array.h"
 #include "../libhs/monitor.h"
 #include "board_priv.h"
 #include "class_priv.h"
@@ -17,61 +18,86 @@
 #include "system.h"
 #include "timer.h"
 
+struct callback {
+    int id;
+    ty_monitor_callback_func *f;
+    void *udata;
+};
+
 struct ty_monitor {
-    int flags;
-    unsigned int drop_delay;
+    int drop_delay;
 
     bool started;
     hs_monitor *device_monitor;
     ty_timer *timer;
 
-    ty_list_head callbacks;
+    _HS_ARRAY(struct callback) callbacks;
     int current_callback_id;
 
     ty_mutex refresh_mutex;
     ty_cond refresh_cond;
     int refresh_callback_ret;
 
-    ty_list_head boards;
-    ty_list_head missing_boards;
-    _hs_htable interfaces;
+    _HS_ARRAY(ty_board *) boards;
+    _hs_htable ifaces;
 
-    void *udata;
-};
-
-struct callback {
-    ty_list_head monitor_node;
-    int id;
-
-    ty_monitor_callback_func *f;
     void *udata;
 };
 
 #define DROP_BOARD_DELAY 15000
 
-static void drop_callback(struct callback *callback)
+static int change_board_status(ty_board *board, ty_board_state status, ty_monitor_event event)
 {
-    ty_list_remove(&callback->monitor_node);
-    free(callback);
-}
+    ty_monitor *monitor = board->monitor;
+    int r = 0;
 
-static int trigger_callbacks(ty_board *board, ty_monitor_event event)
-{
-    ty_list_foreach(cur, &board->monitor->callbacks) {
-        struct callback *callback = ty_container_of(cur, struct callback, monitor_node);
-        int r;
+    // New board status
+    if (status == board->state)
+        return 0;
+    board->state = status;
 
-        r = (*callback->f)(board, event, callback->udata);
+    // Set drop timer for next board that needs to be dropped
+    if (status == TY_BOARD_STATE_MISSING) {
+        board->missing_since = ty_millis();
+
+        int timer_delay = -1;
+        for (size_t i = 0; i < monitor->boards.count; i++) {
+            ty_board *board_it = monitor->boards.values[i];
+
+            if (board_it->state == TY_BOARD_STATE_MISSING) {
+                int board_delay = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
+                if (board_delay < timer_delay || timer_delay == -1)
+                    timer_delay = board_delay;
+            }
+        }
+        r = ty_timer_set(monitor->timer, timer_delay, TY_TIMER_ONESHOT);
         if (r < 0)
             return r;
-        if (r)
-            drop_callback(callback);
     }
 
-    return 0;
+    /* Notify callbacks and do some additional stuff as we go:
+       - Drop callback that return r > 0
+       - Stop calling them is one returns r < 0 */
+    size_t remove_count = 0;
+    for (size_t i = 0; i < monitor->callbacks.count; i++) {
+        struct callback *callback_it = &monitor->callbacks.values[i - remove_count];
+        if (remove_count)
+            *callback_it = monitor->callbacks.values[i];
+
+        if (!r) {
+            r = (*callback_it->f)(board, event, callback_it->udata);
+            if (r > 0) {
+                remove_count++;
+                r = 0;
+            }
+        }
+    }
+    monitor->callbacks.count -= remove_count;
+
+    return r;
 }
 
-static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **rboard)
+static int create_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **rboard)
 {
     ty_board *board;
     int r;
@@ -89,11 +115,9 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
         goto error;
     }
 
-    r = ty_mutex_init(&board->interfaces_lock);
+    r = ty_mutex_init(&board->ifaces_lock);
     if (r < 0)
         goto error;
-
-    ty_list_init(&board->interfaces);
 
     board->vid = iface->dev->vid;
     board->pid = iface->dev->pid;
@@ -104,7 +128,9 @@ static int add_board(ty_monitor *monitor, ty_board_interface *iface, ty_board **
     board->tag = board->id;
 
     board->monitor = monitor;
-    ty_list_add_tail(&monitor->boards, &board->monitor_node);
+    r = _hs_array_push(&monitor->boards, board);
+    if (r < 0)
+        goto error;
 
     *rboard = board;
     return 1;
@@ -114,67 +140,68 @@ error:
     return r;
 }
 
-static void close_board(ty_board *board)
+static int close_board(ty_board *board)
 {
-    ty_list_head ifaces;
+    _HS_ARRAY(ty_board_interface *) ifaces;
+    int r;
 
-    ty_mutex_lock(&board->interfaces_lock);
-
-    ty_list_replace(&board->interfaces, &ifaces);
+    // Reset capabilities to 0, except TY_BOARD_CAPABILITY_UNIQUE
+    ty_mutex_lock(&board->ifaces_lock);
+    _hs_array_move(&board->ifaces, &ifaces);
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
     board->capabilities &= 1 << TY_BOARD_CAPABILITY_UNIQUE;
+    ty_mutex_unlock(&board->ifaces_lock);
 
-    ty_mutex_unlock(&board->interfaces_lock);
+    // Set missing board status
+    r = change_board_status(board, TY_BOARD_STATE_MISSING, TY_MONITOR_EVENT_DISAPPEARED);
 
-    board->state = TY_BOARD_STATE_MISSING;
-    trigger_callbacks(board, TY_MONITOR_EVENT_DISAPPEARED);
+    // Drop all remaining interfaces (sometimes we close even though some interfaces remain)
+    for (size_t i = 0; i < ifaces.count; i++) {
+        ty_board_interface *iface_it = ifaces.values[i];
 
-    ty_list_foreach(cur, &ifaces) {
-        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, board_node);
-
-        if (iface->monitor_hnode.next)
-            _hs_htable_remove(&iface->monitor_hnode);
-
-        ty_board_interface_unref(iface);
+        if (iface_it->monitor_hnode.next)
+            _hs_htable_remove(&iface_it->monitor_hnode);
+        ty_board_interface_unref(iface_it);
     }
-}
+    _hs_array_release(&ifaces);
 
-static int add_missing_board(ty_board *board)
-{
-    ty_monitor *monitor = board->monitor;
-
-    board->missing_since = ty_millis();
-    if (board->missing_node.prev)
-        ty_list_remove(&board->missing_node);
-    ty_list_add_tail(&monitor->missing_boards, &board->missing_node);
-
-    // There may be other boards waiting to be dropped, set timeout for the next in line
-    board = ty_list_get_first(&monitor->missing_boards, ty_board, missing_node);
-
-    return ty_timer_set(monitor->timer,
-                        ty_adjust_timeout((int)monitor->drop_delay, board->missing_since),
-                        TY_TIMER_ONESHOT);
+    return r;
 }
 
 static void drop_board(ty_board *board)
 {
-    if (board->missing_node.prev)
-        ty_list_remove(&board->missing_node);
+    ty_monitor *monitor = board->monitor;
 
-    board->state = TY_BOARD_STATE_DROPPED;
-    trigger_callbacks(board, TY_MONITOR_EVENT_DROPPED);
+    // Change board status
+    change_board_status(board, TY_BOARD_STATE_DROPPED, TY_MONITOR_EVENT_DROPPED);
 
+    // Remove this board from the monitor list
     board->monitor = NULL;
-    ty_list_remove(&board->monitor_node);
+    for (size_t i = 0; i < monitor->boards.count; i++) {
+        if (monitor->boards.values[i] == board)
+            _hs_array_remove(&monitor->boards, i, 1);
+    }
 }
 
-static ty_board *find_board(ty_monitor *monitor, const char *location)
+static ty_board *find_monitor_board(ty_monitor *monitor, const char *location)
 {
-    ty_list_foreach(cur, &monitor->boards) {
-        ty_board *board = ty_container_of(cur, ty_board, monitor_node);
+    for (size_t i = 0; i < monitor->boards.count; i++) {
+        ty_board *board_it = monitor->boards.values[i];
 
-        if (strcmp(board->location, location) == 0)
-            return board;
+        if (strcmp(board_it->location, location) == 0)
+            return board_it;
+    }
+
+    return NULL;
+}
+
+static ty_board_interface *find_monitor_interface(ty_monitor *monitor, hs_device *dev)
+{
+   _hs_htable_foreach_hash(cur, &monitor->ifaces, _hs_htable_hash_ptr(dev)) {
+        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
+
+        if (iface->dev == dev)
+            return iface;
     }
 
     return NULL;
@@ -195,9 +222,9 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
     r = ty_mutex_init(&iface->open_lock);
     if (r < 0)
         goto error;
-
     iface->dev = hs_device_ref(dev);
 
+    // Try this device with all interface classes
     r = 0;
     for (unsigned int i = 0; i < _ty_class_vtables_count && !r; i++) {
         ty_error_mask(TY_ERROR_NOT_FOUND);
@@ -220,53 +247,38 @@ error:
     return r;
 }
 
-static ty_board_interface *find_interface(ty_monitor *monitor, hs_device *dev)
+static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface,
+                                  ty_board **rboard, ty_monitor_event *revent)
 {
-   _hs_htable_foreach_hash(cur, &monitor->interfaces, _hs_htable_hash_ptr(dev)) {
-        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
-
-        if (iface->dev == dev)
-            return iface;
-    }
-
-    return NULL;
-}
-
-static int add_interface(ty_monitor *monitor, hs_device *dev)
-{
-    ty_board_interface *iface = NULL;
-    ty_board *board = NULL;
+    ty_board *board;
     ty_monitor_event event;
     int r;
 
-    r = open_new_interface(dev, &iface);
-    if (r <= 0)
-        goto error;
-
-    board = find_board(monitor, dev->location);
+    board = find_monitor_board(monitor, iface->dev->location);
 
     if (board) {
+        // Update board information
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
         r = (*iface->class_vtable->update_board)(iface, board);
         if (r < 0)
-            goto error;
+            return r;
         if (update_tag_pointer)
             board->tag = board->id;
 
-        /* The model function update_board() returns 1 if the interface is compatible with
+        /* The class function update_board() returns 1 if the interface is compatible with
            this board, or 0 if not. In the latter case, the old board is dropped and a new
            one is used. */
         if (r) {
-            if (board->vid != dev->vid || board->pid != dev->pid) {
+            if (board->vid != iface->dev->vid || board->pid != iface->dev->pid) {
                 /* Theoretically, this should not happen unless device removal notifications
                    where dropped somewhere. */
                 if (board->state == TY_BOARD_STATE_ONLINE)
                     close_board(board);
 
-                board->vid = dev->vid;
-                board->pid = dev->pid;
+                board->vid = iface->dev->vid;
+                board->pid = iface->dev->pid;
             }
 
             event = TY_MONITOR_EVENT_CHANGED;
@@ -276,84 +288,126 @@ static int add_interface(ty_monitor *monitor, hs_device *dev)
             drop_board(board);
             ty_board_unref(board);
 
-            r = add_board(monitor, iface, &board);
+            r = create_board(monitor, iface, &board);
             if (r <= 0)
-                goto error;
+                return r;
+
             event = TY_MONITOR_EVENT_ADDED;
         }
     } else {
-        r = add_board(monitor, iface, &board);
+        r = create_board(monitor, iface, &board);
         if (r <= 0)
-            goto error;
+            return r;
+
         event = TY_MONITOR_EVENT_ADDED;
     }
     iface->board = board;
 
-    _hs_htable_add(&monitor->interfaces, _hs_htable_hash_ptr(iface->dev), &iface->monitor_hnode);
+    *rboard = board;
+    if (revent)
+        *revent = event;
 
-    ty_mutex_lock(&board->interfaces_lock);
+    return 0;
+}
 
+static int register_interface(ty_board *board, ty_board_interface *iface)
+{
+    int r;
+
+    ty_mutex_lock(&board->ifaces_lock);
+
+    // Add interface to monitor and board
     ty_board_interface_ref(iface);
-    ty_list_add_tail(&board->interfaces, &iface->board_node);
+    r = _hs_array_push(&board->ifaces, iface);
+    if (r < 0)
+        goto cleanup;
+    _hs_htable_add(&board->monitor->ifaces, _hs_htable_hash_ptr(iface->dev),
+                   &iface->monitor_hnode);
 
+    // Update board capabilities
     for (int i = 0; i < (int)TY_COUNTOF(board->cap2iface); i++) {
         if (iface->capabilities & (1 << i))
             board->cap2iface[i] = iface;
     }
     board->capabilities |= iface->capabilities;
 
-    ty_mutex_unlock(&board->interfaces_lock);
+    r = 0;
+cleanup:
+    ty_mutex_unlock(&board->ifaces_lock);
+    return r;
+}
 
-    if (board->missing_node.prev)
-        ty_list_remove(&board->missing_node);
+static int add_interface_for_device(ty_monitor *monitor, hs_device *dev)
+{
+    ty_board_interface *iface = NULL;
+    ty_board *board = NULL;
+    ty_monitor_event event = TY_MONITOR_EVENT_ADDED;
+    int r;
 
-    board->state = TY_BOARD_STATE_ONLINE;
-    return trigger_callbacks(board, event);
+    r = open_new_interface(dev, &iface);
+    if (r <= 0)
+        goto error;
+    r = update_or_create_board(monitor, iface, &board, &event);
+    if (r < 0)
+        goto error;
+    r = register_interface(board, iface);
+    if (r < 0)
+        goto error;
+
+    return change_board_status(board, TY_BOARD_STATE_ONLINE, event);
 
 error:
+    if (event == TY_MONITOR_EVENT_ADDED)
+        ty_board_unref(board);
     ty_board_interface_unref(iface);
     return r;
 }
 
-static int remove_interface(ty_monitor *monitor, hs_device *dev)
+static int remove_interface_with_device(ty_monitor *monitor, hs_device *dev)
 {
     ty_board_interface *iface;
     ty_board *board;
     int r;
 
-    iface = find_interface(monitor, dev);
+    // Find interface associated with this device
+    iface = find_monitor_interface(monitor, dev);
     if (!iface)
         return 0;
     board = iface->board;
 
+    // Unregister from monitor
     _hs_htable_remove(&iface->monitor_hnode);
     ty_board_interface_unref(iface);
 
-    ty_mutex_lock(&board->interfaces_lock);
+    ty_mutex_lock(&board->ifaces_lock);
 
-    ty_list_remove(&iface->board_node);
+    // Unregister from board and update capabilities
+    for (size_t i = 0; i < board->ifaces.count; i++) {
+        if (board->ifaces.values[i] == iface) {
+            _hs_array_remove(&board->ifaces, i, 1);
+            break;
+        }
+    }
     ty_board_interface_unref(iface);
-
     memset(board->cap2iface, 0, sizeof(board->cap2iface));
     board->capabilities &= 1 << TY_BOARD_CAPABILITY_UNIQUE;
+    for (size_t i = 0; i < board->ifaces.count; i++) {
+        ty_board_interface *iface_it = board->ifaces.values[i];
 
-    ty_list_foreach(cur, &board->interfaces) {
-        iface = ty_container_of(cur, ty_board_interface, board_node);
-
-        for (unsigned int i = 0; i < TY_COUNTOF(board->cap2iface); i++) {
-            if (iface->capabilities & (1 << i))
-                board->cap2iface[i] = iface;
+        for (unsigned int j = 0; j < TY_COUNTOF(board->cap2iface); j++) {
+            if (iface_it->capabilities & (1 << j))
+                board->cap2iface[j] = iface_it;
         }
-        board->capabilities |= iface->capabilities;
+        board->capabilities |= iface_it->capabilities;
     }
 
-    ty_mutex_unlock(&board->interfaces_lock);
+    ty_mutex_unlock(&board->ifaces_lock);
 
-    if (ty_list_is_empty(&board->interfaces)) {
-        close_board(board);
-        r = add_missing_board(board);
+    // Change status and trigger callbacks
+    if (!board->ifaces.count) {
+        r = close_board(board);
     } else {
-        r = trigger_callbacks(board, TY_MONITOR_EVENT_CHANGED);
+        r = change_board_status(board, TY_BOARD_STATE_ONLINE, TY_MONITOR_EVENT_CHANGED);
     }
 
     return r;
@@ -365,11 +419,11 @@ static int device_callback(hs_device *dev, void *udata)
 
     switch (dev->status) {
     case HS_DEVICE_STATUS_ONLINE:
-        monitor->refresh_callback_ret = add_interface(monitor, dev);
+        monitor->refresh_callback_ret = add_interface_for_device(monitor, dev);
         return !!monitor->refresh_callback_ret;
 
     case HS_DEVICE_STATUS_DISCONNECTED:
-        monitor->refresh_callback_ret = remove_interface(monitor, dev);
+        monitor->refresh_callback_ret = remove_interface_with_device(monitor, dev);
         return !!monitor->refresh_callback_ret;
     }
 
@@ -393,7 +447,7 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
 
     monitor->flags = flags;
     if (getenv("TYTOOLS_DROP_BOARD_DELAY")) {
-        monitor->drop_delay = strtoul(getenv("TYTOOLS_DROP_BOARD_DELAY"), NULL, 10);
+        monitor->drop_delay = (int)strtol(getenv("TYTOOLS_DROP_BOARD_DELAY"), NULL, 10);
     } else {
         monitor->drop_delay = DROP_BOARD_DELAY;
     }
@@ -416,14 +470,9 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
     if (r < 0)
         goto error;
 
-    ty_list_init(&monitor->boards);
-    ty_list_init(&monitor->missing_boards);
-
-    r = _hs_htable_init(&monitor->interfaces, 64);
+    r = _hs_htable_init(&monitor->ifaces, 64);
     if (r < 0)
         goto error;
-
-    ty_list_init(&monitor->callbacks);
 
     *rmonitor = monitor;
     return 0;
@@ -438,18 +487,13 @@ void ty_monitor_free(ty_monitor *monitor)
     if (monitor) {
         ty_monitor_stop(monitor);
 
+        _hs_array_release(&monitor->callbacks);
+        _hs_htable_release(&monitor->ifaces);
+
         ty_cond_release(&monitor->refresh_cond);
         ty_mutex_release(&monitor->refresh_mutex);
-
         hs_monitor_free(monitor->device_monitor);
         ty_timer_free(monitor->timer);
-
-        ty_list_foreach(cur, &monitor->callbacks) {
-            struct callback *callback = ty_container_of(cur, struct callback, monitor_node);
-            free(callback);
-        }
-
-        _hs_htable_release(&monitor->interfaces);
     }
 
     free(monitor);
@@ -489,26 +533,28 @@ void ty_monitor_stop(ty_monitor *monitor)
     if (!monitor->started)
         return;
 
+    // Stop device monitor and timer
     hs_monitor_stop(monitor->device_monitor);
     ty_timer_set(monitor->timer, -1, 0);
 
-    ty_list_foreach(cur, &monitor->boards) {
-        ty_board *board = ty_container_of(cur, ty_board, monitor_node);
+    // Clear registered boards
+    for (size_t i = 0; i < monitor->boards.count; i++) {
+        ty_board *board_it = monitor->boards.values[i];
 
-        board->monitor = NULL;
-        ty_list_remove(&board->monitor_node);
-        ty_board_unref(board);
+        board_it->monitor = NULL;
+        ty_board_unref(board_it);
     }
-    ty_list_init(&monitor->boards);
-    ty_list_init(&monitor->missing_boards);
+    _hs_array_release(&monitor->boards);
 
-    _hs_htable_foreach(cur, &monitor->interfaces) {
-        ty_board_interface *iface = ty_container_of(cur, ty_board_interface, monitor_hnode);
+    // Clear registered interfaces
+    _hs_htable_foreach(cur, &monitor->ifaces) {
+        ty_board_interface *iface_it = ty_container_of(cur, ty_board_interface, monitor_hnode);
 
-        _hs_htable_remove(&iface->monitor_hnode);
-        ty_board_interface_unref(iface);
+        if (iface_it->monitor_hnode.next)
+            _hs_htable_remove(&iface_it->monitor_hnode);
+        ty_board_interface_unref(iface_it);
     }
-    _hs_htable_clear(&monitor->interfaces);
+    _hs_htable_clear(&monitor->ifaces);
 
     monitor->started = false;
 }
@@ -539,17 +585,12 @@ int ty_monitor_register_callback(ty_monitor *monitor, ty_monitor_callback_func *
     assert(monitor);
     assert(f);
 
-    struct callback *callback = calloc(1, sizeof(*callback));
-    if (!callback)
-        return ty_error(TY_ERROR_MEMORY, NULL);
-
-    callback->id = monitor->current_callback_id++;
-    callback->f = f;
-    callback->udata = udata;
-
-    ty_list_add_tail(&monitor->callbacks, &callback->monitor_node);
-
-    return callback->id;
+    struct callback callback = {
+        .id = monitor->current_callback_id++,
+        .f = f,
+        .udata = udata
+    };
+    return _hs_array_push(&monitor->callbacks, callback);
 }
 
 void ty_monitor_deregister_callback(ty_monitor *monitor, int id)
@@ -557,10 +598,9 @@ void ty_monitor_deregister_callback(ty_monitor *monitor, int id)
     assert(monitor);
     assert(id >= 0);
 
-    ty_list_foreach(cur, &monitor->callbacks) {
-        struct callback *callback = ty_container_of(cur, struct callback, monitor_node);
-        if (callback->id == id) {
-            drop_callback(callback);
+    for (size_t i = 0; i < monitor->callbacks.count; i++) {
+        if (monitor->callbacks.values[i].id == id) {
+            _hs_array_remove(&monitor->callbacks, i, 1);
             break;
         }
     }
@@ -573,21 +613,25 @@ int ty_monitor_refresh(ty_monitor *monitor)
     int r;
 
     if (ty_timer_rearm(monitor->timer)) {
-        ty_list_foreach(cur, &monitor->missing_boards) {
-            ty_board *board = ty_container_of(cur, ty_board, missing_node);
-            int timeout;
+        int next_timeout = -1;
 
-            timeout = ty_adjust_timeout((int)monitor->drop_delay, board->missing_since);
-            if (timeout) {
-                r = ty_timer_set(monitor->timer, timeout, TY_TIMER_ONESHOT);
-                if (r < 0)
-                    return r;
-                break;
+        for (size_t i = 0; i < monitor->boards.count; i++) {
+            ty_board *board_it = monitor->boards.values[i];
+
+            if (board_it->state == TY_BOARD_STATE_MISSING) {
+                int board_timeout = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
+                if (!board_timeout) {
+                    drop_board(board_it);
+                    ty_board_unref(board_it);
+                } else if (board_timeout < next_timeout) {
+                    next_timeout = board_timeout;
+                }
             }
-
-            drop_board(board);
-            ty_board_unref(board);
         }
+
+        r = ty_timer_set(monitor->timer, next_timeout, TY_TIMER_ONESHOT);
+        if (r < 0)
+            return r;
     }
 
     r = hs_monitor_refresh(monitor->device_monitor, device_callback, monitor);
@@ -656,12 +700,11 @@ int ty_monitor_list(ty_monitor *monitor, ty_monitor_callback_func *f, void *udat
     assert(monitor);
     assert(f);
 
-    ty_list_foreach(cur, &monitor->boards) {
-        ty_board *board = ty_container_of(cur, ty_board, monitor_node);
-        int r;
+    for (size_t i = 0; i < monitor->boards.count; i++) {
+        ty_board *board_it = monitor->boards.values[i];
 
-        if (board->state == TY_BOARD_STATE_ONLINE) {
-            r = (*f)(board, TY_MONITOR_EVENT_ADDED, udata);
+        if (board_it->state == TY_BOARD_STATE_ONLINE) {
+            int r = (*f)(board_it, TY_MONITOR_EVENT_ADDED, udata);
             if (r)
                 return r;
         }

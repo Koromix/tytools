@@ -14,9 +14,9 @@
 #include "common_priv.h"
 #include "board.h"
 #include "class_priv.h"
+#include "../libhs/array.h"
 #include "../libhs/device.h"
 #include "../libhs/htable.h"
-#include "list.h"
 #include "task.h"
 #include "thread.h"
 
@@ -28,7 +28,6 @@ struct ty_board_interface {
 
     _hs_htable_head monitor_hnode;
     ty_board *board;
-    ty_list_head board_node;
 
     const char *name;
     int capabilities;
@@ -44,10 +43,8 @@ struct ty_board {
     unsigned int refcount;
 
     struct ty_monitor *monitor;
-    ty_list_head monitor_node;
 
     ty_board_state state;
-    ty_list_head missing_node;
     uint64_t missing_since;
 
     ty_model model;
@@ -59,8 +56,8 @@ struct ty_board {
     char *description;
     char *location;
 
-    ty_mutex interfaces_lock;
-    ty_list_head interfaces;
+    ty_mutex ifaces_lock;
+    _HS_ARRAY(ty_board_interface *) ifaces;
     int capabilities;
     ty_board_interface *cap2iface[16];
 
