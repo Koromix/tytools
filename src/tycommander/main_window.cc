@@ -597,11 +597,8 @@ void MainWindow::sendFileToSelection()
     if (filename.isEmpty())
         return;
 
-    for (auto &board: selected_boards_)
-        board->startSendFile(filename);
-
-    // NOTE: should we echo "@%1" to the serial document too?
-    serialEdit->appendHistory(QString("@%1").arg(filename));
+    auto serial_str = QString("@%1").arg(filename);
+    sendToSelectedBoards(serial_str);
 }
 
 void MainWindow::clearSerialDocument()
