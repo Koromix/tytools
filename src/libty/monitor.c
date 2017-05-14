@@ -40,6 +40,8 @@ struct ty_monitor {
 
     _HS_ARRAY(ty_board *) boards;
     _hs_htable ifaces;
+
+    ty_thread_id main_thread_id;
 };
 
 #define DROP_BOARD_DELAY 15000
@@ -429,8 +431,7 @@ static int device_callback(hs_device *dev, void *udata)
     return 0;
 }
 
-// TODO: improve the sequential/parallel API
-int ty_monitor_new(int flags, ty_monitor **rmonitor)
+int ty_monitor_new(ty_monitor **rmonitor)
 {
     assert(rmonitor);
 
@@ -443,7 +444,6 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
         goto error;
     }
 
-    monitor->flags = flags;
     if (getenv("TYTOOLS_DROP_BOARD_DELAY")) {
         monitor->drop_delay = (int)strtol(getenv("TYTOOLS_DROP_BOARD_DELAY"), NULL, 10);
     } else {
@@ -471,6 +471,8 @@ int ty_monitor_new(int flags, ty_monitor **rmonitor)
     r = _hs_htable_init(&monitor->ifaces, 64);
     if (r < 0)
         goto error;
+
+    monitor->main_thread_id = ty_thread_get_self_id();
 
     *rmonitor = monitor;
     return 0;
@@ -643,14 +645,14 @@ int ty_monitor_refresh(ty_monitor *monitor)
 int ty_monitor_wait(ty_monitor *monitor, ty_monitor_wait_func *f, void *udata, int timeout)
 {
     assert(monitor);
-    assert(f || !(monitor->flags & TY_MONITOR_PARALLEL_WAIT));
+    assert(f || (monitor->main_thread_id == ty_thread_get_self_id()));
 
     ty_descriptor_set set = {0};
     uint64_t start;
     int r;
 
     start = ty_millis();
-    if (monitor->flags & TY_MONITOR_PARALLEL_WAIT) {
+    if (monitor->main_thread_id != ty_thread_get_self_id()) {
         ty_mutex_lock(&monitor->refresh_mutex);
         while (!(r = (*f)(monitor, udata))) {
             r = ty_cond_wait(&monitor->refresh_cond, &monitor->refresh_mutex,

@@ -118,7 +118,7 @@ static int init_monitor()
     ty_monitor *monitor = NULL;
     int r;
 
-    r = ty_monitor_new(0, &monitor);
+    r = ty_monitor_new(&monitor);
     if (r < 0)
         goto error;
 

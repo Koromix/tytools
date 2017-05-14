@@ -19,10 +19,6 @@ struct ty_board;
 
 typedef struct ty_monitor ty_monitor;
 
-enum {
-    TY_MONITOR_PARALLEL_WAIT = 1
-};
-
 typedef enum ty_monitor_event {
     TY_MONITOR_EVENT_ADDED,
     TY_MONITOR_EVENT_CHANGED,
@@ -33,7 +29,7 @@ typedef enum ty_monitor_event {
 typedef int ty_monitor_callback_func(struct ty_board *board, ty_monitor_event event, void *udata);
 typedef int ty_monitor_wait_func(ty_monitor *monitor, void *udata);
 
-TY_PUBLIC int ty_monitor_new(int flags, ty_monitor **rmonitor);
+TY_PUBLIC int ty_monitor_new(ty_monitor **rmonitor);
 TY_PUBLIC void ty_monitor_free(ty_monitor *monitor);
 
 TY_PUBLIC int ty_monitor_start(ty_monitor *monitor);

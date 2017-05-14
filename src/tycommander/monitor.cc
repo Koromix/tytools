@@ -177,7 +177,7 @@ bool Monitor::start()
     if (!monitor_) {
         ty_monitor *monitor;
 
-        r = ty_monitor_new(TY_MONITOR_PARALLEL_WAIT, &monitor);
+        r = ty_monitor_new(&monitor);
         if (r < 0)
             return false;
         unique_ptr<ty_monitor, decltype(&ty_monitor_free)> monitor_ptr(monitor, ty_monitor_free);
