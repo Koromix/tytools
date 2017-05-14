@@ -409,7 +409,7 @@ restart:
     r = (ssize_t)size;
 
     // Circular buffer would be more appropriate. Later.
-    _hs_array_deque(&hid->reports, 1);
+    _hs_array_remove(&hid->reports, 0, 1);
 
 cleanup:
     if (!hid->reports.count)

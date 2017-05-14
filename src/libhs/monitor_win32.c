@@ -1515,7 +1515,7 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 cleanup:
     /* If an error occurs, there may be unprocessed notifications. Keep them in
        monitor->refresh_events for the next time this function is called. */
-    _hs_array_deque(&monitor->refresh_events, event_idx);
+    _hs_array_remove(&monitor->refresh_events, 0, event_idx);
     EnterCriticalSection(&monitor->events_lock);
     if (!monitor->refresh_events.count && !monitor->events.count)
         ResetEvent(monitor->thread_event);

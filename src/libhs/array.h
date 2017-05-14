@@ -46,11 +46,14 @@ struct _hs_array {
         if ((Array)->count <= (Array)->allocated / 2) \
             _hs_array_shrink(Array); \
     } while (0)
-#define _hs_array_deque(Array, Count) \
+#define _hs_array_remove(Array, Offset, Count) \
     do { \
+        size_t _HS_UNIQUE_ID(start) = (Offset); \
         size_t _HS_UNIQUE_ID(count) = (Count); \
-        memmove((Array)->values, (Array)->values + _HS_UNIQUE_ID(count), \
-                ((Array)->count - _HS_UNIQUE_ID(count)) * sizeof(*(Array)->values)); \
+        size_t _HS_UNIQUE_ID(end) = _HS_UNIQUE_ID(start) + _HS_UNIQUE_ID(count); \
+        memmove((Array)->values + _HS_UNIQUE_ID(start), \
+                (Array)->values + _HS_UNIQUE_ID(end), \
+                ((Array)->count - _HS_UNIQUE_ID(end)) * sizeof(*(Array)->values)); \
         _hs_array_pop((Array), _HS_UNIQUE_ID(count)); \
     } while (0)
 
