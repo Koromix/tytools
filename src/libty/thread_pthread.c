@@ -45,7 +45,7 @@ int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata)
     ctx.udata = udata;
 
     thread->init = false;
-    r = pthread_create(&thread->thread, NULL, thread_proc, &ctx);
+    r = pthread_create(&thread->thread_id, NULL, thread_proc, &ctx);
     if (r < 0)
         return ty_error(TY_ERROR_SYSTEM, "pthread_create() failed: %s", strerror(r));
 
@@ -64,7 +64,7 @@ int ty_thread_join(ty_thread *thread)
     void *retval;
     int r TY_POSSIBLY_UNUSED;
 
-    r = pthread_join(thread->thread, &retval);
+    r = pthread_join(thread->thread_id, &retval);
     assert(!r);
 
     thread->init = false;
@@ -77,8 +77,13 @@ void ty_thread_detach(ty_thread *thread)
     if (!thread->init)
         return;
 
-    pthread_detach(thread->thread);
+    pthread_detach(thread->thread_id);
     thread->init = false;
+}
+
+ty_thread_id ty_thread_get_self_id(void)
+{
+    return pthread_self();
 }
 
 int ty_mutex_init(ty_mutex *mutex)

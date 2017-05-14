@@ -18,11 +18,17 @@
 
 TY_C_BEGIN
 
+#ifdef _WIN32
+typedef unsigned long ty_thread_id; // DWORD
+#else
+typedef pthread_t ty_thread_id;
+#endif
+
 typedef struct ty_thread {
+    ty_thread_id thread_id;
 #ifdef _WIN32
     void *h; // HANDLE
 #else
-    pthread_t thread;
     bool init;
 #endif
 } ty_thread;
@@ -75,6 +81,8 @@ typedef int ty_thread_func(void *udata);
 TY_PUBLIC int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata);
 TY_PUBLIC int ty_thread_join(ty_thread *thread);
 TY_PUBLIC void ty_thread_detach(ty_thread *thread);
+
+TY_PUBLIC ty_thread_id ty_thread_get_self_id(void);
 
 TY_PUBLIC int ty_mutex_init(ty_mutex *mutex);
 TY_PUBLIC void ty_mutex_release(ty_mutex *mutex);

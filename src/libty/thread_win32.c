@@ -59,7 +59,8 @@ int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata)
         goto cleanup;
     }
 
-    thread->h = (HANDLE)_beginthreadex(NULL, 0, thread_proc, &ctx, 0, NULL);
+    thread->h = (HANDLE)_beginthreadex(NULL, 0, thread_proc, &ctx, 0,
+                                       (unsigned int *)&thread->thread_id);
     if (!thread->h) {
         r = ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
         goto cleanup;
@@ -99,6 +100,11 @@ void ty_thread_detach(ty_thread *thread)
 
     CloseHandle(thread->h);
     thread->h = NULL;
+}
+
+ty_thread_id ty_thread_get_self_id()
+{
+    return GetCurrentThreadId();
 }
 
 int ty_mutex_init(ty_mutex *mutex)
