@@ -77,7 +77,6 @@ cleanup:
 
 int ty_thread_join(ty_thread *thread)
 {
-    // FIXME: assert? ignore?
     assert(thread->h);
 
     union { DWORD dw; int i; } code;
