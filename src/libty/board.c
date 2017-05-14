@@ -140,18 +140,6 @@ bool ty_board_matches_tag(ty_board *board, const char *id)
     return true;
 }
 
-void ty_board_set_udata(ty_board *board, void *udata)
-{
-    assert(board);
-    board->udata = udata;
-}
-
-void *ty_board_get_udata(const ty_board *board)
-{
-    assert(board);
-    return board->udata;
-}
-
 ty_monitor *ty_board_get_monitor(const ty_board *board)
 {
     assert(board);

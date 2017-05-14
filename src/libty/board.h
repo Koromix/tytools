@@ -62,9 +62,6 @@ TY_PUBLIC void ty_board_unref(ty_board *board);
 
 TY_PUBLIC bool ty_board_matches_tag(ty_board *board, const char *id);
 
-TY_PUBLIC void ty_board_set_udata(ty_board *board, void *udata);
-TY_PUBLIC void *ty_board_get_udata(const ty_board *board);
-
 TY_PUBLIC struct ty_monitor *ty_board_get_monitor(const ty_board *board);
 
 TY_PUBLIC ty_board_state ty_board_get_state(const ty_board *board);

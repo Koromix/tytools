@@ -40,8 +40,6 @@ struct ty_monitor {
 
     _HS_ARRAY(ty_board *) boards;
     _hs_htable ifaces;
-
-    void *udata;
 };
 
 #define DROP_BOARD_DELAY 15000
@@ -557,18 +555,6 @@ void ty_monitor_stop(ty_monitor *monitor)
     _hs_htable_clear(&monitor->ifaces);
 
     monitor->started = false;
-}
-
-void ty_monitor_set_udata(ty_monitor *monitor, void *udata)
-{
-    assert(monitor);
-    monitor->udata = udata;
-}
-
-void *ty_monitor_get_udata(const ty_monitor *monitor)
-{
-    assert(monitor);
-    return monitor->udata;
 }
 
 void ty_monitor_get_descriptors(const ty_monitor *monitor, ty_descriptor_set *set, int id)

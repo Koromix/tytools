@@ -39,9 +39,6 @@ TY_PUBLIC void ty_monitor_free(ty_monitor *monitor);
 TY_PUBLIC int ty_monitor_start(ty_monitor *monitor);
 TY_PUBLIC void ty_monitor_stop(ty_monitor *monitor);
 
-TY_PUBLIC void ty_monitor_set_udata(ty_monitor *monitor, void *udata);
-TY_PUBLIC void *ty_monitor_get_udata(const ty_monitor *monitor);
-
 TY_PUBLIC void ty_monitor_get_descriptors(const ty_monitor *monitor, struct ty_descriptor_set *set, int id);
 
 TY_PUBLIC int ty_monitor_register_callback(ty_monitor *monitor, ty_monitor_callback_func *f, void *udata);

@@ -62,8 +62,6 @@ struct ty_board {
     ty_board_interface *cap2iface[16];
 
     ty_task *current_task;
-
-    void *udata;
 };
 
 TY_C_END
