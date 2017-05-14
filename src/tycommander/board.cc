@@ -212,8 +212,8 @@ void Board::updateStatus()
 {
     const char *icon_name = nullptr;
 
-    switch (ty_board_get_state(board_)) {
-    case TY_BOARD_STATE_ONLINE:
+    switch (ty_board_get_status(board_)) {
+    case TY_BOARD_STATUS_ONLINE:
         if (hasCapability(TY_BOARD_CAPABILITY_RUN)) {
             status_text_ = status_firmware_.isEmpty() ? tr("(running)") : status_firmware_;
             icon_name = serialOpen() ? ":/board_attached" : ":/board_detached";
@@ -225,8 +225,8 @@ void Board::updateStatus()
             icon_name = serialOpen() ? ":/board_attached" : ":/board_detached";
         }
         break;
-    case TY_BOARD_STATE_MISSING:
-    case TY_BOARD_STATE_DROPPED:
+    case TY_BOARD_STATUS_MISSING:
+    case TY_BOARD_STATUS_DROPPED:
         status_text_ = tr("(missing)");
         icon_name = ":/board_other";
         break;
@@ -672,7 +672,7 @@ void Board::refreshBoard()
 {
     updateSerialInterface();
 
-    if (ty_board_get_state(board_) == TY_BOARD_STATE_DROPPED) {
+    if (ty_board_get_status(board_) == TY_BOARD_STATUS_DROPPED) {
         emit dropped();
         return;
     }

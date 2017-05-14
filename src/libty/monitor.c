@@ -46,25 +46,25 @@ struct ty_monitor {
 
 #define DROP_BOARD_DELAY 15000
 
-static int change_board_status(ty_board *board, ty_board_state status, ty_monitor_event event)
+static int change_board_status(ty_board *board, ty_board_status status, ty_monitor_event event)
 {
     ty_monitor *monitor = board->monitor;
     int r = 0;
 
     // New board status
-    if (status == board->state)
+    if (status == board->status)
         return 0;
-    board->state = status;
+    board->status = status;
 
     // Set drop timer for next board that needs to be dropped
-    if (status == TY_BOARD_STATE_MISSING) {
+    if (status == TY_BOARD_STATUS_MISSING) {
         board->missing_since = ty_millis();
 
         int timer_delay = -1;
         for (size_t i = 0; i < monitor->boards.count; i++) {
             ty_board *board_it = monitor->boards.values[i];
 
-            if (board_it->state == TY_BOARD_STATE_MISSING) {
+            if (board_it->status == TY_BOARD_STATUS_MISSING) {
                 int board_delay = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
                 if (board_delay < timer_delay || timer_delay == -1)
                     timer_delay = board_delay;
@@ -153,7 +153,7 @@ static int close_board(ty_board *board)
     ty_mutex_unlock(&board->ifaces_lock);
 
     // Set missing board status
-    r = change_board_status(board, TY_BOARD_STATE_MISSING, TY_MONITOR_EVENT_DISAPPEARED);
+    r = change_board_status(board, TY_BOARD_STATUS_MISSING, TY_MONITOR_EVENT_DISAPPEARED);
 
     // Drop all remaining interfaces (sometimes we close even though some interfaces remain)
     for (size_t i = 0; i < ifaces.count; i++) {
@@ -173,7 +173,7 @@ static void drop_board(ty_board *board)
     ty_monitor *monitor = board->monitor;
 
     // Change board status
-    change_board_status(board, TY_BOARD_STATE_DROPPED, TY_MONITOR_EVENT_DROPPED);
+    change_board_status(board, TY_BOARD_STATUS_DROPPED, TY_MONITOR_EVENT_DROPPED);
 
     // Remove this board from the monitor list
     board->monitor = NULL;
@@ -274,7 +274,7 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
             if (board->vid != iface->dev->vid || board->pid != iface->dev->pid) {
                 /* Theoretically, this should not happen unless device removal notifications
                    where dropped somewhere. */
-                if (board->state == TY_BOARD_STATE_ONLINE)
+                if (board->status == TY_BOARD_STATUS_ONLINE)
                     close_board(board);
 
                 board->vid = iface->dev->vid;
@@ -283,7 +283,7 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
 
             event = TY_MONITOR_EVENT_CHANGED;
         } else {
-            if (board->state == TY_BOARD_STATE_ONLINE)
+            if (board->status == TY_BOARD_STATUS_ONLINE)
                 close_board(board);
             drop_board(board);
             ty_board_unref(board);
@@ -354,7 +354,7 @@ static int add_interface_for_device(ty_monitor *monitor, hs_device *dev)
     if (r < 0)
         goto error;
 
-    return change_board_status(board, TY_BOARD_STATE_ONLINE, event);
+    return change_board_status(board, TY_BOARD_STATUS_ONLINE, event);
 
 error:
     if (event == TY_MONITOR_EVENT_ADDED)
@@ -407,7 +407,7 @@ static int remove_interface_with_device(ty_monitor *monitor, hs_device *dev)
     if (!board->ifaces.count) {
         r = close_board(board);
     } else {
-        r = change_board_status(board, TY_BOARD_STATE_ONLINE, TY_MONITOR_EVENT_CHANGED);
+        r = change_board_status(board, TY_BOARD_STATUS_ONLINE, TY_MONITOR_EVENT_CHANGED);
     }
 
     return r;
@@ -606,7 +606,7 @@ int ty_monitor_refresh(ty_monitor *monitor)
         for (size_t i = 0; i < monitor->boards.count; i++) {
             ty_board *board_it = monitor->boards.values[i];
 
-            if (board_it->state == TY_BOARD_STATE_MISSING) {
+            if (board_it->status == TY_BOARD_STATUS_MISSING) {
                 int board_timeout = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
                 if (!board_timeout) {
                     drop_board(board_it);
@@ -691,7 +691,7 @@ int ty_monitor_list(ty_monitor *monitor, ty_monitor_callback_func *f, void *udat
     for (size_t i = 0; i < monitor->boards.count; i++) {
         ty_board *board_it = monitor->boards.values[i];
 
-        if (board_it->state == TY_BOARD_STATE_ONLINE) {
+        if (board_it->status == TY_BOARD_STATUS_ONLINE) {
             int r = (*f)(board_it, TY_MONITOR_EVENT_ADDED, udata);
             if (r)
                 return r;

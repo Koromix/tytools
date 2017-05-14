@@ -44,7 +44,7 @@ struct ty_board {
 
     struct ty_monitor *monitor;
 
-    ty_board_state state;
+    ty_board_status status;
     uint64_t missing_since;
 
     ty_model model;

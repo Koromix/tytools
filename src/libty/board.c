@@ -146,10 +146,10 @@ ty_monitor *ty_board_get_monitor(const ty_board *board)
     return board->monitor;
 }
 
-ty_board_state ty_board_get_state(const ty_board *board)
+ty_board_status ty_board_get_status(const ty_board *board)
 {
     assert(board);
-    return board->state;
+    return board->status;
 }
 
 const char *ty_board_get_id(const ty_board *board)
@@ -292,7 +292,7 @@ static int wait_for_callback(ty_monitor *monitor, void *udata)
     struct wait_for_context *ctx = udata;
     ty_board *board = ctx->board;
 
-    if (board->state == TY_BOARD_STATE_DROPPED)
+    if (board->status == TY_BOARD_STATUS_DROPPED)
         return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' has disappeared", board->tag);
 
     return ty_board_has_capability(board, ctx->capability);
@@ -305,7 +305,7 @@ int ty_board_wait_for(ty_board *board, ty_board_capability capability, int timeo
     ty_monitor *monitor = board->monitor;
     struct wait_for_context ctx;
 
-    if (board->state == TY_BOARD_STATE_DROPPED)
+    if (board->status == TY_BOARD_STATUS_DROPPED)
         return ty_error(TY_ERROR_NOT_FOUND, "Board '%s' has disappeared", board->tag);
     if (!monitor)
         return ty_error(TY_ERROR_NOT_FOUND, "Cannot wait on unmonitored board '%s'", board->tag);

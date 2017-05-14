@@ -38,11 +38,11 @@ typedef enum ty_board_capability {
     TY_BOARD_CAPABILITY_COUNT
 } ty_board_capability;
 
-typedef enum ty_board_state {
-    TY_BOARD_STATE_DROPPED,
-    TY_BOARD_STATE_MISSING,
-    TY_BOARD_STATE_ONLINE
-} ty_board_state;
+typedef enum ty_board_status {
+    TY_BOARD_STATUS_DROPPED,
+    TY_BOARD_STATUS_MISSING,
+    TY_BOARD_STATUS_ONLINE
+} ty_board_status;
 
 enum {
     TY_UPLOAD_WAIT = 1,
@@ -64,7 +64,7 @@ TY_PUBLIC bool ty_board_matches_tag(ty_board *board, const char *id);
 
 TY_PUBLIC struct ty_monitor *ty_board_get_monitor(const ty_board *board);
 
-TY_PUBLIC ty_board_state ty_board_get_state(const ty_board *board);
+TY_PUBLIC ty_board_status ty_board_get_status(const ty_board *board);
 
 TY_PUBLIC const char *ty_board_get_id(const ty_board *board);
 TY_PUBLIC int ty_board_set_tag(ty_board *board, const char *tag);
