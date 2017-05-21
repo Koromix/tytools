@@ -14,6 +14,7 @@
 
 #include "../libhs/common.h"
 #include "../libty/common.h"
+#include "../libty/class.h"
 #include "../tycommander/log_dialog.hpp"
 #include "../tycommander/monitor.hpp"
 #include "tyupdater.hpp"
@@ -102,6 +103,8 @@ int TyUpdater::run()
 int main(int argc, char *argv[])
 {
     hs_log_set_handler(ty_libhs_log_handler, NULL);
+    if (ty_models_load_patch(nullptr) < 0)
+        return 1;
 
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");

@@ -202,6 +202,9 @@ int main(int argc, char *argv[])
     }
 
     hs_log_set_handler(ty_libhs_log_handler, NULL);
+    r = ty_models_load_patch(NULL);
+    if (r < 0)
+        return EXIT_FAILURE;
 
     if (argc < 2) {
         print_main_usage(stderr);
