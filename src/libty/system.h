@@ -21,6 +21,7 @@ TY_C_BEGIN
 #else
     #define TY_PATH_SEPARATORS "/"
 #endif
+#define TY_PATH_MAX_SIZE 4096
 
 #ifdef _WIN32
 typedef void *ty_descriptor; // HANDLE
@@ -33,6 +34,11 @@ typedef enum ty_standard_stream {
     TY_STREAM_OUTPUT = 1,
     TY_STREAM_ERROR = 2
 } ty_standard_stream;
+
+typedef enum ty_standard_path {
+    TY_PATH_EXECUTABLE_DIRECTORY = 0,
+    TY_PATH_CONFIG_DIRECTORY
+} ty_standard_path;
 
 enum {
     TY_DESCRIPTOR_MODE_FIFO = 1,
@@ -72,6 +78,9 @@ static inline unsigned int ty_standard_get_modes(ty_standard_stream std_stream)
 {
     return ty_descriptor_get_modes(ty_standard_get_descriptor(std_stream));
 }
+TY_PUBLIC unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
+                                             char (*rpaths)[TY_PATH_MAX_SIZE],
+                                             unsigned int max_paths);
 
 TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
 
