@@ -113,8 +113,7 @@ typedef enum ty_err {
     TY_ERROR_RANGE         = -11,
     TY_ERROR_SYSTEM        = -12,
     TY_ERROR_PARSE         = -13,
-    TY_ERROR_FIRMWARE      = -14,
-    TY_ERROR_OTHER         = -15
+    TY_ERROR_OTHER         = -14
 } ty_err;
 
 typedef enum ty_message_type {

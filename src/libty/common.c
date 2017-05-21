@@ -153,7 +153,6 @@ static const char *generic_error(int err)
         case TY_ERROR_RANGE: { return "Out of range error"; } break;
         case TY_ERROR_SYSTEM: { return "System error"; } break;
         case TY_ERROR_PARSE: { return "Parse error"; } break;
-        case TY_ERROR_FIRMWARE: { return "Firmware error"; } break;
 
         case TY_ERROR_OTHER: {} break;
     }

@@ -208,12 +208,6 @@ void ty_board_set_model(ty_board *board, ty_model model)
     assert(board);
     assert(board->model);
 
-    if (board->model && ty_models[board->model].code_size && board->model != model) {
-        ty_log(TY_LOG_WARNING, "Cannot set model '%s' for incompatible board '%s'",
-               ty_models[model].name, board->tag);
-        return;
-    }
-
     board->model = model;
 }
 
@@ -373,11 +367,6 @@ int ty_board_upload(ty_board *board, ty_firmware *fw, ty_board_upload_progress_f
         goto cleanup;
     }
     assert(board->model);
-
-    if (fw->size > ty_models[board->model].code_size) {
-        r = ty_error(TY_ERROR_RANGE, "Firmware is too big for %s", ty_models[board->model].name);
-        goto cleanup;
-    }
 
     r = (*iface->class_vtable->upload)(iface, fw, pf, udata);
 
@@ -576,7 +565,7 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
     }
 
     if (fws_count > 1) {
-        return ty_error(TY_ERROR_FIRMWARE, "No firmware is compatible with '%s' (%s)",
+        return ty_error(TY_ERROR_NOT_FOUND, "No firmware is compatible with '%s' (%s)",
                         board->tag, ty_models[board->model].name);
     } else if (fw_models_count) {
         char buf[256], *ptr;
@@ -587,21 +576,34 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
                             i ? (i + 1 < fw_models_count ? ", " : " and ") : "",
                             ty_models[fw_models[i]].name);
 
-        return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is only compatible with %s",
+        return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' is only compatible with %s",
                         fws[0]->name, buf);
     } else {
-        return ty_error(TY_ERROR_FIRMWARE, "Firmware '%s' is not compatible with '%s'",
+        return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' is not compatible with '%s'",
                         fws[0]->name, board->tag);
     }
 }
 
 static int upload_progress_callback(const ty_board *board, const ty_firmware *fw,
-                                    size_t uploaded, void *udata)
+                                    size_t uploaded_size, size_t flash_size, void *udata)
 {
     TY_UNUSED(board);
     TY_UNUSED(udata);
 
-    ty_progress("Uploading", uploaded, fw->size);
+    if (!uploaded_size) {
+        ty_log(TY_LOG_INFO, "Firmware: %s", fw->name);
+        if (fw->size >= 1024) {
+            ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
+                   (fw->size + 1023) / 1024,
+                   (double)fw->size / (double)flash_size * 100.0);
+        } else {
+            ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
+                   fw->size,
+                   (double)fw->size / (double)flash_size * 100.0);
+        }
+    }
+    ty_progress("Uploading", uploaded_size, fw->size);
+
     return 0;
 }
 
@@ -613,18 +615,18 @@ static void unref_upload_firmware(void *ptr)
 static int run_upload(ty_task *task)
 {
     ty_board *board = task->u.upload.board;
-    ty_firmware *fw;
+    ty_firmware *fw = NULL;
     int flags = task->u.upload.flags, r;
 
     if (flags & TY_UPLOAD_NOCHECK) {
         fw = task->u.upload.fws[0];
-    } else if (ty_model_is_real(board->model)) {
-        r = select_compatible_firmware(board, task->u.upload.fws, task->u.upload.fws_count, &fw);
-        if (r < 0)
-            return r;
     } else {
+        ty_error_mask(TY_ERROR_NOT_FOUND);
+        r = select_compatible_firmware(board, task->u.upload.fws, task->u.upload.fws_count, &fw);
+        ty_error_unmask();
         // Maybe we can identify the board and test the firmwares in bootloader mode?
-        fw = NULL;
+        if (r < 0 && r != TY_ERROR_NOT_FOUND)
+            return r;
     }
 
     ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, ty_models[board->model].name);
@@ -657,17 +659,6 @@ wait:
         r = select_compatible_firmware(board, task->u.upload.fws, task->u.upload.fws_count, &fw);
         if (r < 0)
             return r;
-    }
-
-    ty_log(TY_LOG_INFO, "Firmware: %s", fw->name);
-    if (fw->size >= 1024) {
-        ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
-               (fw->size + 1023) / 1024,
-               (double)fw->size / (double)ty_models[board->model].code_size * 100.0);
-    } else {
-        ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
-               fw->size,
-               (double)fw->size / (double)ty_models[board->model].code_size * 100.0);
     }
 
     r = ty_board_upload(board, fw, upload_progress_callback, NULL);

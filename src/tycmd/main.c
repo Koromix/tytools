@@ -63,7 +63,7 @@ static void print_main_usage(FILE *f)
 
     fprintf(f, "Supported models:\n");
     for (unsigned int i = 0; i < ty_models_count; i++) {
-        if (ty_model_is_real((ty_model)i))
+        if (ty_models[i].mcu)
             fprintf(f, "   - %-22s (%s)\n", ty_models[i].name, ty_models[i].mcu);
     }
 }

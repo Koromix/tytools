@@ -19,7 +19,7 @@ TY_C_BEGIN
 
 struct _ty_class_vtable {
     int (*load_interface)(ty_board_interface *iface);
-    int (*update_board)(ty_board_interface *iface, ty_board *board);
+    int (*update_board)(ty_board_interface *iface, ty_board *board, bool new_board);
     unsigned int (*identify_models)(const struct ty_firmware *fw,
                                     ty_model *rmodels, unsigned int max_models);
 

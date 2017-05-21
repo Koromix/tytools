@@ -20,15 +20,14 @@ typedef struct ty_model_info {
     unsigned int priority;
     const char *name;
     const char *mcu;
-    size_t code_size;
 } ty_model_info;
 
-// Keep these enums and ty_models (below) in sync
+// Keep these enums and ty_models in sync (in class.c)
 typedef enum ty_model_generic {
-    TY_MODEL_GENERIC = 1
+    TY_MODEL_GENERIC = 0
 } ty_model_generic;
 typedef enum ty_model_teensy {
-    TY_MODEL_TEENSY = 2,
+    TY_MODEL_TEENSY = 1,
     TY_MODEL_TEENSY_PP_10,
     TY_MODEL_TEENSY_20,
     TY_MODEL_TEENSY_PP_20,
@@ -40,29 +39,11 @@ typedef enum ty_model_teensy {
     TY_MODEL_TEENSY_36
 } ty_model_teensy;
 
-static const ty_model_info ty_models[] = {
-    {0, "(unknown)"},
+TY_PUBLIC extern const ty_model_info *ty_models;
+TY_PUBLIC extern const unsigned int ty_models_count;
 
-    {1, "Generic"},
-    {2, "Teensy"},
-    {2, "Teensy++ 1.0", "at90usb646", 64512},
-    {2, "Teensy 2.0", "atmega32u4", 32256},
-    {2, "Teensy++ 2.0", "at90usb1286", 130048},
-    {2, "Teensy 3.0", "mk20dx128", 131072},
-    {2, "Teensy 3.1", "mk20dx256", 262144},
-    {2, "Teensy LC", "mkl26z64", 63488},
-    {2, "Teensy 3.2", "mk20dx256", 262144},
-    {2, "Teensy 3.5", "mk64fx512", 524288},
-    {2, "Teensy 3.6", "mk66fx1m0", 1048576}
-};
-static const unsigned int ty_models_count = TY_COUNTOF(ty_models);
 
-TY_PUBLIC ty_model ty_model_find(const char *name);
-
-static inline bool ty_model_is_real(ty_model model)
-{
-    return ty_models[model].code_size;
-}
+TY_PUBLIC ty_model ty_models_find(const char *name);
 
 TY_C_END
 

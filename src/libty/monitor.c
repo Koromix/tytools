@@ -122,7 +122,7 @@ static int create_board(ty_monitor *monitor, ty_board_interface *iface, ty_board
     board->vid = iface->dev->vid;
     board->pid = iface->dev->pid;
 
-    r = (*iface->class_vtable->update_board)(iface, board);
+    r = (*iface->class_vtable->update_board)(iface, board, true);
     if (r <= 0)
         goto error;
     board->tag = board->id;
@@ -263,7 +263,7 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
-        r = (*iface->class_vtable->update_board)(iface, board);
+        r = (*iface->class_vtable->update_board)(iface, board, false);
         if (r < 0)
             return r;
         if (update_tag_pointer)
