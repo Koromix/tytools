@@ -118,13 +118,17 @@ static int device_callback(hs_device *dev, void *udata)
     (void)(udata);
 
     switch (dev->status) {
-    case HS_DEVICE_STATUS_ONLINE:
-        return add_serial_source(dev);
-    case HS_DEVICE_STATUS_DISCONNECTED:
-        remove_serial_source(dev);
-        return 0;
+        case HS_DEVICE_STATUS_ONLINE: {
+            return add_serial_source(dev);
+        } break;
+
+        case HS_DEVICE_STATUS_DISCONNECTED: {
+            remove_serial_source(dev);
+            return 0;
+        } break;
     }
 
+    // Should not happen, but needed to prevent compiler warning
     return 0;
 }
 

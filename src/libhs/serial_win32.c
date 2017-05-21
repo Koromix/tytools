@@ -30,138 +30,148 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
                         hs_win32_strerror(0));
 
     switch (config->baudrate) {
-    case 0:
-        break;
-    case 110:
-    case 134:
-    case 150:
-    case 200:
-    case 300:
-    case 600:
-    case 1200:
-    case 1800:
-    case 2400:
-    case 4800:
-    case 9600:
-    case 19200:
-    case 38400:
-    case 57600:
-    case 115200:
-    case 230400:
-        dcb.BaudRate = config->baudrate;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Unsupported baud rate value: %u", config->baudrate);
+        case 0: {} break;
+
+        case 110:
+        case 134:
+        case 150:
+        case 200:
+        case 300:
+        case 600:
+        case 1200:
+        case 1800:
+        case 2400:
+        case 4800:
+        case 9600:
+        case 19200:
+        case 38400:
+        case 57600:
+        case 115200:
+        case 230400: {
+            dcb.BaudRate = config->baudrate;
+        } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Unsupported baud rate value: %u", config->baudrate);
+        } break;
     }
 
     switch (config->databits) {
-    case 0:
-        break;
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-        dcb.ByteSize = (BYTE)config->databits;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid data bits setting: %u", config->databits);
+        case 0: {} break;
+
+        case 5:
+        case 6:
+        case 7:
+        case 8: {
+            dcb.ByteSize = (BYTE)config->databits;
+        } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid data bits setting: %u", config->databits);
+        } break;
     }
 
     switch (config->stopbits) {
-    case 0:
-        break;
-    case 1:
-        dcb.StopBits = ONESTOPBIT;
-        break;
-    case 2:
-        dcb.StopBits = TWOSTOPBITS;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid stop bits setting: %u", config->stopbits);
+        case 0: {} break;
+
+        case 1: { dcb.StopBits = ONESTOPBIT; } break;
+        case 2: { dcb.StopBits = TWOSTOPBITS; } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid stop bits setting: %u", config->stopbits);
+        } break;
     }
 
     switch (config->parity) {
-    case 0:
-        break;
-    case HS_SERIAL_CONFIG_PARITY_OFF:
-        dcb.fParity = FALSE;
-        dcb.Parity = NOPARITY;
-        break;
-    case HS_SERIAL_CONFIG_PARITY_EVEN:
-        dcb.fParity = TRUE;
-        dcb.Parity = EVENPARITY;
-        break;
-    case HS_SERIAL_CONFIG_PARITY_ODD:
-        dcb.fParity = TRUE;
-        dcb.Parity = ODDPARITY;
-        break;
-    case HS_SERIAL_CONFIG_PARITY_MARK:
-        dcb.fParity = TRUE;
-        dcb.Parity = MARKPARITY;
-        break;
-    case HS_SERIAL_CONFIG_PARITY_SPACE:
-        dcb.fParity = TRUE;
-        dcb.Parity = SPACEPARITY;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid parity setting: %d", config->parity);
+        case 0: {} break;
+
+        case HS_SERIAL_CONFIG_PARITY_OFF: {
+            dcb.fParity = FALSE;
+            dcb.Parity = NOPARITY;
+        } break;
+        case HS_SERIAL_CONFIG_PARITY_EVEN: {
+            dcb.fParity = TRUE;
+            dcb.Parity = EVENPARITY;
+        } break;
+        case HS_SERIAL_CONFIG_PARITY_ODD: {
+            dcb.fParity = TRUE;
+            dcb.Parity = ODDPARITY;
+        } break;
+        case HS_SERIAL_CONFIG_PARITY_MARK: {
+            dcb.fParity = TRUE;
+            dcb.Parity = MARKPARITY;
+        } break;
+        case HS_SERIAL_CONFIG_PARITY_SPACE: {
+            dcb.fParity = TRUE;
+            dcb.Parity = SPACEPARITY;
+        } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid parity setting: %d", config->parity);
+        } break;
     }
 
     switch (config->rts) {
-    case 0:
-        break;
-    case HS_SERIAL_CONFIG_RTS_OFF:
-        dcb.fRtsControl = RTS_CONTROL_DISABLE;
-        dcb.fOutxCtsFlow = FALSE;
-        break;
-    case HS_SERIAL_CONFIG_RTS_ON:
-        dcb.fRtsControl = RTS_CONTROL_ENABLE;
-        dcb.fOutxCtsFlow = FALSE;
-        break;
-    case HS_SERIAL_CONFIG_RTS_FLOW:
-        dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
-        dcb.fOutxCtsFlow = TRUE;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid RTS setting: %d", config->rts);
+        case 0: {} break;
+
+        case HS_SERIAL_CONFIG_RTS_OFF: {
+            dcb.fRtsControl = RTS_CONTROL_DISABLE;
+            dcb.fOutxCtsFlow = FALSE;
+        } break;
+        case HS_SERIAL_CONFIG_RTS_ON: {
+            dcb.fRtsControl = RTS_CONTROL_ENABLE;
+            dcb.fOutxCtsFlow = FALSE;
+        } break;
+        case HS_SERIAL_CONFIG_RTS_FLOW: {
+            dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
+            dcb.fOutxCtsFlow = TRUE;
+        } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid RTS setting: %d", config->rts);
+        } break;
     }
 
     switch (config->dtr) {
-    case 0:
-        break;
-    case HS_SERIAL_CONFIG_DTR_OFF:
-        dcb.fDtrControl = DTR_CONTROL_DISABLE;
-        dcb.fOutxDsrFlow = FALSE;
-        break;
-    case HS_SERIAL_CONFIG_DTR_ON:
-        dcb.fDtrControl = DTR_CONTROL_ENABLE;
-        dcb.fOutxDsrFlow = FALSE;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid DTR setting: %d", config->dtr);
+        case 0: {} break;
+
+        case HS_SERIAL_CONFIG_DTR_OFF: {
+            dcb.fDtrControl = DTR_CONTROL_DISABLE;
+            dcb.fOutxDsrFlow = FALSE;
+        } break;
+        case HS_SERIAL_CONFIG_DTR_ON: {
+            dcb.fDtrControl = DTR_CONTROL_ENABLE;
+            dcb.fOutxDsrFlow = FALSE;
+        } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid DTR setting: %d", config->dtr);
+        } break;
     }
 
     switch (config->xonxoff) {
-    case 0:
-        break;
-    case HS_SERIAL_CONFIG_XONXOFF_OFF:
-        dcb.fOutX = FALSE;
-        dcb.fInX = FALSE;
-        break;
-    case HS_SERIAL_CONFIG_XONXOFF_IN:
-        dcb.fOutX = FALSE;
-        dcb.fInX = TRUE;
-        break;
-    case HS_SERIAL_CONFIG_XONXOFF_OUT:
-        dcb.fOutX = TRUE;
-        dcb.fInX = FALSE;
-        break;
-    case HS_SERIAL_CONFIG_XONXOFF_INOUT:
-        dcb.fOutX = TRUE;
-        dcb.fInX = TRUE;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid XON/XOFF setting: %d", config->xonxoff);
+        case 0: {} break;
+
+        case HS_SERIAL_CONFIG_XONXOFF_OFF: {
+            dcb.fOutX = FALSE;
+            dcb.fInX = FALSE;
+        } break;
+        case HS_SERIAL_CONFIG_XONXOFF_IN: {
+            dcb.fOutX = FALSE;
+            dcb.fInX = TRUE;
+        } break;
+        case HS_SERIAL_CONFIG_XONXOFF_OUT: {
+            dcb.fOutX = TRUE;
+            dcb.fInX = FALSE;
+        } break;
+        case HS_SERIAL_CONFIG_XONXOFF_INOUT: {
+            dcb.fOutX = TRUE;
+            dcb.fInX = TRUE;
+        } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid XON/XOFF setting: %d", config->xonxoff);
+        } break;
     }
 
     success = SetCommState(port->u.handle.h, &dcb);
@@ -195,55 +205,31 @@ int hs_serial_get_config(hs_port *port, hs_serial_config *config)
 
     // There is also ONE5STOPBITS, ignore it for now (and ever, probably)
     switch (dcb.StopBits) {
-    case ONESTOPBIT:
-        config->stopbits = 1;
-        break;
-    case TWOSTOPBITS:
-        config->stopbits = 2;
-        break;
+        case ONESTOPBIT: { config->stopbits = 1; } break;
+        case TWOSTOPBITS: { config->stopbits = 2; } break;
     }
 
     if (dcb.fParity) {
         switch (dcb.Parity) {
-        case NOPARITY:
-            config->parity = HS_SERIAL_CONFIG_PARITY_OFF;
-            break;
-        case EVENPARITY:
-            config->parity = HS_SERIAL_CONFIG_PARITY_EVEN;
-            break;
-        case ODDPARITY:
-            config->parity = HS_SERIAL_CONFIG_PARITY_ODD;
-            break;
-        case MARKPARITY:
-            config->parity = HS_SERIAL_CONFIG_PARITY_MARK;
-            break;
-        case SPACEPARITY:
-            config->parity = HS_SERIAL_CONFIG_PARITY_SPACE;
-            break;
+            case NOPARITY: { config->parity = HS_SERIAL_CONFIG_PARITY_OFF; } break;
+            case EVENPARITY: { config->parity = HS_SERIAL_CONFIG_PARITY_EVEN; } break;
+            case ODDPARITY: { config->parity = HS_SERIAL_CONFIG_PARITY_ODD; } break;
+            case MARKPARITY: { config->parity = HS_SERIAL_CONFIG_PARITY_MARK; } break;
+            case SPACEPARITY: { config->parity = HS_SERIAL_CONFIG_PARITY_SPACE; } break;
         }
     } else {
         config->parity = HS_SERIAL_CONFIG_PARITY_OFF;
     }
 
     switch (dcb.fRtsControl) {
-    case RTS_CONTROL_DISABLE:
-        config->rts = HS_SERIAL_CONFIG_RTS_OFF;
-        break;
-    case RTS_CONTROL_ENABLE:
-        config->rts = HS_SERIAL_CONFIG_RTS_ON;
-        break;
-    case RTS_CONTROL_HANDSHAKE:
-        config->rts = HS_SERIAL_CONFIG_RTS_FLOW;
-        break;
+        case RTS_CONTROL_DISABLE: { config->rts = HS_SERIAL_CONFIG_RTS_OFF; } break;
+        case RTS_CONTROL_ENABLE: { config->rts = HS_SERIAL_CONFIG_RTS_ON; } break;
+        case RTS_CONTROL_HANDSHAKE: { config->rts = HS_SERIAL_CONFIG_RTS_FLOW; } break;
     }
 
     switch (dcb.fDtrControl) {
-    case DTR_CONTROL_DISABLE:
-        config->dtr = HS_SERIAL_CONFIG_DTR_OFF;
-        break;
-    case DTR_CONTROL_ENABLE:
-        config->dtr = HS_SERIAL_CONFIG_DTR_ON;
-        break;
+        case DTR_CONTROL_DISABLE: { config->dtr = HS_SERIAL_CONFIG_DTR_OFF; } break;
+        case DTR_CONTROL_ENABLE: { config->dtr = HS_SERIAL_CONFIG_DTR_ON; } break;
     }
 
     if (dcb.fInX && dcb.fOutX) {

@@ -135,19 +135,17 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     start = ty_millis();
 restart:
     if (timeout >= 0) {
-        tv.tv_sec = timeout / 1000;
-        tv.tv_usec = (timeout % 1000) * 1000;
+        int adjusted_timeout = ty_adjust_timeout(timeout, start);
+        tv.tv_sec = adjusted_timeout / 1000;
+        tv.tv_usec = (adjusted_timeout % 1000) * 1000;
+        r = select(FD_SETSIZE, &fds, NULL, NULL, &tv);
+    } else {
+        r = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
     }
-
-    r = select(FD_SETSIZE, &fds, NULL, NULL, timeout >= 0 ? &tv : NULL);
     if (r < 0) {
-        switch (errno) {
-        case EINTR:
-            timeout = ty_adjust_timeout(timeout, start);
+        if (errno == EINTR)
             goto restart;
-        case ENOMEM:
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        }
+
         return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
     }
     if (!r)
@@ -186,12 +184,9 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
 restart:
     r = poll(pfd, (nfds_t)set->count, ty_adjust_timeout(timeout, start));
     if (r < 0) {
-        switch (errno) {
-        case EINTR:
+        if (errno == EINTR)
             goto restart;
-        case ENOMEM:
-            return ty_error(TY_ERROR_MEMORY, NULL);
-        }
+
         return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
     }
     if (!r)

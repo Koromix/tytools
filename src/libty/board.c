@@ -983,20 +983,20 @@ int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
 #endif
     if (!task->u.send_file.fp) {
         switch (errno) {
-        case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
-            break;
-        case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", filename);
-            break;
-        case ENOENT:
-        case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", filename);
-            break;
+            case EACCES: {
+                r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
+            } break;
+            case EIO: {
+                r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", filename);
+            } break;
+            case ENOENT:
+            case ENOTDIR: {
+                r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", filename);
+            } break;
 
-        default:
-            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", filename, strerror(errno));
-            break;
+            default: {
+                r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", filename, strerror(errno));
+            } break;
         }
         goto error;
     }

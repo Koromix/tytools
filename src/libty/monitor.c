@@ -418,13 +418,15 @@ static int device_callback(hs_device *dev, void *udata)
     ty_monitor *monitor = udata;
 
     switch (dev->status) {
-    case HS_DEVICE_STATUS_ONLINE:
-        monitor->refresh_callback_ret = add_interface_for_device(monitor, dev);
-        return !!monitor->refresh_callback_ret;
+        case HS_DEVICE_STATUS_ONLINE: {
+            monitor->refresh_callback_ret = add_interface_for_device(monitor, dev);
+            return !!monitor->refresh_callback_ret;
+        } break;
 
-    case HS_DEVICE_STATUS_DISCONNECTED:
-        monitor->refresh_callback_ret = remove_interface_with_device(monitor, dev);
-        return !!monitor->refresh_callback_ret;
+        case HS_DEVICE_STATUS_DISCONNECTED: {
+            monitor->refresh_callback_ret = remove_interface_with_device(monitor, dev);
+            return !!monitor->refresh_callback_ret;
+        } break;
     }
 
     assert(false);

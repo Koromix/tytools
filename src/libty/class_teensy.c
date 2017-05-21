@@ -33,15 +33,15 @@ static ty_model identify_model(uint16_t usage)
 {
     ty_model model = 0;
     switch (usage) {
-        case 0x1A: model = TY_MODEL_TEENSY_PP_10; break;
-        case 0x1B: model = TY_MODEL_TEENSY_20; break;
-        case 0x1C: model = TY_MODEL_TEENSY_PP_20; break;
-        case 0x1D: model = TY_MODEL_TEENSY_30; break;
-        case 0x1E: model = TY_MODEL_TEENSY_31; break;
-        case 0x20: model = TY_MODEL_TEENSY_LC; break;
-        case 0x21: model = TY_MODEL_TEENSY_32; break;
-        case 0x1F: model = TY_MODEL_TEENSY_35; break;
-        case 0x22: model = TY_MODEL_TEENSY_36; break;
+        case 0x1A: { model = TY_MODEL_TEENSY_PP_10; } break;
+        case 0x1B: { model = TY_MODEL_TEENSY_20; } break;
+        case 0x1C: { model = TY_MODEL_TEENSY_PP_20; } break;
+        case 0x1D: { model = TY_MODEL_TEENSY_30; } break;
+        case 0x1E: { model = TY_MODEL_TEENSY_31; } break;
+        case 0x20: { model = TY_MODEL_TEENSY_LC; } break;
+        case 0x21: { model = TY_MODEL_TEENSY_32; } break;
+        case 0x1F: { model = TY_MODEL_TEENSY_35; } break;
+        case 0x22: { model = TY_MODEL_TEENSY_36; } break;
     }
 
     if (model != 0) {
@@ -88,67 +88,67 @@ static int teensy_load_interface(ty_board_interface *iface)
 #define MAKE_UINT32(high, low) (((high) << 16) | ((low) & 0xFFFF))
 
     switch (MAKE_UINT32(dev->vid, dev->pid)) {
-    case MAKE_UINT32(0x16C0, 0x0476):
-    case MAKE_UINT32(0x16C0, 0x0478):
-    case MAKE_UINT32(0x16C0, 0x0482):
-    case MAKE_UINT32(0x16C0, 0x0483):
-    case MAKE_UINT32(0x16C0, 0x0484):
-    case MAKE_UINT32(0x16C0, 0x0485):
-    case MAKE_UINT32(0x16C0, 0x0486):
-    case MAKE_UINT32(0x16C0, 0x0487):
-    case MAKE_UINT32(0x16C0, 0x0488):
-    case MAKE_UINT32(0x16C0, 0x0489):
-    case MAKE_UINT32(0x16C0, 0x048A):
-    case MAKE_UINT32(0x16C0, 0x04D0):
-    case MAKE_UINT32(0x16C0, 0x04D1):
-    case MAKE_UINT32(0x16C0, 0x04D2):
-    case MAKE_UINT32(0x16C0, 0x04D3):
-    case MAKE_UINT32(0x16C0, 0x04D4):
-    case MAKE_UINT32(0x16C0, 0x04D9):
-        break;
+        case MAKE_UINT32(0x16C0, 0x0476):
+        case MAKE_UINT32(0x16C0, 0x0478):
+        case MAKE_UINT32(0x16C0, 0x0482):
+        case MAKE_UINT32(0x16C0, 0x0483):
+        case MAKE_UINT32(0x16C0, 0x0484):
+        case MAKE_UINT32(0x16C0, 0x0485):
+        case MAKE_UINT32(0x16C0, 0x0486):
+        case MAKE_UINT32(0x16C0, 0x0487):
+        case MAKE_UINT32(0x16C0, 0x0488):
+        case MAKE_UINT32(0x16C0, 0x0489):
+        case MAKE_UINT32(0x16C0, 0x048A):
+        case MAKE_UINT32(0x16C0, 0x04D0):
+        case MAKE_UINT32(0x16C0, 0x04D1):
+        case MAKE_UINT32(0x16C0, 0x04D2):
+        case MAKE_UINT32(0x16C0, 0x04D3):
+        case MAKE_UINT32(0x16C0, 0x04D4):
+        case MAKE_UINT32(0x16C0, 0x04D9): {
+            // Accept this device
+        } break;
 
-    default:
-        return 0;
+        default: { return 0; } break;
     }
 
 #undef MAKE_UINT32
 
     switch (dev->type) {
-    case HS_DEVICE_TYPE_SERIAL:
-        iface->name = "Serial";
-        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
-        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
-        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
-        break;
-
-    case HS_DEVICE_TYPE_HID:
-        switch (dev->u.hid.usage_page) {
-        case TEENSY_USAGE_PAGE_BOOTLOADER:
-            iface->name = "HalfKay";
-            iface->model = identify_model(dev->u.hid.usage);
-            if (iface->model) {
-                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
-                iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
-            }
-            break;
-
-        case TEENSY_USAGE_PAGE_RAWHID:
-            iface->name = "RawHID";
-            iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
-            break;
-
-        case TEENSY_USAGE_PAGE_SEREMU:
-            iface->name = "Seremu";
+        case HS_DEVICE_TYPE_SERIAL: {
+            iface->name = "Serial";
             iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
             iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
             iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
-            break;
+        } break;
 
-        default:
-            return 0;
-        }
+        case HS_DEVICE_TYPE_HID: {
+            switch (dev->u.hid.usage_page) {
+                case TEENSY_USAGE_PAGE_BOOTLOADER: {
+                    iface->name = "HalfKay";
+                    iface->model = identify_model(dev->u.hid.usage);
+                    if (iface->model) {
+                        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
+                        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
+                    }
+                } break;
 
-        break;
+                case TEENSY_USAGE_PAGE_RAWHID: {
+                    iface->name = "RawHID";
+                    iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
+                } break;
+
+                case TEENSY_USAGE_PAGE_SEREMU: {
+                    iface->name = "Seremu";
+                    iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
+                    iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
+                    iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
+                } break;
+
+                default: {
+                    return 0;
+                } break;
+            }
+        } break;
     }
 
     iface->class_vtable = &_ty_teensy_class_vtable;
@@ -326,28 +326,28 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
         reset_handler_addr = (uint32_t)fw->image[4] | ((uint32_t)fw->image[5] << 8) |
                              ((uint32_t)fw->image[6] << 16) | ((uint32_t)fw->image[7] << 24);
         switch (reset_handler_addr) {
-        case 0xF9:
-            rmodels[models_count++] = TY_MODEL_TEENSY_30;
-            magic_check = 0x00043F82;
-            break;
-        case 0x1BD:
-            rmodels[models_count++] = TY_MODEL_TEENSY_31;
-            if (max_models >= 2)
-                rmodels[models_count++] = TY_MODEL_TEENSY_32;
-            magic_check = 0x00043F82;
-            break;
-        case 0xC1:
-            rmodels[models_count++] = TY_MODEL_TEENSY_LC;
-            magic_check = 0x00003F82;
-            break;
-        case 0x199:
-            rmodels[models_count++] = TY_MODEL_TEENSY_35;
-            magic_check = 0x00043F82;
-            break;
-        case 0x1D1:
-            rmodels[models_count++] = TY_MODEL_TEENSY_36;
-            magic_check = 0x00043F82;
-            break;
+            case 0xF9: {
+                rmodels[models_count++] = TY_MODEL_TEENSY_30;
+                magic_check = 0x00043F82;
+            } break;
+            case 0x1BD: {
+                rmodels[models_count++] = TY_MODEL_TEENSY_31;
+                if (max_models >= 2)
+                    rmodels[models_count++] = TY_MODEL_TEENSY_32;
+                magic_check = 0x00043F82;
+            } break;
+            case 0xC1: {
+                rmodels[models_count++] = TY_MODEL_TEENSY_LC;
+                magic_check = 0x00003F82;
+            } break;
+            case 0x199: {
+                rmodels[models_count++] = TY_MODEL_TEENSY_35;
+                magic_check = 0x00043F82;
+            } break;
+            case 0x1D1: {
+                rmodels[models_count++] = TY_MODEL_TEENSY_36;
+                magic_check = 0x00043F82;
+            } break;
         }
 
         if (models_count) {
@@ -377,15 +377,18 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
                               ((uint64_t)fw->image[i + 7] << 56);
 
             switch (value8) {
-            case 0x94F8CFFF7E00940C:
-                rmodels[0] = TY_MODEL_TEENSY_PP_10;
-                return 1;
-            case 0x94F8CFFF3F00940C:
-                rmodels[0] = TY_MODEL_TEENSY_20;
-                return 1;
-            case 0x94F8CFFFFE00940C:
-                rmodels[0] = TY_MODEL_TEENSY_PP_20;
-                return 1;
+                case 0x94F8CFFF7E00940C: {
+                    rmodels[0] = TY_MODEL_TEENSY_PP_10;
+                    return 1;
+                } break;
+                case 0x94F8CFFF3F00940C: {
+                    rmodels[0] = TY_MODEL_TEENSY_20;
+                    return 1;
+                } break;
+                case 0x94F8CFFFFE00940C: {
+                    rmodels[0] = TY_MODEL_TEENSY_PP_20;
+                    return 1;
+                } break;
             }
         }
     }
@@ -399,22 +402,24 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
     ssize_t r;
 
     switch (iface->dev->type) {
-    case HS_DEVICE_TYPE_SERIAL:
-        r = hs_serial_read(iface->port, (uint8_t *)buf, size, timeout);
-        if (r < 0)
-            return ty_libhs_translate_error((int)r);
-        return r;
+        case HS_DEVICE_TYPE_SERIAL: {
+            r = hs_serial_read(iface->port, (uint8_t *)buf, size, timeout);
+            if (r < 0)
+                return ty_libhs_translate_error((int)r);
+            return r;
+        } break;
 
-    case HS_DEVICE_TYPE_HID:
-        r = hs_hid_read(iface->port, hid_buf, sizeof(hid_buf), timeout);
-        if (r < 0)
-            return ty_libhs_translate_error((int)r);
-        if (r < 2)
-            return 0;
+        case HS_DEVICE_TYPE_HID: {
+            r = hs_hid_read(iface->port, hid_buf, sizeof(hid_buf), timeout);
+            if (r < 0)
+                return ty_libhs_translate_error((int)r);
+            if (r < 2)
+                return 0;
 
-        r = (ssize_t)strnlen((char *)hid_buf + 1, (size_t)(r - 1));
-        memcpy(buf, hid_buf + 1, (size_t)r);
-        return r;
+            r = (ssize_t)strnlen((char *)hid_buf + 1, (size_t)(r - 1));
+            memcpy(buf, hid_buf + 1, (size_t)r);
+            return r;
+        } break;
     }
 
     assert(false);
@@ -428,34 +433,36 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
     ssize_t r;
 
     switch (iface->dev->type) {
-    case HS_DEVICE_TYPE_SERIAL:
-        r = hs_serial_write(iface->port, (uint8_t *)buf, size, 5000);
-        if (r < 0)
-            return ty_libhs_translate_error((int)r);
-        if (!r)
-            return ty_error(TY_ERROR_IO, "Timed out while writing to '%s'", iface->dev->path);
-
-        return r;
-
-    case HS_DEVICE_TYPE_HID:
-        /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so no binary
-           transfers. */
-        for (size_t i = 0; i < size;) {
-            size_t block_size = TY_MIN(SEREMU_TX_SIZE, size - i);
-
-            memset(report, 0, sizeof(report));
-            memcpy(report + 1, buf + i, block_size);
-
-            r = hs_hid_write(iface->port, report, sizeof(report));
+        case HS_DEVICE_TYPE_SERIAL: {
+            r = hs_serial_write(iface->port, (uint8_t *)buf, size, 5000);
             if (r < 0)
                 return ty_libhs_translate_error((int)r);
             if (!r)
-                break;
+                return ty_error(TY_ERROR_IO, "Timed out while writing to '%s'", iface->dev->path);
+            return r;
+        } break;
 
-            i += block_size;
-            total += block_size;
-        }
-        return (ssize_t)total;
+        case HS_DEVICE_TYPE_HID: {
+            /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so
+               no binary transfers. */
+            for (size_t i = 0; i < size;) {
+                size_t block_size = TY_MIN(SEREMU_TX_SIZE, size - i);
+
+                memset(report, 0, sizeof(report));
+                memcpy(report + 1, buf + i, block_size);
+
+                r = hs_hid_write(iface->port, report, sizeof(report));
+                if (r < 0)
+                    return ty_libhs_translate_error((int)r);
+                if (!r)
+                    break;
+
+                i += block_size;
+                total += block_size;
+            }
+
+            return (ssize_t)total;
+        } break;
     }
 
     assert(false);
@@ -474,37 +481,37 @@ static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t bloc
     assert(size < sizeof(buf) - 65);
 
     switch (halfkay_version) {
-    case 1:
-        buf[1] = addr & 255;
-        buf[2] = (addr >> 8) & 255;
+        case 1: {
+            buf[1] = addr & 255;
+            buf[2] = (addr >> 8) & 255;
 
-        if (size)
-            memcpy(buf + 3, data, size);
-        size = block_size + 3;
-        break;
+            if (size)
+                memcpy(buf + 3, data, size);
+            size = block_size + 3;
+        } break;
 
-    case 2:
-        buf[1] = (addr >> 8) & 255;
-        buf[2] = (addr >> 16) & 255;
+        case 2: {
+            buf[1] = (addr >> 8) & 255;
+            buf[2] = (addr >> 16) & 255;
 
-        if (size)
-            memcpy(buf + 3, data, size);
-        size = block_size + 3;
-        break;
+            if (size)
+                memcpy(buf + 3, data, size);
+            size = block_size + 3;
+        } break;
 
-    case 3:
-        buf[1] = addr & 255;
-        buf[2] = (addr >> 8) & 255;
-        buf[3] = (addr >> 16) & 255;
+        case 3: {
+            buf[1] = addr & 255;
+            buf[2] = (addr >> 8) & 255;
+            buf[3] = (addr >> 16) & 255;
 
-        if (size)
-            memcpy(buf + 65, data, size);
-        size = block_size + 65;
-        break;
+            if (size)
+                memcpy(buf + 65, data, size);
+            size = block_size + 65;
+        } break;
 
-    default:
-        assert(false);
-        break;
+        default: {
+            assert(false);
+        } break;
     }
 
     /* We may get errors along the way (while the bootloader works) so try again
@@ -540,34 +547,34 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
 
     *rhalfkay_version = 0;
     switch ((ty_model_teensy)model) {
-    case TY_MODEL_TEENSY_PP_10:
-        *rhalfkay_version = 1;
-        *rblock_size = 256;
-        break;
-    case TY_MODEL_TEENSY_20:
-        *rhalfkay_version = 1;
-        *rblock_size = 128;
-        break;
-    case TY_MODEL_TEENSY_PP_20:
-        *rhalfkay_version = 2;
-        *rblock_size = 256;
-        break;
-    case TY_MODEL_TEENSY_30:
-    case TY_MODEL_TEENSY_31:
-    case TY_MODEL_TEENSY_32:
-    case TY_MODEL_TEENSY_35:
-    case TY_MODEL_TEENSY_36:
-        *rhalfkay_version = 3;
-        *rblock_size = 1024;
-        break;
-    case TY_MODEL_TEENSY_LC:
-        *rhalfkay_version = 3;
-        *rblock_size = 512;
-        break;
+        case TY_MODEL_TEENSY_PP_10: {
+            *rhalfkay_version = 1;
+            *rblock_size = 256;
+        } break;
+        case TY_MODEL_TEENSY_20: {
+            *rhalfkay_version = 1;
+            *rblock_size = 128;
+        } break;
+        case TY_MODEL_TEENSY_PP_20: {
+            *rhalfkay_version = 2;
+            *rblock_size = 256;
+        } break;
+        case TY_MODEL_TEENSY_30:
+        case TY_MODEL_TEENSY_31:
+        case TY_MODEL_TEENSY_32:
+        case TY_MODEL_TEENSY_35:
+        case TY_MODEL_TEENSY_36: {
+            *rhalfkay_version = 3;
+            *rblock_size = 1024;
+        } break;
+        case TY_MODEL_TEENSY_LC: {
+            *rhalfkay_version = 3;
+            *rblock_size = 512;
+        } break;
 
-    case TY_MODEL_TEENSY:
-        assert(false);
-        break;
+        case TY_MODEL_TEENSY: {
+            assert(false);
+        } break;
     }
     assert(*rhalfkay_version);
 
@@ -634,26 +641,26 @@ static int teensy_reboot(ty_board_interface *iface)
 
     r = TY_ERROR_UNSUPPORTED;
     switch (iface->dev->type) {
-    case HS_DEVICE_TYPE_SERIAL:
-        r = change_baudrate(iface->port, serial_magic);
-        if (!r) {
-            /* Don't keep these settings, some systems (such as Linux) may reuse them and
-               the device will keep rebooting when opened. */
-            ty_error_mask(TY_ERROR_SYSTEM);
-            change_baudrate(iface->port, 115200);
-            ty_error_unmask();
-        }
-        break;
+        case HS_DEVICE_TYPE_SERIAL: {
+            r = change_baudrate(iface->port, serial_magic);
+            if (!r) {
+                /* Don't keep these settings, some systems (such as Linux) may reuse them and
+                   the device will keep rebooting when opened. */
+                ty_error_mask(TY_ERROR_SYSTEM);
+                change_baudrate(iface->port, 115200);
+                ty_error_unmask();
+            }
+        } break;
 
-    case HS_DEVICE_TYPE_HID:
-        r = (int)hs_hid_send_feature_report(iface->port, seremu_magic, sizeof(seremu_magic));
-        if (r < 0) {
-            r = ty_libhs_translate_error(r);
-        } else {
-            assert(r == sizeof(seremu_magic));
-            r = 0;
-        }
-        break;
+        case HS_DEVICE_TYPE_HID: {
+            r = (int)hs_hid_send_feature_report(iface->port, seremu_magic, sizeof(seremu_magic));
+            if (r < 0) {
+                r = ty_libhs_translate_error(r);
+            } else {
+                assert(r == sizeof(seremu_magic));
+                r = 0;
+            }
+        } break;
     }
 
     return r;

@@ -102,10 +102,8 @@ uint64_t ty_timer_rearm(ty_timer *timer)
         return 0;
 
     switch (kev.ident) {
-    case 0:
-        return (uint64_t)kev.data;
-    case 1:
-        return 1;
+        case 0: { return (uint64_t)kev.data; } break;
+        case 1: { return 1; } break;
     }
 
     assert(false);

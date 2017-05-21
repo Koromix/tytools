@@ -79,38 +79,39 @@ static int parse_line(struct parser_context *ctx, const char *line)
         return parse_error(ctx);
 
     switch (type) {
-    case 0: // data record
-        address += ctx->base_offset;
-        r = ty_firmware_expand_image(ctx->fw, address + length);
-        if (r < 0)
-            return r;
-        for (unsigned int i = 0; i < length; i++)
-            ctx->fw->image[address + i] = parse_hex_byte(ctx, true);
-        break;
+        case 0: { // data record
+            address += ctx->base_offset;
+            r = ty_firmware_expand_image(ctx->fw, address + length);
+            if (r < 0)
+                return r;
+            for (unsigned int i = 0; i < length; i++)
+                ctx->fw->image[address + i] = parse_hex_byte(ctx, true);
+        } break;
 
-    case 1: // EOF record
-        if (length > 0)
+        case 1: { // EOF record
+            if (length > 0)
+                return parse_error(ctx);
+        } break;
+
+        case 2: { // extended segment address record
+            if (length != 2)
+                return parse_error(ctx);
+            ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 4;
+        } break;
+        case 3: { // start segment address record
+        } break;
+
+        case 4: { // extended linear address record
+            if (length != 2)
+                return parse_error(ctx);
+            ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 16;
+        } break;
+        case 5: { // start linear address record
+        } break;
+
+        default: {
             return parse_error(ctx);
-        break;
-
-    case 2: // extended segment address record
-        if (length != 2)
-            return parse_error(ctx);
-        ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 4;
-        break;
-    case 3: // start segment address record
-        break;
-
-    case 4: // extended linear address record
-        if (length != 2)
-            return parse_error(ctx);
-        ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 16;
-        break;
-    case 5: // start linear address record
-        break;
-
-    default:
-        return parse_error(ctx);
+        } break;
     }
 
     // Don't checksum the checksum :)
@@ -148,21 +149,22 @@ int ty_firmware_load_ihex(const char *filename, ty_firmware **rfw)
 #endif
     if (!fp) {
         switch (errno) {
-        case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
-            break;
-        case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", ctx.fw->filename);
-            break;
-        case ENOENT:
-        case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
-            break;
+            case EACCES: {
+                r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
+            } break;
+            case EIO: {
+                r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading",
+                             ctx.fw->filename);
+            } break;
+            case ENOENT:
+            case ENOTDIR: {
+                r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
+            } break;
 
-        default:
-            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
-                         strerror(errno));
-            break;
+            default: {
+                r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
+                             strerror(errno));
+            } break;
         }
         goto cleanup;
     }

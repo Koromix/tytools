@@ -35,16 +35,11 @@ static const char *generic_message(int err)
         return "Success";
 
     switch ((hs_error_code)err) {
-    case HS_ERROR_MEMORY:
-        return "Memory error";
-    case HS_ERROR_NOT_FOUND:
-        return "Not found";
-    case HS_ERROR_ACCESS:
-        return "Permission error";
-    case HS_ERROR_IO:
-        return "I/O error";
-    case HS_ERROR_SYSTEM:
-        return "System error";
+        case HS_ERROR_MEMORY: { return "Memory error"; } break;
+        case HS_ERROR_NOT_FOUND: { return "Not found"; } break;
+        case HS_ERROR_ACCESS: { return "Permission error"; } break;
+        case HS_ERROR_IO: { return "I/O error"; } break;
+        case HS_ERROR_SYSTEM: { return "System error"; } break;
     }
 
     return "Unknown error";

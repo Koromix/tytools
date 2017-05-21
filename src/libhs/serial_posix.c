@@ -39,56 +39,27 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
         speed_t std_baudrate;
 
         switch (config->baudrate) {
-        case 110:
-            std_baudrate = B110;
-            break;
-        case 134:
-            std_baudrate = B134;
-            break;
-        case 150:
-            std_baudrate = B150;
-            break;
-        case 200:
-            std_baudrate = B200;
-            break;
-        case 300:
-            std_baudrate = B300;
-            break;
-        case 600:
-            std_baudrate = B600;
-            break;
-        case 1200:
-            std_baudrate = B1200;
-            break;
-        case 1800:
-            std_baudrate = B1800;
-            break;
-        case 2400:
-            std_baudrate = B2400;
-            break;
-        case 4800:
-            std_baudrate = B4800;
-            break;
-        case 9600:
-            std_baudrate = B9600;
-            break;
-        case 19200:
-            std_baudrate = B19200;
-            break;
-        case 38400:
-            std_baudrate = B38400;
-            break;
-        case 57600:
-            std_baudrate = B57600;
-            break;
-        case 115200:
-            std_baudrate = B115200;
-            break;
-        case 230400:
-            std_baudrate = B230400;
-            break;
-        default:
-            return hs_error(HS_ERROR_SYSTEM, "Unsupported baud rate value: %u", config->baudrate);
+            case 110: { std_baudrate = B110; } break;
+            case 134: { std_baudrate = B134; } break;
+            case 150: { std_baudrate = B150; } break;
+            case 200: { std_baudrate = B200; } break;
+            case 300: { std_baudrate = B300; } break;
+            case 600: { std_baudrate = B600; } break;
+            case 1200: { std_baudrate = B1200; } break;
+            case 1800: { std_baudrate = B1800; } break;
+            case 2400: { std_baudrate = B2400; } break;
+            case 4800: { std_baudrate = B4800; } break;
+            case 9600: { std_baudrate = B9600; } break;
+            case 19200: { std_baudrate = B19200; } break;
+            case 38400: { std_baudrate = B38400; } break;
+            case 57600: { std_baudrate = B57600; } break;
+            case 115200: { std_baudrate = B115200; } break;
+            case 230400: { std_baudrate = B230400; } break;
+
+            default: {
+                return hs_error(HS_ERROR_SYSTEM, "Unsupported baud rate value: %u",
+                                config->baudrate);
+            } break;
         }
 
         cfsetispeed(&tio, std_baudrate);
@@ -99,20 +70,15 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
         tio.c_cflag &= (unsigned int)~CSIZE;
 
         switch (config->databits) {
-        case 5:
-            tio.c_cflag |= CS5;
-            break;
-        case 6:
-            tio.c_cflag |= CS6;
-            break;
-        case 7:
-            tio.c_cflag |= CS7;
-            break;
-        case 8:
-            tio.c_cflag |= CS8;
-            break;
-        default:
-            return hs_error(HS_ERROR_SYSTEM, "Invalid data bits setting: %u", config->databits);
+            case 5: { tio.c_cflag |= CS5; } break;
+            case 6: { tio.c_cflag |= CS6; } break;
+            case 7: { tio.c_cflag |= CS7; } break;
+            case 8: { tio.c_cflag |= CS8; } break;
+
+            default: {
+                return hs_error(HS_ERROR_SYSTEM, "Invalid data bits setting: %u",
+                                config->databits);
+            } break;
         }
     }
 
@@ -120,13 +86,13 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
         tio.c_cflag &= (unsigned int)~CSTOPB;
 
         switch (config->stopbits) {
-        case 1:
-            break;
-        case 2:
-            tio.c_cflag |= CSTOPB;
-            break;
-        default:
-            return hs_error(HS_ERROR_SYSTEM, "Invalid stop bits setting: %u", config->stopbits);
+            case 1: {} break;
+            case 2: { tio.c_cflag |= CSTOPB; } break;
+
+            default: {
+                return hs_error(HS_ERROR_SYSTEM, "Invalid stop bits setting: %u",
+                                config->stopbits);
+            } break;
         }
     }
 
@@ -137,28 +103,22 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
 #endif
 
         switch (config->parity) {
-        case HS_SERIAL_CONFIG_PARITY_OFF:
-            break;
-        case HS_SERIAL_CONFIG_PARITY_EVEN:
-            tio.c_cflag |= PARENB;
-            break;
-        case HS_SERIAL_CONFIG_PARITY_ODD:
-            tio.c_cflag |= PARENB | PARODD;
-            break;
+            case HS_SERIAL_CONFIG_PARITY_OFF: {} break;
+            case HS_SERIAL_CONFIG_PARITY_EVEN: { tio.c_cflag |= PARENB; } break;
+            case HS_SERIAL_CONFIG_PARITY_ODD: { tio.c_cflag |= PARENB | PARODD; } break;
 #ifdef CMSPAR
-        case HS_SERIAL_CONFIG_PARITY_SPACE:
-            tio.c_cflag |= PARENB | CMSPAR;
-            break;
-        case HS_SERIAL_CONFIG_PARITY_MARK:
-            tio.c_cflag |= PARENB | PARODD | CMSPAR;
-            break;
+            case HS_SERIAL_CONFIG_PARITY_SPACE: { tio.c_cflag |= PARENB | CMSPAR; } break;
+            case HS_SERIAL_CONFIG_PARITY_MARK: { tio.c_cflag |= PARENB | PARODD | CMSPAR; } break;
 #else
-        case HS_SERIAL_CONFIG_PARITY_MARK:
-        case HS_SERIAL_CONFIG_PARITY_SPACE:
-            return hs_error(HS_ERROR_SYSTEM, "Mark/space parity is not supported on this platform");
+
+            case HS_SERIAL_CONFIG_PARITY_MARK:
+            case HS_SERIAL_CONFIG_PARITY_SPACE: {
+                return hs_error(HS_ERROR_SYSTEM, "Mark/space parity is not supported");
+            } break;
 #endif
-        default:
-            return hs_error(HS_ERROR_SYSTEM, "Invalid parity setting: %d", config->parity);
+            default: {
+                return hs_error(HS_ERROR_SYSTEM, "Invalid parity setting: %d", config->parity);
+            } break;
         }
     }
 
@@ -167,49 +127,38 @@ int hs_serial_set_config(hs_port *port, const hs_serial_config *config)
         modem_bits &= ~TIOCM_RTS;
 
         switch (config->rts) {
-        case HS_SERIAL_CONFIG_RTS_OFF:
-            break;
-        case HS_SERIAL_CONFIG_RTS_ON:
-            modem_bits |= TIOCM_RTS;
-            break;
-        case HS_SERIAL_CONFIG_RTS_FLOW:
-            tio.c_cflag |= CRTSCTS;
-            break;
-        default:
-            return hs_error(HS_ERROR_SYSTEM, "Invalid RTS setting: %d", config->rts);
+            case HS_SERIAL_CONFIG_RTS_OFF: {} break;
+            case HS_SERIAL_CONFIG_RTS_ON: { modem_bits |= TIOCM_RTS; } break;
+            case HS_SERIAL_CONFIG_RTS_FLOW: { tio.c_cflag |= CRTSCTS; } break;
+
+            default: {
+                return hs_error(HS_ERROR_SYSTEM, "Invalid RTS setting: %d", config->rts);
+            } break;
         }
     }
 
     switch (config->dtr) {
-    case 0:
-        break;
-    case HS_SERIAL_CONFIG_DTR_OFF:
-        modem_bits &= ~TIOCM_DTR;
-        break;
-    case HS_SERIAL_CONFIG_DTR_ON:
-        modem_bits |= TIOCM_DTR;
-        break;
-    default:
-        return hs_error(HS_ERROR_SYSTEM, "Invalid DTR setting: %d", config->dtr);
+        case 0: {} break;
+        case HS_SERIAL_CONFIG_DTR_OFF: { modem_bits &= ~TIOCM_DTR; } break;
+        case HS_SERIAL_CONFIG_DTR_ON: { modem_bits |= TIOCM_DTR; } break;
+
+        default: {
+            return hs_error(HS_ERROR_SYSTEM, "Invalid DTR setting: %d", config->dtr);
+        } break;
     }
 
     if (config->xonxoff) {
         tio.c_iflag &= (unsigned int)~(IXON | IXOFF | IXANY);
 
         switch (config->xonxoff) {
-        case HS_SERIAL_CONFIG_XONXOFF_OFF:
-            break;
-        case HS_SERIAL_CONFIG_XONXOFF_IN:
-            tio.c_iflag |= IXOFF;
-            break;
-        case HS_SERIAL_CONFIG_XONXOFF_OUT:
-            tio.c_iflag |= IXON | IXANY;
-            break;
-        case HS_SERIAL_CONFIG_XONXOFF_INOUT:
-            tio.c_iflag |= IXOFF | IXON | IXANY;
-            break;
-        default:
-            return hs_error(HS_ERROR_SYSTEM, "Invalid XON/XOFF setting: %d", config->xonxoff);
+            case HS_SERIAL_CONFIG_XONXOFF_OFF: {} break;
+            case HS_SERIAL_CONFIG_XONXOFF_IN: { tio.c_iflag |= IXOFF; } break;
+            case HS_SERIAL_CONFIG_XONXOFF_OUT: { tio.c_iflag |= IXON | IXANY; } break;
+            case HS_SERIAL_CONFIG_XONXOFF_INOUT: { tio.c_iflag |= IXOFF | IXON | IXANY; } break;
+
+            default: {
+                return hs_error(HS_ERROR_SYSTEM, "Invalid XON/XOFF setting: %d", config->xonxoff);
+            } break;
         }
     }
 
@@ -247,69 +196,29 @@ int hs_serial_get_config(hs_port *port, hs_serial_config *config)
     memset(config, 0, sizeof(*config));
 
     switch (cfgetispeed(&tio)) {
-    case B110:
-        config->baudrate = 110;
-        break;
-    case B134:
-        config->baudrate = 134;
-        break;
-    case B150:
-        config->baudrate = 150;
-        break;
-    case B200:
-        config->baudrate = 200;
-        break;
-    case B300:
-        config->baudrate = 300;
-        break;
-    case B600:
-        config->baudrate = 600;
-        break;
-    case B1200:
-        config->baudrate = 1200;
-        break;
-    case B1800:
-        config->baudrate = 1800;
-        break;
-    case B2400:
-        config->baudrate = 2400;
-        break;
-    case B4800:
-        config->baudrate = 4800;
-        break;
-    case B9600:
-        config->baudrate = 9600;
-        break;
-    case B19200:
-        config->baudrate = 19200;
-        break;
-    case B38400:
-        config->baudrate = 38400;
-        break;
-    case B57600:
-        config->baudrate = 57600;
-        break;
-    case B115200:
-        config->baudrate = 115200;
-        break;
-    case B230400:
-        config->baudrate = 230400;
-        break;
+        case B110: { config->baudrate = 110; } break;
+        case B134: { config->baudrate = 134; } break;
+        case B150: { config->baudrate = 150; } break;
+        case B200: { config->baudrate = 200; } break;
+        case B300: { config->baudrate = 300; } break;
+        case B600: { config->baudrate = 600; } break;
+        case B1200: { config->baudrate = 1200; } break;
+        case B1800: { config->baudrate = 1800; } break;
+        case B2400: { config->baudrate = 2400; } break;
+        case B4800: { config->baudrate = 4800; } break;
+        case B9600: { config->baudrate = 9600; } break;
+        case B19200: { config->baudrate = 19200; } break;
+        case B38400: { config->baudrate = 38400; } break;
+        case B57600: { config->baudrate = 57600; } break;
+        case B115200: { config->baudrate = 115200; } break;
+        case B230400: { config->baudrate = 230400; } break;
     }
 
     switch (tio.c_cflag & CSIZE) {
-    case CS5:
-        config->databits = 5;
-        break;
-    case CS6:
-        config->databits = 6;
-        break;
-    case CS7:
-        config->databits = 7;
-        break;
-    case CS8:
-        config->databits = 8;
-        break;
+        case CS5: { config->databits = 5; } break;
+        case CS6: { config->databits = 6; } break;
+        case CS7: { config->databits = 7; } break;
+        case CS8: { config->databits = 8; } break;
     }
 
     if (tio.c_cflag & CSTOPB) {
@@ -325,19 +234,11 @@ int hs_serial_get_config(hs_port *port, hs_serial_config *config)
 #else
         switch (tio.c_cflag & PARODD) {
 #endif
-        case 0:
-            config->parity = HS_SERIAL_CONFIG_PARITY_EVEN;
-            break;
-        case PARODD:
-            config->parity = HS_SERIAL_CONFIG_PARITY_ODD;
-            break;
+            case 0: { config->parity = HS_SERIAL_CONFIG_PARITY_EVEN; } break;
+            case PARODD: { config->parity = HS_SERIAL_CONFIG_PARITY_ODD; } break;
 #ifdef CMSPAR
-        case CMSPAR:
-            config->parity = HS_SERIAL_CONFIG_PARITY_SPACE;
-            break;
-        case CMSPAR | PARODD:
-            config->parity = HS_SERIAL_CONFIG_PARITY_MARK;
-            break;
+            case CMSPAR: { config->parity = HS_SERIAL_CONFIG_PARITY_SPACE; } break;
+            case CMSPAR | PARODD: { config->parity = HS_SERIAL_CONFIG_PARITY_MARK; } break;
 #endif
         }
     } else {
@@ -359,18 +260,10 @@ int hs_serial_get_config(hs_port *port, hs_serial_config *config)
     }
 
     switch (tio.c_iflag & (IXON | IXOFF)) {
-    case 0:
-        config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF;
-        break;
-    case IXOFF:
-        config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_IN;
-        break;
-    case IXON:
-        config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_OUT;
-        break;
-    case IXOFF | IXON:
-        config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_INOUT;
-        break;
+        case 0: { config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_OFF; } break;
+        case IXOFF: { config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_IN; } break;
+        case IXON: { config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_OUT; } break;
+        case IXOFF | IXON: { config->xonxoff = HS_SERIAL_CONFIG_XONXOFF_INOUT; } break;
     }
 
     return 0;

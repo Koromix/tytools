@@ -248,49 +248,49 @@ static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size
 
         // little endian
         switch (item_size) {
-        case 0:
-            item_data = 0;
-            break;
-        case 1:
-            item_data = desc[i + 1];
-            break;
-        case 2:
-            item_data = (uint32_t)(desc[i + 2] << 8) | desc[i + 1];
-            break;
-        case 4:
-            item_data = (uint32_t)((desc[i + 4] << 24) | (desc[i + 3] << 16)
-                | (desc[i + 2] << 8) | desc[i + 1]);
-            break;
+            case 0: {
+                item_data = 0;
+            } break;
+            case 1: {
+                item_data = desc[i + 1];
+            } break;
+            case 2: {
+                item_data = (uint32_t)(desc[i + 2] << 8) | desc[i + 1];
+            } break;
+            case 4: {
+                item_data = (uint32_t)((desc[i + 4] << 24) | (desc[i + 3] << 16) |
+                                       (desc[i + 2] << 8) | desc[i + 1]);
+            } break;
 
-        // silence unitialized warning
-        default:
-            item_data = 0;
-            break;
+            // silence unitialized warning
+            default: {
+                item_data = 0;
+            } break;
         }
 
         switch (item_type) {
-        // main items
-        case 0xA0:
-            collection_depth++;
-            break;
-        case 0xC0:
-            collection_depth--;
-            break;
+            // main items
+            case 0xA0: {
+                collection_depth++;
+            } break;
+            case 0xC0: {
+                collection_depth--;
+            } break;
 
-        // global items
-        case 0x84:
-            dev->u.hid.numbered_reports = true;
-            break;
-        case 0x04:
-            if (!collection_depth)
-                dev->u.hid.usage_page = (uint16_t)item_data;
-            break;
+            // global items
+            case 0x84: {
+                dev->u.hid.numbered_reports = true;
+            } break;
+            case 0x04: {
+                if (!collection_depth)
+                    dev->u.hid.usage_page = (uint16_t)item_data;
+            } break;
 
-        // local items
-        case 0x08:
-            if (!collection_depth)
-                dev->u.hid.usage = (uint16_t)item_data;
-            break;
+            // local items
+            case 0x08: {
+                if (!collection_depth)
+                    dev->u.hid.usage = (uint16_t)item_data;
+            } break;
         }
     }
 }
