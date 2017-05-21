@@ -86,14 +86,15 @@ static bool start_echo_thread(HANDLE desc, echo_direction dir, char *path, size_
         goto error;
 
     switch (dir) {
-    case ECHO_IN:
-        ctx->in = desc;
-        ctx->out = ctx->pipe;
-        break;
-    case ECHO_OUT:
-        ctx->in = ctx->pipe;
-        ctx->out = desc;
-        break;
+        case ECHO_IN: {
+            ctx->in = desc;
+            ctx->out = ctx->pipe;
+        } break;
+
+        case ECHO_OUT: {
+            ctx->in = ctx->pipe;
+            ctx->out = desc;
+        } break;
     }
 
     thread = CreateThread(NULL, 0, echo_thread, ctx, 0, NULL);
