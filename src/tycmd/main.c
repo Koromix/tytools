@@ -87,24 +87,24 @@ static int board_callback(ty_board *board, ty_monitor_event event, void *udata)
     TY_UNUSED(udata);
 
     switch (event) {
-    case TY_MONITOR_EVENT_ADDED:
-        if ((!main_board || get_board_priority(board) > get_board_priority(main_board))
-                && ty_board_matches_tag(board, main_board_tag)) {
-            ty_board_unref(main_board);
-            main_board = ty_board_ref(board);
-        }
-        break;
+        case TY_MONITOR_EVENT_ADDED: {
+            if ((!main_board || get_board_priority(board) > get_board_priority(main_board))
+                    && ty_board_matches_tag(board, main_board_tag)) {
+                ty_board_unref(main_board);
+                main_board = ty_board_ref(board);
+            }
+        } break;
 
-    case TY_MONITOR_EVENT_CHANGED:
-    case TY_MONITOR_EVENT_DISAPPEARED:
-        break;
+        case TY_MONITOR_EVENT_CHANGED:
+        case TY_MONITOR_EVENT_DISAPPEARED: {
+        } break;
 
-    case TY_MONITOR_EVENT_DROPPED:
-        if (main_board == board) {
-            ty_board_unref(main_board);
-            main_board = NULL;
-        }
-        break;
+        case TY_MONITOR_EVENT_DROPPED: {
+            if (main_board == board) {
+                ty_board_unref(main_board);
+                main_board = NULL;
+            }
+        } break;
     }
 
     return 0;

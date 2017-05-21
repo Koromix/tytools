@@ -272,108 +272,106 @@ restart:
             return (int)r;
 
         switch (r) {
-        case 0:
-            return 0;
+            case 0: {
+                return 0;
+            } break;
 
-        case 1:
-            r = ty_monitor_refresh(ty_board_get_monitor(board));
-            if (r < 0)
-                return (int)r;
-
-            if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL)) {
-                if (!monitor_reconnect)
-                    return 0;
-
-                ty_log(TY_LOG_INFO, "Waiting for '%s'...", ty_board_get_tag(board));
-                r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, -1);
+            case 1: {
+                r = ty_monitor_refresh(ty_board_get_monitor(board));
                 if (r < 0)
                     return (int)r;
 
-                goto restart;
-            }
+                if (!ty_board_has_capability(board, TY_BOARD_CAPABILITY_SERIAL)) {
+                    if (!monitor_reconnect)
+                        return 0;
 
-            break;
+                    ty_log(TY_LOG_INFO, "Waiting for '%s'...", ty_board_get_tag(board));
+                    r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_SERIAL, -1);
+                    if (r < 0)
+                        return (int)r;
 
-        case 2:
-            r = ty_board_serial_read(board, buf, sizeof(buf), 0);
-            if (r < 0) {
-                if (r == TY_ERROR_IO && monitor_reconnect) {
-                    timeout = ERROR_IO_TIMEOUT;
-                    ty_descriptor_set_remove(&set, 2);
-                    ty_descriptor_set_remove(&set, 3);
-                    break;
+                    goto restart;
                 }
-                return (int)r;
-            }
+            } break;
 
-#ifdef _WIN32
-            r = write(outfd, buf, (unsigned int)r);
-#else
-            r = write(outfd, buf, (size_t)r);
-#endif
-            if (r < 0) {
-                if (errno == EIO)
-                    return ty_error(TY_ERROR_IO, "I/O error on standard output");
-                return ty_error(TY_ERROR_IO, "Failed to write to standard output: %s",
-                                strerror(errno));
-            }
-
-            break;
-
-        case 3:
-#ifdef _WIN32
-            if (monitor_input_available) {
-                if (monitor_input_ret < 0)
-                    return (int)monitor_input_ret;
-
-                memcpy(buf, monitor_input_line, (size_t)monitor_input_ret);
-                r = monitor_input_ret;
-
-                ResetEvent(monitor_input_available);
-                SetEvent(monitor_input_processed);
-            } else {
-                r = read(STDIN_FILENO, buf, sizeof(buf));
-            }
-#else
-            r = read(STDIN_FILENO, buf, sizeof(buf));
-#endif
-            if (r < 0) {
-                if (errno == EIO)
-                    return ty_error(TY_ERROR_IO, "I/O error on standard input");
-                return ty_error(TY_ERROR_IO, "Failed to read from standard input: %s",
-                                strerror(errno));
-            }
-            if (!r) {
-                if (monitor_timeout_eof >= 0) {
-                    /* EOF reached, don't listen to stdin anymore, and start timeout to give some
-                       time for the device to send any data before closing down. */
-                    timeout = monitor_timeout_eof;
-                    ty_descriptor_set_remove(&set, 1);
-                    ty_descriptor_set_remove(&set, 3);
+            case 2: {
+                r = ty_board_serial_read(board, buf, sizeof(buf), 0);
+                if (r < 0) {
+                    if (r == TY_ERROR_IO && monitor_reconnect) {
+                        timeout = ERROR_IO_TIMEOUT;
+                        ty_descriptor_set_remove(&set, 2);
+                        ty_descriptor_set_remove(&set, 3);
+                        break;
+                    }
+                    return (int)r;
                 }
-                break;
-            }
 
 #ifdef _WIN32
-            if (monitor_fake_echo) {
                 r = write(outfd, buf, (unsigned int)r);
-                if (r < 0)
-                    return (int)r;
-            }
+#else
+                r = write(outfd, buf, (size_t)r);
 #endif
+                if (r < 0) {
+                    if (errno == EIO)
+                        return ty_error(TY_ERROR_IO, "I/O error on standard output");
+                    return ty_error(TY_ERROR_IO, "Failed to write to standard output: %s",
+                                    strerror(errno));
+                }
+            } break;
 
-            r = ty_board_serial_write(board, buf, (size_t)r);
-            if (r < 0) {
-                if (r == TY_ERROR_IO && monitor_reconnect) {
-                    timeout = ERROR_IO_TIMEOUT;
-                    ty_descriptor_set_remove(&set, 2);
-                    ty_descriptor_set_remove(&set, 3);
+            case 3: {
+#ifdef _WIN32
+                if (monitor_input_available) {
+                    if (monitor_input_ret < 0)
+                        return (int)monitor_input_ret;
+
+                    memcpy(buf, monitor_input_line, (size_t)monitor_input_ret);
+                    r = monitor_input_ret;
+
+                    ResetEvent(monitor_input_available);
+                    SetEvent(monitor_input_processed);
+                } else {
+                    r = read(STDIN_FILENO, buf, sizeof(buf));
+                }
+#else
+                r = read(STDIN_FILENO, buf, sizeof(buf));
+#endif
+                if (r < 0) {
+                    if (errno == EIO)
+                        return ty_error(TY_ERROR_IO, "I/O error on standard input");
+                    return ty_error(TY_ERROR_IO, "Failed to read from standard input: %s",
+                                    strerror(errno));
+                }
+                if (!r) {
+                    if (monitor_timeout_eof >= 0) {
+                        /* EOF reached, don't listen to stdin anymore, and start timeout to give some
+                           time for the device to send any data before closing down. */
+                        timeout = monitor_timeout_eof;
+                        ty_descriptor_set_remove(&set, 1);
+                        ty_descriptor_set_remove(&set, 3);
+                    }
                     break;
                 }
-                return (int)r;
-            }
 
-            break;
+#ifdef _WIN32
+                if (monitor_fake_echo) {
+                    r = write(outfd, buf, (unsigned int)r);
+                    if (r < 0)
+                        return (int)r;
+                }
+#endif
+
+                r = ty_board_serial_write(board, buf, (size_t)r);
+                if (r < 0) {
+                    if (r == TY_ERROR_IO && monitor_reconnect) {
+                        timeout = ERROR_IO_TIMEOUT;
+                        ty_descriptor_set_remove(&set, 2);
+                        ty_descriptor_set_remove(&set, 3);
+                        break;
+                    }
+                    return (int)r;
+                }
+            } break;
         }
     }
 }

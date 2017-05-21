@@ -65,34 +65,36 @@ static void print_field(const char *key, const char *format, ...)
     }
 
     switch (list_output) {
-    case OUTPUT_PLAIN:
-        if (key || format)
-            printf("\n%*s%c ", list_collection_depth * 2, "", list_collection_depth % 2 ? '+' : '-');
-        if (key)
-            printf("%s: ", key);
-        printf("%s", value);
-        break;
-
-    case OUTPUT_JSON:
-        if (list_collection_started)
-            printf(", ");
-        if (list_collection_depth && list_collections[list_collection_depth - 1] == COLLECTION_LIST &&
-                key && format) {
-            if (numeric) {
-                printf("[\"%s\", %s]", key, value);
-            } else {
-                printf("[\"%s\", \"%s\"]", key, value);
-            }
-        } else {
+        case OUTPUT_PLAIN: {
+            if (key || format)
+                printf("\n%*s%c ", list_collection_depth * 2, "",
+                       list_collection_depth % 2 ? '+' : '-');
             if (key)
-                printf("\"%s\": ", key);
-            if (numeric) {
-                printf("%s", value);
-            } else if (format) {
-                printf("\"%s\"", value);
+                printf("%s: ", key);
+            printf("%s", value);
+        } break;
+
+        case OUTPUT_JSON: {
+            if (list_collection_started)
+                printf(", ");
+            if (list_collection_depth &&
+                    list_collections[list_collection_depth - 1] == COLLECTION_LIST &&
+                    key && format) {
+                if (numeric) {
+                    printf("[\"%s\", %s]", key, value);
+                } else {
+                    printf("[\"%s\", \"%s\"]", key, value);
+                }
+            } else {
+                if (key)
+                    printf("\"%s\": ", key);
+                if (numeric) {
+                    printf("%s", value);
+                } else if (format) {
+                    printf("\"%s\"", value);
+                }
             }
-        }
-        break;
+        } break;
     }
 
     list_collection_started = true;
@@ -116,13 +118,15 @@ static void end_collection(void)
     list_collection_depth--;
 
     switch (list_output) {
-    case OUTPUT_PLAIN:
-        if (!list_collection_started && list_collections[list_collection_depth] == COLLECTION_LIST)
-            printf("(none)");
-        break;
-    case OUTPUT_JSON:
-        printf("%c", list_collections[list_collection_depth] + 2);
-        break;
+        case OUTPUT_PLAIN: {
+            if (!list_collection_started &&
+                    list_collections[list_collection_depth] == COLLECTION_LIST)
+                printf("(none)");
+        } break;
+
+        case OUTPUT_JSON: {
+            printf("%c", list_collections[list_collection_depth] + 2);
+        } break;
     }
 
     list_collection_started = !!list_collection_depth;
@@ -146,18 +150,10 @@ static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
     const char *action = "";
 
     switch (event) {
-    case TY_MONITOR_EVENT_ADDED:
-        action = "add";
-        break;
-    case TY_MONITOR_EVENT_CHANGED:
-        action = "change";
-        break;
-    case TY_MONITOR_EVENT_DISAPPEARED:
-        action = "miss";
-        break;
-    case TY_MONITOR_EVENT_DROPPED:
-        action = "remove";
-        break;
+        case TY_MONITOR_EVENT_ADDED: { action = "add"; } break;
+        case TY_MONITOR_EVENT_CHANGED: { action = "change"; } break;
+        case TY_MONITOR_EVENT_DISAPPEARED: { action = "miss"; } break;
+        case TY_MONITOR_EVENT_DROPPED: { action = "remove"; } break;
     }
 
     start_collection(NULL, COLLECTION_OBJECT);
