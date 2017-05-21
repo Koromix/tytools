@@ -110,9 +110,9 @@ unsigned int ty_descriptor_get_modes(ty_descriptor desc)
     return 0;
 }
 
-ty_descriptor ty_standard_get_descriptor(ty_standard_stream std)
+ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream)
 {
-    return std;
+    return std_stream;
 }
 
 #ifdef __APPLE__

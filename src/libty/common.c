@@ -71,7 +71,7 @@ static void print_progress(const ty_message_data *msg)
         return;
 
     if (!init) {
-        show_progress = ty_standard_get_modes(TY_STANDARD_OUTPUT) & TY_DESCRIPTOR_MODE_TERMINAL;
+        show_progress = ty_standard_get_modes(TY_STREAM_OUTPUT) & TY_DESCRIPTOR_MODE_TERMINAL;
         init = true;
     }
 

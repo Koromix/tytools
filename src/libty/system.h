@@ -29,9 +29,9 @@ typedef int ty_descriptor;
 #endif
 
 typedef enum ty_standard_stream {
-    TY_STANDARD_INPUT = 0,
-    TY_STANDARD_OUTPUT = 1,
-    TY_STANDARD_ERROR = 2
+    TY_STREAM_INPUT = 0,
+    TY_STREAM_OUTPUT = 1,
+    TY_STREAM_ERROR = 2
 } ty_standard_stream;
 
 enum {
@@ -67,10 +67,10 @@ TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
 TY_PUBLIC unsigned int ty_descriptor_get_modes(ty_descriptor desc);
 
-TY_PUBLIC ty_descriptor ty_standard_get_descriptor(ty_standard_stream std);
-static inline unsigned int ty_standard_get_modes(ty_standard_stream std)
+TY_PUBLIC ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream);
+static inline unsigned int ty_standard_get_modes(ty_standard_stream std_stream)
 {
-    return ty_descriptor_get_modes(ty_standard_get_descriptor(std));
+    return ty_descriptor_get_modes(ty_standard_get_descriptor(std_stream));
 }
 
 TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);

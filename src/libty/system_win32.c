@@ -122,12 +122,12 @@ unsigned int ty_descriptor_get_modes(ty_descriptor desc)
     return 0;
 }
 
-ty_descriptor ty_standard_get_descriptor(ty_standard_stream std)
+ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream)
 {
-    switch (std) {
-        case TY_STANDARD_INPUT: { return GetStdHandle(STD_INPUT_HANDLE); } break;
-        case TY_STANDARD_OUTPUT: { return GetStdHandle(STD_OUTPUT_HANDLE); } break;
-        case TY_STANDARD_ERROR: { return GetStdHandle(STD_ERROR_HANDLE); } break;
+    switch (std_stream) {
+        case TY_STREAM_INPUT: { return GetStdHandle(STD_INPUT_HANDLE); } break;
+        case TY_STREAM_OUTPUT: { return GetStdHandle(STD_OUTPUT_HANDLE); } break;
+        case TY_STREAM_ERROR: { return GetStdHandle(STD_ERROR_HANDLE); } break;
     }
 
     assert(false);
