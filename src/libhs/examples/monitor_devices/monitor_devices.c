@@ -31,12 +31,8 @@ static int device_callback(hs_device *dev, void *udata)
     /* Use hs_device_get_status() to differenciate between added and removed devices,
        when called from hs_monitor_list() it is always HS_DEVICE_STATUS_ONLINE. */
     switch (dev->status) {
-    case HS_DEVICE_STATUS_DISCONNECTED:
-        event = "remove";
-        break;
-    case HS_DEVICE_STATUS_ONLINE:
-        event = "add";
-        break;
+        case HS_DEVICE_STATUS_DISCONNECTED: { event = "remove"; } break;
+        case HS_DEVICE_STATUS_ONLINE: { event = "add"; } break;
     }
 
     printf("%s %s@%"PRIu8" %04"PRIx16":%04"PRIx16" (%s)\n",

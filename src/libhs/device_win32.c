@@ -41,15 +41,9 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 
     access = UINT32_MAX;
     switch (mode) {
-    case HS_PORT_MODE_READ:
-        access = GENERIC_READ;
-        break;
-    case HS_PORT_MODE_WRITE:
-        access = GENERIC_WRITE;
-        break;
-    case HS_PORT_MODE_RW:
-        access = GENERIC_READ | GENERIC_WRITE;
-        break;
+        case HS_PORT_MODE_READ: { access = GENERIC_READ; } break;
+        case HS_PORT_MODE_WRITE: { access = GENERIC_WRITE; } break;
+        case HS_PORT_MODE_RW: { access = GENERIC_READ | GENERIC_WRITE; } break;
     }
     assert(access != UINT32_MAX);
 
@@ -57,22 +51,22 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
                                   NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (port->u.handle.h == INVALID_HANDLE_VALUE) {
         switch (GetLastError()) {
-        case ERROR_FILE_NOT_FOUND:
-        case ERROR_PATH_NOT_FOUND:
-            r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
-            break;
-        case ERROR_NOT_ENOUGH_MEMORY:
-        case ERROR_OUTOFMEMORY:
-            r = hs_error(HS_ERROR_MEMORY, NULL);
-            break;
-        case ERROR_ACCESS_DENIED:
-            r = hs_error(HS_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
-            break;
+            case ERROR_FILE_NOT_FOUND:
+            case ERROR_PATH_NOT_FOUND: {
+                r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
+            } break;
+            case ERROR_NOT_ENOUGH_MEMORY:
+            case ERROR_OUTOFMEMORY: {
+                r = hs_error(HS_ERROR_MEMORY, NULL);
+            } break;
+            case ERROR_ACCESS_DENIED: {
+                r = hs_error(HS_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
+            } break;
 
-        default:
-            r = hs_error(HS_ERROR_SYSTEM, "CreateFile('%s') failed: %s", dev->path,
-                         hs_win32_strerror(0));
-            break;
+            default: {
+                r = hs_error(HS_ERROR_SYSTEM, "CreateFile('%s') failed: %s", dev->path,
+                             hs_win32_strerror(0));
+            } break;
         }
         goto error;
     }

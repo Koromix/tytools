@@ -55,27 +55,27 @@ void hs_device_unref(hs_device *dev)
 void _hs_device_log(const hs_device *dev, const char *verb)
 {
     switch (dev->type) {
-    case HS_DEVICE_TYPE_SERIAL:
-        hs_log(HS_LOG_DEBUG, "%s serial device '%s' on iface %u\n"
-                             "  - USB VID/PID = %04x:%04x, USB location = %s\n"
-                             "  - USB manufacturer = %s, product = %s, S/N = %s",
-               verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
-               dev->manufacturer_string ? dev->manufacturer_string : "(none)",
-               dev->product_string ? dev->product_string : "(none)",
-               dev->serial_number_string ? dev->serial_number_string : "(none)");
-        break;
+        case HS_DEVICE_TYPE_SERIAL: {
+            hs_log(HS_LOG_DEBUG, "%s serial device '%s' on iface %u\n"
+                                 "  - USB VID/PID = %04x:%04x, USB location = %s\n"
+                                 "  - USB manufacturer = %s, product = %s, S/N = %s",
+                   verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
+                   dev->manufacturer_string ? dev->manufacturer_string : "(none)",
+                   dev->product_string ? dev->product_string : "(none)",
+                   dev->serial_number_string ? dev->serial_number_string : "(none)");
+        } break;
 
-    case HS_DEVICE_TYPE_HID:
-        hs_log(HS_LOG_DEBUG, "%s HID device '%s' on iface %u\n"
-                             "  - USB VID/PID = %04x:%04x, USB location = %s\n"
-                             "  - USB manufacturer = %s, product = %s, S/N = %s\n"
-                             "  - HID usage page = 0x%x, HID usage = 0x%x",
-               verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
-               dev->manufacturer_string ? dev->manufacturer_string : "(none)",
-               dev->product_string ? dev->product_string : "(none)",
-               dev->serial_number_string ? dev->serial_number_string : "(none)",
-               dev->u.hid.usage_page, dev->u.hid.usage);
-        break;
+        case HS_DEVICE_TYPE_HID: {
+            hs_log(HS_LOG_DEBUG, "%s HID device '%s' on iface %u\n"
+                                 "  - USB VID/PID = %04x:%04x, USB location = %s\n"
+                                 "  - USB manufacturer = %s, product = %s, S/N = %s\n"
+                                 "  - HID usage page = 0x%x, HID usage = 0x%x",
+                   verb, dev->key, dev->iface_number, dev->vid, dev->pid, dev->location,
+                   dev->manufacturer_string ? dev->manufacturer_string : "(none)",
+                   dev->product_string ? dev->product_string : "(none)",
+                   dev->serial_number_string ? dev->serial_number_string : "(none)",
+                   dev->u.hid.usage_page, dev->u.hid.usage);
+        } break;
     }
 }
 
@@ -88,14 +88,17 @@ int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport)
         return hs_error(HS_ERROR_NOT_FOUND, "Device '%s' is not connected", dev->path);
 
     switch (dev->type) {
-    case HS_DEVICE_TYPE_HID:
+        case HS_DEVICE_TYPE_HID: {
 #ifdef __APPLE__
-        return _hs_darwin_open_hid_port(dev, mode, rport);
+            return _hs_darwin_open_hid_port(dev, mode, rport);
 #else
-        return _hs_open_file_port(dev, mode, rport);
+            return _hs_open_file_port(dev, mode, rport);
 #endif
-    case HS_DEVICE_TYPE_SERIAL:
-        return _hs_open_file_port(dev, mode, rport);
+        } break;
+
+        case HS_DEVICE_TYPE_SERIAL: {
+            return _hs_open_file_port(dev, mode, rport);
+        } break;
     }
 
     assert(false);
@@ -108,16 +111,19 @@ void hs_port_close(hs_port *port)
         return;
 
     switch (port->type) {
-    case HS_DEVICE_TYPE_HID:
+        case HS_DEVICE_TYPE_HID: {
 #ifdef __APPLE__
-        _hs_darwin_close_hid_port(port);
+            _hs_darwin_close_hid_port(port);
 #else
-        _hs_close_file_port(port);
+            _hs_close_file_port(port);
 #endif
-        return;
-    case HS_DEVICE_TYPE_SERIAL:
-        _hs_close_file_port(port);
-        return;
+            return;
+        } break;
+
+        case HS_DEVICE_TYPE_SERIAL: {
+            _hs_close_file_port(port);
+            return;
+        } break;
     }
 
     assert(false);
@@ -134,14 +140,17 @@ hs_handle hs_port_get_poll_handle(const hs_port *port)
     assert(port);
 
     switch (port->type) {
-    case HS_DEVICE_TYPE_HID:
+        case HS_DEVICE_TYPE_HID: {
 #ifdef __APPLE__
-        return _hs_darwin_get_hid_port_poll_handle(port);
+            return _hs_darwin_get_hid_port_poll_handle(port);
 #else
-        return _hs_get_file_port_poll_handle(port);
+            return _hs_get_file_port_poll_handle(port);
 #endif
-    case HS_DEVICE_TYPE_SERIAL:
-        return _hs_get_file_port_poll_handle(port);
+        } break;
+
+        case HS_DEVICE_TYPE_SERIAL: {
+            return _hs_get_file_port_poll_handle(port);
+        } break;
     }
 
     assert(false);

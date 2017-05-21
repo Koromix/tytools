@@ -118,29 +118,29 @@ static bool get_device_cursor_relative(struct device_cursor *cursor,
     CONFIGRET cret = 0xFFFFFFFF;
 
     switch (relative) {
-    case DEVINST_RELATIVE_PARENT:
-        cret = CM_Get_Parent(&new_inst, cursor->inst, 0);
-        if (cret != CR_SUCCESS) {
-            hs_log(HS_LOG_DEBUG, "Cannot get parent of device '%s': 0x%lx", cursor->id, cret);
-            return false;
-        }
-        break;
+        case DEVINST_RELATIVE_PARENT: {
+            cret = CM_Get_Parent(&new_inst, cursor->inst, 0);
+            if (cret != CR_SUCCESS) {
+                hs_log(HS_LOG_DEBUG, "Cannot get parent of device '%s': 0x%lx", cursor->id, cret);
+                return false;
+            }
+        } break;
 
-    case DEVINST_RELATIVE_CHILD:
-        cret = CM_Get_Child(&new_inst, cursor->inst, 0);
-        if (cret != CR_SUCCESS) {
-            hs_log(HS_LOG_DEBUG, "Cannot get child of device '%s': 0x%lx", cursor->id, cret);
-            return false;
-        }
-        break;
+        case DEVINST_RELATIVE_CHILD: {
+            cret = CM_Get_Child(&new_inst, cursor->inst, 0);
+            if (cret != CR_SUCCESS) {
+                hs_log(HS_LOG_DEBUG, "Cannot get child of device '%s': 0x%lx", cursor->id, cret);
+                return false;
+            }
+        } break;
 
-    case DEVINST_RELATIVE_SIBLING:
-        cret = CM_Get_Sibling(&new_inst, cursor->inst, 0);
-        if (cret != CR_SUCCESS) {
-            hs_log(HS_LOG_DEBUG, "Cannot get sibling of device '%s': 0x%lx", cursor->id, cret);
-            return false;
-        }
-        break;
+        case DEVINST_RELATIVE_SIBLING: {
+            cret = CM_Get_Sibling(&new_inst, cursor->inst, 0);
+            if (cret != CR_SUCCESS) {
+                hs_log(HS_LOG_DEBUG, "Cannot get sibling of device '%s': 0x%lx", cursor->id, cret);
+                return false;
+            }
+        } break;
     }
     assert(cret != 0xFFFFFFFF);
 
@@ -1183,49 +1183,50 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
     int r;
 
     switch (msg) {
-    case WM_DEVICECHANGE:
-        r = 0;
-        switch (wparam) {
-        case DBT_DEVICEARRIVAL:
-            r = post_event(monitor, DEVICE_EVENT_ADDED,
-                                  (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
-            break;
-        case DBT_DEVICEREMOVECOMPLETE:
-            r = post_event(monitor, DEVICE_EVENT_REMOVED,
-                                  (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
-            break;
-        }
-        if (r < 0) {
-            EnterCriticalSection(&monitor->events_lock);
-            monitor->thread_ret = r;
-            SetEvent(monitor->thread_event);
-            LeaveCriticalSection(&monitor->events_lock);
-        }
-        break;
+        case WM_DEVICECHANGE: {
+            r = 0;
+            switch (wparam) {
+                case DBT_DEVICEARRIVAL: {
+                    r = post_event(monitor, DEVICE_EVENT_ADDED,
+                                          (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+                } break;
 
-    case WM_TIMER:
-        if (CMP_WaitNoPendingInstallEvents(0) == WAIT_OBJECT_0) {
-            KillTimer(hwnd, 1);
-
-            EnterCriticalSection(&monitor->events_lock);
-            r = _hs_array_grow(&monitor->events, monitor->thread_events.count);
-            if (r < 0) {
-                monitor->thread_ret = r;
-            } else {
-                memcpy(monitor->events.values + monitor->events.count,
-                       monitor->thread_events.values,
-                       monitor->thread_events.count * sizeof(*monitor->thread_events.values));
-                monitor->events.count += monitor->thread_events.count;
-                _hs_array_release(&monitor->thread_events);
+                case DBT_DEVICEREMOVECOMPLETE: {
+                    r = post_event(monitor, DEVICE_EVENT_REMOVED,
+                                          (DEV_BROADCAST_DEVICEINTERFACE *)lparam);
+                } break;
             }
-            SetEvent(monitor->thread_event);
-            LeaveCriticalSection(&monitor->events_lock);
-        }
-        break;
+            if (r < 0) {
+                EnterCriticalSection(&monitor->events_lock);
+                monitor->thread_ret = r;
+                SetEvent(monitor->thread_event);
+                LeaveCriticalSection(&monitor->events_lock);
+            }
+        } break;
 
-    case WM_CLOSE:
-        PostQuitMessage(0);
-        break;
+        case WM_TIMER: {
+            if (CMP_WaitNoPendingInstallEvents(0) == WAIT_OBJECT_0) {
+                KillTimer(hwnd, 1);
+
+                EnterCriticalSection(&monitor->events_lock);
+                r = _hs_array_grow(&monitor->events, monitor->thread_events.count);
+                if (r < 0) {
+                    monitor->thread_ret = r;
+                } else {
+                    memcpy(monitor->events.values + monitor->events.count,
+                           monitor->thread_events.values,
+                           monitor->thread_events.count * sizeof(*monitor->thread_events.values));
+                    monitor->events.count += monitor->thread_events.count;
+                    _hs_array_release(&monitor->thread_events);
+                }
+                SetEvent(monitor->thread_event);
+                LeaveCriticalSection(&monitor->events_lock);
+            }
+        } break;
+
+        case WM_CLOSE: {
+            PostQuitMessage(0);
+        } break;
     }
 
     return DefWindowProc(hwnd, msg, wparam, lparam);
@@ -1495,19 +1496,19 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
         struct event *event = &monitor->refresh_events.values[event_idx];
 
         switch (event->type) {
-        case DEVICE_EVENT_ADDED:
-            hs_log(HS_LOG_DEBUG, "Received arrival notification for device '%s'",
-                   event->device_key);
-            r = process_arrival_event(monitor, event->device_key, f, udata);
-            if (r)
-                goto cleanup;
-            break;
+            case DEVICE_EVENT_ADDED: {
+                hs_log(HS_LOG_DEBUG, "Received arrival notification for device '%s'",
+                       event->device_key);
+                r = process_arrival_event(monitor, event->device_key, f, udata);
+                if (r)
+                    goto cleanup;
+            } break;
 
-        case DEVICE_EVENT_REMOVED:
-            hs_log(HS_LOG_DEBUG, "Received removal notification for device '%s'",
-                   event->device_key);
-            _hs_monitor_remove(&monitor->devices, event->device_key, f, udata);
-            break;
+            case DEVICE_EVENT_REMOVED: {
+                hs_log(HS_LOG_DEBUG, "Received removal notification for device '%s'",
+                       event->device_key);
+                _hs_monitor_remove(&monitor->devices, event->device_key, f, udata);
+            } break;
         }
     }
 

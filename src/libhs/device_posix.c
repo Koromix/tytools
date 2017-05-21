@@ -41,48 +41,46 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
 
     fd_flags = O_CLOEXEC | O_NOCTTY | O_NONBLOCK;
     switch (mode) {
-    case HS_PORT_MODE_READ:
-        fd_flags |= O_RDONLY;
-        break;
-    case HS_PORT_MODE_WRITE:
-        fd_flags |= O_WRONLY;
-        break;
-    case HS_PORT_MODE_RW:
-        fd_flags |= O_RDWR;
-        break;
+        case HS_PORT_MODE_READ: { fd_flags |= O_RDONLY; } break;
+        case HS_PORT_MODE_WRITE: { fd_flags |= O_WRONLY; } break;
+        case HS_PORT_MODE_RW: { fd_flags |= O_RDWR; } break;
     }
 
 restart:
     port->u.file.fd = open(dev->path, fd_flags);
     if (port->u.file.fd < 0) {
         switch (errno) {
-        case EINTR:
-            goto restart;
-        case EACCES:
-            r = hs_error(HS_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
-            break;
-        case EIO:
-        case ENXIO:
-        case ENODEV:
-            r = hs_error(HS_ERROR_IO, "I/O error while opening device '%s'", dev->path);
-            break;
-        case ENOENT:
-        case ENOTDIR:
-            r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
-            break;
+            case EINTR: {
+                goto restart;
+            } break;
+
+            case EACCES: {
+                r = hs_error(HS_ERROR_ACCESS, "Permission denied for device '%s'", dev->path);
+            } break;
+            case EIO:
+            case ENXIO:
+            case ENODEV: {
+                r = hs_error(HS_ERROR_IO, "I/O error while opening device '%s'", dev->path);
+            } break;
+            case ENOENT:
+            case ENOTDIR: {
+                r = hs_error(HS_ERROR_NOT_FOUND, "Device '%s' not found", dev->path);
+            } break;
 
 #ifdef __APPLE__
-        /* On El Capitan (and maybe before), the open fails for some time (around 40 - 50 ms on my
-           computer) after the device notification. */
-        case EBUSY:
-            if (retry--) {
-                usleep(20000);
-                goto restart;
-            }
+            /* On El Capitan (and maybe before), the open fails for some time (around 40 - 50 ms
+               on my computer) after the device notification. */
+            case EBUSY: {
+                if (retry--) {
+                    usleep(20000);
+                    goto restart;
+                }
+            } break;
 #endif
-        default:
-            r = hs_error(HS_ERROR_SYSTEM, "open('%s') failed: %s", dev->path, strerror(errno));
-            break;
+
+            default: {
+                r = hs_error(HS_ERROR_SYSTEM, "open('%s') failed: %s", dev->path, strerror(errno));
+            } break;
         }
         goto error;
     }
