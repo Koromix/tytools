@@ -173,21 +173,22 @@ int ty_firmware_load_elf(const char *filename, ty_firmware **rfw)
 #endif
     if (!ctx.fp) {
         switch (errno) {
-        case EACCES:
-            r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
-            break;
-        case EIO:
-            r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", ctx.fw->filename);
-            break;
-        case ENOENT:
-        case ENOTDIR:
-            r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
-            break;
+            case EACCES: {
+                r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
+            } break;
+            case EIO: {
+                r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading",
+                             ctx.fw->filename);
+            } break;
+            case ENOENT:
+            case ENOTDIR: {
+                r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
+            } break;
 
-        default:
-            r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
-                         strerror(errno));
-            break;
+            default: {
+                r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
+                             strerror(errno));
+            } break;
         }
         goto cleanup;
     }

@@ -104,16 +104,19 @@ unsigned int ty_descriptor_get_modes(ty_descriptor desc)
 {
     DWORD tmp;
     switch (GetFileType(desc)) {
-    case FILE_TYPE_PIPE:
-        return TY_DESCRIPTOR_MODE_FIFO;
-    case FILE_TYPE_CHAR:
-        if (GetConsoleMode(desc, &tmp)) {
-            return TY_DESCRIPTOR_MODE_DEVICE | TY_DESCRIPTOR_MODE_TERMINAL;
-        } else {
-            return TY_DESCRIPTOR_MODE_DEVICE;
-        }
-    case FILE_TYPE_DISK:
-        return TY_DESCRIPTOR_MODE_FILE;
+        case FILE_TYPE_PIPE: {
+            return TY_DESCRIPTOR_MODE_FIFO;
+        } break;
+        case FILE_TYPE_CHAR: {
+            if (GetConsoleMode(desc, &tmp)) {
+                return TY_DESCRIPTOR_MODE_DEVICE | TY_DESCRIPTOR_MODE_TERMINAL;
+            } else {
+                return TY_DESCRIPTOR_MODE_DEVICE;
+            }
+        } break;
+        case FILE_TYPE_DISK: {
+            return TY_DESCRIPTOR_MODE_FILE;
+        } break;
     }
 
     return 0;
@@ -122,12 +125,9 @@ unsigned int ty_descriptor_get_modes(ty_descriptor desc)
 ty_descriptor ty_standard_get_descriptor(ty_standard_stream std)
 {
     switch (std) {
-    case TY_STANDARD_INPUT:
-        return GetStdHandle(STD_INPUT_HANDLE);
-    case TY_STANDARD_OUTPUT:
-        return GetStdHandle(STD_OUTPUT_HANDLE);
-    case TY_STANDARD_ERROR:
-        return GetStdHandle(STD_ERROR_HANDLE);
+        case TY_STANDARD_INPUT: { return GetStdHandle(STD_INPUT_HANDLE); } break;
+        case TY_STANDARD_OUTPUT: { return GetStdHandle(STD_OUTPUT_HANDLE); } break;
+        case TY_STANDARD_ERROR: { return GetStdHandle(STD_ERROR_HANDLE); } break;
     }
 
     assert(false);
@@ -143,11 +143,13 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     DWORD ret = WaitForMultipleObjects((DWORD)set->count, set->desc, FALSE,
                                        timeout < 0 ? INFINITE : (DWORD)timeout);
     switch (ret) {
-    case WAIT_FAILED:
-        return ty_error(TY_ERROR_SYSTEM, "WaitForMultipleObjects() failed: %s",
-                        ty_win32_strerror(0));
-    case WAIT_TIMEOUT:
-        return 0;
+        case WAIT_FAILED: {
+            return ty_error(TY_ERROR_SYSTEM, "WaitForMultipleObjects() failed: %s",
+                            ty_win32_strerror(0));
+        } break;
+        case WAIT_TIMEOUT: {
+            return 0;
+        } break;
     }
 
     return set->id[ret - WAIT_OBJECT_0];
