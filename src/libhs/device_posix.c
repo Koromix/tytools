@@ -75,7 +75,7 @@ restart:
                     usleep(20000);
                     goto restart;
                 }
-            } break;
+            } // fallthrough
 #endif
 
             default: {
