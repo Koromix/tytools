@@ -307,7 +307,7 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
     if (revent)
         *revent = event;
 
-    return 0;
+    return 1;
 }
 
 static int register_interface(ty_board *board, ty_board_interface *iface)
@@ -348,7 +348,7 @@ static int add_interface_for_device(ty_monitor *monitor, hs_device *dev)
     if (r <= 0)
         goto error;
     r = update_or_create_board(monitor, iface, &board, &event);
-    if (r < 0)
+    if (r <= 0)
         goto error;
     r = register_interface(board, iface);
     if (r < 0)
