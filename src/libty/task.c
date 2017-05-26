@@ -341,7 +341,7 @@ static int start_worker_thread(ty_pool *pool)
     // Can't handle failure after ty_thread_create() so grow the array first
     r = _hs_array_grow(&pool->worker_threads, 1);
     if (r < 0)
-        return r;
+        return ty_libhs_translate_error(r);
     thread = &pool->worker_threads.values[pool->worker_threads.count];
 
     r = ty_thread_create(thread, worker_thread_main, pool);
@@ -379,8 +379,10 @@ int ty_task_start(ty_task *task)
     }
 
     r = _hs_array_push(&pool->pending_tasks, task);
-    if (r < 0)
+    if (r < 0) {
+        r = ty_libhs_translate_error(r);
         goto cleanup;
+    }
     ty_task_ref(task);
     ty_cond_signal(&pool->pending_cond);
 

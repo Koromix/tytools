@@ -129,8 +129,10 @@ static int create_board(ty_monitor *monitor, ty_board_interface *iface, ty_board
 
     board->monitor = monitor;
     r = _hs_array_push(&monitor->boards, board);
-    if (r < 0)
+    if (r < 0) {
+        r = ty_libhs_translate_error(r);
         goto error;
+    }
 
     *rboard = board;
     return 1;
@@ -319,8 +321,10 @@ static int register_interface(ty_board *board, ty_board_interface *iface)
     // Add interface to monitor and board
     ty_board_interface_ref(iface);
     r = _hs_array_push(&board->ifaces, iface);
-    if (r < 0)
+    if (r < 0) {
+        r = ty_libhs_translate_error(r);
         goto cleanup;
+    }
     _hs_htable_add(&board->monitor->ifaces, _hs_htable_hash_ptr(iface->dev),
                    &iface->monitor_hnode);
 
@@ -580,7 +584,7 @@ int ty_monitor_register_callback(ty_monitor *monitor, ty_monitor_callback_func *
         .f = f,
         .udata = udata
     };
-    return _hs_array_push(&monitor->callbacks, callback);
+    return ty_libhs_translate_error(_hs_array_push(&monitor->callbacks, callback));
 }
 
 void ty_monitor_deregister_callback(ty_monitor *monitor, int id)
