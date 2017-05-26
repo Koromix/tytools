@@ -262,6 +262,7 @@ int ty_libhs_translate_error(int err)
         case HS_ERROR_NOT_FOUND: { return TY_ERROR_NOT_FOUND; } break;
         case HS_ERROR_ACCESS: { return TY_ERROR_ACCESS; } break;
         case HS_ERROR_IO: { return TY_ERROR_IO; } break;
+        case HS_ERROR_PARSE: { return TY_ERROR_PARSE; } break;
         case HS_ERROR_SYSTEM: { return TY_ERROR_SYSTEM; } break;
     }
 

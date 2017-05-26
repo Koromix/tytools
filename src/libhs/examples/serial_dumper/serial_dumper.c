@@ -166,7 +166,7 @@ static int refresh_read_rate(void)
 int main(void)
 {
     // We want serial devices only, you can match multiple devices with an array of matches
-    static const hs_match match = HS_MATCH_TYPE(HS_DEVICE_TYPE_SERIAL);
+    static const hs_match_spec match = HS_MATCH_TYPE(HS_DEVICE_TYPE_SERIAL, NULL);
     hs_monitor *monitor = NULL;
     int r;
 

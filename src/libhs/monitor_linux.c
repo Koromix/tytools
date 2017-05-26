@@ -17,12 +17,12 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "device_priv.h"
-#include "filter_priv.h"
+#include "match_priv.h"
 #include "monitor_priv.h"
 #include "platform.h"
 
 struct hs_monitor {
-    _hs_filter filter;
+    _hs_match_helper match_helper;
     _hs_htable devices;
 
     struct udev_monitor *udev_mon;
@@ -399,7 +399,7 @@ cleanup:
     return r;
 }
 
-static int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
+static int enumerate(_hs_match_helper *match_helper, hs_enumerate_func *f, void *udata)
 {
     struct udev_enumerate *enumerate;
     int r;
@@ -412,7 +412,7 @@ static int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
 
     udev_enumerate_add_match_is_initialized(enumerate);
     for (unsigned int i = 0; device_subsystems[i].subsystem; i++) {
-        if (_hs_filter_has_type(filter, device_subsystems[i].type)) {
+        if (_hs_match_helper_has_type(match_helper, device_subsystems[i].type)) {
             r = udev_enumerate_add_match_subsystem(enumerate, device_subsystems[i].subsystem);
             if (r < 0) {
                 r = hs_error(HS_ERROR_MEMORY, NULL);
@@ -449,7 +449,7 @@ static int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
         if (!r)
             continue;
 
-        if (_hs_filter_match_device(filter, dev)) {
+        if (_hs_match_helper_match(match_helper, dev, &dev->match_udata)) {
             r = (*f)(dev, udata);
             hs_device_unref(dev);
             if (r)
@@ -478,12 +478,12 @@ static int enumerate_enumerate_callback(hs_device *dev, void *udata)
     return (*ctx->f)(dev, ctx->udata);
 }
 
-int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f,
+int hs_enumerate(const hs_match_spec *matches, unsigned int count, hs_enumerate_func *f,
                  void *udata)
 {
     assert(f);
 
-    _hs_filter filter = {0};
+    _hs_match_helper match_helper = {0};
     struct enumerate_enumerate_context ctx;
     int r;
 
@@ -491,20 +491,20 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
     if (r < 0)
         return r;
 
-    r = _hs_filter_init(&filter, matches, count);
+    r = _hs_match_helper_init(&match_helper, matches, count);
     if (r < 0)
         return r;
 
     ctx.f = f;
     ctx.udata = udata;
 
-    r = enumerate(&filter, enumerate_enumerate_callback, &ctx);
+    r = enumerate(&match_helper, enumerate_enumerate_callback, &ctx);
 
-    _hs_filter_release(&filter);
+    _hs_match_helper_release(&match_helper);
     return r;
 }
 
-int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor)
+int hs_monitor_new(const hs_match_spec *matches, unsigned int count, hs_monitor **rmonitor)
 {
     assert(rmonitor);
 
@@ -518,7 +518,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
     }
     monitor->wait_fd = -1;
 
-    r = _hs_filter_init(&monitor->filter, matches, count);
+    r = _hs_match_helper_init(&monitor->match_helper, matches, count);
     if (r < 0)
         goto error;
 
@@ -552,7 +552,7 @@ void hs_monitor_free(hs_monitor *monitor)
 
         _hs_monitor_clear_devices(&monitor->devices);
         _hs_htable_release(&monitor->devices);
-        _hs_filter_release(&monitor->filter);
+        _hs_match_helper_release(&monitor->match_helper);
     }
 
     free(monitor);
@@ -561,9 +561,6 @@ void hs_monitor_free(hs_monitor *monitor)
 static int monitor_enumerate_callback(hs_device *dev, void *udata)
 {
     hs_monitor *monitor = (hs_monitor *)udata;
-
-    if (!_hs_filter_match_device(&monitor->filter, dev))
-        return 0;
     return _hs_monitor_add(&monitor->devices, dev, NULL, NULL);
 }
 
@@ -583,7 +580,7 @@ int hs_monitor_start(hs_monitor *monitor)
     }
 
     for (unsigned int i = 0; device_subsystems[i].subsystem; i++) {
-        if (_hs_filter_has_type(&monitor->filter, device_subsystems[i].type)) {
+        if (_hs_match_helper_has_type(&monitor->match_helper, device_subsystems[i].type)) {
             r = udev_monitor_filter_add_match_subsystem_devtype(monitor->udev_mon, device_subsystems[i].subsystem, NULL);
             if (r < 0) {
                 r = hs_error(HS_ERROR_SYSTEM, "udev_monitor_filter_add_match_subsystem_devtype() failed");
@@ -598,7 +595,7 @@ int hs_monitor_start(hs_monitor *monitor)
         goto error;
     }
 
-    r = enumerate(&monitor->filter, monitor_enumerate_callback, monitor);
+    r = enumerate(&monitor->match_helper, monitor_enumerate_callback, monitor);
     if (r < 0)
         goto error;
 
@@ -653,7 +650,7 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 
             r = read_device_information(udev_dev, &dev);
             if (r > 0) {
-                r = _hs_filter_match_device(&monitor->filter, dev);
+                r = _hs_match_helper_match(&monitor->match_helper, dev, &dev->match_udata);
                 if (r)
                     r = _hs_monitor_add(&monitor->devices, dev, f, udata);
             }

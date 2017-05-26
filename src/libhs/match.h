@@ -22,21 +22,21 @@ HS_BEGIN_C
 
 /**
  * @ingroup match
- * @brief Device match, use the @ref HS_MATCH_TYPE "dedicated macros" for convenience.
+ * @brief Device match specifier, use the @ref HS_MATCH_TYPE "dedicated macros" for convenience.
  *
  * Here is a short example to enumerate all serial devices and HID devices with a specific
  * VID:PID pair.
  *
  * @code{.c}
- * const hs_match matches[] = {
- *     HS_MATCH_TYPE(HS_DEVICE_TYPE_SERIAL),
- *     HS_MATCH_TYPE_VID_PID(HS_DEVICE_TYPE_HID, 0x16C0, 0x478)
+ * const hs_match_spec specs[] = {
+ *     HS_MATCH_TYPE(HS_DEVICE_TYPE_SERIAL, NULL),
+ *     HS_MATCH_TYPE_VID_PID(HS_DEVICE_TYPE_HID, 0x16C0, 0x478, NULL)
  * };
  *
- * r = hs_enumerate(matches, sizeof(matches) / sizeof(*matches), device_callback, NULL);
+ * r = hs_enumerate(specs, sizeof(specs) / sizeof(*specs), device_callback, NULL);
  * @endcode
  */
-struct hs_match {
+struct hs_match_spec {
     /** Device type @ref hs_device_type or 0 to match all types. */
     unsigned int type;
 
@@ -45,30 +45,43 @@ struct hs_match {
     /** Device product ID or 0 to match all. */
     uint16_t pid;
 
-    /** Device path or NULL to match all. */
-    const char *path;
+    /** This value will be copied to dev->match_udata, see @ref hs_device. */
+    void *udata;
 };
 
 /**
  * @ingroup match
  * @brief Match a specific device type, see @ref hs_device_type.
  */
-#define HS_MATCH_TYPE(type) {(type), 0, 0, NULL}
+#define HS_MATCH_TYPE(type, udata) {(type), 0, 0, (udata)}
 /**
  * @ingroup match
  * @brief Match devices with corresponding VID:PID pair.
  */
-#define HS_MATCH_VID_PID(vid, pid) {0, (vid), (pid), NULL}
+#define HS_MATCH_VID_PID(vid, pid, udata) {0, (vid), (pid), (udata)}
 /**
  * @ingroup match
  * @brief Match devices with corresponding @ref hs_device_type and VID:PID pair.
  */
-#define HS_MATCH_TYPE_VID_PID(type, vid, pid) {(type), (vid), (pid), NULL}
+#define HS_MATCH_TYPE_VID_PID(type, vid, pid, udata) {(type), (vid), (pid), (udata)}
+
 /**
  * @ingroup match
- * @brief Match device with corresponding @ref hs_device_type and device path (e.g. COM1).
+ * @brief Create device match from human-readable string.
+ *
+ * Match string  | Details
+ * ------------- | -------------------------------------------------
+ * 0:0           | Match all devices
+ * 0:0/serial    | Match all serial devices
+ * abcd:0123/hid | Match HID devices with VID:PID pair 0xABCD:0x0123
+ * 0123:abcd     | Match devices with VID:PID pair 0x0123:0xABCD
+ *
+ * @param      str    Human-readable match string.
+ * @param[out] rmatch A pointer to the variable that receives the device match specifier,
+ *     it will stay unchanged if the function fails.
+ * @return This function returns 0 on success, or a negative @ref hs_error_code value.
  */
-#define HS_MATCH_TYPE_PATH(type, path) {(type), 0, 0, (path)}
+int hs_match_parse(const char *str, hs_match_spec *rspec);
 
 HS_END_C
 

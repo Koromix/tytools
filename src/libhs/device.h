@@ -110,6 +110,9 @@ struct hs_device {
     /** Device interface number. */
     uint8_t iface_number;
 
+    /** Match pointer, copied from udata in @ref hs_match_spec. */
+    void *match_udata;
+
     /** Contains type-specific information, see below. */
     union {
         /** Only valid when type == HS_DEVICE_TYPE_HID. */
