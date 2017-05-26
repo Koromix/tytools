@@ -86,34 +86,6 @@ static int teensy_load_interface(ty_board_interface *iface)
 {
     hs_device *dev = iface->dev;
 
-#define MAKE_UINT32(high, low) (((high) << 16) | ((low) & 0xFFFF))
-
-    switch (MAKE_UINT32(dev->vid, dev->pid)) {
-        case MAKE_UINT32(0x16C0, 0x0476):
-        case MAKE_UINT32(0x16C0, 0x0478):
-        case MAKE_UINT32(0x16C0, 0x0482):
-        case MAKE_UINT32(0x16C0, 0x0483):
-        case MAKE_UINT32(0x16C0, 0x0484):
-        case MAKE_UINT32(0x16C0, 0x0485):
-        case MAKE_UINT32(0x16C0, 0x0486):
-        case MAKE_UINT32(0x16C0, 0x0487):
-        case MAKE_UINT32(0x16C0, 0x0488):
-        case MAKE_UINT32(0x16C0, 0x0489):
-        case MAKE_UINT32(0x16C0, 0x048A):
-        case MAKE_UINT32(0x16C0, 0x04D0):
-        case MAKE_UINT32(0x16C0, 0x04D1):
-        case MAKE_UINT32(0x16C0, 0x04D2):
-        case MAKE_UINT32(0x16C0, 0x04D3):
-        case MAKE_UINT32(0x16C0, 0x04D4):
-        case MAKE_UINT32(0x16C0, 0x04D9): {
-            // Accept this device
-        } break;
-
-        default: { return 0; } break;
-    }
-
-#undef MAKE_UINT32
-
     switch (dev->type) {
         case HS_DEVICE_TYPE_SERIAL: {
             iface->name = "Serial";
@@ -690,6 +662,8 @@ static int teensy_reboot(ty_board_interface *iface)
 }
 
 const struct _ty_class_vtable _ty_teensy_class_vtable = {
+    .name = "Teensy",
+
     .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
     .identify_models = teensy_identify_models,
