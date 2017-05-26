@@ -71,11 +71,11 @@ set(LIBHS_SOURCES array.c
                   device.c
                   device.h
                   device_priv.h
-                  filter.c
-                  filter_priv.h
                   hid.h
                   htable.c
+                  match.c
                   match.h
+                  match_priv.h
                   monitor.h
                   monitor_common.c
                   monitor_priv.h

@@ -32,12 +32,13 @@ static int generic_load_interface(ty_board_interface *iface)
     return 1;
 }
 
-static int generic_update_board(ty_board_interface *iface, ty_board *board)
+static int generic_update_board(ty_board_interface *iface, ty_board *board, bool new_board)
 {
+    TY_UNUSED(new_board);
+
     const char *manufacturer_string;
     const char *product_string;
     const char *serial_number_string;
-    ty_model model = 0;
     char *serial_number = NULL;
     bool unique = false;
     char *description = NULL;
@@ -55,11 +56,10 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
         serial_number_string = "?";
 
     // Check and update board model
-    if (board->model && board->model != iface->model) {
+    if (board->model != TY_MODEL_GENERIC) {
         r = 0;
         goto error;
     }
-    model = iface->model;
 
     // Check and update board serial number
     if (board->serial_number && strcmp(board->serial_number, serial_number_string) != 0) {
@@ -109,8 +109,6 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board)
     }
 
     // Everything is alright, we can commit changes
-    if (model)
-        board->model = model;
     if (serial_number) {
         free(board->serial_number);
         board->serial_number = serial_number;
@@ -166,6 +164,8 @@ static ssize_t generic_serial_write(ty_board_interface *iface, const char *buf, 
 }
 
 const struct _ty_class_vtable _ty_generic_class_vtable = {
+    .name = "Generic",
+
     .load_interface = generic_load_interface,
     .update_board = generic_update_board,
 

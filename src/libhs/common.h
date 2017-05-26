@@ -29,7 +29,7 @@ HS_BEGIN_C
 typedef struct hs_device hs_device;
 typedef struct hs_monitor hs_monitor;
 typedef struct hs_port hs_port;
-typedef struct hs_match hs_match;
+typedef struct hs_match_spec hs_match_spec;
 
 /**
  * @defgroup misc Miscellaneous
@@ -131,8 +131,10 @@ typedef enum hs_error_code {
     HS_ERROR_ACCESS        = -3,
     /** Input/output error. */
     HS_ERROR_IO            = -4,
+    /** Parse error. */
+    HS_ERROR_PARSE         = -5,
     /** Generic system error. */
-    HS_ERROR_SYSTEM        = -5
+    HS_ERROR_SYSTEM        = -6
 } hs_error_code;
 
 typedef void hs_log_handler_func(hs_log_level level, int err, const char *msg, void *udata);

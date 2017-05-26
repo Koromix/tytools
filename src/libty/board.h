@@ -53,7 +53,8 @@ enum {
 #define TY_UPLOAD_MAX_FIRMWARES 256
 
 typedef int ty_board_list_interfaces_func(ty_board_interface *iface, void *udata);
-typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *fw, size_t uploaded, void *udata);
+typedef int ty_board_upload_progress_func(const ty_board *board, const struct ty_firmware *fw,
+                                          size_t uploaded_size, size_t flash_size, void *udata);
 
 TY_PUBLIC const char *ty_board_capability_get_name(ty_board_capability cap);
 

@@ -66,10 +66,10 @@ typedef int hs_enumerate_func(struct hs_device *dev, void *udata);
  * @return This function returns 0 on success, or a negative @ref hs_error_code value. If the
  *     callback returns a non-zero value, the enumeration is interrupted and the value is returned.
  *
- * @sa hs_match Match specific devices.
+ * @sa hs_match_spec Match specific devices.
  * @sa hs_enumerate_func() for more information about the callback.
  */
-int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata);
+int hs_enumerate(const hs_match_spec *matches, unsigned int count, hs_enumerate_func *f, void *udata);
 
 /**
  * @ingroup monitor
@@ -83,7 +83,7 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
  * @return This function returns 1 if a device is found, 0 if not or a negative @ref hs_error_code
  *     value.
  */
-int hs_find(const hs_match *matches, unsigned int count, struct hs_device **rdev);
+int hs_find(const hs_match_spec *matches, unsigned int count, struct hs_device **rdev);
 
 /**
  * @{
@@ -103,7 +103,7 @@ int hs_find(const hs_match *matches, unsigned int count, struct hs_device **rdev
  *
  * @sa hs_monitor_free()
  */
-int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor);
+int hs_monitor_new(const hs_match_spec *matches, unsigned int count, hs_monitor **rmonitor);
 /**
  * @ingroup monitor
  * @brief Close a device monitor.

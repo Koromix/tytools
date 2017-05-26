@@ -21,7 +21,7 @@ static int find_callback(hs_device *dev, void *udata)
     return 1;
 }
 
-int hs_find(const hs_match *matches, unsigned int count, hs_device **rdev)
+int hs_find(const hs_match_spec *matches, unsigned int count, hs_device **rdev)
 {
     assert(rdev);
     return hs_enumerate(matches, count, find_callback, rdev);

@@ -107,7 +107,7 @@ void Board::loadSettings(Monitor *monitor)
     if (hasCapability(TY_BOARD_CAPABILITY_UNIQUE)) {
         auto model_name = cache_.get("model");
         if (model_name.isValid()) {
-            auto model = ty_model_find(model_name.toString().toUtf8().constData());
+            auto model = ty_models_find(model_name.toString().toUtf8().constData());
             if (model)
                 ty_board_set_model(board_, model);
         }
@@ -690,7 +690,8 @@ void Board::refreshBoard()
     }
 
     ty_model model = this->model();
-    if (ty_model_is_real(model))
+    // FIXME: Hack to cache Teensy model, move to libty and drop ty_board_set_model()
+    if (ty_models[model].mcu)
         cache_.put("model", ty_models[model].name);
 
     updateStatus();

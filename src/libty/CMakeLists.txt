@@ -25,6 +25,8 @@ set(LIBTY_SOURCES board.c
                   firmware.h
                   firmware_elf.c
                   firmware_ihex.c
+                  ini.c
+                  ini.h
                   monitor.c
                   monitor.h
                   optline.c

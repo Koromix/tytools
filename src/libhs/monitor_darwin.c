@@ -20,12 +20,12 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "device_priv.h"
-#include "filter_priv.h"
+#include "match_priv.h"
 #include "monitor_priv.h"
 #include "platform.h"
 
 struct hs_monitor {
-    _hs_filter filter;
+    _hs_match_helper match_helper;
     _hs_htable devices;
 
     IONotificationPortRef notify_port;
@@ -359,7 +359,7 @@ cleanup:
     return r;
 }
 
-static int process_iterator_devices(io_iterator_t it, const _hs_filter *filter,
+static int process_iterator_devices(io_iterator_t it, const _hs_match_helper *match_helper,
                                     hs_enumerate_func *f, void *udata)
 {
     io_service_t service;
@@ -375,7 +375,7 @@ static int process_iterator_devices(io_iterator_t it, const _hs_filter *filter,
         if (!r)
             continue;
 
-        if (_hs_filter_match_device(filter, dev)) {
+        if (_hs_match_helper_match(match_helper, dev, &dev->match_udata)) {
             r = (*f)(dev, udata);
             hs_device_unref(dev);
             if (r)
@@ -392,7 +392,7 @@ static int attached_callback(hs_device *dev, void *udata)
 {
     hs_monitor *monitor = (hs_monitor *)udata;
 
-    if (!_hs_filter_match_device(&monitor->filter, dev))
+    if (!_hs_match_helper_match(&monitor->match_helper, dev, &dev->match_udata))
         return 0;
     return _hs_monitor_add(&monitor->devices, dev, monitor->callback, monitor->callback_udata);
 }
@@ -401,7 +401,7 @@ static void darwin_devices_attached(void *udata, io_iterator_t it)
 {
     hs_monitor *monitor = (hs_monitor *)udata;
 
-    monitor->notify_ret = process_iterator_devices(it, &monitor->filter,
+    monitor->notify_ret = process_iterator_devices(it, &monitor->match_helper,
                                                    attached_callback, monitor);
 }
 
@@ -439,17 +439,17 @@ static int enumerate_enumerate_callback(hs_device *dev, void *udata)
     return (*ctx->f)(dev, ctx->udata);
 }
 
-int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata)
+int hs_enumerate(const hs_match_spec *matches, unsigned int count, hs_enumerate_func *f, void *udata)
 {
     assert(f);
 
-    _hs_filter filter;
+    _hs_match_helper match_helper;
     struct enumerate_enumerate_context ctx;
     io_iterator_t it = 0;
     kern_return_t kret;
     int r;
 
-    r = _hs_filter_init(&filter, matches, count);
+    r = _hs_match_helper_init(&match_helper, matches, count);
     if (r < 0)
         goto cleanup;
 
@@ -457,7 +457,7 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
     ctx.udata = udata;
 
     for (unsigned int i = 0; device_classes[i].old_stack; i++) {
-        if (_hs_filter_has_type(&filter, device_classes[i].type)) {
+        if (_hs_match_helper_has_type(&match_helper, device_classes[i].type)) {
             const char *cls = correct_class(device_classes[i].new_stack, device_classes[i].old_stack);
 
             kret = IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching(cls), &it);
@@ -466,7 +466,7 @@ int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func 
                 goto cleanup;
             }
 
-            r = process_iterator_devices(it, &filter, enumerate_enumerate_callback, &ctx);
+            r = process_iterator_devices(it, &match_helper, enumerate_enumerate_callback, &ctx);
             if (r)
                 goto cleanup;
 
@@ -481,7 +481,7 @@ cleanup:
         clear_iterator(it);
         IOObjectRelease(it);
     }
-    _hs_filter_release(&filter);
+    _hs_match_helper_release(&match_helper);
     return r;
 }
 
@@ -503,7 +503,7 @@ static int add_notification(hs_monitor *monitor, const char *cls, const io_name_
     return 0;
 }
 
-int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor)
+int hs_monitor_new(const hs_match_spec *matches, unsigned int count, hs_monitor **rmonitor)
 {
     assert(rmonitor);
 
@@ -521,7 +521,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
 
     monitor->kqfd = -1;
 
-    r = _hs_filter_init(&monitor->filter, matches, count);
+    r = _hs_match_helper_init(&monitor->match_helper, matches, count);
     if (r < 0)
         goto error;
 
@@ -586,7 +586,7 @@ void hs_monitor_free(hs_monitor *monitor)
 
         _hs_monitor_clear_devices(&monitor->devices);
         _hs_htable_release(&monitor->devices);
-        _hs_filter_release(&monitor->filter);
+        _hs_match_helper_release(&monitor->match_helper);
     }
 
     free(monitor);
@@ -601,9 +601,6 @@ hs_handle hs_monitor_get_poll_handle(const hs_monitor *monitor)
 static int start_enumerate_callback(hs_device *dev, void *udata)
 {
     hs_monitor *monitor = (hs_monitor *)udata;
-
-    if (!_hs_filter_match_device(&monitor->filter, dev))
-        return 0;
     return _hs_monitor_add(&monitor->devices, dev, NULL, NULL);
 }
 
@@ -618,13 +615,13 @@ int hs_monitor_start(hs_monitor *monitor)
         return 0;
 
     for (unsigned int i = 0; device_classes[i].old_stack; i++) {
-        if (_hs_filter_has_type(&monitor->filter, device_classes[i].type)) {
+        if (_hs_match_helper_has_type(&monitor->match_helper, device_classes[i].type)) {
             r = add_notification(monitor, correct_class(device_classes[i].new_stack, device_classes[i].old_stack),
                                  kIOFirstMatchNotification, darwin_devices_attached, &it);
             if (r < 0)
                 goto error;
 
-            r = process_iterator_devices(it, &monitor->filter, start_enumerate_callback, monitor);
+            r = process_iterator_devices(it, &monitor->match_helper, start_enumerate_callback, monitor);
             if (r < 0)
                 goto error;
         }

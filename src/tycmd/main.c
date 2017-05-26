@@ -63,7 +63,7 @@ static void print_main_usage(FILE *f)
 
     fprintf(f, "Supported models:\n");
     for (unsigned int i = 0; i < ty_models_count; i++) {
-        if (ty_model_is_real((ty_model)i))
+        if (ty_models[i].mcu)
             fprintf(f, "   - %-22s (%s)\n", ty_models[i].name, ty_models[i].mcu);
     }
 }
@@ -202,6 +202,9 @@ int main(int argc, char *argv[])
     }
 
     hs_log_set_handler(ty_libhs_log_handler, NULL);
+    r = ty_models_load_patch(NULL);
+    if (r < 0)
+        return EXIT_FAILURE;
 
     if (argc < 2) {
         print_main_usage(stderr);

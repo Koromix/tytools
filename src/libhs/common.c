@@ -39,6 +39,7 @@ static const char *generic_message(int err)
         case HS_ERROR_NOT_FOUND: { return "Not found"; } break;
         case HS_ERROR_ACCESS: { return "Permission error"; } break;
         case HS_ERROR_IO: { return "I/O error"; } break;
+        case HS_ERROR_PARSE: { return "Parse error"; } break;
         case HS_ERROR_SYSTEM: { return "System error"; } break;
     }
 

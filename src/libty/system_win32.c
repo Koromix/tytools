@@ -134,6 +134,63 @@ ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream)
     return NULL;
 }
 
+unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
+                                   char (*rpaths)[TY_PATH_MAX_SIZE], unsigned int max_paths)
+{
+    assert(rpaths);
+
+    unsigned int paths_count = 0;
+
+    if (!max_paths)
+        return 0;
+
+#define ADD_SHELL_DIRECTORY(Id) \
+        do { \
+            if (paths_count < max_paths) { \
+                if (SHGetFolderPath(NULL, (Id), NULL, SHGFP_TYPE_CURRENT, \
+                                    rpaths[paths_count++]) != S_OK) \
+                    goto overflow; \
+            } \
+        } while (false)
+
+    switch (std_path) {
+        case TY_PATH_EXECUTABLE_DIRECTORY: {
+            DWORD len = GetModuleFileName(NULL, rpaths[0], TY_PATH_MAX_SIZE);
+            if (len == TY_PATH_MAX_SIZE)
+                goto overflow;
+            while (len && !strchr(TY_PATH_SEPARATORS, rpaths[0][--len]))
+                continue;
+            rpaths[0][len] = 0;
+            paths_count = 1;
+        } break;
+
+        case TY_PATH_CONFIG_DIRECTORY: {
+            ADD_SHELL_DIRECTORY(CSIDL_APPDATA);
+            ADD_SHELL_DIRECTORY(CSIDL_COMMON_APPDATA);
+        } break;
+    }
+
+#undef ADD_SHELL_DIRECTORY
+
+    if (suffix) {
+        for (unsigned int i = 0; i < paths_count; i++) {
+            size_t len, suffix_len;
+
+            len = strlen(rpaths[i]);
+            suffix_len = (size_t)snprintf(rpaths[i] + len, TY_PATH_MAX_SIZE - len, "/%s", suffix);
+            if (suffix_len >= TY_PATH_MAX_SIZE - len)
+                goto overflow;
+        }
+    }
+
+    assert(paths_count);
+    return paths_count;
+
+overflow:
+    ty_error(TY_ERROR_SYSTEM, "Ignoring truncated path in ty_standard_get_paths()");
+    return 0;
+}
+
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);

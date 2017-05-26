@@ -28,7 +28,7 @@ HS_END_C
 #include <wchar.h>
 #include "array.h"
 #include "device_priv.h"
-#include "filter_priv.h"
+#include "match_priv.h"
 #include "monitor_priv.h"
 #include "platform.h"
 
@@ -45,7 +45,7 @@ struct event {
 typedef _HS_ARRAY(struct event) event_array;
 
 struct hs_monitor {
-    _hs_filter filter;
+    _hs_match_helper match_helper;
     _hs_htable devices;
 
     HANDLE thread;
@@ -1016,8 +1016,8 @@ cleanup:
     return r;
 }
 
-static int enumerate_setup_class(const GUID *guid, const _hs_filter *filter, hs_enumerate_func *f,
-                                 void *udata)
+static int enumerate_setup_class(const GUID *guid, const _hs_match_helper *match_helper,
+                                 hs_enumerate_func *f, void *udata)
 {
     HDEVINFO set = NULL;
     SP_DEVINFO_DATA info;
@@ -1038,7 +1038,7 @@ static int enumerate_setup_class(const GUID *guid, const _hs_filter *filter, hs_
         if (!r)
             continue;
 
-        if (_hs_filter_match_device(filter, dev)) {
+        if (_hs_match_helper_match(match_helper, dev, &dev->match_udata)) {
             r = (*f)(dev, udata);
             hs_device_unref(dev);
             if (r)
@@ -1055,7 +1055,7 @@ cleanup:
     return r;
 }
 
-int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
+int enumerate(_hs_match_helper *match_helper, hs_enumerate_func *f, void *udata)
 {
     int r;
 
@@ -1064,7 +1064,7 @@ int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
         return r;
 
     for (unsigned int i = 0; i < _HS_COUNTOF(setup_classes); i++) {
-        if (_hs_filter_has_type(filter, setup_classes[i].type)) {
+        if (_hs_match_helper_has_type(match_helper, setup_classes[i].type)) {
             GUID guids[8];
             DWORD guids_count;
             BOOL success;
@@ -1076,7 +1076,7 @@ int enumerate(_hs_filter *filter, hs_enumerate_func *f, void *udata)
                                 setup_classes[i].name, hs_win32_strerror(0));
 
             for (unsigned int j = 0; j < guids_count; j++) {
-                r = enumerate_setup_class(&guids[j], filter, f, udata);
+                r = enumerate_setup_class(&guids[j], match_helper, f, udata);
                 if (r)
                     return r;
             }
@@ -1099,24 +1099,24 @@ static int enumerate_enumerate_callback(hs_device *dev, void *udata)
     return (*ctx->f)(dev, ctx->udata);
 }
 
-int hs_enumerate(const hs_match *matches, unsigned int count, hs_enumerate_func *f, void *udata)
+int hs_enumerate(const hs_match_spec *matches, unsigned int count, hs_enumerate_func *f, void *udata)
 {
     assert(f);
 
-    _hs_filter filter = {0};
+    _hs_match_helper match_helper = {0};
     struct enumerate_enumerate_context ctx;
     int r;
 
-    r = _hs_filter_init(&filter, matches, count);
+    r = _hs_match_helper_init(&match_helper, matches, count);
     if (r < 0)
         return r;
 
     ctx.f = f;
     ctx.udata = udata;
 
-    r = enumerate(&filter, enumerate_enumerate_callback, &ctx);
+    r = enumerate(&match_helper, enumerate_enumerate_callback, &ctx);
 
-    _hs_filter_release(&filter);
+    _hs_match_helper_release(&match_helper);
     return r;
 }
 
@@ -1315,9 +1315,6 @@ cleanup:
 static int monitor_enumerate_callback(hs_device *dev, void *udata)
 {
     hs_monitor *monitor = (hs_monitor *)udata;
-
-    if (!_hs_filter_match_device(&monitor->filter, dev))
-        return 0;
     return _hs_monitor_add(&monitor->devices, dev, NULL, NULL);
 }
 
@@ -1325,7 +1322,7 @@ static int monitor_enumerate_callback(hs_device *dev, void *udata)
    thread message queue. Unfortunately we can't poll on message queues so instead, we make a
    background thread to get device notifications, and tell us about it using Win32 events which
    we can poll. */
-int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmonitor)
+int hs_monitor_new(const hs_match_spec *matches, unsigned int count, hs_monitor **rmonitor)
 {
     assert(rmonitor);
 
@@ -1338,7 +1335,7 @@ int hs_monitor_new(const hs_match *matches, unsigned int count, hs_monitor **rmo
         goto error;
     }
 
-    r = _hs_filter_init(&monitor->filter, matches, count);
+    r = _hs_match_helper_init(&monitor->match_helper, matches, count);
     if (r < 0)
         goto error;
 
@@ -1372,7 +1369,7 @@ void hs_monitor_free(hs_monitor *monitor)
 
         _hs_monitor_clear_devices(&monitor->devices);
         _hs_htable_release(&monitor->devices);
-        _hs_filter_release(&monitor->filter);
+        _hs_match_helper_release(&monitor->match_helper);
     }
 
     free(monitor);
@@ -1410,7 +1407,7 @@ int hs_monitor_start(hs_monitor *monitor)
     }
     ResetEvent(monitor->thread_event);
 
-    r = enumerate(&monitor->filter, monitor_enumerate_callback, monitor);
+    r = enumerate(&monitor->match_helper, monitor_enumerate_callback, monitor);
     if (r < 0)
         goto error;
 
@@ -1460,7 +1457,7 @@ static int process_arrival_event(hs_monitor *monitor, const char *key, hs_enumer
     if (r <= 0)
         return r;
 
-    r = _hs_filter_match_device(&monitor->filter, dev);
+    r = _hs_match_helper_match(&monitor->match_helper, dev, &dev->match_udata);
     if (r)
         r = _hs_monitor_add(&monitor->devices, dev, f, udata);
     hs_device_unref(dev);

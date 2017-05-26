@@ -122,7 +122,7 @@ static int create_board(ty_monitor *monitor, ty_board_interface *iface, ty_board
     board->vid = iface->dev->vid;
     board->pid = iface->dev->pid;
 
-    r = (*iface->class_vtable->update_board)(iface, board);
+    r = (*iface->class_vtable->update_board)(iface, board, true);
     if (r <= 0)
         goto error;
     board->tag = board->id;
@@ -211,8 +211,14 @@ static ty_board_interface *find_monitor_interface(ty_monitor *monitor, hs_device
 
 static int open_new_interface(hs_device *dev, ty_board_interface **riface)
 {
+    const struct _ty_class_vtable *class_vtable;
     ty_board_interface *iface;
     int r;
+
+    class_vtable = dev->match_udata;
+    // This particular device match was disabled by the user
+    if (!class_vtable)
+        return 0;
 
     iface = calloc(1, sizeof(*iface));
     if (!iface) {
@@ -226,20 +232,14 @@ static int open_new_interface(hs_device *dev, ty_board_interface **riface)
         goto error;
     iface->dev = hs_device_ref(dev);
 
-    // Try this device with all interface classes
-    r = 0;
-    for (unsigned int i = 0; i < _ty_class_vtables_count && !r; i++) {
-        ty_error_mask(TY_ERROR_NOT_FOUND);
-        r = (*_ty_class_vtables[i]->load_interface)(iface);
-        ty_error_unmask();
-        if (r < 0) {
-            if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
-                r = 0;
-            goto error;
-        }
-    }
-    if (!r)
+    ty_error_mask(TY_ERROR_NOT_FOUND);
+    r = (*class_vtable->load_interface)(iface);
+    ty_error_unmask();
+    if (r <= 0) {
+        if (r == TY_ERROR_NOT_FOUND || r == TY_ERROR_ACCESS)
+            r = 0;
         goto error;
+    }
 
     *riface = iface;
     return 1;
@@ -263,7 +263,7 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
         bool update_tag_pointer = false;
         if (board->tag == board->id)
             update_tag_pointer = true;
-        r = (*iface->class_vtable->update_board)(iface, board);
+        r = (*iface->class_vtable->update_board)(iface, board, false);
         if (r < 0)
             return r;
         if (update_tag_pointer)
@@ -456,7 +456,7 @@ int ty_monitor_new(ty_monitor **rmonitor)
         monitor->drop_delay = DROP_BOARD_DELAY;
     }
 
-    r = hs_monitor_new(NULL, 0, &monitor->device_monitor);
+    r = hs_monitor_new(_ty_class_match_specs, _ty_class_match_specs_count, &monitor->device_monitor);
     if (r < 0) {
         r = ty_libhs_translate_error(r);
         goto error;

@@ -48,7 +48,7 @@ static uint16_t parse_hex_short(struct parser_context *ctx)
     return (uint16_t)((parse_hex_byte(ctx, true) << 8) | parse_hex_byte(ctx, true));
 }
 
-static int parse_error(struct parser_context *ctx)
+static int ihex_parse_error(struct parser_context *ctx)
 {
     return ty_error(TY_ERROR_PARSE, "IHEX parse error on line %u in '%s'", ctx->line,
                     ctx->fw->filename);
@@ -69,14 +69,14 @@ static int parse_line(struct parser_context *ctx, const char *line)
     if (*ctx->ptr++ != ':')
         return 0;
     if (strlen(ctx->ptr) < 11)
-        return parse_error(ctx);
+        return ihex_parse_error(ctx);
 
     length = parse_hex_byte(ctx, true);
     address = parse_hex_short(ctx);
     type = parse_hex_byte(ctx, true);
 
     if (ctx->error)
-        return parse_error(ctx);
+        return ihex_parse_error(ctx);
 
     switch (type) {
         case 0: { // data record
@@ -90,12 +90,12 @@ static int parse_line(struct parser_context *ctx, const char *line)
 
         case 1: { // EOF record
             if (length > 0)
-                return parse_error(ctx);
+                return ihex_parse_error(ctx);
         } break;
 
         case 2: { // extended segment address record
             if (length != 2)
-                return parse_error(ctx);
+                return ihex_parse_error(ctx);
             ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 4;
         } break;
         case 3: { // start segment address record
@@ -103,14 +103,14 @@ static int parse_line(struct parser_context *ctx, const char *line)
 
         case 4: { // extended linear address record
             if (length != 2)
-                return parse_error(ctx);
+                return ihex_parse_error(ctx);
             ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 16;
         } break;
         case 5: { // start linear address record
         } break;
 
         default: {
-            return parse_error(ctx);
+            return ihex_parse_error(ctx);
         } break;
     }
 
@@ -118,11 +118,11 @@ static int parse_line(struct parser_context *ctx, const char *line)
     checksum = parse_hex_byte(ctx, false);
 
     if (ctx->error)
-        return parse_error(ctx);
+        return ihex_parse_error(ctx);
     if (*ctx->ptr != '\r' && *ctx->ptr != '\n' && *ctx->ptr)
-        return parse_error(ctx);
+        return ihex_parse_error(ctx);
     if (((ctx->sum & 0xFF) + (checksum & 0xFF)) & 0xFF)
-        return parse_error(ctx);
+        return ihex_parse_error(ctx);
 
     // Return 1 for EOF records, to end the parsing
     return type == 1;
@@ -172,7 +172,7 @@ int ty_firmware_load_ihex(const char *filename, ty_firmware **rfw)
     do {
         if (!fgets(buf, sizeof(buf), fp)) {
             if (feof(fp)) {
-                r = parse_error(&ctx);
+                r = ihex_parse_error(&ctx);
             } else {
                 r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", ctx.fw->filename);
             }

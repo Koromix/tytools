@@ -18,6 +18,7 @@
 #include <termios.h>
 #ifdef __APPLE__
     #include <mach/mach_time.h>
+    #include <mach-o/dyld.h>
     #include <sys/select.h>
 #else
     #include <poll.h>
@@ -114,6 +115,153 @@ ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream)
 {
     return std_stream;
 }
+
+#ifdef __APPLE__
+
+unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
+                                   char (*rpaths)[TY_PATH_MAX_SIZE], unsigned int max_paths)
+{
+    assert(rpaths);
+
+    unsigned int paths_count = 0;
+
+    if (!max_paths)
+        return 0;
+
+#define ADD_DIRECTORY(Fmt, ...) \
+        do { \
+            if (paths_count < max_paths) { \
+                if (snprintf(rpaths[paths_count++], TY_PATH_MAX_SIZE, \
+                             (Fmt), ## __VA_ARGS__) >= TY_PATH_MAX_SIZE) \
+                    goto overflow; \
+            } \
+        } while (false)
+
+    switch (std_path) {
+        case TY_PATH_EXECUTABLE_DIRECTORY: {
+            uint32_t tmp_size = TY_PATH_MAX_SIZE;
+            int r = _NSGetExecutablePath(rpaths[0], &tmp_size);
+            if (r == -1)
+                goto overflow;
+
+            size_t len = strlen(rpaths[0]);
+            while (len && !strchr(TY_PATH_SEPARATORS, rpaths[0][--len]))
+                continue;
+            rpaths[0][len] = 0;
+
+            paths_count = 1;
+        } break;
+
+        // FIXME: Use NSSearchPathForDirectoriesInDomains() to get proper paths
+        case TY_PATH_CONFIG_DIRECTORY: {
+            const char *home_dir = getenv("HOME");
+            if (home_dir)
+                ADD_DIRECTORY("%s/Library/Preferences", home_dir);
+            ADD_DIRECTORY("/Library/Preferences");
+        } break;
+    }
+
+#undef ADD_DIRECTORY
+
+    if (suffix) {
+        for (unsigned int i = 0; i < paths_count; i++) {
+            size_t len = strlen(rpaths[i]);
+            size_t suffix_len = (size_t)snprintf(rpaths[i] + len, TY_PATH_MAX_SIZE - len,
+                                                 "/%s", suffix);
+            if (suffix_len >= TY_PATH_MAX_SIZE - len)
+                goto overflow;
+        }
+    }
+
+    assert(paths_count);
+    return paths_count;
+
+overflow:
+    ty_error(TY_ERROR_SYSTEM, "Ignoring truncated path in ty_standard_get_paths()");
+    return 0;
+}
+
+#else
+
+unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
+                                   char (*rpaths)[TY_PATH_MAX_SIZE], unsigned int max_paths)
+{
+    assert(rpaths);
+
+    unsigned int paths_count = 0;
+
+    if (!max_paths)
+        return 0;
+
+#define ADD_DIRECTORY(Fmt, ...) \
+        do { \
+            if (paths_count < max_paths) { \
+                if (snprintf(rpaths[paths_count++], TY_PATH_MAX_SIZE, \
+                             (Fmt), ## __VA_ARGS__) >= TY_PATH_MAX_SIZE) \
+                    goto overflow; \
+            } \
+        } while (false)
+
+    switch (std_path) {
+        case TY_PATH_EXECUTABLE_DIRECTORY: {
+            ssize_t len = readlink("/proc/self/exe", rpaths[0], TY_PATH_MAX_SIZE);
+            if (len < 0) {
+                ty_error(TY_ERROR_SYSTEM, "readlink('/proc/self/exe') failed: %s", strerror(errno));
+                return 0;
+            }
+            if (len >= TY_PATH_MAX_SIZE)
+                goto overflow;
+
+            while (len && !strchr(TY_PATH_SEPARATORS, rpaths[0][--len]))
+                continue;
+            rpaths[0][len] = 0;
+
+            paths_count = 1;
+        } break;
+
+        case TY_PATH_CONFIG_DIRECTORY: {
+            const char *config_home_dir = getenv("XDG_CONFIG_HOME");
+            if (config_home_dir) {
+                ADD_DIRECTORY("%s", config_home_dir);
+            } else {
+                const char *home_dir = getenv("HOME");
+                if (home_dir)
+                    ADD_DIRECTORY("%s/.config", home_dir);
+            }
+
+            const char *config_dirs = getenv("XDG_CONFIG_DIRS");
+            if (!config_dirs)
+                config_dirs = "/etc/xdg";
+            while (config_dirs[0]) {
+                size_t len = strcspn(config_dirs, ":");
+                if (len)
+                    ADD_DIRECTORY("%.*s", (int)len, config_dirs);
+                config_dirs += len + !!config_dirs[len];
+            }
+        } break;
+    }
+
+#undef ADD_DIRECTORY
+
+    if (suffix) {
+        for (unsigned int i = 0; i < paths_count; i++) {
+            size_t len = strlen(rpaths[i]);
+            size_t suffix_len = (size_t)snprintf(rpaths[i] + len, TY_PATH_MAX_SIZE - len,
+                                                 "/%s", suffix);
+            if (suffix_len >= TY_PATH_MAX_SIZE - len)
+                goto overflow;
+        }
+    }
+
+    assert(paths_count);
+    return paths_count;
+
+overflow:
+    ty_error(TY_ERROR_SYSTEM, "Ignoring truncated path in ty_standard_get_paths()");
+    return 0;
+}
+
+#endif
 
 #ifdef __APPLE__
 
