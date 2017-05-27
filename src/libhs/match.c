@@ -18,7 +18,7 @@ int hs_match_parse(const char *str, hs_match_spec *rspec)
 {
     unsigned int vid = 0, pid = 0, type = 0;
 
-    str += strcspn(str, " ");
+    str += strspn(str, " ");
     if (str[0]) {
         char type_buf[16];
         int r;
