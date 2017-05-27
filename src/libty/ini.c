@@ -84,8 +84,8 @@ int ty_ini_walk_fp(FILE *fp, const char *filename, ty_ini_callback_func *f, void
 
             key = line;
             key_end = strchr(key, '=');
-            if (!key_end)
-                return ini_parse_error(filename, line_number, "key=value");
+            if (!key_end || key == key_end)
+                return ini_parse_error(filename, line_number, "key = value");
             value = key_end + 1;
             value += strspn(value, " \t");
             value_end = line + line_len;
