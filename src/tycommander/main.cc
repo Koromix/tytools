@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 #endif
 
     hs_log_set_handler(ty_libhs_log_handler, NULL);
-    if (ty_models_load_patch(nullptr) < 0)
+    if (ty_models_load_patch(nullptr) == TY_ERROR_MEMORY)
         return 1;
 
     qRegisterMetaType<ty_log_level>("ty_log_level");
