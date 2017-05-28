@@ -60,7 +60,7 @@ using namespace std;
 TyCommander::TyCommander(int &argc, char *argv[])
     : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
-    setOrganizationName("ty");
+    setOrganizationName("TyTools");
     setApplicationName(TY_CONFIG_TYCOMMANDER_NAME);
     setApplicationVersion(ty_version_string());
 
@@ -518,7 +518,7 @@ void TyCommander::initCache(const QString &name, SettingsDatabase &cache)
        but we put our files in organizationName() to share them with tycmd. On Windows, Qt uses
        AppData/Local/organizationName()/applicationName()/cache so we need to special case that. */
 #ifdef _WIN32
-    auto path = QString("%1/../cache/%2.ini")
+    auto path = QString("%1/../%2.ini")
                 .arg(QStandardPaths::writableLocation(QStandardPaths::DataLocation), name);
 #else
     auto path = QString("%1/../%2.ini")
