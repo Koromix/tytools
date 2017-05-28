@@ -51,13 +51,8 @@ static int change_board_status(ty_board *board, ty_board_status status, ty_monit
     ty_monitor *monitor = board->monitor;
     int r = 0;
 
-    // New board status
-    if (status == board->status)
-        return 0;
-    board->status = status;
-
-    // Set drop timer for next board that needs to be dropped
-    if (status == TY_BOARD_STATUS_MISSING) {
+    // Set new board status, engage drop timer if needed
+    if (status == TY_BOARD_STATUS_MISSING && status != board->status) {
         board->missing_since = ty_millis();
 
         int timer_delay = -1;
@@ -74,6 +69,7 @@ static int change_board_status(ty_board *board, ty_board_status status, ty_monit
         if (r < 0)
             return r;
     }
+    board->status = status;
 
     /* Notify callbacks and do some additional stuff as we go:
        - Drop callback that return r > 0
