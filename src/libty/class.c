@@ -34,11 +34,11 @@ const unsigned int ty_models_count = TY_COUNTOF(default_models);
 
 extern const struct _ty_class_vtable _ty_teensy_class_vtable;
 extern const struct _ty_class_vtable _ty_generic_class_vtable;
-const struct _ty_class_vtable *const _ty_class_vtables[] = {
-    &_ty_generic_class_vtable,
-    &_ty_teensy_class_vtable
+const struct _ty_class _ty_classes[] = {
+    {"Generic", &_ty_generic_class_vtable},
+    {"Teensy", &_ty_teensy_class_vtable}
 };
-const unsigned int _ty_class_vtables_count = TY_COUNTOF(_ty_class_vtables);
+const unsigned int _ty_classes_count = TY_COUNTOF(_ty_classes);
 
 static hs_match_spec default_match_specs[] = {
     HS_MATCH_VID_PID(0x16C0, 0x0476, (void *)&_ty_teensy_class_vtable),
@@ -117,9 +117,9 @@ static int patch_ini_callback(const char *section, char *key, char *value, void 
         if (hs_match_parse(key, &new_spec) < 0)
             return 0;
         if (value[0]) {
-            for (unsigned int i = 0; i < _ty_class_vtables_count; i++) {
-                if (!strcmp(_ty_class_vtables[i]->name, value)) {
-                    new_spec.udata = (void *)_ty_class_vtables[i];
+            for (unsigned int i = 0; i < _ty_classes_count; i++) {
+                if (!strcmp(_ty_classes[i].name, value)) {
+                    new_spec.udata = (void *)_ty_classes[i].vtable;
                     break;
                 }
             }

@@ -19,8 +19,6 @@
 TY_C_BEGIN
 
 struct _ty_class_vtable {
-    const char *name;
-
     int (*load_interface)(ty_board_interface *iface);
     int (*update_board)(ty_board_interface *iface, ty_board *board, bool new_board);
     unsigned int (*identify_models)(const struct ty_firmware *fw,
@@ -36,8 +34,13 @@ struct _ty_class_vtable {
     int (*reboot)(ty_board_interface *iface);
 };
 
-extern const struct _ty_class_vtable *const _ty_class_vtables[];
-extern const unsigned int _ty_class_vtables_count;
+struct _ty_class {
+    const char *name;
+    const struct _ty_class_vtable *vtable;
+};
+
+extern const struct _ty_class _ty_classes[];
+extern const unsigned int _ty_classes_count;
 
 extern const hs_match_spec *_ty_class_match_specs;
 extern unsigned int _ty_class_match_specs_count;

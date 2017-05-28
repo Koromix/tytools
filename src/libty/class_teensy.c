@@ -662,8 +662,6 @@ static int teensy_reboot(ty_board_interface *iface)
 }
 
 const struct _ty_class_vtable _ty_teensy_class_vtable = {
-    .name = "Teensy",
-
     .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
     .identify_models = teensy_identify_models,

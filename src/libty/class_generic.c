@@ -164,8 +164,6 @@ static ssize_t generic_serial_write(ty_board_interface *iface, const char *buf, 
 }
 
 const struct _ty_class_vtable _ty_generic_class_vtable = {
-    .name = "Generic",
-
     .load_interface = generic_load_interface,
     .update_board = generic_update_board,
 

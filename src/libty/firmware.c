@@ -161,15 +161,15 @@ unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
 
     unsigned int guesses_count = 0;
 
-    for (unsigned int i = 0; i < _ty_class_vtables_count; i++) {
+    for (unsigned int i = 0; i < _ty_classes_count; i++) {
         ty_model partial_guesses[16];
         unsigned int partial_count;
 
-        if (!_ty_class_vtables[i]->identify_models)
+        if (!_ty_classes[i].vtable->identify_models)
             continue;
 
-        partial_count = (*_ty_class_vtables[i]->identify_models)(fw, partial_guesses,
-                                                                 TY_COUNTOF(partial_guesses));
+        partial_count = (*_ty_classes[i].vtable->identify_models)(fw, partial_guesses,
+                                                                  TY_COUNTOF(partial_guesses));
 
         for (unsigned int j = 0; j < partial_count; j++) {
             if (rmodels && guesses_count < max_models)
