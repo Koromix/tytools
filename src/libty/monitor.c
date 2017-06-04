@@ -30,6 +30,7 @@ struct ty_monitor {
     bool started;
     hs_monitor *device_monitor;
     ty_timer *timer;
+    bool timer_running;
 
     _HS_ARRAY(struct callback) callbacks;
     int current_callback_id;
@@ -53,23 +54,19 @@ static int change_board_status(ty_board *board, ty_board_status status, ty_monit
 
     // Set new board status, engage drop timer if needed
     if (status == TY_BOARD_STATUS_MISSING && status != board->status) {
+        board->status = TY_BOARD_STATUS_MISSING;
         board->missing_since = ty_millis();
 
-        int timer_delay = -1;
-        for (size_t i = 0; i < monitor->boards.count; i++) {
-            ty_board *board_it = monitor->boards.values[i];
-
-            if (board_it->status == TY_BOARD_STATUS_MISSING) {
-                int board_delay = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
-                if (board_delay < timer_delay || timer_delay == -1)
-                    timer_delay = board_delay;
-            }
+        if (!monitor->timer_running) {
+            int timer_delay = ty_adjust_timeout(monitor->drop_delay, board->missing_since);
+            r = ty_timer_set(monitor->timer, timer_delay, TY_TIMER_ONESHOT);
+            if (r < 0)
+                return r;
+            monitor->timer_running = true;
         }
-        r = ty_timer_set(monitor->timer, timer_delay, TY_TIMER_ONESHOT);
-        if (r < 0)
-            return r;
+    } else {
+        board->status = status;
     }
-    board->status = status;
 
     /* Notify callbacks and do some additional stuff as we go:
        - Drop callback that return r > 0
@@ -538,6 +535,7 @@ void ty_monitor_stop(ty_monitor *monitor)
     // Stop device monitor and timer
     hs_monitor_stop(monitor->device_monitor);
     ty_timer_set(monitor->timer, -1, 0);
+    monitor->timer_running = false;
 
     // Clear registered boards
     for (size_t i = 0; i < monitor->boards.count; i++) {
@@ -603,25 +601,28 @@ int ty_monitor_refresh(ty_monitor *monitor)
     int r;
 
     if (ty_timer_rearm(monitor->timer)) {
-        int next_timeout = -1;
+        int timer_delay = -1;
 
         for (size_t i = 0; i < monitor->boards.count; i++) {
             ty_board *board_it = monitor->boards.values[i];
 
             if (board_it->status == TY_BOARD_STATUS_MISSING) {
                 int board_timeout = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
-                if (!board_timeout) {
+                /* Drop boards that are about to expire (< 20 ms) to deal with limited timer
+                   resolution (e.g. TickCount64() on Windows). */
+                if (board_timeout < 20) {
                     drop_board(board_it);
                     ty_board_unref(board_it);
-                } else if (board_timeout < next_timeout) {
-                    next_timeout = board_timeout;
+                } else if (board_timeout < timer_delay || timer_delay == -1) {
+                    timer_delay = board_timeout;
                 }
             }
         }
 
-        r = ty_timer_set(monitor->timer, next_timeout, TY_TIMER_ONESHOT);
+        r = ty_timer_set(monitor->timer, timer_delay, TY_TIMER_ONESHOT);
         if (r < 0)
             return r;
+        monitor->timer_running = (timer_delay >= 0);
     }
 
     r = hs_monitor_refresh(monitor->device_monitor, device_callback, monitor);
