@@ -565,7 +565,7 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
     }
 
     if (fws_count > 1) {
-        return ty_error(TY_ERROR_NOT_FOUND, "No firmware is compatible with '%s' (%s)",
+        return ty_error(TY_ERROR_UNSUPPORTED, "No firmware is compatible with '%s' (%s)",
                         board->tag, ty_models[board->model].name);
     } else if (fw_models_count) {
         char buf[256], *ptr;
@@ -615,18 +615,18 @@ static void unref_upload_firmware(void *ptr)
 static int run_upload(ty_task *task)
 {
     ty_board *board = task->u.upload.board;
-    ty_firmware *fw = NULL;
+    ty_firmware *fw;
     int flags = task->u.upload.flags, r;
 
     if (flags & TY_UPLOAD_NOCHECK) {
         fw = task->u.upload.fws[0];
-    } else {
-        ty_error_mask(TY_ERROR_NOT_FOUND);
+    } else if (ty_models[board->model].mcu) {
         r = select_compatible_firmware(board, task->u.upload.fws, task->u.upload.fws_count, &fw);
-        ty_error_unmask();
-        // Maybe we can identify the board and test the firmwares in bootloader mode?
-        if (r < 0 && r != TY_ERROR_NOT_FOUND)
+        if (r < 0)
             return r;
+    } else {
+        // Maybe we can identify the board and test the firmwares in bootloader mode?
+        fw = NULL;
     }
 
     ty_log(TY_LOG_INFO, "Uploading to board '%s' (%s)", board->tag, ty_models[board->model].name);
