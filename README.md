@@ -119,8 +119,8 @@ are two options to enable Qt in TyTools:
 
 - _dynamic Qt build_: Easiest option, you only need to install the pre-built Qt DLLs for
   your compiler with the official Qt installer. The binaries need the Qt DLLs to work.
-- _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the [qt5
-  directory](https://github.com/Koromix/tytools/tree/master/qt5) for instructions.
+- _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the
+  [lib/qt5 directory](https://github.com/Koromix/tytools/tree/master/lib/qt5) for instructions.
 
 To build TyTools with MSVC 2015 32-bit, launch _VS2015 x86 Native Tools Command Prompt_,
 navigate to the project directory and execute CMake:
@@ -148,8 +148,8 @@ are two options to enable Qt in TyTools:
 
 - _dynamic Qt build_: Easiest option, you only need to install the pre-built Qt DLLs for
   your compiler with the official Qt installer. The binaries need the Qt DLLs to work.
-- _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the [qt5
-  directory](https://github.com/Koromix/tytools/tree/master/qt5) for instructions.
+- _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the
+  [lib/qt5 directory](https://github.com/Koromix/tytools/tree/master/lib/qt5) for instructions.
 
 After Qt is ready, you can build TyTools by executing the following commands in the
 project directory:
