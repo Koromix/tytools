@@ -136,7 +136,12 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
             goto error;
         }
 
-        port->u.handle.read_buf = (uint8_t *)malloc(READ_BUFFER_SIZE);
+        if (dev->type == HS_DEVICE_TYPE_HID) {
+            port->u.handle.read_buf_size = dev->u.hid.input_report_len;
+        } else {
+            port->u.handle.read_buf_size = READ_BUFFER_SIZE;
+        }
+        port->u.handle.read_buf = (uint8_t *)malloc(port->u.handle.read_buf_size);
         if (!port->u.handle.read_buf) {
             r = hs_error(HS_ERROR_MEMORY, NULL);
             goto error;
@@ -263,8 +268,8 @@ void _hs_win32_start_async_read(hs_port *port)
 {
     DWORD ret;
 
-    ret = (DWORD)ReadFile(port->u.handle.h, port->u.handle.read_buf, READ_BUFFER_SIZE, NULL,
-                          port->u.handle.read_ov);
+    ret = (DWORD)ReadFile(port->u.handle.h, port->u.handle.read_buf, port->u.handle.read_buf_size,
+                          NULL, port->u.handle.read_ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(port->u.handle.h);
 

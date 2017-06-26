@@ -586,19 +586,21 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
         lret = HidD_GetPreparsedData(h, &pp);
         if (!lret) {
             hs_log(HS_LOG_WARNING, "HidD_GetPreparsedData() failed on '%s", dev->path);
-            goto ignore_hid_descriptor;
+            r = 0;
+            goto cleanup;
         }
         lret = HidP_GetCaps(pp, &caps);
         HidD_FreePreparsedData(pp);
         if (lret != HIDP_STATUS_SUCCESS) {
             hs_log(HS_LOG_WARNING, "Invalid HID descriptor from '%s", dev->path);
-            goto ignore_hid_descriptor;
+            r = 0;
+            goto cleanup;
         }
 
         dev->u.hid.usage_page = caps.UsagePage;
         dev->u.hid.usage = caps.Usage;
+        dev->u.hid.input_report_len = caps.InputReportByteLength;
     }
-ignore_hid_descriptor:
 
     r = 1;
 cleanup:

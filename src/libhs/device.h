@@ -122,7 +122,11 @@ struct hs_device {
             /** Primary usage value read from the HID report descriptor. */
             uint16_t usage;
 
-#ifdef __linux__
+#if defined(WIN32)
+            /** @cond */
+            size_t input_report_len;
+            /** @endcond */
+#elif defined(__linux__)
             /** @cond */
             // Needed to work around a bug on old Linux kernels
             bool numbered_reports;

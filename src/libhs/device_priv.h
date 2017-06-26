@@ -26,6 +26,7 @@ struct hs_port {
             void *h; // HANDLE
 
             struct _OVERLAPPED *read_ov;
+            size_t read_buf_size;
             uint8_t *read_buf;
             uint8_t *read_ptr;
             size_t read_len;
