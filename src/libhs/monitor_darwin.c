@@ -289,7 +289,7 @@ static int fill_device_details(struct service_aggregate *agg, hs_device *dev)
 #undef GET_MANDATORY_PROPERTY_NUMBER
 #undef GET_OPTIONAL_PROPERTY_STRING
 
-    r = _hs_asprintf(&dev->key, "%"PRIx64, session);
+    r = _hs_asprintf(&dev->key, "%" PRIx64, session);
     if (r < 0)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
@@ -418,7 +418,7 @@ static void darwin_devices_detached(void *udata, io_iterator_t it)
         if (r) {
             char key[32];
 
-            sprintf(key, "%"PRIx64, session);
+            sprintf(key, "%" PRIx64, session);
             _hs_monitor_remove(&monitor->devices, key, monitor->callback, monitor->callback_udata);
         }
 

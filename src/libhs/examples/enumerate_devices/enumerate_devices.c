@@ -19,7 +19,7 @@ static int device_callback(hs_device *dev, void *udata)
 {
     (void)(udata);
 
-    printf("+ %s@%"PRIu8" %04"PRIx16":%04"PRIx16" (%s)\n",
+    printf("+ %s@%" PRIu8 " %04" PRIx16 ":%04" PRIx16 " (%s)\n",
            dev->location, dev->iface_number, dev->vid, dev->pid,
            hs_device_type_strings[dev->type]);
     printf("  - device node:   %s\n", dev->path);
