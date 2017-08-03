@@ -280,77 +280,87 @@ static void teensy_close_interface(ty_board_interface *iface)
     iface->port = NULL;
 }
 
+static uint32_t read_uint32_le(const uint8_t *ptr)
+{
+    return (uint32_t)ptr[0] |
+           ((uint32_t)ptr[1] << 8) |
+           ((uint32_t)ptr[2] << 16) |
+           ((uint32_t)ptr[3] << 24);
+}
+
+static uint64_t read_uint64_le(const uint8_t *ptr)
+{
+    return (uint64_t)ptr[0] |
+           ((uint64_t)ptr[1] << 8) |
+           ((uint64_t)ptr[2] << 16) |
+           ((uint64_t)ptr[3] << 24) |
+           ((uint64_t)ptr[4] << 32) |
+           ((uint64_t)ptr[5] << 40) |
+           ((uint64_t)ptr[6] << 48) |
+           ((uint64_t)ptr[7] << 56);
+}
+
 static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmodels,
                                            unsigned int max_models)
 {
     /* Try ARM models first. We use a few facts to recognize these models:
        - The interrupt vector table (_VectorsFlash[]) is located at 0x0 (at least initially)
+       - _VectorsFlash[0] is the initial stack pointer, which is the end of the RAM address space
+       - _VectorsFlash[1] is the address of ResetHandler(), which follows _VectorsFlash[]
        - _VectorsFlash[] has a different length for each model
-       - ResetHandler() comes right after _VectorsFlash (this is enforced by the LD script)
-       - _VectorsFlash[1] contains the address of ResetHandler
-       Knowing all that, we can read the ResetHandler address 4 bytes in, and recognize the model
-       from this address.
-       To make sure it's really a Teensy firmware, we then check for a magic signature value
-       in the .startup section, which is the value assigned to SIM_SCGC5 in ResetHandler(). */
+
+       Since Teensyduino 1.38, ResetHandler() can move out of the .startup section (when
+       using -mpure-code, LTO), which breaks fact #3. But in that case there will be a lot of
+       0xFF bytes after _VectorsFlash[], which we can use to detect the size of _VectorsFlash[].
+
+       We combine the size of _VectorsFlash[] and the initial stack pointer value to
+       differenciate models. */
     const size_t teensy3_startup_size = 0x400;
     if (fw->size >= teensy3_startup_size) {
-        uint32_t reset_handler_addr, magic_check;
-        unsigned int models_count = 0;
+        uint32_t stack_addr;
+        uint32_t end_vector_addr;
+        unsigned int arm_models_count = 0;
 
-        reset_handler_addr = (uint32_t)fw->image[4] | ((uint32_t)fw->image[5] << 8) |
-                             ((uint32_t)fw->image[6] << 16) | ((uint32_t)fw->image[7] << 24);
-        switch (reset_handler_addr) {
-            case 0xF9: {
-                rmodels[models_count++] = TY_MODEL_TEENSY_30;
-                magic_check = 0x00043F82;
-            } break;
-            case 0x1BD: {
-                rmodels[models_count++] = TY_MODEL_TEENSY_31;
-                if (max_models >= 2)
-                    rmodels[models_count++] = TY_MODEL_TEENSY_32;
-                magic_check = 0x00043F82;
-            } break;
-            case 0xC1: {
-                rmodels[models_count++] = TY_MODEL_TEENSY_LC;
-                magic_check = 0x00003F82;
-            } break;
-            case 0x199: {
-                rmodels[models_count++] = TY_MODEL_TEENSY_35;
-                magic_check = 0x00043F82;
-            } break;
-            case 0x1D1: {
-                rmodels[models_count++] = TY_MODEL_TEENSY_36;
-                magic_check = 0x00043F82;
-            } break;
-        }
-
-        if (models_count) {
-            for (size_t i = reset_handler_addr; i < teensy3_startup_size - sizeof(uint32_t); i++) {
-                uint32_t value4 = (uint32_t)fw->image[i] |
-                                  ((uint32_t)fw->image[i + 1] << 8) |
-                                  ((uint32_t)fw->image[i + 2] << 16) |
-                                  ((uint32_t)fw->image[i + 3] << 24);
-
-                if (value4 == magic_check)
-                    return models_count;
+        stack_addr = read_uint32_le(fw->image);
+        end_vector_addr = read_uint32_le(fw->image + 4) & ~1u;
+        if (end_vector_addr >= teensy3_startup_size) {
+            for (size_t i = 0; i < teensy3_startup_size - sizeof(uint64_t); i += 4) {
+                if (read_uint64_le(fw->image + i) == 0xFFFFFFFFFFFFFFFF) {
+                    end_vector_addr = i;
+                    break;
+                }
             }
         }
+
+        switch (((uint64_t)stack_addr << 32) | end_vector_addr) {
+            case 0x20002000000000F8: {
+                rmodels[arm_models_count++] = TY_MODEL_TEENSY_30;
+            } break;
+            case 0x20008000000001BC: {
+                rmodels[arm_models_count++] = TY_MODEL_TEENSY_31;
+                if (max_models >= 2)
+                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_32;
+            } break;
+            case 0x20001800000000C0: {
+                rmodels[arm_models_count++] = TY_MODEL_TEENSY_LC;
+            } break;
+            case 0x2002000000000198: {
+                rmodels[arm_models_count++] = TY_MODEL_TEENSY_35;
+            } break;
+            case 0x20030000000001D0: {
+                rmodels[arm_models_count++] = TY_MODEL_TEENSY_36;
+            } break;
+        }
+        if (arm_models_count)
+            return arm_models_count;
     }
 
     /* Now try AVR Teensies. We search for machine code that matches model-specific code in
        _reboot_Teensyduino_(). Not elegant, but it does the work. */
     if (fw->size > sizeof(uint64_t) && fw->size <= 130048) {
         for (size_t i = 0; i < fw->size - sizeof(uint64_t); i++) {
-            uint64_t value8 = (uint64_t)fw->image[i] |
-                              ((uint64_t)fw->image[i + 1] << 8) |
-                              ((uint64_t)fw->image[i + 2] << 16) |
-                              ((uint64_t)fw->image[i + 3] << 24) |
-                              ((uint64_t)fw->image[i + 4] << 32) |
-                              ((uint64_t)fw->image[i + 5] << 40) |
-                              ((uint64_t)fw->image[i + 6] << 48) |
-                              ((uint64_t)fw->image[i + 7] << 56);
-
-            switch (value8) {
+            uint64_t magic_value = read_uint64_le(fw->image + i);
+            switch (magic_value) {
                 case 0x94F8CFFF7E00940C: {
                     rmodels[0] = TY_MODEL_TEENSY_PP_10;
                     return 1;
