@@ -141,16 +141,19 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
         } else {
             port->u.handle.read_buf_size = READ_BUFFER_SIZE;
         }
-        port->u.handle.read_buf = (uint8_t *)malloc(port->u.handle.read_buf_size);
-        if (!port->u.handle.read_buf) {
-            r = hs_error(HS_ERROR_MEMORY, NULL);
-            goto error;
-        }
 
-        _hs_win32_start_async_read(port);
-        if (port->u.handle.read_status < 0) {
-            r = port->u.handle.read_status;
-            goto error;
+        if (port->u.handle.read_buf_size) {
+            port->u.handle.read_buf = (uint8_t *)malloc(port->u.handle.read_buf_size);
+            if (!port->u.handle.read_buf) {
+                r = hs_error(HS_ERROR_MEMORY, NULL);
+                goto error;
+            }
+
+            _hs_win32_start_async_read(port);
+            if (port->u.handle.read_status < 0) {
+                r = port->u.handle.read_status;
+                goto error;
+            }
         }
     }
 
@@ -286,9 +289,11 @@ void _hs_win32_finalize_async_read(hs_port *port, int timeout)
 {
     DWORD len, ret;
 
+    if (!port->u.handle.read_buf_size)
+        return;
+
     if (timeout > 0)
         WaitForSingleObject(port->u.handle.read_ov->hEvent, (DWORD)timeout);
-
     ret = (DWORD)GetOverlappedResult(port->u.handle.h, port->u.handle.read_ov, &len, timeout < 0);
     if (!ret) {
         if (GetLastError() == ERROR_IO_INCOMPLETE) {
