@@ -505,7 +505,7 @@ static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t bloc
 restart:
     r = hs_hid_write(port, buf, size);
     if (r == HS_ERROR_IO && ty_millis() - start < timeout) {
-        ty_delay(10);
+        ty_delay(20);
         goto restart;
     }
     hs_error_unmask();
@@ -514,6 +514,11 @@ restart:
             return ty_error(TY_ERROR_IO, "%s", hs_error_last_message());
         return ty_libhs_translate_error((int)r);
     }
+
+    /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
+       first write takes longer because it triggers a complete erase of all blocks. */
+    if (!addr)
+        ty_delay(200);
 
     return 0;
 }
@@ -610,10 +615,6 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
                          addr, fw->image + addr, write_size, 3000);
         if (r < 0)
             return r;
-
-        /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
-           first write takes longer because it triggers a complete erase of all blocks. */
-        ty_delay(addr ? 20 : 200);
 
         if (pf) {
             r = (*pf)(iface->board, fw, addr + write_size, code_size, udata);
