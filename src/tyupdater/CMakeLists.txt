@@ -36,7 +36,7 @@ if(CONFIG_VARIANT)
         set(TYUPDATER_ICON_FILE_PREFIX "${CONFIG_VARIANT_PATH}/tyupdater")
     endif()
     if(EXISTS "${CONFIG_VARIANT_PATH}/resources.qrc")
-        list(INSERT TYUPDATER_RESOURCES 0 "${CONFIG_VARIANT_PATH}/resources.qrc")
+        set(TYUPDATER_RESOURCES "${CONFIG_VARIANT_PATH}/resources.qrc")
     endif()
 endif()
 
