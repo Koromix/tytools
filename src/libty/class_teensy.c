@@ -315,7 +315,7 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
        We combine the size of _VectorsFlash[] and the initial stack pointer value to
        differenciate models. */
-    const size_t teensy3_startup_size = 0x400;
+    const uint32_t teensy3_startup_size = 0x400;
     if (fw->size >= teensy3_startup_size) {
         uint32_t stack_addr;
         uint32_t end_vector_addr;
@@ -324,7 +324,7 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
         stack_addr = read_uint32_le(fw->image);
         end_vector_addr = read_uint32_le(fw->image + 4) & ~1u;
         if (end_vector_addr >= teensy3_startup_size) {
-            for (size_t i = 0; i < teensy3_startup_size - sizeof(uint64_t); i += 4) {
+            for (uint32_t i = 0; i < teensy3_startup_size - sizeof(uint64_t); i += 4) {
                 if (read_uint64_le(fw->image + i) == 0xFFFFFFFFFFFFFFFF) {
                     end_vector_addr = i;
                     break;
