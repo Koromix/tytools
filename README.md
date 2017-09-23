@@ -192,7 +192,7 @@ Open the project directory in a terminal and execute:
 ```bash
 # You can of course use another directory if you prefer.
 mkdir -p build/linux && cd build/linux
-cmake ../..
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local ../..
 make
 ```
 
@@ -201,3 +201,17 @@ If you want to build debug binaries instead, you should specify the build type:
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug ../..
 ```
+
+The compiled binaries can be used directly from the build directory. Follow through the
+next section if you want to install the application.
+
+### Installation
+
+You can deploy TyTools to your system with the following commands:
+
+```bash
+sudo make install
+```
+
+By default this will copy the files to `/usr/local`. To change this directory you need
+to change the `CMAKE_INSTALL_PREFIX` value in the Compilation section above.
