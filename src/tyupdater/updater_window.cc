@@ -45,16 +45,16 @@ UpdaterWindow::UpdaterWindow(QWidget *parent)
     connect(actionQuit, &QAction::triggered, this, &TyUpdater::quit);
 
     connect(actionOpenLog, &QAction::triggered, tyUpdater, &TyUpdater::showLogWindow);
-#ifdef TY_CONFIG_URL_WEBSITE
-    connect(actionWebsite, &QAction::triggered, this, &UpdaterWindow::openWebsite);
-#else
-    actionWebsite->setVisible(false);
-#endif
-#ifdef TY_CONFIG_URL_BUGS
-    connect(actionReportBug, &QAction::triggered, this, &UpdaterWindow::openBugReports);
-#else
-    actionReportBug->setVisible(false);
-#endif
+    if (TY_CONFIG_URL_WEBSITE[0]) {
+        connect(actionWebsite, &QAction::triggered, this, &UpdaterWindow::openWebsite);
+    } else {
+        actionWebsite->setVisible(false);
+    }
+    if (TY_CONFIG_URL_BUGS[0]) {
+        connect(actionReportBug, &QAction::triggered, this, &UpdaterWindow::openBugReports);
+    } else {
+        actionReportBug->setVisible(false);
+    }
 
     connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &UpdaterWindow::currentChanged);
@@ -104,26 +104,15 @@ void UpdaterWindow::resetCurrent()
     current_board_->startReset();
 }
 
-#ifdef TY_CONFIG_URL_WEBSITE
-    void openWebsite();
-#endif
-#ifdef TY_CONFIG_URL_BUGS
-    void openBugReports();
-#endif
-
-#ifdef TY_CONFIG_URL_WEBSITE
 void UpdaterWindow::openWebsite()
 {
     QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_WEBSITE));
 }
-#endif
 
-#ifdef TY_CONFIG_URL_BUGS
 void UpdaterWindow::openBugReports()
 {
     QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_BUGS));
 }
-#endif
 
 void UpdaterWindow::changeCurrentBoard(Board *board)
 {

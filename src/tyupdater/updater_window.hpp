@@ -51,12 +51,8 @@ public slots:
     void uploadNewToCurrent();
     void resetCurrent();
 
-#ifdef TY_CONFIG_URL_WEBSITE
     void openWebsite();
-#endif
-#ifdef TY_CONFIG_URL_BUGS
     void openBugReports();
-#endif
 
 private:
     void changeCurrentBoard(Board *board);
