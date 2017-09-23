@@ -12,9 +12,6 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "")
 cmake_minimum_required(VERSION 3.1)
 project(TyTools C CXX)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-include("cmake/Utility.cmake")
-
 if(CONFIG_VARIANT)
     if(IS_ABSOLUTE ${CONFIG_VARIANT})
         set(CONFIG_VARIANT_PATH ${CONFIG_VARIANT})
@@ -24,7 +21,12 @@ if(CONFIG_VARIANT)
     if(EXISTS "${CONFIG_VARIANT_PATH}/settings.cmake")
         include("${CONFIG_VARIANT_PATH}/settings.cmake")
     endif()
+
+    set(USE_UNITY_BUILDS OFF CACHE BOOL "")
 endif()
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+include("cmake/Utility.cmake")
 
 set(VERSION_DEFAULT "0.8.8" CACHE STRING "Default version number")
 set(VERSION_WITH_GIT ON CACHE BOOL "Compute version using git tags (fallback)")
