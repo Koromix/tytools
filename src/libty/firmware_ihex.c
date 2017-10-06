@@ -16,36 +16,32 @@ struct parser_context {
     unsigned int line;
 
     const char *ptr;
+    size_t line_len;
     uint8_t sum;
     bool error;
 
     uint32_t base_offset;
 };
 
-static uint8_t parse_hex_byte(struct parser_context *ctx, bool checksum)
+static uint32_t parse_hex_value(struct parser_context *ctx, size_t size)
 {
     if (ctx->error)
         return 0;
 
-    uint8_t value;
-    int r;
-
-    r = sscanf(ctx->ptr, "%02"SCNx8, &value);
-    if (r < 1) {
-        ctx->error = true;
-        return 0;
+    uint32_t value = 0;
+    while (size--) {
+        uint8_t byte;
+        int r = sscanf(ctx->ptr, "%02"SCNx8, &byte);
+        if (r < 1) {
+            ctx->error = true;
+            return 0;
+        }
+        value = (value << 8) | byte;
+        ctx->sum = (uint8_t)(ctx->sum + byte);
+        ctx->ptr += 2;
     }
-    ctx->ptr += 2;
 
-    if (checksum)
-        ctx->sum = (uint8_t)(ctx->sum + value);
-
-    return (uint8_t)value;
-}
-
-static uint16_t parse_hex_short(struct parser_context *ctx)
-{
-    return (uint16_t)((parse_hex_byte(ctx, true) << 8) | parse_hex_byte(ctx, true));
+    return value;
 }
 
 static int ihex_parse_error(struct parser_context *ctx)
@@ -56,57 +52,60 @@ static int ihex_parse_error(struct parser_context *ctx)
 
 static int parse_line(struct parser_context *ctx, const char *line)
 {
-    unsigned int length, type;
+    unsigned int data_len, type;
     uint32_t address;
-    uint8_t checksum;
+    uint8_t sum, checksum;
     int r;
 
     ctx->ptr = line;
+    ctx->line_len = strlen(line);
+    while (ctx->line_len && strchr("\r\n", ctx->ptr[ctx->line_len - 1]))
+        ctx->line_len--;
     ctx->sum = 0;
     ctx->error = false;
 
     // Empty lines are probably OK
     if (*ctx->ptr++ != ':')
         return 0;
-    if (strlen(ctx->ptr) < 11)
-        return ihex_parse_error(ctx);
 
-    length = parse_hex_byte(ctx, true);
-    address = parse_hex_short(ctx);
-    type = parse_hex_byte(ctx, true);
-
-    if (ctx->error)
+    data_len = parse_hex_value(ctx, 1);
+    if (11 + 2 * data_len != ctx->line_len)
         return ihex_parse_error(ctx);
+    address = parse_hex_value(ctx, 2);
+    type = parse_hex_value(ctx, 1);
 
     switch (type) {
         case 0: { // data record
             address += ctx->base_offset;
-            r = ty_firmware_expand_image(ctx->fw, address + length);
+            r = ty_firmware_expand_image(ctx->fw, address + data_len);
             if (r < 0)
                 return r;
-            for (unsigned int i = 0; i < length; i++)
-                ctx->fw->image[address + i] = parse_hex_byte(ctx, true);
+            for (unsigned int i = 0; i < data_len; i++)
+                ctx->fw->image[address + i] = (uint8_t)parse_hex_value(ctx, 1);
         } break;
 
         case 1: { // EOF record
-            if (length > 0)
+            if (data_len)
                 return ihex_parse_error(ctx);
         } break;
 
         case 2: { // extended segment address record
-            if (length != 2)
+            if (data_len != 2)
                 return ihex_parse_error(ctx);
-            ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 4;
-        } break;
-        case 3: { // start segment address record
+            ctx->base_offset = (uint32_t)parse_hex_value(ctx, 2) << 4;
         } break;
 
         case 4: { // extended linear address record
-            if (length != 2)
+            if (data_len != 2)
                 return ihex_parse_error(ctx);
-            ctx->base_offset = (uint32_t)parse_hex_short(ctx) << 16;
+            ctx->base_offset = (uint32_t)parse_hex_value(ctx, 2) << 16;
         } break;
+
+        case 3:   // start segment address record
         case 5: { // start linear address record
+            if (data_len != 4)
+                return ihex_parse_error(ctx);
+            parse_hex_value(ctx, 4);
         } break;
 
         default: {
@@ -115,17 +114,16 @@ static int parse_line(struct parser_context *ctx, const char *line)
     }
 
     // Don't checksum the checksum :)
-    checksum = parse_hex_byte(ctx, false);
+    sum = ctx->sum;
+    checksum = (uint8_t)parse_hex_value(ctx, 1);
 
     if (ctx->error)
         return ihex_parse_error(ctx);
-    if (*ctx->ptr != '\r' && *ctx->ptr != '\n' && *ctx->ptr)
-        return ihex_parse_error(ctx);
-    if (((ctx->sum & 0xFF) + (checksum & 0xFF)) & 0xFF)
+    if ((sum + checksum) & 0xFF)
         return ihex_parse_error(ctx);
 
     // Return 1 for EOF records, to end the parsing
-    return type == 1;
+    return (type == 1);
 }
 
 int ty_firmware_load_ihex(const char *filename, ty_firmware **rfw)
