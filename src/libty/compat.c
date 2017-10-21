@@ -11,7 +11,7 @@
 #include "common_priv.h"
 #include <stdarg.h>
 
-#ifndef HAVE_ASPRINTF
+#ifndef _TY_HAVE_ASPRINTF
 
 int _ty_asprintf(char **strp, const char *fmt, ...)
 {

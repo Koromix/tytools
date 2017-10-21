@@ -69,9 +69,9 @@ endif()
 configure_file(version.h.in version.h)
 
 include(CheckSymbolExists)
-check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
+check_symbol_exists(asprintf stdio.h _TY_HAVE_ASPRINTF)
 if(NOT WIN32)
-    check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
+    check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h _TY_HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
 endif()
 configure_file(config.h.in config.h)
 
@@ -84,8 +84,12 @@ set_target_properties(libty PROPERTIES OUTPUT_NAME ty)
 target_link_libraries(libty PRIVATE ${LIBTY_LINK_LIBRARIES})
 # We need that for config.h
 target_include_directories(libty PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-target_compile_definitions(libty PUBLIC HAVE_CONFIG_H)
+target_compile_definitions(libty PUBLIC _TY_HAVE_CONFIG_H)
 if(MSVC)
     target_compile_definitions(libty PUBLIC TY_STATIC)
 endif()
 enable_unity_build(libty)
+
+configure_file(libty.h.in libty.h.in)
+add_amalgamated_file(libty "${CMAKE_BINARY_DIR}/libty.h" "${CMAKE_CURRENT_BINARY_DIR}/libty.h.in"
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
