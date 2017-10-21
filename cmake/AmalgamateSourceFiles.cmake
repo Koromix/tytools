@@ -22,19 +22,22 @@ endforeach()
 
 list(GET ARGV 0 SRC)
 list(GET ARGV 1 DEST)
+if(NOT WORKING_DIRECTORY)
+    get_filename_component(WORKING_DIRECTORY "${SRC}" DIRECTORY)
+endif()
 
 file(REMOVE "${DEST}")
 
-get_filename_component(src_dir "${SRC}" DIRECTORY)
+
 file(STRINGS "${SRC}" lines ENCODING "UTF-8")
 
 foreach(line IN LISTS lines)
-    if(line MATCHES "#include \"([a-zA-Z0-9_\\-]+\\.[a-zA-Z]+)\"")
+    if(line MATCHES "^ *#include \"([a-zA-Z0-9_\\-]+\\.[a-zA-Z]+)\"$")
         set(include_file "${CMAKE_MATCH_1}")
         list(FIND EXCLUDE "${include_file}" exclude_index)
         if(exclude_index EQUAL -1)
             if(NOT IS_ABSOLUTE "${include_file}")
-                set(include_file_full "${src_dir}/${include_file}")
+                set(include_file_full "${WORKING_DIRECTORY}/${include_file}")
             else()
                 set(include_file_full "${include_file}")
             endif()

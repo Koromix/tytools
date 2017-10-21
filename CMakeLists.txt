@@ -57,13 +57,6 @@ set(CONFIG_URL_BUGS "https://github.com/Koromix/tytools/issues" CACHE STRING "Pr
 set(CONFIG_PACKAGE_NAME "TyTools" CACHE STRING "Package / installer name")
 set(CONFIG_PACKAGE_FILENAME "TyTools" CACHE STRING "Package / installer filename")
 
-if(CMAKE_C_COMPILER_ID MATCHES "[Cc]lang")
-    set(CMAKE_COMPILER_IS_CLANG 1)
-endif()
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(LINUX 1)
-endif()
-
 if(MSVC)
     set(USE_SHARED_MSVCRT OFF CACHE BOOL "Build with shared version of MS CRT (/MD)")
 endif()
