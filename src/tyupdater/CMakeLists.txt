@@ -25,7 +25,9 @@ set(TYUPDATER_SOURCES ../tycommander/board.cc
                       ../tycommander/task.cc
                       ../tycommander/task.hpp
                       tyupdater.cc
-                      updater_window.cc)
+                      tyupdater.hpp
+                      updater_window.cc
+                      updater_window.hpp)
 set(TYUPDATER_FORMS ../tycommander/log_dialog.ui
                     updater_window.ui)
 

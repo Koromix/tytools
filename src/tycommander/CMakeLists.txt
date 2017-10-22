@@ -17,27 +17,33 @@ set(TYCOMMANDER_SOURCES about_dialog.cc
                         board.hpp
                         board_widget.cc
                         board_widget.hpp
+                        client_handler.cc
+                        client_handler.hpp
                         database.cc
                         database.hpp
                         descriptor_notifier.cc
                         descriptor_notifier.hpp
-                        client_handler.cc
                         enhanced_widgets.cc
+                        enhanced_widgets.hpp
                         firmware.cc
                         firmware.hpp
                         log_dialog.cc
                         log_dialog.hpp
                         main.cc
                         main_window.cc
+                        main_window.hpp
                         monitor.cc
                         monitor.hpp
                         preferences_dialog.cc
+                        preferences_dialog.hpp
                         selector_dialog.cc
+                        selector_dialog.hpp
                         session_channel.cc
                         session_channel.hpp
                         task.cc
                         task.hpp
-                        tycommander.cc)
+                        tycommander.cc
+                        tycommander.hpp)
 set(TYCOMMANDER_FORMS about_dialog.ui
                       arduino_dialog.ui
                       board_widget.ui

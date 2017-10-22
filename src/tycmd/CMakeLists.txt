@@ -11,6 +11,7 @@
 set(TYCMD_SOURCES identify.c
                   list.c
                   main.c
+                  main.h
                   monitor.c
                   reset.c
                   upload.c)
