@@ -437,21 +437,39 @@ void MainWindow::rebootSelection()
 
 void MainWindow::sendToSelectedBoards(const QString &s)
 {
-    auto newline = actionSerialEOLGroup->checkedAction()->property("EOL").toString();
-    auto s2 = s + newline;
-
+    QString cmd;
+    QString value;
     if (s.startsWith('@')) {
-        auto filename = s.mid(1);
-        for (auto &board: selected_boards_)
-            board->startSendFile(filename);
+        cmd = s.mid(1, s.indexOf(' ', 1) - 1).trimmed();
+        value = s.mid(cmd.length() + 1).trimmed();
     } else {
+        cmd = "send";
+        value = s;
+    }
+
+    QString echo_str;
+    if (cmd == "send_file") {
+        echo_str = s + "\n";
+
         for (auto &board: selected_boards_)
-            board->startSendSerial(s2);
+            board->startSendFile(value);
+    } else if (cmd == "send") {
+        echo_str = value +
+                   actionSerialEOLGroup->checkedAction()->property("EOL").toString();
+
+        for (auto &board: selected_boards_)
+            board->startSendSerial(echo_str);
+    } else {
+        ty_log(TY_LOG_ERROR, "Unknown command '%s' (prefix with '@send ' if your string starts with character '@')",
+               cmd.toUtf8().constData());
+        for (auto &board: selected_boards_)
+            board->notifyLog(TY_LOG_ERROR, ty_error_last_message());
+        return;
     }
 
     if (actionSerialEcho->isChecked()) {
         for (auto &board: selected_boards_)
-            board->appendFakeSerialRead(s2);
+            board->appendFakeSerialRead(echo_str);
     }
 }
 
@@ -597,7 +615,7 @@ void MainWindow::sendFileToSelection()
     if (filename.isEmpty())
         return;
 
-    auto serial_str = QString("@%1").arg(filename);
+    auto serial_str = QString("@send_file %1").arg(filename);
     sendToSelectedBoards(serial_str);
 }
 
