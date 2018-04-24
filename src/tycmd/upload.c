@@ -27,7 +27,9 @@ static void print_upload_usage(FILE *f)
                "       --nocheck            Force upload even if the board is not compatible\n"
                "       --noreset            Do not reset the device once the upload is finished\n"
                "   -f, --format <format>    Firmware file format (autodetected by default)\n\n"
-               "You can pass multiple firmwares, and the first compatible one will be used.\n");
+               "You can pass multiple firmwares, and the first compatible one will be used.\n\n"
+               "Use '-' to read firmware from stdin, in which case you need to specificy the\n"
+               "format with -f <format>.\n\n");
 
     fprintf(f, "Supported firmware formats: ");
     for (unsigned int i = 0; i < ty_firmware_formats_count; i++)
@@ -76,7 +78,8 @@ int upload(int argc, char *argv[])
             break;
         }
 
-        r = ty_firmware_load(opt, NULL, upload_firmware_format, &fws[fws_count]);
+        r = ty_firmware_load(opt, !strcmp(opt, "-") ? stdin : NULL,
+                             upload_firmware_format, &fws[fws_count]);
         if (!r)
             fws_count++;
     }
