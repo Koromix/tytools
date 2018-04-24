@@ -106,7 +106,7 @@ static int read_chunk(struct loader_context *ctx, off_t offset, size_t size, voi
 
         // fseek() is undefined for non-seekable streams on Win32. I've tested it a few
         // times, things tend to fail here.
-        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is truncated (or unseekable?) %d %d",
+        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is truncated (or unseekable?)",
                         ctx->fw->filename);
     }
 
