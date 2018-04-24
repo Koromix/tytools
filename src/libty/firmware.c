@@ -73,12 +73,15 @@ error:
     return r;
 }
 
-int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfw)
+int ty_firmware_load(const char *filename, FILE *fp, const char *format_name, ty_firmware **rfw)
 {
     assert(filename);
     assert(rfw);
 
     const ty_firmware_format *format = NULL;
+    bool close_fp = false;
+    ty_firmware *fw = NULL;
+    int r;
 
     if (format_name) {
         for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
@@ -87,12 +90,16 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
                 break;
             }
         }
-        if (!format)
-            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
+        if (!format) {
+            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
+            goto cleanup;
+        }
     } else {
         const char *ext = strrchr(filename, '.');
-        if (!ext)
-            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
+        if (!ext) {
+            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
+            goto cleanup;
+        }
 
         for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
             if (strcasecmp(ty_firmware_formats[i].ext, ext) == 0) {
@@ -100,12 +107,58 @@ int ty_firmware_load(const char *filename, const char *format_name, ty_firmware 
                 break;
             }
         }
-        if (!format)
-            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized extension",
+        if (!format) {
+            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized extension",
                             filename);
+            goto cleanup;
+        }
     }
 
-    return (*format->load)(filename, rfw);
+    if (!fp) {
+#ifdef _WIN32
+        fp = fopen(filename, "rb");
+#else
+        fp = fopen(filename, "rbe");
+#endif
+        if (!fp) {
+            switch (errno) {
+                case EACCES: {
+                    r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
+                } break;
+                case EIO: {
+                    r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading", filename);
+                } break;
+                case ENOENT:
+                case ENOTDIR: {
+                    r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", filename);
+                } break;
+
+                default: {
+                    r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", filename,
+                                 strerror(errno));
+                } break;
+            }
+            goto cleanup;
+        }
+        close_fp = true;
+    }
+
+    r = ty_firmware_new(filename, &fw);
+    if (r < 0)
+        goto cleanup;
+
+    r = (*format->load)(fw, fp);
+    if (r < 0)
+        goto cleanup;
+
+    *rfw = fw;
+    fw = NULL;
+
+cleanup:
+    ty_firmware_unref(fw);
+    if (close_fp)
+        fclose(fp);
+    return r;
 }
 
 ty_firmware *ty_firmware_ref(ty_firmware *fw)

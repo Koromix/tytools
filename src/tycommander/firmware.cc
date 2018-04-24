@@ -28,7 +28,7 @@ shared_ptr<Firmware> Firmware::load(const QString &filename)
     ty_firmware *fw;
     int r;
 
-    r = ty_firmware_load(filename.toLocal8Bit().constData(), nullptr, &fw);
+    r = ty_firmware_load(filename.toLocal8Bit().constData(), nullptr, nullptr, &fw);
     if (r < 0)
         return nullptr;
 

@@ -104,7 +104,10 @@ static int read_chunk(struct loader_context *ctx, off_t offset, size_t size, voi
             return ty_error(TY_ERROR_SYSTEM, "fread('%s') failed: %s", ctx->fw->filename, strerror(errno));
         }
 
-        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is truncated", ctx->fw->filename);
+        // fseek() is undefined for non-seekable streams on Win32. I've tested it a few
+        // times, things tend to fail here.
+        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is truncated (or unseekable?) %d %d",
+                        ctx->fw->filename);
     }
 
     return 0;
@@ -154,59 +157,28 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     return 1;
 }
 
-int ty_firmware_load_elf(const char *filename, ty_firmware **rfw)
+int ty_firmware_load_elf(ty_firmware *fw, FILE *fp)
 {
-    assert(filename);
-    assert(rfw);
+    assert(fw);
+    assert(!fw->size);
+    assert(fp);
 
     struct loader_context ctx = {0};
     int r;
 
-    r = ty_firmware_new(filename, &ctx.fw);
-    if (r < 0)
-        goto cleanup;
-
-#ifdef _WIN32
-    ctx.fp = fopen(ctx.fw->filename, "rb");
-#else
-    ctx.fp = fopen(ctx.fw->filename, "rbe");
-#endif
-    if (!ctx.fp) {
-        switch (errno) {
-            case EACCES: {
-                r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
-            } break;
-            case EIO: {
-                r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading",
-                             ctx.fw->filename);
-            } break;
-            case ENOENT:
-            case ENOTDIR: {
-                r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
-            } break;
-
-            default: {
-                r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
-                             strerror(errno));
-            } break;
-        }
-        goto cleanup;
-    }
+    ctx.fw = fw;
+    ctx.fp = fp;
 
     r = read_chunk(&ctx, 0, sizeof(ctx.ehdr), &ctx.ehdr);
     if (r < 0)
-        goto cleanup;
+        return r;
 
-    if (memcmp(ctx.ehdr.e_ident, ELFMAG, SELFMAG) != 0) {
-        r = ty_error(TY_ERROR_PARSE, "Missing ELF signature in '%s'", ctx.fw->filename);
-        goto cleanup;
-    }
+    if (memcmp(ctx.ehdr.e_ident, ELFMAG, SELFMAG) != 0)
+        return ty_error(TY_ERROR_PARSE, "Missing ELF signature in '%s'", ctx.fw->filename);
 
-    if (ctx.ehdr.e_ident[EI_CLASS] != ELFCLASS32) {
-        r = ty_error(TY_ERROR_UNSUPPORTED, "ELF object '%s' is not supported (not 32-bit)",
-                     ctx.fw->filename);
-        goto cleanup;
-    }
+    if (ctx.ehdr.e_ident[EI_CLASS] != ELFCLASS32)
+        return ty_error(TY_ERROR_UNSUPPORTED, "ELF object '%s' is not supported (not 32-bit)",
+                        ctx.fw->filename);
 
     if (is_endianness_reversed(&ctx)) {
         reverse_uint16(&ctx.ehdr.e_type);
@@ -223,24 +195,14 @@ int ty_firmware_load_elf(const char *filename, ty_firmware **rfw)
         reverse_uint16(&ctx.ehdr.e_shstrndx);
     }
 
-    if (!ctx.ehdr.e_phoff) {
-        r = ty_error(TY_ERROR_PARSE, "ELF file '%s' has no program headers", ctx.fw->filename);
-        goto cleanup;
-    }
+    if (!ctx.ehdr.e_phoff)
+        return ty_error(TY_ERROR_PARSE, "ELF file '%s' has no program headers", ctx.fw->filename);
 
     for (unsigned int i = 0; i < ctx.ehdr.e_phnum; i++) {
         r = load_segment(&ctx, i);
         if (r < 0)
-            goto cleanup;
+            return r;
     }
 
-    *rfw = ctx.fw;
-    ctx.fw = NULL;
-
-    r = 0;
-cleanup:
-    if (ctx.fp)
-        fclose(ctx.fp);
-    ty_firmware_unref(ctx.fw);
-    return r;
+    return 0;
 }

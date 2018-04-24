@@ -126,71 +126,32 @@ static int parse_line(struct parser_context *ctx, const char *line)
     return (type == 1);
 }
 
-int ty_firmware_load_ihex(const char *filename, ty_firmware **rfw)
+int ty_firmware_load_ihex(ty_firmware *fw, FILE *fp)
 {
-    assert(filename);
-    assert(rfw);
+    assert(fw);
+    assert(!fw->size);
+    assert(fp);
 
     struct parser_context ctx = {0};
-    FILE *fp = NULL;
     char buf[1024];
     int r;
 
-    r = ty_firmware_new(filename, &ctx.fw);
-    if (r < 0)
-        goto cleanup;
-
-#ifdef _WIN32
-    fp = fopen(ctx.fw->filename, "r");
-#else
-    fp = fopen(ctx.fw->filename, "re");
-#endif
-    if (!fp) {
-        switch (errno) {
-            case EACCES: {
-                r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", ctx.fw->filename);
-            } break;
-            case EIO: {
-                r = ty_error(TY_ERROR_IO, "I/O error while opening '%s' for reading",
-                             ctx.fw->filename);
-            } break;
-            case ENOENT:
-            case ENOTDIR: {
-                r = ty_error(TY_ERROR_NOT_FOUND, "File '%s' does not exist", ctx.fw->filename);
-            } break;
-
-            default: {
-                r = ty_error(TY_ERROR_SYSTEM, "fopen('%s') failed: %s", ctx.fw->filename,
-                             strerror(errno));
-            } break;
-        }
-        goto cleanup;
-    }
-
+    ctx.fw = fw;
     do {
         if (!fgets(buf, sizeof(buf), fp)) {
             if (feof(fp)) {
-                r = ihex_parse_error(&ctx);
+                return ihex_parse_error(&ctx);
             } else {
-                r = ty_error(TY_ERROR_IO, "I/O error while reading '%s'", ctx.fw->filename);
+                return ty_error(TY_ERROR_IO, "I/O error while reading '%s'", ctx.fw->filename);
             }
-            goto cleanup;
         }
         ctx.line++;
 
         // Returns 1 when EOF record is detected
         r = parse_line(&ctx, buf);
         if (r < 0)
-            goto cleanup;
+            return r;
     } while (!r);
 
-    *rfw = ctx.fw;
-    ctx.fw = NULL;
-
-    r = 0;
-cleanup:
-    if (fp)
-        fclose(fp);
-    ty_firmware_unref(ctx.fw);
-    return r;
+    return 0;
 }

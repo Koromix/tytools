@@ -76,7 +76,7 @@ int upload(int argc, char *argv[])
             break;
         }
 
-        r = ty_firmware_load(opt, upload_firmware_format, &fws[fws_count]);
+        r = ty_firmware_load(opt, NULL, upload_firmware_format, &fws[fws_count]);
         if (!r)
             fws_count++;
     }

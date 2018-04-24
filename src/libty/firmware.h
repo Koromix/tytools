@@ -21,9 +21,9 @@ typedef struct ty_firmware {
 
     char *name;
     char *filename;
+
     uint8_t *image;
     size_t size;
-
     size_t alloc_size;
 } ty_firmware;
 
@@ -31,7 +31,7 @@ typedef struct ty_firmware_format {
     const char *name;
     const char *ext;
 
-    int (*load)(const char *filename, ty_firmware **rfw);
+    int (*load)(ty_firmware *fw, FILE *fp);
 } ty_firmware_format;
 
 TY_PUBLIC extern const ty_firmware_format ty_firmware_formats[];
@@ -40,10 +40,10 @@ TY_PUBLIC extern const unsigned int ty_firmware_formats_count;
 #define TY_FIRMWARE_MAX_SIZE (1024 * 1024)
 
 TY_PUBLIC int ty_firmware_new(const char *filename, ty_firmware **rfw);
+TY_PUBLIC int ty_firmware_load(const char *filename, FILE *fp, const char *format_name, ty_firmware **rfw);
 
-TY_PUBLIC int ty_firmware_load(const char *filename, const char *format_name, ty_firmware **rfw);
-TY_PUBLIC int ty_firmware_load_elf(const char *filename, ty_firmware **rfw);
-TY_PUBLIC int ty_firmware_load_ihex(const char *filename, ty_firmware **rfw);
+TY_PUBLIC int ty_firmware_load_elf(ty_firmware *fw, FILE *fp);
+TY_PUBLIC int ty_firmware_load_ihex(ty_firmware *fw, FILE *fp);
 
 TY_PUBLIC ty_firmware *ty_firmware_ref(ty_firmware *fw);
 TY_PUBLIC void ty_firmware_unref(ty_firmware *fw);
