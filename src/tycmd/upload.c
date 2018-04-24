@@ -29,7 +29,7 @@ static void print_upload_usage(FILE *f)
                "   -f, --format <format>    Firmware file format (autodetected by default)\n\n"
                "You can pass multiple firmwares, and the first compatible one will be used.\n\n"
                "Use '-' to read firmware from stdin, in which case you need to specificy the\n"
-               "format with -f <format>.\n\n");
+               "format with -f <format>. This will not work with all formats (such as ELF).\n\n");
 
     fprintf(f, "Supported firmware formats: ");
     for (unsigned int i = 0; i < ty_firmware_formats_count; i++)
