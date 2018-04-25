@@ -16,7 +16,7 @@ struct parser_context {
     unsigned int line;
 
     const char *ptr;
-    size_t line_len;
+    const char *end;
     uint8_t sum;
     bool error;
 
@@ -30,12 +30,22 @@ static uint32_t parse_hex_value(struct parser_context *ctx, size_t size)
 
     uint32_t value = 0;
     while (size--) {
+        char buf[3];
         uint8_t byte;
-        int r = sscanf(ctx->ptr, "%02"SCNx8, &byte);
+
+        if (ctx->ptr > ctx->end - 2) {
+            ctx->error = true;
+            return 0;
+        }
+        memcpy(buf, ctx->ptr, 2);
+        buf[2] = 0;
+
+        int r = sscanf(buf, "%02"SCNx8, &byte);
         if (r < 1) {
             ctx->error = true;
             return 0;
         }
+
         value = (value << 8) | byte;
         ctx->sum = (uint8_t)(ctx->sum + byte);
         ctx->ptr += 2;
@@ -58,14 +68,14 @@ static int parse_line(struct parser_context *ctx, const char *line, size_t line_
     int r;
 
     ctx->ptr = line;
-    ctx->line_len = line_len;
+    ctx->end = line + line_len;
     ctx->sum = 0;
     ctx->error = false;
 
     if (!line_len || *ctx->ptr++ != ':')
         return ihex_parse_error(ctx);
     data_len = parse_hex_value(ctx, 1);
-    if (11 + 2 * data_len != ctx->line_len)
+    if (11 + 2 * data_len != line_len)
         return ihex_parse_error(ctx);
     address = parse_hex_value(ctx, 2);
     type = parse_hex_value(ctx, 1);
