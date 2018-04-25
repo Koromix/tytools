@@ -59,7 +59,8 @@ typedef struct Elf32_Phdr {
 struct loader_context {
     ty_firmware *fw;
 
-    FILE *fp;
+    const uint8_t *mem;
+    size_t len;
 
     Elf32_Ehdr ehdr;
 };
@@ -86,30 +87,11 @@ static inline void reverse_uint32(uint32_t *u)
 
 static int read_chunk(struct loader_context *ctx, off_t offset, size_t size, void *buf)
 {
-    ssize_t r;
-
-#ifdef _WIN32
-    r = _fseeki64(ctx->fp, offset, SEEK_SET);
-#else
-    r = fseeko(ctx->fp, offset, SEEK_SET);
-#endif
-    if (r < 0)
-        return ty_error(TY_ERROR_SYSTEM, "fseeko() failed: %s", strerror(errno));
-
-    r = (ssize_t)fread(buf, 1, size, ctx->fp);
-    if (r < (ssize_t)size) {
-        if (ferror(ctx->fp)) {
-            if (errno == EIO)
-                return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", ctx->fw->filename);
-            return ty_error(TY_ERROR_SYSTEM, "fread('%s') failed: %s", ctx->fw->filename, strerror(errno));
-        }
-
-        // fseek() is undefined for non-seekable streams on Win32. I've tested it a few
-        // times, things tend to fail here.
-        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is truncated (or unseekable?)",
+    if (offset < 0 || (size_t)offset > ctx->len - size)
+        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is malformed or truncated",
                         ctx->fw->filename);
-    }
 
+    memcpy(buf, ctx->mem + offset, size);
     return 0;
 }
 
@@ -157,17 +139,18 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     return 1;
 }
 
-int ty_firmware_load_elf(ty_firmware *fw, FILE *fp)
+int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
 {
     assert(fw);
     assert(!fw->size);
-    assert(fp);
+    assert(mem || !len);
 
     struct loader_context ctx = {0};
     int r;
 
     ctx.fw = fw;
-    ctx.fp = fp;
+    ctx.mem = mem;
+    ctx.len = len;
 
     r = read_chunk(&ctx, 0, sizeof(ctx.ehdr), &ctx.ehdr);
     if (r < 0)

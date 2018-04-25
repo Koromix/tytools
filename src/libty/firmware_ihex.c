@@ -50,7 +50,7 @@ static int ihex_parse_error(struct parser_context *ctx)
                     ctx->fw->filename);
 }
 
-static int parse_line(struct parser_context *ctx, const char *line)
+static int parse_line(struct parser_context *ctx, const char *line, size_t line_len)
 {
     unsigned int data_len, type;
     uint32_t address;
@@ -58,16 +58,12 @@ static int parse_line(struct parser_context *ctx, const char *line)
     int r;
 
     ctx->ptr = line;
-    ctx->line_len = strlen(line);
-    while (ctx->line_len && strchr("\r\n", ctx->ptr[ctx->line_len - 1]))
-        ctx->line_len--;
+    ctx->line_len = line_len;
     ctx->sum = 0;
     ctx->error = false;
 
-    // Empty lines are probably OK
-    if (*ctx->ptr++ != ':')
-        return 0;
-
+    if (!line_len || *ctx->ptr++ != ':')
+        return ihex_parse_error(ctx);
     data_len = parse_hex_value(ctx, 1);
     if (11 + 2 * data_len != ctx->line_len)
         return ihex_parse_error(ctx);
@@ -126,32 +122,36 @@ static int parse_line(struct parser_context *ctx, const char *line)
     return (type == 1);
 }
 
-int ty_firmware_load_ihex(ty_firmware *fw, FILE *fp)
+int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len)
 {
     assert(fw);
     assert(!fw->size);
-    assert(fp);
+    assert(mem || !len);
 
     struct parser_context ctx = {0};
-    char buf[1024];
     int r;
 
     ctx.fw = fw;
-    do {
-        if (!fgets(buf, sizeof(buf), fp)) {
-            if (feof(fp)) {
-                return ihex_parse_error(&ctx);
-            } else {
-                return ty_error(TY_ERROR_IO, "I/O error while reading '%s'", ctx.fw->filename);
-            }
-        }
+
+    size_t start, end = 0;
+    for (;;) {
+        start = end;
+        while (start < len && (mem[start] == '\r' || mem[start] == '\n'))
+            start++;
+        if (start >= len)
+            break;
+        end = start;
+        while (end < len && mem[end] != '\r' && mem[end] != '\n')
+            end++;
         ctx.line++;
 
         // Returns 1 when EOF record is detected
-        r = parse_line(&ctx, buf);
+        r = parse_line(&ctx, (const char *)mem + start, end - start);
         if (r < 0)
             return r;
-    } while (!r);
+        if (r)
+            break;
+    }
 
     return 0;
 }

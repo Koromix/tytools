@@ -9,6 +9,7 @@
    See the LICENSE file for more details. */
 
 #include "common_priv.h"
+#include "../libhs/array.h"
 #include "class_priv.h"
 #include "firmware.h"
 #include "system.h"
@@ -73,15 +74,10 @@ error:
     return r;
 }
 
-int ty_firmware_load(const char *filename, FILE *fp, const char *format_name, ty_firmware **rfw)
+static int find_format(const char *filename, const char *format_name,
+                       const ty_firmware_format **rformat)
 {
-    assert(filename);
-    assert(rfw);
-
     const ty_firmware_format *format = NULL;
-    bool close_fp = false;
-    ty_firmware *fw = NULL;
-    int r;
 
     if (format_name) {
         for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
@@ -90,16 +86,12 @@ int ty_firmware_load(const char *filename, FILE *fp, const char *format_name, ty
                 break;
             }
         }
-        if (!format) {
-            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
-            goto cleanup;
-        }
+        if (!format)
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware file format '%s' unknown", format_name);
     } else {
         const char *ext = strrchr(filename, '.');
-        if (!ext) {
-            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
-            goto cleanup;
-        }
+        if (!ext)
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' has no file extension", filename);
 
         for (unsigned int i = 0; i < ty_firmware_formats_count; i++) {
             if (strcasecmp(ty_firmware_formats[i].ext, ext) == 0) {
@@ -107,12 +99,30 @@ int ty_firmware_load(const char *filename, FILE *fp, const char *format_name, ty
                 break;
             }
         }
-        if (!format) {
-            r = ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized extension",
+        if (!format)
+            return ty_error(TY_ERROR_UNSUPPORTED, "Firmware '%s' uses unrecognized extension",
                             filename);
-            goto cleanup;
-        }
     }
+
+    *rformat = format;
+    return 0;
+}
+
+int ty_firmware_load_file(const char *filename, FILE *fp, const char *format_name,
+                          ty_firmware **rfw)
+{
+    assert(filename);
+    assert(rfw);
+
+    const ty_firmware_format *format;
+    bool close_fp = false;
+    _HS_ARRAY(uint8_t) buf = {0};
+    ty_firmware *fw = NULL;
+    int r;
+
+    r = find_format(filename, format_name, &format);
+    if (r < 0)
+        goto cleanup;
 
     if (!fp) {
 #ifdef _WIN32
@@ -143,11 +153,33 @@ int ty_firmware_load(const char *filename, FILE *fp, const char *format_name, ty
         close_fp = true;
     }
 
+    // Load file to memory
+    while (!feof(fp)) {
+        r = _hs_array_grow(&buf, 128 * 1024);
+        if (r < 0)
+            goto cleanup;
+
+        buf.count += fread(buf.values + buf.count, 1, 131072, fp);
+        if (ferror(fp)) {
+            if (errno == EIO) {
+                r = ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", filename);
+            } else {
+                r = ty_error(TY_ERROR_SYSTEM, "fread('%s') failed: %s", filename, strerror(errno));
+            }
+            goto cleanup;
+        }
+        if (buf.count > 8 * 1024 * 1024) {
+            r = ty_error(TY_ERROR_RANGE, "Firmware '%s' is too big to load", filename);
+            goto cleanup;
+        }
+    }
+    _hs_array_shrink(&buf);
+
     r = ty_firmware_new(filename, &fw);
     if (r < 0)
         goto cleanup;
 
-    r = (*format->load)(fw, fp);
+    r = (*format->load)(fw, buf.values, buf.count);
     if (r < 0)
         goto cleanup;
 
@@ -158,6 +190,38 @@ cleanup:
     ty_firmware_unref(fw);
     if (close_fp)
         fclose(fp);
+    _hs_array_release(&buf);
+    return r;
+}
+
+int ty_firmware_load_mem(const char *filename, const uint8_t *mem, size_t len,
+                         const char *format_name, ty_firmware **rfw)
+{
+    assert(filename);
+    assert(mem || !len);
+    assert(rfw);
+
+    const ty_firmware_format *format;
+    ty_firmware *fw = NULL;
+    int r;
+
+    r = find_format(filename, format_name, &format);
+    if (r < 0)
+        goto cleanup;
+
+    r = ty_firmware_new(filename, &fw);
+    if (r < 0)
+        goto cleanup;
+
+    r = (*format->load)(fw, mem, len);
+    if (r < 0)
+        goto cleanup;
+
+    *rfw = fw;
+    fw = NULL;
+
+cleanup:
+    ty_firmware_unref(fw);
     return r;
 }
 
