@@ -69,6 +69,7 @@ struct loader_context {
 static inline bool is_endianness_reversed(struct loader_context *ctx)
 {
     union { uint16_t u; uint8_t raw[2]; } u;
+    u.raw[0] = 0;
     u.raw[1] = 1;
 
     return (u.u == 1) == (ctx->ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
