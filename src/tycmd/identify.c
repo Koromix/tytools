@@ -64,7 +64,8 @@ int identify(int argc, char *argv[])
         unsigned int fw_models_count = 0;
         int r;
 
-        r = ty_firmware_load_file(opt, NULL, identify_firmware_format, &fw);
+        r = ty_firmware_load_file(opt, !strcmp(opt, "-") ? stdin : NULL,
+                                  identify_firmware_format, &fw);
         if (!r)
             fw_models_count = ty_firmware_identify(fw, fw_models, TY_COUNTOF(fw_models));
         ty_firmware_unref(fw);
