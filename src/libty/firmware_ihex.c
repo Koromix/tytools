@@ -31,7 +31,8 @@ static uint32_t parse_hex_value(struct parser_context *ctx, size_t size)
     uint32_t value = 0;
     while (size--) {
         char buf[3];
-        uint8_t byte;
+        char *end;
+        unsigned long byte;
 
         if (ctx->ptr > ctx->end - 2) {
             ctx->error = true;
@@ -40,13 +41,13 @@ static uint32_t parse_hex_value(struct parser_context *ctx, size_t size)
         memcpy(buf, ctx->ptr, 2);
         buf[2] = 0;
 
-        int r = sscanf(buf, "%02"SCNx8, &byte);
-        if (r < 1) {
+        byte = strtoul(buf, &end, 16);
+        if (end == buf || end[0]) {
             ctx->error = true;
             return 0;
         }
 
-        value = (value << 8) | byte;
+        value = (value << 8) | (uint8_t)byte;
         ctx->sum = (uint8_t)(ctx->sum + byte);
         ctx->ptr += 2;
     }
