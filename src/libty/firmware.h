@@ -34,27 +34,27 @@ typedef struct ty_firmware_format {
     int (*load)(ty_firmware *fw, const uint8_t *mem, size_t len);
 } ty_firmware_format;
 
-TY_PUBLIC extern const ty_firmware_format ty_firmware_formats[];
-TY_PUBLIC extern const unsigned int ty_firmware_formats_count;
+extern const ty_firmware_format ty_firmware_formats[];
+extern const unsigned int ty_firmware_formats_count;
 
 #define TY_FIRMWARE_MAX_SIZE (1024 * 1024)
 
-TY_PUBLIC int ty_firmware_new(const char *filename, ty_firmware **rfw);
-TY_PUBLIC int ty_firmware_load_file(const char *filename, FILE *fp, const char *format_name,
-                                    ty_firmware **rfw);
-TY_PUBLIC int ty_firmware_load_mem(const char *filename, const uint8_t *mem, size_t len,
-                                   const char *format_name, ty_firmware **rfw);
+int ty_firmware_new(const char *filename, ty_firmware **rfw);
+int ty_firmware_load_file(const char *filename, FILE *fp, const char *format_name,
+                          ty_firmware **rfw);
+int ty_firmware_load_mem(const char *filename, const uint8_t *mem, size_t len,
+                         const char *format_name, ty_firmware **rfw);
 
-TY_PUBLIC int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len);
-TY_PUBLIC int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len);
+int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len);
+int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len);
 
-TY_PUBLIC ty_firmware *ty_firmware_ref(ty_firmware *fw);
-TY_PUBLIC void ty_firmware_unref(ty_firmware *fw);
+ty_firmware *ty_firmware_ref(ty_firmware *fw);
+void ty_firmware_unref(ty_firmware *fw);
 
-TY_PUBLIC int ty_firmware_expand_image(ty_firmware *fw, size_t size);
+int ty_firmware_expand_image(ty_firmware *fw, size_t size);
 
-TY_PUBLIC unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
-                                            unsigned int max_models);
+unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
+                                  unsigned int max_models);
 
 TY_C_END
 

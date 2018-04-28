@@ -23,13 +23,13 @@ enum {
     TY_TIMER_ONESHOT = 1
 };
 
-TY_PUBLIC int ty_timer_new(ty_timer **rtimer);
-TY_PUBLIC void ty_timer_free(ty_timer *timer);
+int ty_timer_new(ty_timer **rtimer);
+void ty_timer_free(ty_timer *timer);
 
-TY_PUBLIC void ty_timer_get_descriptors(const ty_timer *timer, struct ty_descriptor_set *set, int id);
+void ty_timer_get_descriptors(const ty_timer *timer, struct ty_descriptor_set *set, int id);
 
-TY_PUBLIC int ty_timer_set(ty_timer *timer, int value, int flags);
-TY_PUBLIC uint64_t ty_timer_rearm(ty_timer *timer);
+int ty_timer_set(ty_timer *timer, int value, int flags);
+uint64_t ty_timer_rearm(ty_timer *timer);
 
 TY_C_END
 

@@ -38,7 +38,6 @@
 TY_C_BEGIN
 
 #if defined(__GNUC__)
-    #define TY_PUBLIC __attribute__((__visibility__("default")))
     #define TY_POSSIBLY_UNUSED __attribute__((__unused__))
     #ifdef __MINGW_PRINTF_FORMAT
         #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
@@ -48,13 +47,6 @@ TY_C_BEGIN
 
     #define TY_THREAD_LOCAL __thread
 #elif _MSC_VER >= 1900
-    #if defined(TY_STATIC)
-        #define TY_PUBLIC
-    #elif defined(TY_UTIL_H)
-        #define TY_PUBLIC __declspec(dllexport)
-    #else
-        #define TY_PUBLIC __declspec(dllimport)
-    #endif
     #define TY_POSSIBLY_UNUSED
     #define TY_PRINTF_FORMAT(fmt, first)
 
@@ -160,26 +152,26 @@ typedef struct ty_message_data {
 
 typedef void ty_message_func(const ty_message_data *msg, void *udata);
 
-TY_PUBLIC extern int ty_config_verbosity;
+extern int ty_config_verbosity;
 
-TY_PUBLIC const char *ty_version_string(void);
+const char *ty_version_string(void);
 
-TY_PUBLIC void ty_message_default_handler(const ty_message_data *msg, void *udata);
-TY_PUBLIC void ty_message_redirect(ty_message_func *f, void *udata);
+void ty_message_default_handler(const ty_message_data *msg, void *udata);
+void ty_message_redirect(ty_message_func *f, void *udata);
 
-TY_PUBLIC void ty_error_mask(ty_err err);
-TY_PUBLIC void ty_error_unmask(void);
-TY_PUBLIC bool ty_error_is_masked(int err);
+void ty_error_mask(ty_err err);
+void ty_error_unmask(void);
+bool ty_error_is_masked(int err);
 
-TY_PUBLIC const char *ty_error_last_message(void);
+const char *ty_error_last_message(void);
 
-TY_PUBLIC void ty_message(ty_message_data *msg);
-TY_PUBLIC void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
-TY_PUBLIC int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
-TY_PUBLIC void ty_progress(const char *action, uint64_t value, uint64_t max);
+void ty_message(ty_message_data *msg);
+void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
+int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
+void ty_progress(const char *action, uint64_t value, uint64_t max);
 
-TY_PUBLIC int ty_libhs_translate_error(int err);
-TY_PUBLIC void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
+int ty_libhs_translate_error(int err);
+void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 
 TY_C_END
 

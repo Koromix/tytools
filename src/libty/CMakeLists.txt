@@ -85,9 +85,6 @@ target_link_libraries(libty PRIVATE ${LIBTY_LINK_LIBRARIES})
 # We need that for config.h
 target_include_directories(libty PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(libty PUBLIC _TY_HAVE_CONFIG_H)
-if(MSVC)
-    target_compile_definitions(libty PUBLIC TY_STATIC)
-endif()
 enable_unity_build(libty)
 
 configure_file(libty.h.in libty.h.in)

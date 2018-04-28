@@ -59,35 +59,34 @@ enum {
 };
 
 #ifdef _WIN32
-TY_PUBLIC char *ty_win32_strerror(unsigned long err);
+char *ty_win32_strerror(unsigned long err);
 #endif
 
-TY_PUBLIC uint64_t ty_millis(void);
-TY_PUBLIC void ty_delay(unsigned int ms);
+uint64_t ty_millis(void);
+void ty_delay(unsigned int ms);
 
-TY_PUBLIC int ty_adjust_timeout(int timeout, uint64_t start);
+int ty_adjust_timeout(int timeout, uint64_t start);
 
-TY_PUBLIC void ty_descriptor_set_clear(ty_descriptor_set *set);
-TY_PUBLIC void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
-TY_PUBLIC void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
+void ty_descriptor_set_clear(ty_descriptor_set *set);
+void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
+void ty_descriptor_set_remove(ty_descriptor_set *set, int id);
 
-TY_PUBLIC unsigned int ty_descriptor_get_modes(ty_descriptor desc);
+unsigned int ty_descriptor_get_modes(ty_descriptor desc);
 
-TY_PUBLIC ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream);
+ty_descriptor ty_standard_get_descriptor(ty_standard_stream std_stream);
 static inline unsigned int ty_standard_get_modes(ty_standard_stream std_stream)
 {
     return ty_descriptor_get_modes(ty_standard_get_descriptor(std_stream));
 }
-TY_PUBLIC unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
-                                             char (*rpaths)[TY_PATH_MAX_SIZE],
-                                             unsigned int max_paths);
+unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
+                                   char (*rpaths)[TY_PATH_MAX_SIZE], unsigned int max_paths);
 
-TY_PUBLIC int ty_poll(const ty_descriptor_set *set, int timeout);
+int ty_poll(const ty_descriptor_set *set, int timeout);
 
-TY_PUBLIC bool ty_compare_paths(const char *path1, const char *path2);
+bool ty_compare_paths(const char *path1, const char *path2);
 
-TY_PUBLIC int ty_terminal_setup(int flags);
-TY_PUBLIC void ty_terminal_restore(void);
+int ty_terminal_setup(int flags);
+void ty_terminal_restore(void);
 
 TY_C_END
 

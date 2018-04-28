@@ -78,25 +78,25 @@ typedef struct ty_cond {
 
 typedef int ty_thread_func(void *udata);
 
-TY_PUBLIC int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata);
-TY_PUBLIC int ty_thread_join(ty_thread *thread);
-TY_PUBLIC void ty_thread_detach(ty_thread *thread);
+int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata);
+int ty_thread_join(ty_thread *thread);
+void ty_thread_detach(ty_thread *thread);
 
-TY_PUBLIC ty_thread_id ty_thread_get_self_id(void);
+ty_thread_id ty_thread_get_self_id(void);
 
-TY_PUBLIC int ty_mutex_init(ty_mutex *mutex);
-TY_PUBLIC void ty_mutex_release(ty_mutex *mutex);
+int ty_mutex_init(ty_mutex *mutex);
+void ty_mutex_release(ty_mutex *mutex);
 
-TY_PUBLIC void ty_mutex_lock(ty_mutex *mutex);
-TY_PUBLIC void ty_mutex_unlock(ty_mutex *mutex);
+void ty_mutex_lock(ty_mutex *mutex);
+void ty_mutex_unlock(ty_mutex *mutex);
 
-TY_PUBLIC int ty_cond_init(ty_cond *cond);
-TY_PUBLIC void ty_cond_release(ty_cond *cond);
+int ty_cond_init(ty_cond *cond);
+void ty_cond_release(ty_cond *cond);
 
-TY_PUBLIC void ty_cond_signal(ty_cond *cond);
-TY_PUBLIC void ty_cond_broadcast(ty_cond *cond);
+void ty_cond_signal(ty_cond *cond);
+void ty_cond_broadcast(ty_cond *cond);
 
-TY_PUBLIC bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout);
+bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout);
 
 TY_C_END
 

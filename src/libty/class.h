@@ -39,12 +39,12 @@ typedef enum ty_model_teensy {
     TY_MODEL_TEENSY_36
 } ty_model_teensy;
 
-TY_PUBLIC extern const ty_model_info *ty_models;
-TY_PUBLIC extern const unsigned int ty_models_count;
+extern const ty_model_info *ty_models;
+extern const unsigned int ty_models_count;
 
-TY_PUBLIC int ty_models_load_patch(const char *filename);
+int ty_models_load_patch(const char *filename);
 
-TY_PUBLIC ty_model ty_models_find(const char *name);
+ty_model ty_models_find(const char *name);
 
 TY_C_END
 

@@ -17,8 +17,8 @@ TY_C_BEGIN
 
 typedef int ty_ini_callback_func(const char *section, char *key, char *value, void *udata);
 
-TY_PUBLIC int ty_ini_walk_fp(FILE *fp, const char *path, ty_ini_callback_func *f, void *udata);
-TY_PUBLIC int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata);
+int ty_ini_walk_fp(FILE *fp, const char *path, ty_ini_callback_func *f, void *udata);
+int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata);
 
 TY_C_END
 

@@ -74,26 +74,26 @@ typedef struct ty_task {
     } u;
 } ty_task;
 
-TY_PUBLIC int ty_pool_new(ty_pool **rpool);
-TY_PUBLIC void ty_pool_free(ty_pool *pool);
+int ty_pool_new(ty_pool **rpool);
+void ty_pool_free(ty_pool *pool);
 
-TY_PUBLIC int ty_pool_set_max_threads(ty_pool *pool, unsigned int max);
-TY_PUBLIC unsigned int ty_pool_get_max_threads(ty_pool *pool);
-TY_PUBLIC void ty_pool_set_idle_timeout(ty_pool *pool, int timeout);
-TY_PUBLIC int ty_pool_get_idle_timeout(ty_pool *pool);
+int ty_pool_set_max_threads(ty_pool *pool, unsigned int max);
+unsigned int ty_pool_get_max_threads(ty_pool *pool);
+void ty_pool_set_idle_timeout(ty_pool *pool, int timeout);
+int ty_pool_get_idle_timeout(ty_pool *pool);
 
-TY_PUBLIC int ty_pool_get_default(ty_pool **rpool);
+int ty_pool_get_default(ty_pool **rpool);
 
-TY_PUBLIC int ty_task_new(const char *name, int (*run)(ty_task *task), ty_task **rtask);
+int ty_task_new(const char *name, int (*run)(ty_task *task), ty_task **rtask);
 
-TY_PUBLIC ty_task *ty_task_ref(ty_task *task);
-TY_PUBLIC void ty_task_unref(ty_task *task);
+ty_task *ty_task_ref(ty_task *task);
+void ty_task_unref(ty_task *task);
 
-TY_PUBLIC int ty_task_start(ty_task *task);
-TY_PUBLIC int ty_task_wait(ty_task *task, ty_task_status status, int timeout);
-TY_PUBLIC int ty_task_join(ty_task *task);
+int ty_task_start(ty_task *task);
+int ty_task_wait(ty_task *task, ty_task_status status, int timeout);
+int ty_task_join(ty_task *task);
 
-TY_PUBLIC ty_task *ty_task_get_current(void);
+ty_task *ty_task_get_current(void);
 
 TY_C_END
 

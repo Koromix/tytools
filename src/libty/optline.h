@@ -28,14 +28,14 @@ typedef struct ty_optline_context {
     char buf[80];
 } ty_optline_context;
 
-TY_PUBLIC void ty_optline_init(ty_optline_context *ctx, char **args, unsigned int args_count);
-TY_PUBLIC void ty_optline_init_argv(ty_optline_context *ctx, int argc, char **argv);
+void ty_optline_init(ty_optline_context *ctx, char **args, unsigned int args_count);
+void ty_optline_init_argv(ty_optline_context *ctx, int argc, char **argv);
 
-TY_PUBLIC char *ty_optline_next_option(ty_optline_context *ctx);
+char *ty_optline_next_option(ty_optline_context *ctx);
 
-TY_PUBLIC char *ty_optline_get_option(ty_optline_context *ctx);
-TY_PUBLIC char *ty_optline_get_value(ty_optline_context *ctx);
-TY_PUBLIC char *ty_optline_consume_non_option(ty_optline_context *ctx);
+char *ty_optline_get_option(ty_optline_context *ctx);
+char *ty_optline_get_value(ty_optline_context *ctx);
+char *ty_optline_consume_non_option(ty_optline_context *ctx);
 
 TY_C_END
 
