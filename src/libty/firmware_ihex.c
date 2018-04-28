@@ -145,12 +145,12 @@ int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len)
     ctx.fw = fw;
 
     size_t start, end = 0;
-    for (;;) {
+    do {
         start = end;
         while (start < len && (mem[start] == '\r' || mem[start] == '\n'))
             start++;
         if (start >= len)
-            break;
+            return ty_error(TY_ERROR_PARSE, "Missing EOF record in '%s' (IHEX)", fw->filename);
         end = start;
         while (end < len && mem[end] != '\r' && mem[end] != '\n')
             end++;
@@ -160,9 +160,7 @@ int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len)
         r = parse_line(&ctx, (const char *)mem + start, end - start);
         if (r < 0)
             return r;
-        if (r)
-            break;
-    }
+    } while (!r);
 
     return 0;
 }
