@@ -345,7 +345,8 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
                 rmodels[arm_models_count++] = TY_MODEL_TEENSY_LC;
             } break;
             case 0x2002000000000198:
-            case 0x2002FFFC00000198: {
+            case 0x2002FFFC00000198:
+            case 0x2002FFF800000198: {
                 rmodels[arm_models_count++] = TY_MODEL_TEENSY_35;
             } break;
             case 0x20030000000001D0: {
