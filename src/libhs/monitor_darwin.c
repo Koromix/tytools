@@ -276,12 +276,12 @@ static int fill_device_details(struct service_aggregate *agg, hs_device *dev)
         if (r < 0) \
             return r;
 
-    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "sessionID", kCFNumberSInt64Type, &session);
-    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idVendor", kCFNumberSInt64Type, &dev->vid);
-    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idProduct", kCFNumberSInt64Type, &dev->pid);
-    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "bcdDevice", kCFNumberSInt64Type,
+    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "sessionID", kCFNumberSInt16Type, &session);
+    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idVendor", kCFNumberSInt16Type, &dev->vid);
+    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idProduct", kCFNumberSInt16Type, &dev->pid);
+    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "bcdDevice", kCFNumberSInt16Type,
                                   &dev->bcd_device);
-    GET_MANDATORY_PROPERTY_NUMBER(agg->iface_service, "bInterfaceNumber", kCFNumberSInt64Type,
+    GET_MANDATORY_PROPERTY_NUMBER(agg->iface_service, "bInterfaceNumber", kCFNumberSInt8Type,
                                   &dev->iface_number);
 
     GET_OPTIONAL_PROPERTY_STRING(agg->usb_service, "USB Vendor Name", &dev->manufacturer_string);
