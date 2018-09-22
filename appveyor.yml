@@ -37,16 +37,6 @@ artifacts:
   - path: '$(BUILD_TYPE)\TyUpdater.pdb'
 
 deploy:
-  - provider: BinTray
-    username: Koromix
-    api_key:
-      secure: "SV8zwvJsQsGbojZy6Z8CHeRGmZse3AOoohPIiog2o5/6tH191ei3GakTEpHsfYe2"
-    subject: koromix
-    repo: tytools
-    package: tytools
-    version: $(APPVEYOR_REPO_BRANCH)
-    publish: true
-    artifact: /.*\.(zip|msi)/
   - provider: GitHub
     auth_token:
       secure: "cLGLqvqDP4MpJ0+skssc+alB65DtwvIgpdgEkEAvuYTm8YX4ZXYIsZe115DDbR2f"
