@@ -101,6 +101,8 @@ struct hs_device {
     uint16_t vid;
     /** Device product identifier. */
     uint16_t pid;
+    /** Device bcd. */
+    uint16_t bcd_device;
     /** Device manufacturer string, or NULL if not available. */
     char *manufacturer_string;
     /** Device product string, or NULL if not available. */

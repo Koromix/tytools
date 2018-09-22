@@ -127,6 +127,14 @@ static int fill_device_details(struct udev_aggregate *agg, hs_device *dev)
     if (errno)
         return 0;
 
+    errno = 0;
+    buf = udev_device_get_sysattr_value(agg->usb, "bcdDevice");
+    if (!buf)
+        return 0;
+    dev->bcd_device = (uint16_t)strtoul(buf, NULL, 16);
+    if (errno)
+        return 0;
+
     buf = udev_device_get_sysattr_value(agg->usb, "manufacturer");
     if (buf) {
         dev->manufacturer_string = strdup(buf);

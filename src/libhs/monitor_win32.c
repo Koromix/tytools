@@ -754,6 +754,9 @@ static int read_device_properties(hs_device *dev, DEVINST inst, uint8_t port)
         goto cleanup;
     }
 
+    // Get additional properties
+    dev->bcd_device = node->DeviceDescriptor.bcdDevice;
+
     /* Descriptor requests to USB devices underlying HID devices fail most (all?) of the time,
        so we need a different technique here. We still need the device descriptor because the
        HidD_GetXString() functions sometime return garbage (at least on XP) when the string
