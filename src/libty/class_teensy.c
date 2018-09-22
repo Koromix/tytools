@@ -29,7 +29,29 @@ enum {
 
 extern const struct _ty_class_vtable _ty_teensy_class_vtable;
 
-static ty_model identify_model(uint16_t usage)
+static ty_model identify_model_bcd(uint16_t bcd_device)
+{
+    ty_model model = 0;
+    switch (bcd_device & 0xFF) {
+        case 0x74: { model = TY_MODEL_TEENSY_30; } break;
+        case 0x75: { model = TY_MODEL_TEENSY_31; } break;
+        case 0x73: { model = TY_MODEL_TEENSY_LC; } break;
+        case 0x76: { model = TY_MODEL_TEENSY_35; } break;
+        case 0x77: { model = TY_MODEL_TEENSY_36; } break;
+    }
+
+    if (model != 0) {
+        ty_log(TY_LOG_DEBUG, "Identified '%s' with bcdDevice value 0x%"PRIx16,
+               ty_models[model].name, bcd_device);
+    } else {
+        ty_log(TY_LOG_DEBUG, "Unknown %s model with bcdDevice value 0x%"PRIx16,
+               ty_models[TY_MODEL_TEENSY].name, bcd_device);
+    }
+
+    return model;
+}
+
+static ty_model identify_model_halfkay(uint16_t usage)
 {
     ty_model model = 0;
     switch (usage) {
@@ -98,7 +120,7 @@ static int teensy_load_interface(ty_board_interface *iface)
             switch (dev->u.hid.usage_page) {
                 case TEENSY_USAGE_PAGE_BOOTLOADER: {
                     iface->name = "HalfKay";
-                    iface->model = identify_model(dev->u.hid.usage);
+                    iface->model = identify_model_halfkay(dev->u.hid.usage);
                     if (iface->model) {
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
@@ -124,9 +146,13 @@ static int teensy_load_interface(ty_board_interface *iface)
         } break;
     }
 
+    if (!iface->model) {
+        iface->model = identify_model_bcd(dev->bcd_device);
+        if (!iface->model)
+            iface->model = TY_MODEL_TEENSY;
+    }
+
     iface->class_vtable = &_ty_teensy_class_vtable;
-    if (!iface->model)
-        iface->model = TY_MODEL_TEENSY;
 
     return 1;
 }
@@ -143,7 +169,14 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
     if (iface->model != TY_MODEL_TEENSY) {
         model = iface->model;
 
-        if (!new_board && board->model != TY_MODEL_TEENSY && board->model != model) {
+        // With the bcdDevice method we detect Teensy 3.2 as Teensy 3.1, tolerate the difference
+        if (board->model == TY_MODEL_TEENSY_31 && model == TY_MODEL_TEENSY_32 &&
+                iface->capabilities & (1 << TY_BOARD_CAPABILITY_UPLOAD)) {
+            // Keep the bootloader info (more accurate)
+        } else if (board->model == TY_MODEL_TEENSY_32 && model == TY_MODEL_TEENSY_31 &&
+                   !(iface->capabilities & (1 << TY_BOARD_CAPABILITY_UPLOAD))) {
+            model = 0;
+        } else if (!new_board && board->model != TY_MODEL_TEENSY && board->model != model) {
             r = 0;
             goto error;
         }
@@ -154,7 +187,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
     // Check and update board serial number
     if (iface->dev->serial_number_string) {
         uint64_t serial_value;
-        if (iface->model != TY_MODEL_TEENSY) {
+        if (iface->capabilities & (1 << TY_BOARD_CAPABILITY_UPLOAD)) {
             serial_value = parse_bootloader_serial_number(iface->dev->serial_number_string);
         } else {
             serial_value = strtoull(iface->dev->serial_number_string, NULL, 10);
@@ -180,7 +213,8 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
                    because there is no way to interpret the serial number correctly, and the board
                    will show up as a different board if it is first plugged in bootloader mode.
                    The only way to fix this is to use Teensyduino >= 1.19. */
-                if (iface->model != TY_MODEL_TEENSY && serial_value == board_serial_value * 10) {
+                if (iface->capabilities & (1 << TY_BOARD_CAPABILITY_UPLOAD) &&
+                        serial_value == board_serial_value * 10) {
                     ty_log(TY_LOG_WARNING, "Upgrade board '%s' with recent Teensyduino version",
                            board->tag);
                 } else {
@@ -195,7 +229,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
     {
         const char *product_string = NULL;
 
-        if (iface->model != TY_MODEL_TEENSY) {
+        if (iface->capabilities & (1 << TY_BOARD_CAPABILITY_UPLOAD)) {
             if (!board->description)
                 product_string = "HalfKay";
         } else if (iface->dev->product_string) {
