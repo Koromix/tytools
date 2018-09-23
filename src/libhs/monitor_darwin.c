@@ -276,7 +276,7 @@ static int fill_device_details(struct service_aggregate *agg, hs_device *dev)
         if (r < 0) \
             return r;
 
-    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "sessionID", kCFNumberSInt16Type, &session);
+    GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "sessionID", kCFNumberSInt64Type, &session);
     GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idVendor", kCFNumberSInt16Type, &dev->vid);
     GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "idProduct", kCFNumberSInt16Type, &dev->pid);
     GET_MANDATORY_PROPERTY_NUMBER(agg->usb_service, "bcdDevice", kCFNumberSInt16Type,
