@@ -32,12 +32,13 @@ extern const struct _ty_class_vtable _ty_teensy_class_vtable;
 static ty_model identify_model_bcd(uint16_t bcd_device)
 {
     ty_model model = 0;
-    switch (bcd_device & 0xFF) {
-        case 0x74: { model = TY_MODEL_TEENSY_30; } break;
-        case 0x75: { model = TY_MODEL_TEENSY_31; } break;
-        case 0x73: { model = TY_MODEL_TEENSY_LC; } break;
-        case 0x76: { model = TY_MODEL_TEENSY_35; } break;
-        case 0x77: { model = TY_MODEL_TEENSY_36; } break;
+    switch (bcd_device) {
+        case 0x274: { model = TY_MODEL_TEENSY_30; } break;
+        case 0x275: { model = TY_MODEL_TEENSY_31; } break;
+        case 0x273: { model = TY_MODEL_TEENSY_LC; } break;
+        case 0x276: { model = TY_MODEL_TEENSY_35; } break;
+        case 0x277: { model = TY_MODEL_TEENSY_36; } break;
+        case 0x278: { model = TY_MODEL_TEENSY_40; } break;
     }
 
     if (model != 0) {
@@ -64,6 +65,7 @@ static ty_model identify_model_halfkay(uint16_t usage)
         case 0x21: { model = TY_MODEL_TEENSY_32; } break;
         case 0x1F: { model = TY_MODEL_TEENSY_35; } break;
         case 0x22: { model = TY_MODEL_TEENSY_36; } break;
+        case 0x23: { model = TY_MODEL_TEENSY_40; } break;
     }
 
     if (model != 0) {
@@ -338,10 +340,19 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
                                            unsigned int max_models)
 {
     const ty_firmware_segment *segment0 = ty_firmware_find_segment(fw, 0);
-    if (!segment0)
-        return 0;
+    const ty_firmware_segment *teensy4_segment = ty_firmware_find_segment(fw, 0x60000000);
 
-    /* Try ARM models first. We use a few facts to recognize these models:
+    // First, try the Teensy 4.0
+    if (teensy4_segment && teensy4_segment->size >= sizeof(uint64_t)) {
+        uint64_t flash_config_8 = read_uint64_le(teensy4_segment->data);
+
+        if (flash_config_8 == 0x5601000042464346) {
+            rmodels[0] = TY_MODEL_TEENSY_40;
+            return 1;
+        }
+    }
+
+    /* Now try the Teensy 3.0 stack size method. We use a few facts to recognize these models:
        - The interrupt vector table (_VectorsFlash[]) is located at 0x0 (at least initially)
        - _VectorsFlash[0] is the initial stack pointer, which is the end of the RAM address space
        - _VectorsFlash[1] is the address of ResetHandler(), which follows _VectorsFlash[]
@@ -353,46 +364,48 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
        We combine the size of _VectorsFlash[] and the initial stack pointer value to
        differenciate models. */
-    const uint32_t teensy3_startup_size = 0x400;
-    if (segment0->size >= teensy3_startup_size) {
-        uint32_t stack_addr;
-        uint32_t end_vector_addr;
-        unsigned int arm_models_count = 0;
+    if (segment0) {
+        const uint32_t teensy3_startup_size = 0x400;
+        if (segment0->size >= teensy3_startup_size) {
+            uint32_t stack_addr;
+            uint32_t end_vector_addr;
+            unsigned int arm_models_count = 0;
 
-        stack_addr = read_uint32_le(segment0->data);
-        end_vector_addr = read_uint32_le(segment0->data + 4) & ~1u;
-        if (end_vector_addr >= teensy3_startup_size) {
-            for (uint32_t i = 0; i < teensy3_startup_size - sizeof(uint64_t); i += 4) {
-                if (read_uint64_le(segment0->data + i) == 0xFFFFFFFFFFFFFFFF) {
-                    end_vector_addr = i;
-                    break;
+            stack_addr = read_uint32_le(segment0->data);
+            end_vector_addr = read_uint32_le(segment0->data + 4) & ~1u;
+            if (end_vector_addr >= teensy3_startup_size) {
+                for (uint32_t i = 0; i < teensy3_startup_size - sizeof(uint64_t); i += 4) {
+                    if (read_uint64_le(segment0->data + i) == 0xFFFFFFFFFFFFFFFF) {
+                        end_vector_addr = i;
+                        break;
+                    }
                 }
             }
-        }
 
-        switch (((uint64_t)stack_addr << 32) | end_vector_addr) {
-            case 0x20002000000000F8: {
-                rmodels[arm_models_count++] = TY_MODEL_TEENSY_30;
-            } break;
-            case 0x20008000000001BC: {
-                rmodels[arm_models_count++] = TY_MODEL_TEENSY_31;
-                if (max_models >= 2)
-                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_32;
-            } break;
-            case 0x20001800000000C0: {
-                rmodels[arm_models_count++] = TY_MODEL_TEENSY_LC;
-            } break;
-            case 0x2002000000000198:
-            case 0x2002FFFC00000198:
-            case 0x2002FFF800000198: {
-                rmodels[arm_models_count++] = TY_MODEL_TEENSY_35;
-            } break;
-            case 0x20030000000001D0: {
-                rmodels[arm_models_count++] = TY_MODEL_TEENSY_36;
-            } break;
+            switch (((uint64_t)stack_addr << 32) | end_vector_addr) {
+                case 0x20002000000000F8: {
+                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_30;
+                } break;
+                case 0x20008000000001BC: {
+                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_31;
+                    if (max_models >= 2)
+                        rmodels[arm_models_count++] = TY_MODEL_TEENSY_32;
+                } break;
+                case 0x20001800000000C0: {
+                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_LC;
+                } break;
+                case 0x2002000000000198:
+                case 0x2002FFFC00000198:
+                case 0x2002FFF800000198: {
+                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_35;
+                } break;
+                case 0x20030000000001D0: {
+                    rmodels[arm_models_count++] = TY_MODEL_TEENSY_36;
+                } break;
+            }
+            if (arm_models_count)
+                return arm_models_count;
         }
-        if (arm_models_count)
-            return arm_models_count;
     }
 
     /* Now try AVR Teensies. We search for machine code that matches model-specific code in
@@ -572,11 +585,11 @@ restart:
 static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
                                 size_t *rcode_size, size_t *rblock_size)
 {
-    if ((model == TY_MODEL_TEENSY_PP_10 || model == TY_MODEL_TEENSY_20) &&
-            !getenv("TYTOOLS_EXPERIMENTAL_BOARDS")) {
+    if ((model == TY_MODEL_TEENSY_PP_10 || model == TY_MODEL_TEENSY_20 ||
+         model == TY_MODEL_TEENSY_40) && !getenv("TYTOOLS_EXPERIMENTAL_BOARDS")) {
         return ty_error(TY_ERROR_UNSUPPORTED,
                         "Support for %s boards is experimental, set environment variable"
-                        "TYTOOLS_EXPERIMENTAL_BOARDS to any value to enable support for them",
+                        "TYTOOLS_EXPERIMENTAL_BOARDS to any value to enable upload",
                         ty_models[model].name);
     }
 
@@ -622,6 +635,11 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
             *rhalfkay_version = 3;
             *rcode_size = 63488;
             *rblock_size = 512;
+        } break;
+        case TY_MODEL_TEENSY_40: {
+            *rhalfkay_version = 3;
+            *rcode_size = 1612185600;
+            *rblock_size = 1024;
         } break;
 
         case TY_MODEL_TEENSY: {

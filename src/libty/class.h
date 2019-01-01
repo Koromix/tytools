@@ -36,7 +36,8 @@ typedef enum ty_model_teensy {
     TY_MODEL_TEENSY_LC,
     TY_MODEL_TEENSY_32,
     TY_MODEL_TEENSY_35,
-    TY_MODEL_TEENSY_36
+    TY_MODEL_TEENSY_36,
+    TY_MODEL_TEENSY_40
 } ty_model_teensy;
 
 extern const ty_model_info *ty_models;
