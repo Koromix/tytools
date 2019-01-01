@@ -337,6 +337,10 @@ static uint64_t read_uint64_le(const uint8_t *ptr)
 static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmodels,
                                            unsigned int max_models)
 {
+    const ty_firmware_segment *segment0 = ty_firmware_find_segment(fw, 0);
+    if (!segment0)
+        return 0;
+
     /* Try ARM models first. We use a few facts to recognize these models:
        - The interrupt vector table (_VectorsFlash[]) is located at 0x0 (at least initially)
        - _VectorsFlash[0] is the initial stack pointer, which is the end of the RAM address space
@@ -350,16 +354,16 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
        We combine the size of _VectorsFlash[] and the initial stack pointer value to
        differenciate models. */
     const uint32_t teensy3_startup_size = 0x400;
-    if (fw->size >= teensy3_startup_size) {
+    if (segment0->size >= teensy3_startup_size) {
         uint32_t stack_addr;
         uint32_t end_vector_addr;
         unsigned int arm_models_count = 0;
 
-        stack_addr = read_uint32_le(fw->image);
-        end_vector_addr = read_uint32_le(fw->image + 4) & ~1u;
+        stack_addr = read_uint32_le(segment0->data);
+        end_vector_addr = read_uint32_le(segment0->data + 4) & ~1u;
         if (end_vector_addr >= teensy3_startup_size) {
             for (uint32_t i = 0; i < teensy3_startup_size - sizeof(uint64_t); i += 4) {
-                if (read_uint64_le(fw->image + i) == 0xFFFFFFFFFFFFFFFF) {
+                if (read_uint64_le(segment0->data + i) == 0xFFFFFFFFFFFFFFFF) {
                     end_vector_addr = i;
                     break;
                 }
@@ -393,22 +397,28 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
     /* Now try AVR Teensies. We search for machine code that matches model-specific code in
        _reboot_Teensyduino_(). Not elegant, but it does the work. */
-    if (fw->size > sizeof(uint64_t) && fw->size <= 130048) {
-        for (size_t i = 0; i < fw->size - sizeof(uint64_t); i++) {
-            uint64_t magic_value = read_uint64_le(fw->image + i);
-            switch (magic_value) {
-                case 0x94F8CFFF7E00940C: {
-                    rmodels[0] = TY_MODEL_TEENSY_PP_10;
-                    return 1;
-                } break;
-                case 0x94F8CFFF3F00940C: {
-                    rmodels[0] = TY_MODEL_TEENSY_20;
-                    return 1;
-                } break;
-                case 0x94F8CFFFFE00940C: {
-                    rmodels[0] = TY_MODEL_TEENSY_PP_20;
-                    return 1;
-                } break;
+    if (fw->size <= 130048) {
+        for (unsigned int i = 0; i < fw->segments_count; i++) {
+            const ty_firmware_segment *segment = &fw->segments[i];
+            if (segment->size < sizeof(uint64_t))
+                continue;
+
+            for (size_t j = 0; j < segment->size - sizeof(uint64_t); j++) {
+                uint64_t magic_value = read_uint64_le(segment->data + j);
+                switch (magic_value) {
+                    case 0x94F8CFFF7E00940C: {
+                        rmodels[0] = TY_MODEL_TEENSY_PP_10;
+                        return 1;
+                    } break;
+                    case 0x94F8CFFF3F00940C: {
+                        rmodels[0] = TY_MODEL_TEENSY_20;
+                        return 1;
+                    } break;
+                    case 0x94F8CFFFFE00940C: {
+                        rmodels[0] = TY_MODEL_TEENSY_PP_20;
+                        return 1;
+                    } break;
+                }
             }
         }
     }
@@ -644,18 +654,22 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
             return r;
     }
 
-    for (size_t addr = 0; addr < fw->size; addr += block_size) {
-        size_t write_size = TY_MIN(block_size, (size_t)(fw->size - addr));
+    for (unsigned int segment_idx = 0; segment_idx < fw->segments_count; segment_idx++) {
+        const ty_firmware_segment *segment = &fw->segments[segment_idx];
 
-        r = halfkay_send(iface->port, halfkay_version, block_size,
-                         addr, fw->image + addr, write_size, 3000);
-        if (r < 0)
-            return r;
+        for (size_t offset = 0; offset < segment->size; offset += block_size) {
+            size_t write_size = TY_MIN(block_size, (size_t)(segment->size - offset));
 
-        if (pf) {
-            r = (*pf)(iface->board, fw, addr + write_size, code_size, udata);
-            if (r)
+            r = halfkay_send(iface->port, halfkay_version, block_size,
+                             segment->address + offset, segment->data + offset, write_size, 3000);
+            if (r < 0)
                 return r;
+
+            if (pf) {
+                r = (*pf)(iface->board, fw, offset + write_size, code_size, udata);
+                if (r)
+                    return r;
+            }
         }
     }
 

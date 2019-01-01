@@ -20,7 +20,8 @@ struct parser_context {
     uint8_t sum;
     bool error;
 
-    uint32_t base_offset;
+    uint32_t offset2;
+    ty_firmware_segment *segment;
 };
 
 static uint32_t parse_hex_value(struct parser_context *ctx, size_t size)
@@ -83,12 +84,14 @@ static int parse_line(struct parser_context *ctx, const char *line, size_t line_
 
     switch (type) {
         case 0: { // data record
-            address += ctx->base_offset;
-            r = ty_firmware_expand_image(ctx->fw, address + data_len);
+            address += ctx->offset2;
+
+            r = ty_firmware_expand_segment(ctx->fw, ctx->segment, address + data_len);
             if (r < 0)
                 return r;
+
             for (unsigned int i = 0; i < data_len; i++)
-                ctx->fw->image[address + i] = (uint8_t)parse_hex_value(ctx, 1);
+                ctx->segment->data[address + i] = (uint8_t)parse_hex_value(ctx, 1);
         } break;
 
         case 1: { // EOF record
@@ -99,19 +102,25 @@ static int parse_line(struct parser_context *ctx, const char *line, size_t line_
         case 2: { // extended segment address record
             if (data_len != 2)
                 return ihex_parse_error(ctx);
-            ctx->base_offset = (uint32_t)parse_hex_value(ctx, 2) << 4;
+
+            ctx->offset2 = (uint32_t)parse_hex_value(ctx, 2) << 4;
         } break;
 
         case 4: { // extended linear address record
             if (data_len != 2)
                 return ihex_parse_error(ctx);
-            ctx->base_offset = (uint32_t)parse_hex_value(ctx, 2) << 16;
+
+            address = (uint32_t)parse_hex_value(ctx, 2) << 16;
+            r = ty_firmware_add_segment(ctx->fw, address, 0, &ctx->segment);
+            if (r < 0)
+                return r;
         } break;
 
         case 3:   // start segment address record
         case 5: { // start linear address record
             if (data_len != 4)
                 return ihex_parse_error(ctx);
+
             parse_hex_value(ctx, 4);
         } break;
 
@@ -136,13 +145,16 @@ static int parse_line(struct parser_context *ctx, const char *line, size_t line_
 int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len)
 {
     assert(fw);
-    assert(!fw->size);
+    assert(!fw->segments_count && !fw->size);
     assert(mem || !len);
 
     struct parser_context ctx = {0};
     int r;
 
     ctx.fw = fw;
+    r = ty_firmware_add_segment(fw, 0, 0, &ctx.segment);
+    if (r < 0)
+        return r;
 
     size_t start, end = 0;
     do {
@@ -161,6 +173,11 @@ int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len)
         if (r < 0)
             return r;
     } while (!r);
+
+    for (unsigned int i = 0; i < fw->segments_count; i++) {
+        const ty_firmware_segment *segment = &fw->segments[i];
+        fw->size = TY_MAX(fw->size, segment->address + segment->size);
+    }
 
     return 0;
 }

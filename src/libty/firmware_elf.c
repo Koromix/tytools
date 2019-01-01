@@ -121,6 +121,7 @@ static int load_program_header(struct loader_context *ctx, unsigned int i, Elf32
 static int load_segment(struct loader_context *ctx, unsigned int i)
 {
     Elf32_Phdr phdr;
+    ty_firmware_segment *segment;
     int r;
 
     r = load_program_header(ctx, i ,&phdr);
@@ -130,10 +131,10 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     if (phdr.p_type != PT_LOAD || !phdr.p_filesz)
         return 0;
 
-    r = ty_firmware_expand_image(ctx->fw, phdr.p_paddr + phdr.p_filesz);
+    r = ty_firmware_add_segment(ctx->fw, phdr.p_paddr, phdr.p_filesz, &segment);
     if (r < 0)
         return r;
-    r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, ctx->fw->image + phdr.p_paddr);
+    r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, segment->data);
     if (r < 0)
         return r;
 
@@ -143,7 +144,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
 int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
 {
     assert(fw);
-    assert(!fw->size);
+    assert(!fw->segments_count && !fw->size);
     assert(mem || !len);
 
     struct loader_context ctx = {0};
@@ -186,6 +187,11 @@ int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
         r = load_segment(&ctx, i);
         if (r < 0)
             return r;
+    }
+
+    for (unsigned int i = 0; i < fw->segments_count; i++) {
+        const ty_firmware_segment *segment = &fw->segments[i];
+        fw->size = TY_MAX(fw->size, segment->address + segment->size);
     }
 
     return 0;

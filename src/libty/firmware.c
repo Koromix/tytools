@@ -20,8 +20,6 @@ const ty_firmware_format ty_firmware_formats[] = {
 };
 const unsigned int ty_firmware_formats_count = TY_COUNTOF(ty_firmware_formats);
 
-#define FIRMWARE_STEP_SIZE 32768
-
 static const char *get_basename(const char *filename)
 {
     const char *basename;
@@ -239,7 +237,8 @@ void ty_firmware_unref(ty_firmware *fw)
         if (_ty_refcount_decrease(&fw->refcount))
             return;
 
-        free(fw->image);
+        for (unsigned int i = 0; i < fw->segments_count; i++)
+            free(fw->segments[i].data);
         free(fw->name);
         free(fw->filename);
     }
@@ -247,24 +246,65 @@ void ty_firmware_unref(ty_firmware *fw)
     free(fw);
 }
 
-int ty_firmware_expand_image(ty_firmware *fw, size_t size)
+const ty_firmware_segment *ty_firmware_find_segment(const ty_firmware *fw, uint32_t address)
 {
-    if (size > fw->alloc_size) {
+    assert(fw);
+
+    for (unsigned int i = fw->segments_count; i-- > 0;) {
+        const ty_firmware_segment *segment = &fw->segments[i];
+        if (address >= segment->address && address < segment->address + segment->size)
+            return segment;
+    }
+
+    return NULL;
+}
+
+int ty_firmware_add_segment(ty_firmware *fw, uint32_t address, size_t size,
+                            ty_firmware_segment **rsegment)
+{
+    assert(fw);
+
+    ty_firmware_segment *segment;
+    int r;
+
+    if (fw->segments_count >= TY_FIRMWARE_MAX_SEGMENTS)
+        return ty_error(TY_ERROR_RANGE, "Firmware '%s' has too many segments", fw->filename);
+
+    segment = &fw->segments[fw->segments_count];
+    segment->address = address;
+
+    r = ty_firmware_expand_segment(fw, segment, size);
+    if (r < 0)
+        return r;
+
+    fw->segments_count++;
+
+    if (rsegment)
+        *rsegment = segment;
+    return 0;
+}
+
+int ty_firmware_expand_segment(ty_firmware *fw, ty_firmware_segment *segment, size_t size)
+{
+    const size_t step_size = 65536;
+
+    if (size > segment->alloc_size) {
         uint8_t *tmp;
         size_t alloc_size;
 
-        if (size > TY_FIRMWARE_MAX_SIZE)
-            return ty_error(TY_ERROR_RANGE, "Firmware too big (max %u bytes) in '%s'",
-                            TY_FIRMWARE_MAX_SIZE, fw->filename);
+        if (size > TY_FIRMWARE_MAX_SEGMENT_SIZE)
+            return ty_error(TY_ERROR_RANGE, "Firmware '%s' has excessive segment size (max %u bytes)",
+                            fw->filename, TY_FIRMWARE_MAX_SEGMENT_SIZE);
 
-        alloc_size = (size + (FIRMWARE_STEP_SIZE - 1)) / FIRMWARE_STEP_SIZE * FIRMWARE_STEP_SIZE;
-        tmp = realloc(fw->image, alloc_size);
+        alloc_size = (size + (step_size - 1)) / step_size * step_size;
+        tmp = realloc(segment->data, alloc_size);
         if (!tmp)
             return ty_error(TY_ERROR_MEMORY, NULL);
-        fw->image = tmp;
-        fw->alloc_size = alloc_size;
+
+        segment->data = tmp;
+        segment->alloc_size = alloc_size;
     }
-    fw->size = size;
+    segment->size = size;
 
     return 0;
 }
