@@ -32,7 +32,6 @@ public:
 
     QString filename() const { return fw_->filename; }
     QString name() const { return fw_->name; }
-    size_t size() const { return fw_->size; }
 
     ty_firmware *firmware() const { return fw_; }
 

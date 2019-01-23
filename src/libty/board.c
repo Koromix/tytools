@@ -592,17 +592,17 @@ static int upload_progress_callback(const ty_board *board, const ty_firmware *fw
 
     if (!uploaded_size) {
         ty_log(TY_LOG_INFO, "Firmware: %s", fw->name);
-        if (fw->size >= 1024) {
+        if (fw->total_size >= 1024) {
             ty_log(TY_LOG_INFO, "Flash usage: %zu kiB (%.1f%%)",
-                   (fw->size + 1023) / 1024,
-                   (double)fw->size / (double)flash_size * 100.0);
+                   (fw->total_size + 1023) / 1024,
+                   (double)fw->total_size / (double)flash_size * 100.0);
         } else {
             ty_log(TY_LOG_INFO, "Flash usage: %zu bytes (%.1f%%)",
-                   fw->size,
-                   (double)fw->size / (double)flash_size * 100.0);
+                   fw->total_size,
+                   (double)fw->total_size / (double)flash_size * 100.0);
         }
     }
-    ty_progress("Uploading", uploaded_size, fw->size);
+    ty_progress("Uploading", uploaded_size, fw->total_size);
 
     return 0;
 }

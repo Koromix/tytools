@@ -144,7 +144,7 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
 int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
 {
     assert(fw);
-    assert(!fw->segments_count && !fw->size);
+    assert(!fw->segments_count && !fw->total_size);
     assert(mem || !len);
 
     struct loader_context ctx = {0};
@@ -191,7 +191,8 @@ int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
 
     for (unsigned int i = 0; i < fw->segments_count; i++) {
         const ty_firmware_segment *segment = &fw->segments[i];
-        fw->size = TY_MAX(fw->size, segment->address + segment->size);
+        fw->total_size += segment->size;
+        fw->max_address = TY_MAX(fw->max_address, segment->address + segment->size);
     }
 
     return 0;

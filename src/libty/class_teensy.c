@@ -410,7 +410,7 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
     /* Now try AVR Teensies. We search for machine code that matches model-specific code in
        _reboot_Teensyduino_(). Not elegant, but it does the work. */
-    if (fw->size <= 130048) {
+    if (fw->max_address <= 130048) {
         for (unsigned int i = 0; i < fw->segments_count; i++) {
             const ty_firmware_segment *segment = &fw->segments[i];
             if (segment->size < sizeof(uint64_t))
@@ -638,7 +638,7 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
         } break;
         case TY_MODEL_TEENSY_40: {
             *rhalfkay_version = 3;
-            *rcode_size = 1612185600;
+            *rcode_size = 1572864;
             *rblock_size = 1024;
         } break;
 
@@ -662,7 +662,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
     if (r < 0)
         return r;
 
-    if (fw->size > code_size)
+    if (fw->total_size > code_size)
         return ty_error(TY_ERROR_RANGE, "Firmware is too big for %s",
                         ty_models[iface->model].name);
 
@@ -675,6 +675,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
     for (unsigned int segment_idx = 0; segment_idx < fw->segments_count; segment_idx++) {
         const ty_firmware_segment *segment = &fw->segments[segment_idx];
 
+        size_t uploaded_size = 0;
         for (size_t offset = 0; offset < segment->size; offset += block_size) {
             size_t write_size = TY_MIN(block_size, (size_t)(segment->size - offset));
 
@@ -682,9 +683,10 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
                              segment->address + offset, segment->data + offset, write_size, 3000);
             if (r < 0)
                 return r;
+            uploaded_size += write_size;
 
             if (pf) {
-                r = (*pf)(iface->board, fw, offset + write_size, code_size, udata);
+                r = (*pf)(iface->board, fw, uploaded_size, code_size, udata);
                 if (r)
                     return r;
             }
