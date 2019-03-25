@@ -1,6 +1,6 @@
 # TyTools - public domain
 # Niels Martignène <niels.martignene@protonmail.com>
-# https://neodd.com/tytools
+# https://koromix.dev/tytools
 
 # This software is in the public domain. Where that dedication is not
 # recognized, you are granted a perpetual, irrevocable license to copy,

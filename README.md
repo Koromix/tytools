@@ -1,4 +1,4 @@
-You can find these instructions on the [official web page](http://neodd.com/tytools).
+You can find these instructions on the [official web page](http://koromix.dev/tytools).
 
 # Overview
 

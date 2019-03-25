@@ -1,6 +1,6 @@
 # libhs - public domain
 # Niels Martignène <niels.martignene@protonmail.com>
-# https://neodd.com/libhs
+# https://koromix.dev/libhs
 
 # This software is in the public domain. Where that dedication is not
 # recognized, you are granted a perpetual, irrevocable license to copy,
