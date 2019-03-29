@@ -11,8 +11,7 @@ TyCommander | Qt GUI (static)           | Upload, monitor and communicate with m
 TyUpdater   | Qt GUI (static)           | Simple firmware / sketch uploader
 tycmd       | Command-line<br>_No Qt !_ | Command-line tool to manage Teensy boards
 
-Download the [latest release from GitHub](https://github.com/Koromix/tytools/releases). You can find
-[development builds on BinTray](https://bintray.com/koromix/tytools/tytools/view#files).
+Download the [latest release from GitHub](https://github.com/Koromix/tytools/releases).
 
 All the code related to these programs is under **public domain**, you can do whatever you want
 with it. See the LICENSE file or [unlicense.org](https://unlicense.org/) more more information.
