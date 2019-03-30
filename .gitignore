@@ -9,6 +9,6 @@ CMakeLists.txt.*
 *.elf
 
 # Don't show the static Qt5 builds
-qt5/*
-!qt5/README.md
-!qt5/download-static-qt5.sh
+lib/qt5/*
+!lib/qt5/README.md
+!lib/qt5/download-static-qt5.sh
