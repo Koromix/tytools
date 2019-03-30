@@ -14,7 +14,7 @@ tycmd       | Command-line<br>_No Qt !_ | Command-line tool to manage Teensy boa
 Download the [latest release from GitHub](https://github.com/Koromix/tytools/releases).
 
 All the code related to these programs is under **public domain**, you can do whatever you want
-with it. See the LICENSE file or [unlicense.org](https://unlicense.org/) more more information.
+with it. See the LICENSE file or [unlicense.org](https://unlicense.org/) for more information.
 
 # Using tycmd
 
