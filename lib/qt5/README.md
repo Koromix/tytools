@@ -1,17 +1,20 @@
+These instructions have been tested with *Qt 5.12.2*, they will probably **not work for
+Qt versions < 5.12**.
+
 # Compilation on Windows
 
-## MSVC 2015 32-bit with static MSVCRT
+## MSVC 20xx 32-bit with static MSVCRT
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.7/5.7.1/submodules/qtbase-opensource-src-5.7.1.7z
+Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.2/submodules/qtbase-everywhere-src-5.12.2.zip
 
-Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-opensource-src-5.6.1" to
-"i686-win32-msvc2015-mt". Open the "VS2015 x86 Native Tools Command Prompt" and cd to
+Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.2" to
+"i686-win32-msvc-mt". Open the "VS20xx x86 Native Tools Command Prompt" and cd to
 this directory.
 
 ```batch
-cd i686-win32-msvc2015-mt
-REM Now we are in tytools/lib/qt5/i686-win32-msvc2015-mt
-configure -platform win32-msvc2015 ^
+cd i686-win32-msvc-mt
+REM Now we are in tytools/lib/qt5/i686-win32-msvc-mt
+configure -platform win32-msvc ^
     -opensource ^
     -confirm-license ^
     -static ^
@@ -34,18 +37,18 @@ nmake
 Unfortunately Qt static builds are fragile and cannot be moved around. You will need to rebuild Qt
 if you move your project.
 
-## MSVC 2015 64-bit with static MSVCRT
+## MSVC 20xx 64-bit with static MSVCRT
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.7/5.7.1/submodules/qtbase-opensource-src-5.7.1.7z
+Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.2/submodules/qtbase-everywhere-src-5.12.2.zip
 
-Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-opensource-src-5.6.1" to
-"x86_64-win32-msvc2015-mt". Open the "VS2015 x64 Native Tools Command Prompt" and cd to
+Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.2" to
+"x86_64-win32-msvc-mt". Open the "VS20xx x64 Native Tools Command Prompt" and cd to
 this directory.
 
 ```batch
-cd x86_64-win32-msvc2015-mt
-REM Now we are in tytools/lib/qt5/x86_64-win32-msvc2015-mt
-configure -platform win32-msvc2015 ^
+cd x86_64-win32-msvc-mt
+REM Now we are in tytools/lib/qt5/x86_64-win32-msvc-mt
+configure -platform win32-msvc ^
     -opensource ^
     -confirm-license ^
     -static ^
@@ -72,9 +75,9 @@ if you move your project.
 
 A recent version of XCode must be installed.
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.7/5.7.1/submodules/qtbase-opensource-src-5.7.1.tar.xz
+Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.2/submodules/qtbase-everywhere-src-5.12.2.tar.xz
 
-Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-opensource-src-5.6.1" to
+Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.2" to
 "x86_64-darwin-clang". Open a command prompt and go to that directory.
 
 ```sh

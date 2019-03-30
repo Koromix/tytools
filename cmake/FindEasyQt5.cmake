@@ -21,7 +21,7 @@ if(NOT Qt5_FOUND)
     endif()
     if(MSVC)
         if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 18)
-            set(HOST "${HOST_CPU}-win32-msvc2015")
+            set(HOST "${HOST_CPU}-win32-msvc")
         else()
             message(FATAL_ERROR "Only Visual Studio 2015 and later versions are supported")
         endif()
@@ -66,22 +66,19 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
     if(Qt5_TYPE STREQUAL "STATIC_LIBRARY")
         get_filename_component(Qt5_DIRECTORY "${Qt5_LOCATION}" DIRECTORY)
         get_filename_component(Qt5_DIRECTORY "${Qt5_DIRECTORY}" DIRECTORY)
-        set(Qt5_LIBRARY_DIRECTORIES "${Qt5_DIRECTORY}/lib" "${Qt5_DIRECTORY}/plugins/platforms")
+        set(Qt5_LIBRARY_DIRECTORIES
+            "${Qt5_DIRECTORY}/lib" "${Qt5_DIRECTORY}/plugins/platforms" "${Qt5_DIRECTORY}/plugins/styles")
 
         if(WIN32)
             # Fix undefined reference to _imp__WSAAsyncSelect@16
             set_property(TARGET Qt5::Network APPEND PROPERTY INTERFACE_LINK_LIBRARIES ws2_32)
 
             # Why is there no config package for this?
-            find_library(Qt5PlatformSupport_LIBRARIES Qt5PlatformSupport
+            find_library(qtpcre_LIBRARIES NAMES qtpcre qtpcre2
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
-            find_library(qtpcre_LIBRARIES qtpcre
-                HINTS ${Qt5_LIBRARY_DIRECTORIES}
-                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
-                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
-            find_library(qtpng_LIBRARIES qtpng
+            find_library(qtpng_LIBRARIES NAMES qtpng qtlibpng
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
@@ -93,11 +90,34 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(qwindowsvistastyle_LIBRARIES qwindowsvistastyle
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5WindowsUIAutomationSupport_LIBRARIES Qt5WindowsUIAutomationSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5FontDatabaseSupport_LIBRARIES Qt5FontDatabaseSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5EventDispatcherSupport_LIBRARIES Qt5EventDispatcherSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5ThemeSupport_LIBRARIES Qt5ThemeSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
 
             target_link_libraries(EasyQt5 INTERFACE
-                Qt5::QWindowsIntegrationPlugin imm32 winmm
-                Qt5::Core Qt5::Widgets Qt5::Network
-                ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES} ${qtpng_LIBRARIES} ${qtfreetype_LIBRARIES})
+                Qt5::QWindowsIntegrationPlugin Qt5::Core Qt5::Widgets Qt5::Network
+                imm32 winmm dwmapi version wtsapi32 netapi32 userenv
+                ${Qt5WindowsUIAutomationSupport_LIBRARIES} ${Qt5FontDatabaseSupport_LIBRARIES}
+                ${Qt5EventDispatcherSupport_LIBRARIES} ${Qt5ThemeSupport_LIBRARIES}
+                ${qwindows_LIBRARIES} ${qwindowsvistastyle_LIBRARIES}
+                ${qtpcre_LIBRARIES} ${qtpng_LIBRARIES} ${qtfreetype_LIBRARIES})
         elseif(APPLE)
             find_library(COCOA_LIBRARIES Cocoa)
             find_library(CARBON_LIBRARIES Carbon)
