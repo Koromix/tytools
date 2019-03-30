@@ -271,8 +271,8 @@ void _hs_win32_start_async_read(hs_port *port)
 {
     DWORD ret;
 
-    ret = (DWORD)ReadFile(port->u.handle.h, port->u.handle.read_buf, port->u.handle.read_buf_size,
-                          NULL, port->u.handle.read_ov);
+    ret = (DWORD)ReadFile(port->u.handle.h, port->u.handle.read_buf,
+                          (DWORD)port->u.handle.read_buf_size, NULL, port->u.handle.read_ov);
     if (!ret && GetLastError() != ERROR_IO_PENDING) {
         CancelIo(port->u.handle.h);
 
