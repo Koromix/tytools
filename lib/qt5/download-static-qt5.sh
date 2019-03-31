@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 print_usage() {
-    printf "usage: %s [options] <version> (e.g. 5.5.1)\n\n" "$(basename $0)"
+    printf "usage: %s [options] <version> (e.g. 5.12.2)\n\n" "$(basename $0)"
     printf "This tool downloads the appropriate Qt sources needed to build\n"
     printf "a static build of Qt\n\n"
     printf "Options:\n"
@@ -25,7 +25,7 @@ VERSION=${@:$OPTIND:1}
 # any GPG signature for the source downloads to make this secure.
 [ ! -f qtbase-md5sums-$VERSION.txt ] && wget -O qtbase-md5sums-$VERSION.txt http://download.qt.io/official_releases/qt/$(echo $VERSION | cut -d. -f1,2)/$VERSION/submodules/md5sums.txt
 md5sum --quiet -c qtbase-md5sums-$VERSION.txt 2>/dev/null | cut -d: -f1 | xargs rm -f
-[ ! -f qtbase-opensource-src-$VERSION.tar.xz ] && wget http://download.qt.io/official_releases/qt/$(echo $VERSION | cut -d. -f1,2)/$VERSION/submodules/qtbase-opensource-src-$VERSION.tar.xz
+[ ! -f qtbase-everywhere-src-$VERSION.tar.xz ] && wget http://download.qt.io/official_releases/qt/$(echo $VERSION | cut -d. -f1,2)/$VERSION/submodules/qtbase-everywhere-src-$VERSION.tar.xz
 echo "All files downloaded"
 
 if [ -n "$DESTDIR" ]; then
