@@ -113,7 +113,7 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
 
             target_link_libraries(EasyQt5 INTERFACE
                 Qt5::QWindowsIntegrationPlugin Qt5::Core Qt5::Widgets Qt5::Network
-                imm32 winmm dwmapi version wtsapi32 netapi32 userenv
+                imm32 winmm dwmapi version wtsapi32 netapi32 userenv uxtheme
                 ${Qt5WindowsUIAutomationSupport_LIBRARIES} ${Qt5FontDatabaseSupport_LIBRARIES}
                 ${Qt5EventDispatcherSupport_LIBRARIES} ${Qt5ThemeSupport_LIBRARIES}
                 ${qwindows_LIBRARIES} ${qwindowsvistastyle_LIBRARIES}
