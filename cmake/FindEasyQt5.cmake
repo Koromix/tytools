@@ -127,15 +127,43 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
             find_package(Cups REQUIRED)
             find_package(OpenGL REQUIRED)
 
-            find_library(Qt5PlatformSupport_LIBRARIES Qt5PlatformSupport
+            find_library(qtpcre_LIBRARIES NAMES qtpcre qtpcre2
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
-            find_library(qtpcre_LIBRARIES qtpcre
+            find_library(qtpng_LIBRARIES NAMES qtpng qtlibpng
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
-            find_library(qtpng_LIBRARIES qtpng
+            find_library(qcocoa_LIBRARIES qcocoa
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5FontDatabaseSupport_LIBRARIES Qt5FontDatabaseSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5EventDispatcherSupport_LIBRARIES Qt5EventDispatcherSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5ThemeSupport_LIBRARIES Qt5ThemeSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5ClipboardSupport_LIBRARIES Qt5ClipboardSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5GraphicsSupport_LIBRARIES Qt5GraphicsSupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5AccessibilitySupport_LIBRARIES Qt5AccessibilitySupport
+                HINTS ${Qt5_LIBRARY_DIRECTORIES}
+                NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
+                NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
+            find_library(Qt5CglSupport_LIBRARIES Qt5CglSupport
                 HINTS ${Qt5_LIBRARY_DIRECTORIES}
                 NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_SYSTEM_ENVIRONMENT_PATH
                 NO_CMAKE_SYSTEM_PATH NO_CMAKE_FIND_ROOT_PATH)
@@ -143,7 +171,11 @@ if(Qt5_FOUND AND NOT TARGET EasyQt5)
             target_link_libraries(EasyQt5 INTERFACE
                 Qt5::QCocoaIntegrationPlugin Qt5::PrintSupport
                 Qt5::Core Qt5::Widgets Qt5::Network
-                ${Qt5PlatformSupport_LIBRARIES} ${qtpcre_LIBRARIES} ${qtpng_LIBRARIES}
+                ${qcocoa_LIBRARIES} ${Qt5CglSupport_LIBRARIES}
+                ${Qt5FontDatabaseSupport_LIBRARIES} ${Qt5ClipboardSupport_LIBRARIES}
+                ${Qt5EventDispatcherSupport_LIBRARIES} ${Qt5ThemeSupport_LIBRARIES}
+                ${Qt5GraphicsSupport_LIBRARIES} ${Qt5AccessibilitySupport_LIBRARIES}
+                ${qtpcre_LIBRARIES} ${qtpng_LIBRARIES}
                 ${COCOA_LIBRARIES} ${CARBON_LIBRARIES} ${SECURITY_LIBRARIES}
                 ${ZLIB_LIBRARIES} ${CUPS_LIBRARIES} ${SC_LIBRARIES} ${OPENGL_LIBRARIES})
         endif()

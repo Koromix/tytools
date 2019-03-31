@@ -8,7 +8,7 @@
 
 # See the LICENSE file for more details.
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10" CACHE STRING "")
 cmake_minimum_required(VERSION 3.1)
 project(TyTools C CXX)
 
