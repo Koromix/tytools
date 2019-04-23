@@ -24,6 +24,7 @@
     #include <QtPlugin>
     #if defined(_WIN32)
         Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)
+        Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin)
     #elif defined(__APPLE__)
         Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin)
     #endif
