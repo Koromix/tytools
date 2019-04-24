@@ -38,7 +38,8 @@ static ty_model identify_model_bcd(uint16_t bcd_device)
         case 0x273: { model = TY_MODEL_TEENSY_LC; } break;
         case 0x276: { model = TY_MODEL_TEENSY_35; } break;
         case 0x277: { model = TY_MODEL_TEENSY_36; } break;
-        case 0x278: { model = TY_MODEL_TEENSY_40; } break;
+        case 0x278: { model = TY_MODEL_TEENSY_40_BETA1; } break;
+        case 0x279: { model = TY_MODEL_TEENSY_40; } break;
     }
 
     if (model != 0) {
@@ -65,7 +66,8 @@ static ty_model identify_model_halfkay(uint16_t usage)
         case 0x21: { model = TY_MODEL_TEENSY_32; } break;
         case 0x1F: { model = TY_MODEL_TEENSY_35; } break;
         case 0x22: { model = TY_MODEL_TEENSY_36; } break;
-        case 0x23: { model = TY_MODEL_TEENSY_40; } break;
+        case 0x23: { model = TY_MODEL_TEENSY_40_BETA1; } break;
+        case 0x24: { model = TY_MODEL_TEENSY_40; } break;
     }
 
     if (model != 0) {
@@ -347,8 +349,13 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
         uint64_t flash_config_8 = read_uint64_le(teensy4_segment->data);
 
         if (flash_config_8 == 0x5601000042464346) {
-            rmodels[0] = TY_MODEL_TEENSY_40;
-            return 1;
+            unsigned int models_count = 0;
+
+            rmodels[models_count++] = TY_MODEL_TEENSY_40;
+            if (max_models >= 2)
+                rmodels[models_count++] = TY_MODEL_TEENSY_40_BETA1;
+
+            return models_count;
         }
     }
 
@@ -586,7 +593,8 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
                                 size_t *rcode_size, size_t *rblock_size)
 {
     if ((model == TY_MODEL_TEENSY_PP_10 || model == TY_MODEL_TEENSY_20 ||
-         model == TY_MODEL_TEENSY_40) && !getenv("TYTOOLS_EXPERIMENTAL_BOARDS")) {
+         model == TY_MODEL_TEENSY_40_BETA1 || model == TY_MODEL_TEENSY_40) &&
+            !getenv("TYTOOLS_EXPERIMENTAL_BOARDS")) {
         return ty_error(TY_ERROR_UNSUPPORTED,
                         "Support for %s boards is experimental, set environment variable"
                         "TYTOOLS_EXPERIMENTAL_BOARDS to any value to enable upload",
@@ -636,6 +644,7 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
             *rcode_size = 63488;
             *rblock_size = 512;
         } break;
+        case TY_MODEL_TEENSY_40_BETA1:
         case TY_MODEL_TEENSY_40: {
             *rhalfkay_version = 3;
             *rcode_size = 1572864;

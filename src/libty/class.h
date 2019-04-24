@@ -37,6 +37,7 @@ typedef enum ty_model_teensy {
     TY_MODEL_TEENSY_32,
     TY_MODEL_TEENSY_35,
     TY_MODEL_TEENSY_36,
+    TY_MODEL_TEENSY_40_BETA1,
     TY_MODEL_TEENSY_40
 } ty_model_teensy;
 

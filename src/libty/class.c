@@ -28,7 +28,8 @@ static const ty_model_info default_models[] = {
     {1, "Teensy 3.2", "mk20dx256"},
     {1, "Teensy 3.5", "mk64fx512"},
     {1, "Teensy 3.6", "mk66fx1m0"},
-    {1, "Teensy 4.0", "imxrt"}
+    {1, "Teensy 4.0 (beta 1)", "imxrt_b1"},
+    {1, "Teensy 4.0", "imxrt"},
 };
 const ty_model_info *ty_models = default_models;
 const unsigned int ty_models_count = TY_COUNTOF(default_models);
