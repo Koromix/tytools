@@ -592,8 +592,7 @@ restart:
 static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
                                 size_t *rcode_size, size_t *rblock_size)
 {
-    if ((model == TY_MODEL_TEENSY_PP_10 || model == TY_MODEL_TEENSY_20 ||
-         model == TY_MODEL_TEENSY_40_BETA1 || model == TY_MODEL_TEENSY_40) &&
+    if ((model == TY_MODEL_TEENSY_PP_10 || model == TY_MODEL_TEENSY_20) &&
             !getenv("TYTOOLS_EXPERIMENTAL_BOARDS")) {
         return ty_error(TY_ERROR_UNSUPPORTED,
                         "Support for %s boards is experimental, set environment variable"
