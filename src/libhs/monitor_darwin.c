@@ -42,10 +42,8 @@ struct hs_monitor {
 };
 
 struct device_class {
-    const char *old_stack;
-    const char *new_stack;
-
     hs_device_type type;
+    const char *stacks[3];
 };
 
 struct service_aggregate {
@@ -55,26 +53,30 @@ struct service_aggregate {
 };
 
 static struct device_class device_classes[] = {
-    {"IOHIDDevice",       "IOUSBHostHIDDevice", HS_DEVICE_TYPE_HID},
-    {"IOSerialBSDClient", "IOSerialBSDClient",  HS_DEVICE_TYPE_SERIAL},
-    {NULL}
+    {HS_DEVICE_TYPE_HID,    {"IOHIDDevice",       "IOUSBHostHIDDevice", "AppleUserHIDDevice"}},
+    {HS_DEVICE_TYPE_SERIAL, {"IOSerialBSDClient", "IOSerialBSDClient",  "IOSerialBSDClient"}}
 };
 
-static bool uses_new_stack()
+static int get_stack_version()
 {
-    static bool init, new_stack;
+    static bool init;
+    static int stack_version;
 
     if (!init) {
-        new_stack = hs_darwin_version() >= 150000;
+        uint32_t version = hs_darwin_version();
+
+        if (version >= 190000) {
+            stack_version = 2;
+        } else if (version >= 150000) {
+            stack_version = 1;
+        } else {
+            stack_version = 0;
+        }
+
         init = true;
     }
 
-    return new_stack;
-}
-
-static const char *correct_class(const char *new_stack, const char *old_stack)
-{
-    return uses_new_stack() ? new_stack : old_stack;
+    return stack_version;
 }
 
 static int get_ioregistry_value_string(io_service_t service, CFStringRef prop, char **rs)
@@ -458,9 +460,9 @@ int hs_enumerate(const hs_match_spec *matches, unsigned int count, hs_enumerate_
     ctx.f = f;
     ctx.udata = udata;
 
-    for (unsigned int i = 0; device_classes[i].old_stack; i++) {
+    for (unsigned int i = 0; i < _HS_COUNTOF(device_classes); i++) {
         if (_hs_match_helper_has_type(&match_helper, device_classes[i].type)) {
-            const char *cls = correct_class(device_classes[i].new_stack, device_classes[i].old_stack);
+            const char *cls = device_classes[i].stacks[get_stack_version()];
 
             kret = IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching(cls), &it);
             if (kret != kIOReturnSuccess) {
@@ -616,10 +618,12 @@ int hs_monitor_start(hs_monitor *monitor)
     if (monitor->started)
         return 0;
 
-    for (unsigned int i = 0; device_classes[i].old_stack; i++) {
+    for (unsigned int i = 0; i < _HS_COUNTOF(device_classes); i++) {
         if (_hs_match_helper_has_type(&monitor->match_helper, device_classes[i].type)) {
-            r = add_notification(monitor, correct_class(device_classes[i].new_stack, device_classes[i].old_stack),
-                                 kIOFirstMatchNotification, darwin_devices_attached, &it);
+            const char *cls = device_classes[i].stacks[get_stack_version()];
+
+            r = add_notification(monitor, cls, kIOFirstMatchNotification,
+                                 darwin_devices_attached, &it);
             if (r < 0)
                 goto error;
 
@@ -629,7 +633,7 @@ int hs_monitor_start(hs_monitor *monitor)
         }
     }
 
-    r = add_notification(monitor, correct_class("IOUSBHostDevice", kIOUSBDeviceClassName),
+    r = add_notification(monitor, hs_version() >= 150000 ? "IOUSBHostDevice" : kIOUSBDeviceClassName,
                          kIOTerminatedNotification, darwin_devices_detached, &it);
     if (r < 0)
         goto error;
