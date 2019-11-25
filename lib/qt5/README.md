@@ -81,9 +81,9 @@ Qt versions < or > 5.9**. Even if they work, you may not be able to link TyTools
 
 A recent version of XCode must be installed.
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.2/submodules/qtbase-everywhere-src-5.9.7.tar.xz
+Download qtbase source from http://download.qt.io/official_releases/qt/5.9/5.9.8/submodules/qtbase-opensource-src-5.9.8.tar.xz
 
-Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.9.7" to
+Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-opensource-src-5.9.8" to
 "x86_64-darwin-clang". Open a command prompt and go to that directory.
 
 ```sh
