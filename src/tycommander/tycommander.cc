@@ -60,6 +60,8 @@ using namespace std;
 TyCommander::TyCommander(int &argc, char *argv[])
     : QApplication(argc, argv), argc_(argc), argv_(argv)
 {
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
     setOrganizationName("TyTools");
     setApplicationName(TY_CONFIG_TYCOMMANDER_NAME);
     setApplicationVersion(ty_version_string());

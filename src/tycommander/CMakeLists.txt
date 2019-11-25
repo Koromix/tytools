@@ -76,7 +76,8 @@ qt5_add_resources(TYCOMMANDER_RESOURCES_RCC ${TYCOMMANDER_RESOURCES})
 add_executable(tycommander WIN32 MACOSX_BUNDLE
                ${TYCOMMANDER_SOURCES} ${TYCOMMANDER_FORMS_HEADERS} ${TYCOMMANDER_RESOURCES_RCC})
 set_target_properties(tycommander PROPERTIES AUTOMOC ON
-                                             OUTPUT_NAME ${CONFIG_TYCOMMANDER_EXECUTABLE})
+                                             OUTPUT_NAME ${CONFIG_TYCOMMANDER_EXECUTABLE}
+                                             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/tycommander_macos.plist.in")
 target_link_libraries(tycommander PRIVATE libhs libty EasyQt5)
 # We need these include directories for moc-generated files
 target_include_directories(tycommander PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

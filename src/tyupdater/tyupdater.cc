@@ -35,6 +35,8 @@ using namespace std;
 TyUpdater::TyUpdater(int &argc, char *argv[])
     : QApplication(argc, argv)
 {
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
     setOrganizationName("ty");
     setApplicationName(TY_CONFIG_TYUPDATER_NAME);
     setApplicationVersion(ty_version_string());
