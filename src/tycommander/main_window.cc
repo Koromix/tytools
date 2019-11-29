@@ -249,6 +249,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
     firmwareBrowseButton->setMenu(menuBrowseFirmware);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
+    connect(rateComboBox, &QComboBox::currentTextChanged, this, [=](const QString &str) {
+        unsigned int rate = str.toUInt();
+        setSerialRateForSelection(rate);
+    });
     connect(codecComboBox, &QComboBox::currentTextChanged, this, &MainWindow::setSerialCodecForSelection);
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -946,6 +950,9 @@ void MainWindow::refreshSettings()
 
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
+    rateComboBox->blockSignals(true);
+    rateComboBox->setCurrentText(QString::number(current_board_->serialRate()));
+    rateComboBox->blockSignals(false);
     codecComboBox->blockSignals(true);
     codecComboBox->setCurrentIndex(codec_indexes_.value(current_board_->serialCodecName(), 0));
     codecComboBox->blockSignals(false);
@@ -978,6 +985,7 @@ void MainWindow::refreshInterfaces()
         interfaceTree->addTopLevelItem(item);
     }
 
+    rateComboBox->setEnabled(current_board_->serialIsSerial());
     ambiguousBoardLabel->setVisible(!current_board_->hasCapability(TY_BOARD_CAPABILITY_UNIQUE));
 }
 
@@ -1048,6 +1056,12 @@ void MainWindow::setResetAfterForSelection(bool reset_after)
 {
     for (auto &board: selected_boards_)
         board->setResetAfter(reset_after);
+}
+
+void MainWindow::setSerialRateForSelection(unsigned int rate)
+{
+    for (auto &board: selected_boards_)
+        board->setSerialRate(rate);
 }
 
 void MainWindow::setSerialCodecForSelection(const QString &codec_name)

@@ -65,6 +65,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
 
     QString firmware_;
     bool reset_after_;
+    unsigned int serial_rate_ = 0;
     QString serial_codec_name_;
     bool clear_on_reset_;
     bool enable_serial_;
@@ -117,6 +118,7 @@ public:
     QString firmware() const { return firmware_; }
     QStringList recentFirmwares() const { return recent_firmwares_; }
     bool resetAfter() const { return reset_after_; }
+    unsigned int serialRate() const { return serial_rate_; }
     QString serialCodecName() const { return serial_codec_name_; }
     QTextCodec *serialCodec() const { return serial_codec_; }
     bool clearOnReset() const { return clear_on_reset_; }
@@ -126,6 +128,7 @@ public:
     QString serialLogFilename() const { return serial_log_file_.fileName(); }
 
     bool serialOpen() const { return serial_iface_; }
+    bool serialIsSerial() const;
     QTextDocument &serialDocument() { return serial_document_; }
 
     static QStringList makeCapabilityList(uint16_t capabilities);
@@ -151,6 +154,7 @@ public slots:
     void setFirmware(const QString &firmware);
     void clearRecentFirmwares();
     void setResetAfter(bool reset_after);
+    void setSerialRate(unsigned int rate);
     void setSerialCodecName(QString codec_name);
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
@@ -199,6 +203,7 @@ private:
     bool openSerialInterface();
     void closeSerialInterface();
     void updateSerialLogState(bool new_file);
+    bool syncBaudRate(unsigned int rate);
 
     void addUploadedFirmware(ty_firmware *fw);
 

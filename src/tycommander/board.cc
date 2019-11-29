@@ -101,6 +101,7 @@ void Board::loadSettings(Monitor *monitor)
     serial_log_size_ = db_.get(
         "serialLogSize",
         static_cast<quint64>(monitor ? monitor->serialLogSize() : 0)).toULongLong();
+    serial_rate_ = db_.get("serialRate", 115200).toUInt();
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */
@@ -206,6 +207,16 @@ std::vector<BoardInterfaceInfo> Board::interfaces() const
     }, &vec);
 
     return vec;
+}
+
+bool Board::serialIsSerial() const
+{
+    if (serial_iface_) {
+        hs_device *dev = ty_board_interface_get_device(serial_iface_);
+        return dev->type == HS_DEVICE_TYPE_SERIAL;
+    } else {
+        return false;
+    }
 }
 
 void Board::updateStatus()
@@ -434,6 +445,18 @@ void Board::setResetAfter(bool reset_after)
     reset_after_ = reset_after;
 
     db_.put("resetAfter", reset_after);
+    emit settingsChanged();
+}
+
+void Board::setSerialRate(unsigned int rate)
+{
+    if (rate == serial_rate_)
+        return;
+
+    if (!syncBaudRate(rate))
+        return;
+
+    db_.put("serialRate", rate);
     emit settingsChanged();
 }
 
@@ -717,14 +740,7 @@ bool Board::openSerialInterface()
     ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
 
-    // TODO: Make serial settings (mainly speed) configurable in the GUI
-    hs_device *dev = ty_board_interface_get_device(serial_iface_);
-    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
-        hs_port *port = ty_board_interface_get_handle(serial_iface_);
-        hs_serial_config config = {};
-        config.baudrate = 115200;
-        hs_serial_set_config(port, &config);
-    }
+    syncBaudRate(serial_rate_);
 
     return true;
 }
@@ -766,6 +782,27 @@ void Board::updateSerialLogState(bool new_file)
         serial_log_file_.close();
         serial_log_file_.remove();
     }
+}
+
+bool Board::syncBaudRate(unsigned int rate)
+{
+    if (!serial_iface_)
+        return true;
+
+    hs_device *dev = ty_board_interface_get_device(serial_iface_);
+    hs_port *port = ty_board_interface_get_handle(serial_iface_);
+
+    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
+        hs_serial_config config = {};
+        config.baudrate = serial_rate_;
+
+        int r = hs_serial_set_config(port, &config);
+        if (r < 0)
+            return false;
+    }
+
+    serial_rate_ = rate;
+    return true;
 }
 
 TaskInterface Board::watchTask(TaskInterface task)

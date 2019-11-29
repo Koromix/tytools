@@ -127,6 +127,7 @@ private slots:
     void browseForFirmware();
 
     void setResetAfterForSelection(bool reset_after);
+    void setSerialRateForSelection(unsigned int rate);
     void setSerialCodecForSelection(const QString &codec_name);
     void setClearOnResetForSelection(bool clear_on_reset);
     void setScrollBackLimitForSelection(int limit);
