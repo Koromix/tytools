@@ -203,7 +203,6 @@ private:
     bool openSerialInterface();
     void closeSerialInterface();
     void updateSerialLogState(bool new_file);
-    bool syncBaudRate(unsigned int rate);
 
     void addUploadedFirmware(ty_firmware *fw);
 

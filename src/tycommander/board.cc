@@ -453,8 +453,12 @@ void Board::setSerialRate(unsigned int rate)
     if (rate == serial_rate_)
         return;
 
-    if (!syncBaudRate(rate))
-        return;
+    serial_rate_ = rate;
+    if (serial_iface_) {
+        closeSerialInterface();
+        if (!openSerialInterface())
+            updateStatus();
+    }
 
     db_.put("serialRate", rate);
     emit settingsChanged();
@@ -740,7 +744,15 @@ bool Board::openSerialInterface()
     ty_board_interface_get_descriptors(serial_iface_, &set, 1);
     serial_notifier_.setDescriptorSet(&set);
 
-    syncBaudRate(serial_rate_);
+    hs_device *dev = ty_board_interface_get_device(serial_iface_);
+    hs_port *port = ty_board_interface_get_handle(serial_iface_);
+
+    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
+        hs_serial_config config = {};
+        config.baudrate = serial_rate_;
+
+        hs_serial_set_config(port, &config);
+    }
 
     return true;
 }
@@ -782,27 +794,6 @@ void Board::updateSerialLogState(bool new_file)
         serial_log_file_.close();
         serial_log_file_.remove();
     }
-}
-
-bool Board::syncBaudRate(unsigned int rate)
-{
-    if (!serial_iface_)
-        return true;
-
-    hs_device *dev = ty_board_interface_get_device(serial_iface_);
-    hs_port *port = ty_board_interface_get_handle(serial_iface_);
-
-    if (dev->type == HS_DEVICE_TYPE_SERIAL) {
-        hs_serial_config config = {};
-        config.baudrate = serial_rate_;
-
-        int r = hs_serial_set_config(port, &config);
-        if (r < 0)
-            return false;
-    }
-
-    serial_rate_ = rate;
-    return true;
 }
 
 TaskInterface Board::watchTask(TaskInterface task)
