@@ -20,6 +20,7 @@ struct parser_context {
     uint8_t sum;
     bool error;
 
+    uint32_t offset1;
     uint32_t offset2;
     ty_firmware_segment *segment;
 };
@@ -84,7 +85,7 @@ static int parse_line(struct parser_context *ctx, const char *line, size_t line_
 
     switch (type) {
         case 0: { // data record
-            address += ctx->offset2;
+            address += ctx->offset1 + ctx->offset2;
 
             r = ty_firmware_expand_segment(ctx->fw, ctx->segment, address + data_len);
             if (r < 0)
@@ -111,9 +112,16 @@ static int parse_line(struct parser_context *ctx, const char *line, size_t line_
                 return ihex_parse_error(ctx);
 
             address = (uint32_t)parse_hex_value(ctx, 2) << 16;
-            r = ty_firmware_add_segment(ctx->fw, address, 0, &ctx->segment);
-            if (r < 0)
-                return r;
+
+            if (address + 65536 > ctx->segment->address + TY_FIRMWARE_MAX_SEGMENT_SIZE) {
+                r = ty_firmware_add_segment(ctx->fw, address, 0, &ctx->segment);
+                if (r < 0)
+                    return r;
+
+                ctx->offset1 = 0;
+            } else {
+                ctx->offset1 = address - ctx->segment->address;
+            }
         } break;
 
         case 3:   // start segment address record

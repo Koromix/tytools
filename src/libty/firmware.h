@@ -16,7 +16,7 @@
 
 TY_C_BEGIN
 
-#define TY_FIRMWARE_MAX_SEGMENTS 8
+#define TY_FIRMWARE_MAX_SEGMENTS 16
 #define TY_FIRMWARE_MAX_SEGMENT_SIZE (2 * 1024 * 1024)
 
 typedef struct ty_firmware_segment {
