@@ -252,11 +252,38 @@ const ty_firmware_segment *ty_firmware_find_segment(const ty_firmware *fw, uint3
 
     for (unsigned int i = fw->segments_count; i-- > 0;) {
         const ty_firmware_segment *segment = &fw->segments[i];
+
         if (address >= segment->address && address < segment->address + segment->size)
             return segment;
     }
 
     return NULL;
+}
+
+size_t ty_firmware_extract(const ty_firmware *fw, uint32_t address, uint8_t *buf, size_t size)
+{
+    assert(fw);
+
+    size_t total_len = 0;
+    for (unsigned int i = 0; i < fw->segments_count; i++) {
+        const ty_firmware_segment *segment = &fw->segments[i];
+
+        if (address >= segment->address && address < segment->address + segment->size) {
+            size_t delta = address - segment->address;
+            size_t len = TY_MIN(segment->size - delta, size);
+
+            memcpy(buf, segment->data + delta, len);
+            total_len += len;
+        } else if (address < segment->address && address + size > segment->address) {
+            size_t delta = segment->address - address;
+            size_t len = TY_MIN(segment->size, size - delta);
+
+            memcpy(buf + delta, segment->data, len);
+            total_len += len;
+        }
+    }
+
+    return total_len;
 }
 
 int ty_firmware_add_segment(ty_firmware *fw, uint32_t address, size_t size,
