@@ -679,6 +679,11 @@ void Board::appendBufferToSerialDocument()
     serial_buf_len_ = 0;
     locker.unlock();
 
+    // Hack to fix extra empty lines when CR and LF are put in separate buffers.
+    // That's something that will go away with VT-100 support.
+    if (str.endsWith('\r'))
+        str.resize(str.size() - 1);
+
     QTextCursor cursor(&serial_document_);
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(str);
