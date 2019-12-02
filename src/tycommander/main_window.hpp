@@ -92,7 +92,7 @@ public slots:
     void openPreferences();
     void openAboutDialog();
 
-    void sendFileToSelection();
+    void makeSendFileCommand();
     void clearSerialDocument();
 
 private:
