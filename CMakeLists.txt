@@ -28,7 +28,7 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 include("cmake/Utility.cmake")
 
-set(VERSION_DEFAULT "0.8.11" CACHE STRING "Default version number")
+set(VERSION_DEFAULT "0.9.0" CACHE STRING "Default version number")
 set(VERSION_WITH_GIT ON CACHE BOOL "Compute version using git tags (fallback)")
 
 set(CONFIG_TYCMD_BUILD ON CACHE BOOL "Build tycmd (Teensy command-line manager)")
