@@ -985,7 +985,6 @@ void MainWindow::refreshInterfaces()
         interfaceTree->addTopLevelItem(item);
     }
 
-    rateComboBox->setEnabled(current_board_->serialIsSerial());
     ambiguousBoardLabel->setVisible(!current_board_->hasCapability(TY_BOARD_CAPABILITY_UNIQUE));
 }
 
@@ -1001,6 +1000,8 @@ void MainWindow::refreshStatus()
     } else {
         statusProgressBar->hide();
     }
+
+    rateComboBox->setEnabled(current_board_->serialIsSerial());
 }
 
 void MainWindow::refreshProgress()
