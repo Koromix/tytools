@@ -691,7 +691,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
 
     size_t uploaded_len = 0;
     for (size_t address = min_address; address < fw->max_address; address += block_size) {
-        char buf[8192];
+        uint8_t buf[8192];
         size_t buf_len;
 
         memset(buf, 0, sizeof(buf));
