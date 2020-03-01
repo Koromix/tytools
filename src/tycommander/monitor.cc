@@ -214,7 +214,7 @@ void Monitor::stop()
     serial_thread_.wait();
 
     if (!boards_.empty()) {
-        beginRemoveRows(QModelIndex(), 0, static_cast<int>(boards_.size()));
+        beginRemoveRows(QModelIndex(), 0, static_cast<int>(boards_.size()) - 1);
         boards_.clear();
         endRemoveRows();
     }
