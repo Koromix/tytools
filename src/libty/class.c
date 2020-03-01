@@ -54,6 +54,8 @@ static hs_match_spec default_match_specs[] = {
     HS_MATCH_VID_PID(0x16C0, 0x0488, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x0489, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x048A, (void *)&_ty_teensy_class_vtable),
+    HS_MATCH_VID_PID(0x16C0, 0x048B, (void *)&_ty_teensy_class_vtable),
+    HS_MATCH_VID_PID(0x16C0, 0x048C, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x04D0, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x04D1, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x04D2, (void *)&_ty_teensy_class_vtable),
