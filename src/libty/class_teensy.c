@@ -655,7 +655,7 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
         case TY_MODEL_TEENSY_40: {
             *rhalfkay_version = 3;
             *rmin_address = 0x60000000;
-            *rmax_address = 0x60180000;
+            *rmax_address = 0x601F0000;
             *rblock_size = 1024;
         } break;
 
