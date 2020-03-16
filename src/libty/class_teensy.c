@@ -40,7 +40,8 @@ static ty_model identify_model_bcd(uint16_t bcd_device)
         case 0x277: { model = TY_MODEL_TEENSY_36; } break;
         case 0x278: { model = TY_MODEL_TEENSY_40_BETA1; } break;
         case 0x279: { model = TY_MODEL_TEENSY_40; } break;
-    }
+		case 0x280: { model = TY_MODEL_TEENSY_41; } break;
+	}
 
     if (model != 0) {
         ty_log(TY_LOG_DEBUG, "Identified '%s' with bcdDevice value 0x%"PRIx16,
@@ -68,7 +69,8 @@ static ty_model identify_model_halfkay(uint16_t usage)
         case 0x22: { model = TY_MODEL_TEENSY_36; } break;
         case 0x23: { model = TY_MODEL_TEENSY_40_BETA1; } break;
         case 0x24: { model = TY_MODEL_TEENSY_40; } break;
-    }
+		case 0x25: { model = TY_MODEL_TEENSY_41; } break;
+	}
 
     if (model != 0) {
         ty_log(TY_LOG_DEBUG, "Identified '%s' with usage value 0x%"PRIx16,
@@ -351,7 +353,9 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
         if (flash_config_8 == 0x5601000042464346) {
             unsigned int models_count = 0;
 
-            rmodels[models_count++] = TY_MODEL_TEENSY_40;
+			rmodels[models_count++] = TY_MODEL_TEENSY_41;
+			if (models_count < max_models)
+				rmodels[models_count++] = TY_MODEL_TEENSY_40;
             if (max_models >= 2)
                 rmodels[models_count++] = TY_MODEL_TEENSY_40_BETA1;
 
@@ -658,6 +662,12 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
             *rmax_address = 0x60180000;
             *rblock_size = 1024;
         } break;
+		case TY_MODEL_TEENSY_41: {
+			*rhalfkay_version = 3;
+			*rmin_address = 0x60000000;
+			*rmax_address = 0x607C0000;
+			*rblock_size = 1024;
+		} break;
 
         case TY_MODEL_TEENSY: {
             assert(false);
