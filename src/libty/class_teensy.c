@@ -351,12 +351,21 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
         uint64_t flash_config_8 = read_uint64_le(teensy4_segment->data);
 
         if (flash_config_8 == 0x5601000042464346) {
-            unsigned int models_count = 0;
 
-			rmodels[models_count++] = TY_MODEL_TEENSY_41;
+            // now lets see if we can get the flash size, this
+            // will help distinguish the T4.1 from T4
+            if (teensy4_segment->size > (0x50 + sizeof(uint32_t))) {
+                uint32_t sflashA1Size = read_uint32_le(&teensy4_segment->data[0x50]);
+
+                if (sflashA1Size == 0x00800000) {
+                    // This is a T4.1
+                    rmodels[0] = TY_MODEL_TEENSY_41;
+                    return 1;
+                }
+            }
+            unsigned int models_count = 0;
+            rmodels[models_count++] = TY_MODEL_TEENSY_40;
 			if (models_count < max_models)
-				rmodels[models_count++] = TY_MODEL_TEENSY_40;
-            if (max_models >= 2)
                 rmodels[models_count++] = TY_MODEL_TEENSY_40_BETA1;
 
             return models_count;
