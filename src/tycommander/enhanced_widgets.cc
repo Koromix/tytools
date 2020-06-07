@@ -90,6 +90,7 @@ EnhancedLineInput::EnhancedLineInput(QWidget *parent)
     setInsertPolicy(QComboBox::NoInsert);
     setEditable(true);
     setMaxCount(10000);
+    setCompleter(nullptr);
 
     connect(lineEdit(), &QLineEdit::returnPressed, this, &EnhancedLineInput::commit);
 }
