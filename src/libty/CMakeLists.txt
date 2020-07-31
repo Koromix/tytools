@@ -14,6 +14,7 @@ set(LIBTY_SOURCES board.c
                   class.c
                   class.h
                   class_priv.h
+                  class_default.c
                   class_generic.c
                   class_teensy.c
                   common.c
@@ -64,6 +65,13 @@ elseif(APPLE)
     list(APPEND LIBTY_LINK_LIBRARIES ${COREFOUNDATION_LIBRARIES} ${IOKIT_LIBRARIES})
 else()
     message(FATAL_ERROR "Unsupported platform")
+endif()
+
+if(CONFIG_VARIANT)
+    if(EXISTS "${CONFIG_VARIANT_PATH}/class_default.c")
+        list(REMOVE_ITEM LIBTY_SOURCES class_default.c)
+        list(APPEND LIBTY_SOURCES "${CONFIG_VARIANT_PATH}/class_default.c")
+    endif()
 endif()
 
 configure_file(version.h.in version.h)
