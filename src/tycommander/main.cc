@@ -136,10 +136,6 @@ int main(int argc, char *argv[])
     SetUnhandledExceptionFilter(unhandled_exception_handler);
 #endif
 
-    hs_log_set_handler(ty_libhs_log_handler, NULL);
-    if (ty_models_load_patch(nullptr) == TY_ERROR_MEMORY)
-        return 1;
-
     qRegisterMetaType<ty_log_level>("ty_log_level");
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
@@ -152,5 +148,10 @@ int main(int argc, char *argv[])
 #else
     app.setClientConsole(ty_standard_get_modes(TY_STREAM_OUTPUT) != TY_DESCRIPTOR_MODE_DEVICE);
 #endif
+
+    hs_log_set_handler(ty_libhs_log_handler, NULL);
+    if (ty_models_load_patch(nullptr) == TY_ERROR_MEMORY)
+        return 1;
+
     return app.exec();
 }
