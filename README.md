@@ -215,3 +215,18 @@ sudo make install
 
 By default this will copy the files to `/usr/local`. To change this directory you need
 to change the `CMAKE_INSTALL_PREFIX` value in the Compilation section above.
+
+## Customized builds
+
+A number of customized builds are available in the [variants directory](https://github.com/Koromix/tytools/tree/master/variants).
+
+In order to activate a customized build, you need to specify it when running cmake.
+For example, in order to build the morningstar variant, run the following commands from the
+project directory:
+
+```batch
+mkdir build
+mkdir build/morningstar
+cd build/morningstar
+cmake -DCONFIG_VARIANT=morningstar ../..
+```
