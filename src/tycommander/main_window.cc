@@ -652,10 +652,15 @@ void MainWindow::fixEmptySelection(const QModelIndex &parent, int start, int end
     Q_UNUSED(parent);
     Q_UNUSED(end);
 
-    if (selected_boards_.empty() && monitor_->rowCount()) {
-        if (start >= monitor_->rowCount())
-            start = monitor_->rowCount() - 1;
-        boardList->setCurrentIndex(monitor_->index(start, 0));
+    if (selected_boards_.empty()) {
+        for (int i = start; i <= end && i < monitor_->rowCount(); i++) {
+            auto board = monitor_->board(i);
+
+            if (!board->isSecondary()) {
+                boardList->setCurrentIndex(monitor_->index(i, 0));
+                break;
+            }
+        }
     }
 }
 
