@@ -233,14 +233,13 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
 
     // Help the monitor make multiple boards for Dual/Triple Serial builds
     if (iface->dev->type == HS_DEVICE_TYPE_SERIAL) {
-        if (iface->dev->iface_number > 0) {
+        board->match_iface = iface->dev->iface_number;
+        board->secondary = iface->dev->iface_number / 2;
+
+        if (iface->dev->iface_number > 0)
             iface->capabilities &= (1 << TY_BOARD_CAPABILITY_UNIQUE) |
                                    (1 << TY_BOARD_CAPABILITY_SERIAL) |
                                    (1 << TY_BOARD_CAPABILITY_RUN);
-            board->secondary = true;
-        }
-
-        board->match_iface = iface->dev->iface_number;
     }
 
     // Update board description
@@ -268,9 +267,9 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
 
     // Update board unique identifier
     if (!board->id || serial_number) {
-        if (board->match_iface > 0) {
+        if (board->secondary > 0) {
             r = asprintf(&id, "%s-%s@%d", serial_number ? serial_number : "?",
-                         ty_models[TY_MODEL_TEENSY].name, board->match_iface);
+                         ty_models[TY_MODEL_TEENSY].name, board->secondary);
         } else {
             r = asprintf(&id, "%s-%s", serial_number ? serial_number : "?",
                          ty_models[TY_MODEL_TEENSY].name);

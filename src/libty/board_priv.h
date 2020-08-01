@@ -56,7 +56,7 @@ struct ty_board {
     char *description;
     char *location;
 
-    bool secondary;
+    int secondary;
     int match_iface;
 
     ty_mutex ifaces_lock;

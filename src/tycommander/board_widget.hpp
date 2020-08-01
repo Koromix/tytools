@@ -29,7 +29,7 @@ public:
     void setModel(const QString &model) { modelLabel->setText(model); }
     void setTag(const QString &tag) { tagLabel->setText(tag); }
     void setStatus(const QString &status);
-    void setSecondary(bool secondary);
+    void setSecondary(int secondary);
 
     void setProgress(unsigned int progress, unsigned int total);
 

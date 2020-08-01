@@ -74,7 +74,7 @@ const char *ty_board_get_tag(const ty_board *board);
 const char *ty_board_get_location(const ty_board *board);
 const char *ty_board_get_serial_number(const ty_board *board);
 const char *ty_board_get_description(const ty_board *board);
-bool ty_board_get_secondary(const ty_board *board);
+int ty_board_get_secondary(const ty_board *board);
 
 void ty_board_set_model(ty_board *board, ty_model model);
 ty_model ty_board_get_model(const ty_board *board);

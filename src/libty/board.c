@@ -203,7 +203,7 @@ const char *ty_board_get_description(const ty_board *board)
     return board->description;
 }
 
-bool ty_board_get_secondary(const ty_board *board)
+int ty_board_get_secondary(const ty_board *board)
 {
     assert(board);
     return board->secondary;
