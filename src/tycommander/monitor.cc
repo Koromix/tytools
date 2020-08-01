@@ -56,6 +56,7 @@ void Monitor::loadSettings()
     }
     ty_pool_set_max_threads(pool_, max_tasks);
     ignore_generic_ = db_.get("ignoreGeneric", false).toBool();
+    ignore_secondary_ = db_.get("ignoreSecondary", false).toBool();
     default_serial_ = db_.get("serialByDefault", true).toBool();
     serial_log_size_ = db_.get("serialLogSize", 20000000ull).toULongLong();
     serial_log_dir_ = db_.get("serialLogDir", "").toString();
@@ -101,6 +102,33 @@ void Monitor::setIgnoreGeneric(bool ignore_generic)
     }
 
     db_.put("ignoreGeneric", ignore_generic);
+    emit settingsChanged();
+}
+
+
+
+void Monitor::setIgnoreSecondary(bool ignore_secondary)
+{
+    if (ignore_secondary == ignore_secondary_)
+        return;
+
+    ignore_secondary_ = ignore_secondary;
+
+    if (ignore_secondary) {
+        for (size_t i = 0; i < boards_.size(); i++) {
+            auto &board = boards_[i];
+            if (board->secondary()) {
+                beginRemoveRows(QModelIndex(), static_cast<int>(i), static_cast<int>(i));
+                boards_.erase(boards_.begin() + static_cast<int>(i));
+                endRemoveRows();
+                i--;
+            }
+        }
+    } else {
+        ty_monitor_list(monitor_, handleEvent, this);
+    }
+
+    db_.put("ignoreSecondary", ignore_secondary);
     emit settingsChanged();
 }
 
@@ -398,6 +426,9 @@ void Monitor::handleAddedEvent(ty_board *board)
 {
     if (ignore_generic_ && ty_board_get_model(board) == TY_MODEL_GENERIC)
         return;
+    if (ignore_secondary_ && ty_board_get_secondary(board))
+        return;
+
     if (findBoardIterator(board) != boards_.end())
         return;
 

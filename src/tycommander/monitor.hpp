@@ -39,6 +39,8 @@ class Monitor : public QAbstractListModel {
     QThread serial_thread_;
 
     bool ignore_generic_;
+    bool ignore_secondary_;
+
     bool default_serial_;
     size_t serial_log_size_;
     QString serial_log_dir_;
@@ -76,6 +78,7 @@ public:
 
     unsigned int maxTasks() const;
     bool ignoreGeneric() const { return ignore_generic_; }
+    bool ignoreSecondary() const {return ignore_secondary_; }
 
     bool serialByDefault() const { return default_serial_; }
     size_t serialLogSize() const { return serial_log_size_; }
@@ -115,6 +118,7 @@ public:
 public slots:
     void setMaxTasks(unsigned int max_tasks);
     void setIgnoreGeneric(bool ignore_generic);
+    void setIgnoreSecondary(bool ignore_secondary);
     void setSerialByDefault(bool default_serial);
     void setSerialLogSize(size_t default_size);
     void setSerialLogDir(const QString &dir);

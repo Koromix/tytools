@@ -89,6 +89,7 @@ int TyUpdater::run()
 {
     monitor_.reset(new Monitor());
     monitor_->setIgnoreGeneric(true);
+    monitor_->setIgnoreSecondary(true);
     monitor_->setSerialByDefault(false);
     monitor_->setSerialLogSize(0);
     if (!monitor_->start()) {
