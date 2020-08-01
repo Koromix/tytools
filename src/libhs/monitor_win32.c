@@ -350,7 +350,7 @@ static int find_device_port_ioctl(const char *hub_id, const char *child_key)
         goto cleanup;
     }
 
-    hs_log(HS_LOG_DEBUG, "Asking HUB at '%s' for port information (XP code path)", path);
+    hs_log(HS_LOG_DEBUG, "Asking HUB at '%s' for port information (legacy code path)", path);
     success = DeviceIoControl(h, IOCTL_USB_GET_NODE_INFORMATION, NULL, 0, &node, sizeof(node),
                               &len, NULL);
     if (!success) {
@@ -514,7 +514,7 @@ static int find_device_location(DEVINST inst, uint8_t ports[])
             return depth;
     }
     if (!depth) {
-        hs_log(HS_LOG_DEBUG, "Using legacy XP code for location of '%s'", dev_cursor.id);
+        hs_log(HS_LOG_DEBUG, "Using legacy code for location of '%s'", dev_cursor.id);
         depth = resolve_usb_location_ioctl(usb_cursor, ports, &roothub_cursor);
         if (depth < 0)
             return depth;

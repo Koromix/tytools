@@ -31,9 +31,7 @@ struct hs_port {
             uint8_t *read_ptr;
             size_t read_len;
             int read_status;
-            unsigned long read_pending_thread; // DWORD
 
-            void *write_handle; // HANDLE
             void *write_event; // HANDLE
         } handle;
 #else
