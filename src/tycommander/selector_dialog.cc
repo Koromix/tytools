@@ -26,6 +26,7 @@ public:
 
     int columnCount(const QModelIndex &parent) const override;
     QVariant data(const QModelIndex &index, int role) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
 };
 
 class SelectorDialogItemDelegate: public QItemDelegate {
@@ -64,7 +65,12 @@ QVariant SelectorDialogModel::data(const QModelIndex &index, int role) const
     }
 
     return QIdentityProxyModel::data(index, role);
+}
 
+Qt::ItemFlags SelectorDialogModel::flags(const QModelIndex &index) const
+{
+    auto board = QIdentityProxyModel::data(index, Monitor::ROLE_BOARD).value<Board *>();
+    return board->isSecondary() ? 0 : QIdentityProxyModel::flags(index);
 }
 
 QSize SelectorDialogItemDelegate::sizeHint(const QStyleOptionViewItem &option,
