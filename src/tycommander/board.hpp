@@ -107,6 +107,7 @@ public:
     QString location() const;
     QString serialNumber() const;
     QString description() const;
+    bool isSecondary() const;
 
     std::vector<BoardInterfaceInfo> interfaces() const;
 

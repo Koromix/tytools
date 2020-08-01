@@ -21,6 +21,16 @@ BoardWidget::BoardWidget(QWidget *parent)
     : QWidget(parent)
 {
     setupUi(this);
+
+    QGridLayout *layout = static_cast<QGridLayout *>(this->layout());
+
+    plusIcon = new QLabel(this);
+    plusIcon->setMinimumSize(18, 18);
+    plusIcon->setMaximumSize(18, 18);
+    plusIcon->setScaledContents(true);
+    plusIcon->setPixmap(QPixmap(QString::fromUtf8(":/board_plus")));
+    plusIcon->setVisible(false);
+    layout->addWidget(plusIcon, 0, 0, Qt::AlignRight | Qt::AlignBottom);
 }
 
 void BoardWidget::setIcon(const QIcon &icon)
@@ -46,6 +56,11 @@ void BoardWidget::setProgress(unsigned int progress, unsigned int total)
     }
 }
 
+void BoardWidget::setSecondary(bool secondary)
+{
+    plusIcon->setVisible(secondary);
+}
+
 QRect BoardWidget::tagGeometry() const
 {
     auto geometry = tagLabel->geometry();
@@ -65,6 +80,7 @@ void BoardItemDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opt
     widget_.setModel(board->modelName());
     widget_.setTag(board->tag());
     widget_.setStatus(board->statusText());
+    widget_.setSecondary(board->isSecondary());
 
     auto task = board->task();
     if (task.status() == TY_TASK_STATUS_RUNNING) {

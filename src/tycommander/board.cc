@@ -188,6 +188,11 @@ QString Board::description() const
     return ty_board_get_description(board_);
 }
 
+bool Board::isSecondary() const
+{
+    return ty_board_get_secondary(board_);
+}
+
 std::vector<BoardInterfaceInfo> Board::interfaces() const
 {
     std::vector<BoardInterfaceInfo> vec;

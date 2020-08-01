@@ -10,6 +10,7 @@
         <file alias="board_pending">images/board_pending.png</file>
         <file alias="board_working">images/board_working.png</file>
         <file alias="board_error">images/board_error.png</file>
+        <file alias="board_plus">images/board_plus.png</file>
         <file alias="reset">images/reset.png</file>
         <file alias="upload">images/upload.png</file>
         <file alias="reboot">images/reboot.png</file>

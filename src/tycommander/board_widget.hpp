@@ -20,6 +20,8 @@
 class BoardWidget : public QWidget, private Ui::BoardWidget {
     Q_OBJECT
 
+    QLabel *plusIcon;
+
 public:
     BoardWidget(QWidget *parent = nullptr);
 
@@ -27,6 +29,7 @@ public:
     void setModel(const QString &model) { modelLabel->setText(model); }
     void setTag(const QString &tag) { tagLabel->setText(tag); }
     void setStatus(const QString &status);
+    void setSecondary(bool secondary);
 
     void setProgress(unsigned int progress, unsigned int total);
 

@@ -203,6 +203,12 @@ const char *ty_board_get_description(const ty_board *board)
     return board->description;
 }
 
+bool ty_board_get_secondary(const ty_board *board)
+{
+    assert(board);
+    return board->secondary;
+}
+
 void ty_board_set_model(ty_board *board, ty_model model)
 {
     assert(board);
