@@ -382,7 +382,7 @@ void MainWindow::uploadToSelection()
 
     unsigned int fws_count = 0;
     for (auto &board: selected_boards_) {
-        if (!board->firmware().isEmpty()) {
+        if (!board->secondary() && !board->firmware().isEmpty()) {
             fws_count++;
             board->startUpload();
         }
@@ -417,8 +417,10 @@ void MainWindow::uploadNewToSelection()
         return;
     }
 
-    for (auto &board: selected_boards_)
-        board->startUpload(fws);
+    for (auto &board: selected_boards_) {
+        if (!board->secondary())
+            board->startUpload(fws);
+    }
 }
 
 void MainWindow::dropAssociationForSelection()
