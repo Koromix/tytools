@@ -613,11 +613,12 @@ int ty_monitor_refresh(ty_monitor *monitor)
     if (ty_timer_rearm(monitor->timer)) {
         int timer_delay = -1;
 
-        for (size_t i = 0; i < monitor->boards.count; i++) {
+        for (size_t i = monitor->boards.count; i-- > 0;) {
             ty_board *board_it = monitor->boards.values[i];
 
             if (board_it->status == TY_BOARD_STATUS_MISSING) {
                 int board_timeout = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
+
                 /* Drop boards that are about to expire (< 20 ms) to deal with limited timer
                    resolution (e.g. TickCount64() on Windows). */
                 if (board_timeout < 20) {
