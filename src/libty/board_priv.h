@@ -55,7 +55,9 @@ struct ty_board {
     char *serial_number;
     char *description;
     char *location;
-    int serial_iface;
+
+    bool secondary;
+    int match_iface;
 
     ty_mutex ifaces_lock;
     _HS_ARRAY(ty_board_interface *) ifaces;

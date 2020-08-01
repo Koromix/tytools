@@ -107,7 +107,7 @@ static int create_board(ty_monitor *monitor, ty_board_interface *iface, ty_board
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;
     }
-    board->serial_iface = -1;
+    board->match_iface = -1;
 
     r = ty_mutex_init(&board->ifaces_lock);
     if (r < 0)
@@ -256,8 +256,7 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
 
         if (strcmp(board->location, iface->dev->location) != 0)
             continue;
-        if (iface->dev->type == HS_DEVICE_TYPE_SERIAL && board->serial_iface >= 0 &&
-                board->serial_iface != iface->dev->iface_number)
+        if (board->match_iface >= 0 && board->match_iface != iface->dev->iface_number)
             continue;
 
         // Update board information
@@ -307,8 +306,6 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
 
         if (!found)
             iface->board = board;
-        if (iface->dev->type == HS_DEVICE_TYPE_SERIAL && board->serial_iface < 0)
-            board->serial_iface = iface->dev->iface_number;
 
         found = true;
     }
@@ -324,8 +321,6 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
             return r;
 
         iface->board = board;
-        if (iface->dev->type == HS_DEVICE_TYPE_SERIAL && board->serial_iface < 0)
-            board->serial_iface = iface->dev->iface_number;
 
         change_board_status(board, TY_BOARD_STATUS_ONLINE, TY_MONITOR_EVENT_ADDED);
     }

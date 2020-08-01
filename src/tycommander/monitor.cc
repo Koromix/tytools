@@ -439,9 +439,11 @@ void Monitor::handleAddedEvent(ty_board *board)
         removeBoardItem(findBoardIterator(board));
     });
 
-    beginInsertRows(QModelIndex(), static_cast<int>(boards_.size()),
-                    static_cast<int>(boards_.size()));
-    boards_.push_back(board_wrapper_ptr);
+    auto insert_it = std::find_if(boards_.begin(), boards_.end(),
+        [&](const std::shared_ptr<Board> &it) { return board_wrapper->id() < it->id(); });
+
+    beginInsertRows(QModelIndex(), insert_it - boards_.begin(), insert_it - boards_.begin());
+    boards_.insert(insert_it, board_wrapper_ptr);
     endInsertRows();
 
     emit boardAdded(board_wrapper);
