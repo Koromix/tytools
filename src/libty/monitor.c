@@ -256,7 +256,8 @@ static int update_or_create_board(ty_monitor *monitor, ty_board_interface *iface
 
         if (strcmp(board->location, iface->dev->location) != 0)
             continue;
-        if (board->match_iface >= 0 && board->match_iface != iface->dev->iface_number)
+        if (board->match_iface >= 0 && iface->dev->type == HS_DEVICE_TYPE_SERIAL &&
+                                       iface->dev->iface_number != board->match_iface)
             continue;
 
         // Update board information

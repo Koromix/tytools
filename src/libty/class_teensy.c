@@ -235,11 +235,6 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
     if (iface->dev->type == HS_DEVICE_TYPE_SERIAL) {
         board->match_iface = iface->dev->iface_number;
         board->secondary = iface->dev->iface_number / 2;
-
-        if (iface->dev->iface_number > 0)
-            iface->capabilities &= (1 << TY_BOARD_CAPABILITY_UNIQUE) |
-                                   (1 << TY_BOARD_CAPABILITY_SERIAL) |
-                                   (1 << TY_BOARD_CAPABILITY_RUN);
     }
 
     // Update board description

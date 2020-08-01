@@ -429,14 +429,28 @@ void MainWindow::dropAssociationForSelection()
 
 void MainWindow::resetSelection()
 {
-    for (auto &board: selected_boards_)
-        board->startReset();
+    QSet<QString> handled_locations;
+
+    for (auto &board: selected_boards_) {
+        int count = handled_locations.count();
+        handled_locations.insert(board->location());
+
+        if (handled_locations.count() > count)
+            board->startReset();
+    }
 }
 
 void MainWindow::rebootSelection()
 {
-    for (auto &board: selected_boards_)
-        board->startReboot();
+    QSet<QString> handled_locations;
+
+    for (auto &board: selected_boards_) {
+        int count = handled_locations.count();
+        handled_locations.insert(board->location());
+
+        if (handled_locations.count() > count)
+            board->startReboot();
+    }
 }
 
 void MainWindow::sendToSelectedBoards(const QString &s)
@@ -914,8 +928,8 @@ void MainWindow::refreshActions()
     bool upload = false, reset = false, reboot = false, send = false;
     for (auto &board: selected_boards_) {
         if (board->taskStatus() == TY_TASK_STATUS_READY) {
-            upload |= board->hasCapability(TY_BOARD_CAPABILITY_UPLOAD) ||
-                      board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
+            upload |= !board->secondary() && (board->hasCapability(TY_BOARD_CAPABILITY_UPLOAD) ||
+                                              board->hasCapability(TY_BOARD_CAPABILITY_REBOOT));
             reset |= board->hasCapability(TY_BOARD_CAPABILITY_RESET) ||
                      board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
             reboot |= board->hasCapability(TY_BOARD_CAPABILITY_REBOOT);
