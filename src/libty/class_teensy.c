@@ -234,7 +234,9 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
     // Help the monitor make multiple boards for Dual/Triple Serial builds
     if (iface->dev->type == HS_DEVICE_TYPE_SERIAL) {
         if (iface->dev->iface_number > 0) {
-            iface->capabilities &= (1 << TY_BOARD_CAPABILITY_UNIQUE) | (1 << TY_BOARD_CAPABILITY_SERIAL);
+            iface->capabilities &= (1 << TY_BOARD_CAPABILITY_UNIQUE) |
+                                   (1 << TY_BOARD_CAPABILITY_SERIAL) |
+                                   (1 << TY_BOARD_CAPABILITY_RUN);
             board->secondary = true;
         }
 
