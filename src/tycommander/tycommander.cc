@@ -542,7 +542,8 @@ QString TyCommander::helpText()
                       "   -w, --wait               Wait until full completion\n\n"
                       "   -B, --board <tag>        Work with board <tag> instead of first detected\n"
                       "   -m, --multi              Select all matching boards (first match by default)\n"
-                      "   -p, --persist            Save new board settings (e.g. command attach)\n\n"
+                      "   -p, --persist            Save new board settings (e.g. command attach)\n"
+                      "       --delegate           Reboot the board and let Teensy Loader do the rest\n\n"
                       "Commands:\n").arg(QFileInfo(QApplication::applicationFilePath()).fileName());
 
     for (auto cmd = commands; cmd->name; cmd++) {
