@@ -667,15 +667,21 @@ wait:
             return r;
     }
 
-    r = ty_board_upload(board, fw, upload_progress_callback, NULL);
-    if (r < 0)
-        return r;
-
-    if (!(flags & TY_UPLOAD_NORESET)) {
-        ty_log(TY_LOG_INFO, "Sending reset command");
-        r = ty_board_reset(board);
+    if (!(flags & TY_UPLOAD_DELEGATE)) {
+        r = ty_board_upload(board, fw, upload_progress_callback, NULL);
         if (r < 0)
             return r;
+    }
+
+    if (!(flags & TY_UPLOAD_NORESET)) {
+        if (flags & TY_UPLOAD_DELEGATE) {
+            ty_log(TY_LOG_INFO, "Waiting for Teensy Loader");
+        } else {
+            ty_log(TY_LOG_INFO, "Sending reset command");
+            r = ty_board_reset(board);
+            if (r < 0)
+                return r;
+        }
 
         r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RUN, FINAL_TASK_TIMEOUT);
         if (r < 0)

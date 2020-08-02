@@ -302,8 +302,7 @@ int TyCommander::executeRemoteCommand(int argc, char *argv[])
     ty_optline_context optl;
     char *opt;
     bool autostart = false;
-    bool multi = false;
-    bool persist = false;
+    QStringList options;
     QStringList filters;
     QString usbtype;
 
@@ -320,9 +319,11 @@ int TyCommander::executeRemoteCommand(int argc, char *argv[])
         } else if (opt2 == "--wait" || opt2 == "-w") {
             wait_ = true;
         } else if (opt2 == "--multi" || opt2 == "-m") {
-            multi = true;
+            options.append("multi");
         } else if (opt2 == "--persist" || opt2 == "-p") {
-            persist = true;
+            options.append("persist");
+        } else if (opt2 == "--delegate") {
+            options.append("delegate");
         } else if (opt2 == "--board" || opt2 == "-B") {
             char *value = ty_optline_get_value(&optl);
             if (!value) {
@@ -377,10 +378,8 @@ int TyCommander::executeRemoteCommand(int argc, char *argv[])
         filters.clear();
 
     client->send({"workdir", QDir::currentPath()});
-    if (multi)
-        client->send("multi");
-    if (persist)
-        client->send("persist");
+    if (options.count())
+        client->send(QStringList{"options"} + options);
     if (!filters.isEmpty())
         client->send(QStringList{"select"} + filters);
     QStringList command_arglist = {command_};

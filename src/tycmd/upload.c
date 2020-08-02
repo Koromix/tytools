@@ -23,9 +23,10 @@ static void print_upload_usage(FILE *f)
     fprintf(f, "\n");
 
     fprintf(f, "Upload options:\n"
-               "   -w, --wait               Wait for the bootloader instead of rebooting\n"
+               "   -w, --wait               Wait for the bootloader instead of rebooting\n\n"
                "       --nocheck            Force upload even if the board is not compatible\n"
                "       --noreset            Do not reset the device once the upload is finished\n"
+               "       --delegate           Reboot the board and let Teensy Loader do the rest\n\n"
                "   -f, --format <format>    Firmware file format (autodetected by default)\n\n"
                "You can pass multiple firmwares, and the first compatible one will be used.\n\n"
                "Use '-' to read firmware from stdin, in which case you need to specificy the\n"
@@ -58,6 +59,8 @@ int upload(int argc, char *argv[])
             upload_flags |= TY_UPLOAD_NOCHECK;
         } else if (strcmp(opt, "--noreset") == 0) {
             upload_flags |= TY_UPLOAD_NORESET;
+        } else if (strcmp(opt, "--delegate") == 0) {
+            upload_flags |= TY_UPLOAD_DELEGATE;
         } else if (strcmp(opt, "--format") == 0 || strcmp(opt, "-f") == 0) {
             upload_firmware_format = ty_optline_get_value(&optl);
             if (!upload_firmware_format) {

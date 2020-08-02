@@ -304,10 +304,10 @@ TaskInterface Board::upload(const QString &filename)
 
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws)
 {
-    return upload(fws, reset_after_);
+    return upload(fws, reset_after_ ? 0 : TY_UPLOAD_NORESET);
 }
 
-TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
+TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, int flags)
 {
     vector<ty_firmware *> fws2;
     ty_task *task;
@@ -318,7 +318,7 @@ TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, bool reset_
         fws2.push_back(fw->firmware());
 
     r = ty_upload(board_, &fws2[0], static_cast<unsigned int>(fws2.size()),
-                  reset_after ? 0 : TY_UPLOAD_NORESET, &task);
+                  flags, &task);
     if (r < 0)
         return watchTask(make_task<FailedTask>(ty_error_last_message()));
     task->pool = pool_;
@@ -547,9 +547,9 @@ TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws)
     return task;
 }
 
-TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws, bool reset_after)
+TaskInterface Board::startUpload(const vector<shared_ptr<Firmware>> &fws, int flags)
 {
-    auto task = upload(fws, reset_after);
+    auto task = upload(fws, flags);
     task.start();
     return task;
 }

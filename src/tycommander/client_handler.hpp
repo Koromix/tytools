@@ -31,6 +31,7 @@ class ClientHandler : public QObject {
     QString working_directory_;
     bool multi_ = false;
     bool persist_ = false;
+    bool delegate_ = false;
     QStringList filters_;
 
     std::vector<TaskInterface> tasks_;
@@ -48,8 +49,7 @@ signals:
 
 private:
     void setWorkingDirectory(const QStringList &parameters);
-    void setMultiSelection(const QStringList &parameters);
-    void setPersistOption(const QStringList &parameters);
+    void setOptions(const QStringList &parameters);
     void selectBoard(const QStringList &filters);
     void openMainWindow(const QStringList &parameters);
     void reset(const QStringList &parameters);
@@ -59,7 +59,8 @@ private:
     void detach(const QStringList &parameters);
 
     static std::vector<TaskInterface> makeUploadTasks(
-        const std::vector<std::shared_ptr<Board>> &boards, const QStringList &filenames);
+        const std::vector<std::shared_ptr<Board>> &boards,
+        const QStringList &filenames, bool delegate);
 
     std::vector<std::shared_ptr<Board>> selectedBoards();
 

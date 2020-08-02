@@ -28,8 +28,7 @@ using namespace std;
 
 const QHash<QString, void (ClientHandler::*)(const QStringList &)> ClientHandler::commands_ = {
     {"workdir", &ClientHandler::setWorkingDirectory},
-    {"multi",   &ClientHandler::setMultiSelection},
-    {"persist", &ClientHandler::setPersistOption},
+    {"options", &ClientHandler::setOptions},
     {"select",  &ClientHandler::selectBoard},
     {"open",    &ClientHandler::openMainWindow},
     {"reset",   &ClientHandler::reset},
@@ -82,14 +81,25 @@ void ClientHandler::setWorkingDirectory(const QStringList &parameters)
     working_directory_ = parameters[0];
 }
 
-void ClientHandler::setMultiSelection(const QStringList &parameters)
+void ClientHandler::setOptions(const QStringList &parameters)
 {
-    multi_ = QVariant(parameters.value(0, "1")).toBool();
-}
+    for (QString param: parameters) {
+        bool enable = true;
+        if (param.startsWith('-')) {
+            param = param.mid(1);
+            enable = false;
+        }
 
-void ClientHandler::setPersistOption(const QStringList &parameters)
-{
-    persist_ = QVariant(parameters.value(0, "1")).toBool();
+        if (param == "multi") {
+            multi_ = enable;
+        } else if (param == "persist") {
+            persist_ = true;
+        } else if (param == "delegate") {
+            delegate_ = true;
+        } else {
+            notifyLog(TY_LOG_ERROR, tr("Ignoring unknown option '%1'").arg(param));
+        }
+    }
 }
 
 void ClientHandler::selectBoard(const QStringList &filters)
@@ -197,12 +207,12 @@ void ClientHandler::upload(const QStringList &filenames)
             QPointer<ClientHandler> this_ptr = this;
             connect(dialog, &SelectorDialog::accepted, [=]() {
                 if (this_ptr) {
-                    auto tasks = makeUploadTasks(dialog->selectedBoards(), filenames2);
+                    auto tasks = makeUploadTasks(dialog->selectedBoards(), filenames2, delegate_);
                     for (auto &task: tasks)
                         addTask(task);
                     executeTasks();
                 } else {
-                    auto tasks = makeUploadTasks(dialog->selectedBoards(), filenames2);
+                    auto tasks = makeUploadTasks(dialog->selectedBoards(), filenames2, delegate_);
                     for (auto &task: tasks)
                         task.start();
                 }
@@ -224,7 +234,7 @@ void ClientHandler::upload(const QStringList &filenames)
     if (boards.empty())
         return;
 
-    auto tasks = makeUploadTasks(boards, filenames2);
+    auto tasks = makeUploadTasks(boards, filenames2, delegate_);
     for (auto &task: tasks)
         addTask(task);
     executeTasks();
@@ -261,9 +271,11 @@ void ClientHandler::detach(const QStringList &)
    This means we cannot use notify*() methods in there, hence the use of pseudo-tasks
    such as FailedTask and so on. */
 vector<TaskInterface> ClientHandler::makeUploadTasks(const vector<shared_ptr<Board>> &boards,
-                                                     const QStringList &filenames)
+                                                     const QStringList &filenames, bool delegate)
 {
     vector<TaskInterface> tasks;
+
+    int flags = delegate ? TY_UPLOAD_DELEGATE : 0;
 
     if (filenames.isEmpty()) {
         unsigned int fws_count = 0;
@@ -277,7 +289,7 @@ vector<TaskInterface> ClientHandler::makeUploadTasks(const vector<shared_ptr<Boa
                     continue;
                 }
 
-                tasks.push_back(board->upload({fw}));
+                tasks.push_back(board->upload({fw}, flags));
             }
         }
         if (!fws_count) {
@@ -303,7 +315,7 @@ vector<TaskInterface> ClientHandler::makeUploadTasks(const vector<shared_ptr<Boa
 
         if (!fws.empty()) {
             for (auto &board: boards)
-                tasks.push_back(board->upload(fws));
+                tasks.push_back(board->upload(fws, flags));
         }
     }
 

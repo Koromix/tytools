@@ -47,7 +47,8 @@ typedef enum ty_board_status {
 enum {
     TY_UPLOAD_WAIT = 1,
     TY_UPLOAD_NORESET = 2,
-    TY_UPLOAD_NOCHECK = 4
+    TY_UPLOAD_NOCHECK = 4,
+    TY_UPLOAD_DELEGATE = 8
 };
 
 #define TY_UPLOAD_MAX_FIRMWARES 256
