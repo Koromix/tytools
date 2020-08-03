@@ -111,50 +111,35 @@ static int fill_device_details(struct udev_aggregate *agg, hs_device *dev)
     if (r <= 0)
         return r;
 
-    errno = 0;
-    buf = udev_device_get_sysattr_value(agg->usb, "idVendor");
-    if (!buf)
-        return 0;
-    dev->vid = (uint16_t)strtoul(buf, NULL, 16);
-    if (errno)
-        return 0;
+#define READ_UINT16_ATTRIBUTE(name, ptr) \
+        do { \
+            errno = 0; \
+            buf = udev_device_get_sysattr_value(agg->usb, (name)); \
+            if (!buf) \
+                return 0; \
+            *(ptr) = (uint16_t)strtoul(buf, NULL, 16); \
+            if (errno) \
+                return 0; \
+        } while (false)
+#define READ_STR_ATTRIBUTE(name, ptr) \
+        do { \
+            buf = udev_device_get_sysattr_value(agg->usb, (name)); \
+            if (buf) { \
+                *(ptr) = strdup(buf); \
+                if (!*(ptr)) \
+                    return hs_error(HS_ERROR_MEMORY, NULL); \
+            } \
+        } while (false)
 
-    errno = 0;
-    buf = udev_device_get_sysattr_value(agg->usb, "idProduct");
-    if (!buf)
-        return 0;
-    dev->pid = (uint16_t)strtoul(buf, NULL, 16);
-    if (errno)
-        return 0;
+    READ_UINT16_ATTRIBUTE("idVendor", &dev->vid);
+    READ_UINT16_ATTRIBUTE("idProduct", &dev->pid);
+    READ_UINT16_ATTRIBUTE("bcdDevice", &dev->bcd_device);
+    READ_STR_ATTRIBUTE("manufacturer", &dev->manufacturer_string);
+    READ_STR_ATTRIBUTE("product", &dev->product_string);
+    READ_STR_ATTRIBUTE("serial", &dev->serial_number_string);
 
-    errno = 0;
-    buf = udev_device_get_sysattr_value(agg->usb, "bcdDevice");
-    if (!buf)
-        return 0;
-    dev->bcd_device = (uint16_t)strtoul(buf, NULL, 16);
-    if (errno)
-        return 0;
-
-    buf = udev_device_get_sysattr_value(agg->usb, "manufacturer");
-    if (buf) {
-        dev->manufacturer_string = strdup(buf);
-        if (!dev->manufacturer_string)
-            return hs_error(HS_ERROR_MEMORY, NULL);
-    }
-
-    buf = udev_device_get_sysattr_value(agg->usb, "product");
-    if (buf) {
-        dev->product_string = strdup(buf);
-        if (!dev->product_string)
-            return hs_error(HS_ERROR_MEMORY, NULL);
-    }
-
-    buf = udev_device_get_sysattr_value(agg->usb, "serial");
-    if (buf) {
-        dev->serial_number_string = strdup(buf);
-        if (!dev->serial_number_string)
-            return hs_error(HS_ERROR_MEMORY, NULL);
-    }
+#undef READ_STR_ATTRIBUTE
+#undef READ_UINT16_ATTRIBUTE
 
     errno = 0;
     buf = udev_device_get_devpath(agg->iface);
