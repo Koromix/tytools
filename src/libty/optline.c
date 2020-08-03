@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "optline.h"
 
 void ty_optline_init(ty_optline_context *ctx, char **args, unsigned int args_count)
@@ -110,7 +110,7 @@ char *ty_optline_next_option(ty_optline_context *ctx)
             /* We can reorder args, but we don't want to change strings. So copy the
                option up to '=' in our buffer. And store the part after '=' as the
                current value. */
-            size_t len = TY_MIN((size_t)(needle - opt), sizeof(ctx->buf) - 1);
+            size_t len = _HS_MIN((size_t)(needle - opt), sizeof(ctx->buf) - 1);
             memcpy(ctx->buf, opt, len);
             ctx->buf[len] = 0;
             ctx->current_option = ctx->buf;

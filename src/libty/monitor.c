@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "../libhs/device.h"
 #include "../libhs/array.h"
 #include "../libhs/monitor.h"
@@ -234,7 +234,7 @@ static int register_board_interface(ty_board *board, ty_board_interface *iface)
     ty_board_interface_ref(iface);
 
     // Update board capabilities
-    for (int i = 0; i < (int)TY_COUNTOF(board->cap2iface); i++) {
+    for (int i = 0; i < (int)_HS_COUNTOF(board->cap2iface); i++) {
         if (iface->capabilities & (1 << i))
             board->cap2iface[i] = iface;
     }
@@ -358,7 +358,7 @@ static int remove_interface_with_device(ty_monitor *monitor, hs_device *dev)
 
     // Find interface associated with this device
     _hs_htable_foreach_hash(cur, &monitor->ifaces, _hs_htable_hash_ptr(dev)) {
-        ty_board_interface *iface_it = ty_container_of(cur, ty_board_interface, monitor_hnode);
+        ty_board_interface *iface_it = _HS_CONTAINER_OF(cur, ty_board_interface, monitor_hnode);
 
         if (iface_it->dev == dev) {
             iface = iface_it;
@@ -398,7 +398,7 @@ static int remove_interface_with_device(ty_monitor *monitor, hs_device *dev)
         for (size_t j = 0; j < board->ifaces.count; j++) {
             ty_board_interface *iface_it = board->ifaces.values[j];
 
-            for (unsigned int k = 0; k < TY_COUNTOF(board->cap2iface); k++) {
+            for (unsigned int k = 0; k < _HS_COUNTOF(board->cap2iface); k++) {
                 if (iface_it->capabilities & (1 << k))
                     board->cap2iface[k] = iface_it;
             }
@@ -559,7 +559,7 @@ void ty_monitor_stop(ty_monitor *monitor)
 
     // Clear registered interfaces
     _hs_htable_foreach(cur, &monitor->ifaces) {
-        ty_board_interface *iface_it = ty_container_of(cur, ty_board_interface, monitor_hnode);
+        ty_board_interface *iface_it = _HS_CONTAINER_OF(cur, ty_board_interface, monitor_hnode);
 
         if (iface_it->monitor_hnode.next)
             _hs_htable_remove(&iface_it->monitor_hnode);

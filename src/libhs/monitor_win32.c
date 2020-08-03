@@ -14,10 +14,10 @@
 #include <cfgmgr32.h>
 #include <dbt.h>
 #include <devioctl.h>
-HS_BEGIN_C
+_HS_BEGIN_C
     #include <hidsdi.h>
     #include <hidpi.h>
-HS_END_C
+_HS_END_C
 #include <initguid.h>
 #include <process.h>
 #include <setupapi.h>
@@ -165,7 +165,9 @@ static int build_device_path(const char *id, const GUID *guid, char **rpath)
     if (!path)
         return hs_error(HS_ERROR_MEMORY, NULL);
 
-    ptr = _hs_stpcpy(path, "\\\\.\\");
+    strcpy(path, "\\\\.\\");
+    ptr = path + 4;
+
     while (*id) {
         if (*id == '\\') {
             *ptr++ = '#';
@@ -194,8 +196,8 @@ static int build_location_string(uint8_t ports[], unsigned int depth, char **rpa
     ptr = buf;
     size = sizeof(buf);
 
-    strcpy(buf, "usb");
-    ptr += strlen(buf);
+    ptr = strcpy(buf, "usb");
+    ptr = buf + 3;
     size -= (size_t)(ptr - buf);
 
     for (size_t i = 0; i < depth; i++) {

@@ -99,7 +99,7 @@ static int redirect_stdout(int *routfd)
 
 static unsigned int __stdcall stdin_thread(void *udata)
 {
-    TY_UNUSED(udata);
+    _HS_UNUSED(udata);
 
     DWORD len;
     BOOL success;

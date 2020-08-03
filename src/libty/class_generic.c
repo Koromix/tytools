@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "../libhs/device.h"
 #include "../libhs/serial.h"
 #include "board.h"
@@ -34,7 +34,7 @@ static int generic_load_interface(ty_board_interface *iface)
 
 static int generic_update_board(ty_board_interface *iface, ty_board *board, bool new_board)
 {
-    TY_UNUSED(new_board);
+    _HS_UNUSED(new_board);
 
     const char *manufacturer_string;
     const char *product_string;
@@ -88,7 +88,7 @@ static int generic_update_board(ty_board_interface *iface, ty_board *board, bool
     }
 
     // Create new board unique identifier
-    r = asprintf(&id, "%s-%s", serial_number, manufacturer_string);
+    r = _hs_asprintf(&id, "%s-%s", serial_number, manufacturer_string);
     if (r < 0) {
         r = ty_error(TY_ERROR_MEMORY, NULL);
         goto error;

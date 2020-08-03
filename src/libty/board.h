@@ -14,7 +14,7 @@
 #include "common.h"
 #include "class.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 struct ty_descriptor_set;
 struct hs_device;
@@ -120,6 +120,6 @@ int ty_reboot(ty_board *board, struct ty_task **rtask);
 int ty_send(ty_board *board, const char *buf, size_t size, struct ty_task **rtask);
 int ty_send_file(ty_board *board, const char *filename, struct ty_task **rtask);
 
-TY_C_END
+_HS_END_C
 
 #endif

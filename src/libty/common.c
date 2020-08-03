@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #ifdef _WIN32
     // Need that for InterlockedX functions
     #include <windows.h>
@@ -24,10 +24,10 @@ int ty_config_verbosity = TY_LOG_INFO;
 static ty_message_func *message_handler = ty_message_default_handler;
 static void *message_handler_udata = NULL;
 
-static TY_THREAD_LOCAL ty_err error_masks[16];
-static TY_THREAD_LOCAL unsigned int error_masks_count;
+static _HS_THREAD_LOCAL ty_err error_masks[16];
+static _HS_THREAD_LOCAL unsigned int error_masks_count;
 
-static TY_THREAD_LOCAL char last_error_msg[512];
+static _HS_THREAD_LOCAL char last_error_msg[512];
 
 const char *ty_version_string(void)
 {
@@ -92,7 +92,7 @@ static void print_progress(const ty_message_data *msg)
 
 void ty_message_default_handler(const ty_message_data *msg, void *udata)
 {
-    TY_UNUSED(udata);
+    _HS_UNUSED(udata);
 
     switch (msg->type) {
         case TY_MESSAGE_LOG: {
@@ -162,7 +162,7 @@ static const char *generic_error(int err)
 
 void ty_error_mask(ty_err err)
 {
-    assert(error_masks_count < TY_COUNTOF(error_masks));
+    assert(error_masks_count < _HS_COUNTOF(error_masks));
 
     error_masks[error_masks_count++] = err;
 }
@@ -272,7 +272,7 @@ int ty_libhs_translate_error(int err)
 
 void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata)
 {
-    TY_UNUSED(udata);
+    _HS_UNUSED(udata);
 
     ty_message_data msg = {0};
 

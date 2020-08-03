@@ -9,7 +9,6 @@
    See the LICENSE file for more details. */
 
 #include "common_priv.h"
-#include <stdarg.h>
 
 static hs_log_handler_func *log_handler = hs_log_default_handler;
 static void *log_handler_udata;
@@ -134,4 +133,50 @@ int hs_error(hs_error_code err, const char *fmt, ...)
         (*log_handler)(HS_LOG_ERROR, err, buf, log_handler_udata);
 
     return err;
+}
+
+int _hs_asprintf(char **strp, const char *fmt, ...)
+{
+    va_list ap;
+    int r;
+
+    va_start(ap, fmt);
+#ifdef HAVE_ASPRINTF
+    r = vasprintf(strp, fmt, ap);
+#else
+    r = _hs_vasprintf(strp, fmt, ap);
+#endif
+    va_end(ap);
+
+    return r;
+}
+
+int _hs_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+#ifdef HAVE_ASPRINTF
+    return vasprintf(strp, fmt, ap);
+#else
+    va_list ap_copy;
+    char *s;
+    int r;
+
+    va_copy(ap_copy, ap);
+    r = vsnprintf(NULL, 0, fmt, ap_copy);
+    if (r < 0)
+        return -1;
+    va_end(ap_copy);
+
+    s = (char *)malloc((size_t)r + 1);
+    if (!s)
+        return -1;
+
+    va_copy(ap_copy, ap);
+    r = vsnprintf(s, (size_t)r + 1, fmt, ap_copy);
+    if (r < 0)
+        return -1;
+    va_end(ap_copy);
+
+    *strp = s;
+    return r;
+#endif
 }

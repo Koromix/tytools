@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 /**
  * @defgroup match Device matching
@@ -83,6 +83,6 @@ struct hs_match_spec {
  */
 int hs_match_parse(const char *str, hs_match_spec *rspec);
 
-HS_END_C
+_HS_END_C
 
 #endif

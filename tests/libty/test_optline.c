@@ -27,7 +27,7 @@ static void test_optline_short(void)
     {
         char *args[] = {"-f"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-f");
         ASSERT(!ty_optline_next_option(&ctx));
@@ -37,7 +37,7 @@ static void test_optline_short(void)
     {
         char *args[] = {"-foo", "-b"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-f");
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-o");
@@ -53,7 +53,7 @@ static void test_optline_long(void)
     {
         char *args[] = {"--foobar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foobar");
         ASSERT(!ty_optline_next_option(&ctx));
@@ -63,7 +63,7 @@ static void test_optline_long(void)
     {
         char *args[] = {"--foo", "--bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--bar");
@@ -77,7 +77,7 @@ static void test_optline_mixed(void)
     {
         char *args[] = {"--foo", "-bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-b");
@@ -90,7 +90,7 @@ static void test_optline_mixed(void)
     {
         char *args[] = {"-foo", "--bar", "-FOO"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-f");
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-o");
@@ -109,7 +109,7 @@ static void test_optline_value(void)
     {
         char *args[] = {"-f", "bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-f");
         ASSERT_STR_EQUAL(ty_optline_get_value(&ctx), "bar");
@@ -120,7 +120,7 @@ static void test_optline_value(void)
     {
         char *args[] = {"-fbar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "-f");
         ASSERT_STR_EQUAL(ty_optline_get_value(&ctx), "bar");
@@ -131,7 +131,7 @@ static void test_optline_value(void)
     {
         char *args[] = {"--foo=bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
         ASSERT_STR_EQUAL(ty_optline_get_value(&ctx), "bar");
@@ -142,7 +142,7 @@ static void test_optline_value(void)
     {
         char *args[] = {"--foo", "bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
         ASSERT_STR_EQUAL(ty_optline_get_value(&ctx), "bar");
@@ -153,7 +153,7 @@ static void test_optline_value(void)
     {
         char *args[] = {"bar", "--foo"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo");
         ASSERT(!ty_optline_get_value(&ctx));
@@ -168,7 +168,7 @@ static void test_optline_positional(void)
     {
         char *args[] = {"foo", "bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_consume_non_option(&ctx), "foo");
         ASSERT_STR_EQUAL(ty_optline_consume_non_option(&ctx), "bar");
@@ -179,7 +179,7 @@ static void test_optline_positional(void)
     {
         char *args[] = {"foo", "--foobar", "bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ty_optline_next_option(&ctx);
         ty_optline_next_option(&ctx);
@@ -192,7 +192,7 @@ static void test_optline_positional(void)
     {
         char *args[] = {"foobar", "--", "foo", "--bar"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ty_optline_next_option(&ctx);
         ASSERT_STR_EQUAL(ty_optline_consume_non_option(&ctx), "foobar");
@@ -205,7 +205,7 @@ static void test_optline_positional(void)
     {
         char *args[] = {"foo", "FOO", "foobar", "--", "bar", "BAR", "barfoo", "BARFOO"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ty_optline_next_option(&ctx);
         ASSERT_STR_EQUAL(ty_optline_consume_non_option(&ctx), "foo");
@@ -226,7 +226,7 @@ static void test_optline_complex(void)
         char *args[] = {"--foo1", "bar", "fooBAR", "-foo2", "--foo3=BAR", "-fbar",
                         "--", "FOOBAR", "--", "--FOOBAR"};
         ty_optline_context ctx;
-        ty_optline_init(&ctx, args, TY_COUNTOF(args));
+        ty_optline_init(&ctx, args, _HS_COUNTOF(args));
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--foo1");
         ASSERT_STR_EQUAL(ty_optline_get_value(&ctx), "bar");
@@ -263,7 +263,7 @@ static void test_optline_argv(void)
     {
         char *argv[] = {"foo"};
         ty_optline_context ctx;
-        ty_optline_init_argv(&ctx, TY_COUNTOF(argv), argv);
+        ty_optline_init_argv(&ctx, _HS_COUNTOF(argv), argv);
 
         ASSERT(!ty_optline_next_option(&ctx));
         ASSERT(!ty_optline_consume_non_option(&ctx));
@@ -272,7 +272,7 @@ static void test_optline_argv(void)
     {
         char *argv[] = {"foo", "--bar"};
         ty_optline_context ctx;
-        ty_optline_init_argv(&ctx, TY_COUNTOF(argv), argv);
+        ty_optline_init_argv(&ctx, _HS_COUNTOF(argv), argv);
 
         ASSERT_STR_EQUAL(ty_optline_next_option(&ctx), "--bar");
         ASSERT(!ty_optline_next_option(&ctx));

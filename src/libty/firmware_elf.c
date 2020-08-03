@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include <sys/types.h>
 #include "firmware.h"
 
@@ -192,7 +192,7 @@ int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
     for (unsigned int i = 0; i < fw->segments_count; i++) {
         const ty_firmware_segment *segment = &fw->segments[i];
         fw->total_size += segment->size;
-        fw->max_address = TY_MAX(fw->max_address, segment->address + segment->size);
+        fw->max_address = _HS_MAX(fw->max_address, segment->address + segment->size);
     }
 
     return 0;

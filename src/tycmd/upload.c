@@ -76,8 +76,8 @@ int upload(int argc, char *argv[])
 
     fws_count = 0;
     while ((opt = ty_optline_consume_non_option(&optl))) {
-        if (fws_count >= TY_COUNTOF(fws)) {
-            ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %zu files", TY_COUNTOF(fws));
+        if (fws_count >= _HS_COUNTOF(fws)) {
+            ty_log(TY_LOG_WARNING, "Too many firmwares, considering only %zu files", _HS_COUNTOF(fws));
             break;
         }
 

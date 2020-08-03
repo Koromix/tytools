@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 #ifdef _WIN32
 /**
@@ -186,6 +186,6 @@ uint32_t hs_darwin_version(void);
  */
 int hs_poll(hs_poll_source *sources, unsigned int count, int timeout);
 
-HS_END_C
+_HS_END_C
 
 #endif

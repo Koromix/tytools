@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 /**
  * @defgroup hid HID device I/O
@@ -85,6 +85,6 @@ ssize_t hs_hid_get_feature_report(hs_port *port, uint8_t report_id, uint8_t *buf
  */
 ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t size);
 
-HS_END_C
+_HS_END_C
 
 #endif

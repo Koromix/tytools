@@ -19,9 +19,6 @@ set(LIBTY_SOURCES board.c
                   class_teensy.c
                   common.c
                   common.h
-                  common_priv.h
-                  compat.c
-                  compat_priv.h
                   firmware.c
                   firmware.h
                   firmware_elf.c
@@ -75,12 +72,6 @@ if(CONFIG_VARIANT)
 endif()
 
 configure_file(version.h.in version.h)
-
-include(CheckSymbolExists)
-check_symbol_exists(asprintf stdio.h _TY_HAVE_ASPRINTF)
-if(NOT WIN32)
-    check_symbol_exists(pthread_cond_timedwait_relative_np pthread.h _TY_HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP)
-endif()
 configure_file(config.h.in config.h)
 
 list(APPEND LIBTY_LINK_LIBRARIES libhs)

@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 typedef unsigned int ty_model;
 typedef struct ty_model_info {
@@ -49,6 +49,6 @@ int ty_models_load_patch(const char *filename);
 
 ty_model ty_models_find(const char *name);
 
-TY_C_END
+_HS_END_C
 
 #endif

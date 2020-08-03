@@ -15,16 +15,17 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #ifdef __cplusplus
-    #define HS_BEGIN_C extern "C" {
-    #define HS_END_C }
+    #define _HS_BEGIN_C extern "C" {
+    #define _HS_END_C }
 #else
-    #define HS_BEGIN_C
-    #define HS_END_C
+    #define _HS_BEGIN_C
+    #define _HS_END_C
 #endif
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 typedef struct hs_device hs_device;
 typedef struct hs_monitor hs_monitor;
@@ -57,13 +58,21 @@ typedef struct hs_match_spec hs_match_spec;
 #define HS_VERSION_STRING "0.9.0"
 
 #if defined(__GNUC__)
+    #define _HS_POSSIBLY_UNUSED __attribute__((__unused__))
+    #define _HS_THREAD_LOCAL __thread
+    #define _HS_ALIGN_OF(type)  __alignof__(type)
+
     #ifdef __MINGW_PRINTF_FORMAT
-        #define HS_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
+        #define _HS_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
     #else
-        #define HS_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
+        #define _HS_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
     #endif
 #elif _MSC_VER >= 1900
-    #define HS_PRINTF_FORMAT(fmt, first)
+    #define _HS_POSSIBLY_UNUSED
+    #define _HS_THREAD_LOCAL __declspec(thread)
+    #define _HS_ALIGN_OF(type) __alignof(type)
+
+    #define _HS_PRINTF_FORMAT(fmt, first)
 
     // HAVE_SSIZE_T is used this way by other projects
     #ifndef HAVE_SSIZE_T
@@ -74,17 +83,27 @@ typedef __int64 ssize_t;
 typedef long ssize_t;
         #endif
     #endif
+
+    #define strcasecmp _stricmp
+    #define strncasecmp _strnicmp
 #else
     #error "This compiler is not supported"
 #endif
 
 #define _HS_CONCAT_HELPER(a, b) a ## b
 #define _HS_CONCAT(a, b) _HS_CONCAT_HELPER(a, b)
-
 #define _HS_UNIQUE_ID(prefix) _HS_CONCAT(prefix, __LINE__)
-
-#define _hs_container_of(head, type, member) \
+#define _HS_UNUSED(arg) ((void)(arg))
+#define _HS_COUNTOF(a) (sizeof(a) / sizeof(*(a)))
+#define _HS_MIN(a,b) ((a) < (b) ? (a) : (b))
+#define _HS_MAX(a,b) ((a) > (b) ? (a) : (b))
+#define _HS_ALIGN_SIZE(size, align) (((size) + (align) - 1) / (align) * (align))
+#define _HS_ALIGN_SIZE_FOR_TYPE(size, type) _HS_ALIGN_SIZE((size), sizeof(type))
+#define _HS_CONTAINER_OF(head, type, member) \
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
+
+int _hs_asprintf(char **strp, const char *fmt, ...) _HS_PRINTF_FORMAT(2, 3);
+int _hs_vasprintf(char **strp, const char *fmt, va_list ap);
 
 #if defined(DOXYGEN)
 /**
@@ -208,7 +227,7 @@ void hs_log_set_handler(hs_log_handler_func *f, void *udata);
  *
  * @sa hs_log_set_handler() to use a custom callback function.
  */
-void hs_log(hs_log_level level, const char *fmt, ...) HS_PRINTF_FORMAT(2, 3);
+void hs_log(hs_log_level level, const char *fmt, ...) _HS_PRINTF_FORMAT(2, 3);
 
 /** @} */
 
@@ -299,8 +318,8 @@ const char *hs_error_last_message();
  * @sa hs_error_mask() to mask specific error codes.
  * @sa hs_log_set_handler() to use a custom callback function.
  */
-int hs_error(hs_error_code err, const char *fmt, ...) HS_PRINTF_FORMAT(2, 3);
+int hs_error(hs_error_code err, const char *fmt, ...) _HS_PRINTF_FORMAT(2, 3);
 
-HS_END_C
+_HS_END_C
 
 #endif

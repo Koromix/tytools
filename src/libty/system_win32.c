@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <direct.h>
@@ -54,7 +54,7 @@ static ULONGLONG WINAPI GetTickCount64_fallback(void)
 {
     static LARGE_INTEGER freq;
     LARGE_INTEGER now;
-    BOOL success TY_POSSIBLY_UNUSED;
+    BOOL success _HS_POSSIBLY_UNUSED;
 
     if (!freq.QuadPart) {
         success = QueryPerformanceFrequency(&freq);

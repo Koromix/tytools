@@ -14,7 +14,7 @@
 #include "common.h"
 #include "thread.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 struct ty_board;
 struct ty_firmware;
@@ -95,6 +95,6 @@ int ty_task_join(ty_task *task);
 
 ty_task *ty_task_get_current(void);
 
-TY_C_END
+_HS_END_C
 
 #endif

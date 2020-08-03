@@ -27,63 +27,7 @@
 #include "../libhs/common.h"
 #include "config.h"
 
-#ifdef __cplusplus
-    #define TY_C_BEGIN extern "C" {
-    #define TY_C_END }
-#else
-    #define TY_C_BEGIN
-    #define TY_C_END
-#endif
-
-TY_C_BEGIN
-
-#if defined(__GNUC__)
-    #define TY_POSSIBLY_UNUSED __attribute__((__unused__))
-    #ifdef __MINGW_PRINTF_FORMAT
-        #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__MINGW_PRINTF_FORMAT, fmt, first)))
-    #else
-        #define TY_PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
-    #endif
-
-    #define TY_THREAD_LOCAL __thread
-#elif _MSC_VER >= 1900
-    #define TY_POSSIBLY_UNUSED
-    #define TY_PRINTF_FORMAT(fmt, first)
-
-    #define TY_THREAD_LOCAL __declspec(thread)
-
-    // HAVE_SSIZE_T is used this way by other projects
-    #ifndef HAVE_SSIZE_T
-        #define HAVE_SSIZE_T
-        #ifdef _WIN64
-typedef __int64 ssize_t;
-        #else
-typedef long ssize_t;
-        #endif
-    #endif
-
-    #define strcasecmp _stricmp
-    #define strncasecmp _strnicmp
-#else
-    #error "This compiler is not supported"
-#endif
-
-#define TY_UNUSED(arg) ((void)(arg))
-
-#define TY_COUNTOF(a) (sizeof(a) / sizeof(*(a)))
-
-#define TY_MIN(a,b) ((a) < (b) ? (a) : (b))
-#define TY_MAX(a,b) ((a) > (b) ? (a) : (b))
-
-#define TY_CONCAT_HELPER(a, b) a ## b
-#define TY_CONCAT(a, b) TY_CONCAT_HELPER(a, b)
-
-#define TY_UNIQUE_ID(prefix) TY_CONCAT(prefix, __LINE__)
-
-#define ty_container_of(head, type, member) \
-    ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
-
-#define ty_member_sizeof(type, member) sizeof(((type *)0)->member)
+_HS_BEGIN_C
 
 /* I really don't know where to put that and it is useful as a generic
    "how long to show error message" constant. */
@@ -166,13 +110,16 @@ bool ty_error_is_masked(int err);
 const char *ty_error_last_message(void);
 
 void ty_message(ty_message_data *msg);
-void ty_log(ty_log_level level, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
-int ty_error(ty_err err, const char *fmt, ...) TY_PRINTF_FORMAT(2, 3);
+void ty_log(ty_log_level level, const char *fmt, ...) _HS_PRINTF_FORMAT(2, 3);
+int ty_error(ty_err err, const char *fmt, ...) _HS_PRINTF_FORMAT(2, 3);
 void ty_progress(const char *action, uint64_t value, uint64_t max);
 
 int ty_libhs_translate_error(int err);
 void ty_libhs_log_handler(hs_log_level level, int err, const char *log, void *udata);
 
-TY_C_END
+void _ty_refcount_increase(unsigned int *rrefcount);
+unsigned int _ty_refcount_decrease(unsigned int *rrefcount);
+
+_HS_END_C
 
 #endif

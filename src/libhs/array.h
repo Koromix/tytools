@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 struct _hs_array {
     void *values;
@@ -79,6 +79,6 @@ static inline int _hs_array_grow_(struct _hs_array *array, size_t value_size, si
 
 void _hs_array_shrink_(struct _hs_array *array, size_t value_size);
 
-HS_END_C
+_HS_END_C
 
 #endif

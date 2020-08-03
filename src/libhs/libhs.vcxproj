@@ -134,7 +134,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="common.c" />
-    <ClCompile Include="compat.c" />
     <ClCompile Include="device.c" />
     <ClCompile Include="device_win32.c" />
     <ClCompile Include="filter.c" />
@@ -149,7 +148,6 @@
   <ItemGroup>
     <ClInclude Include="common.h" />
     <ClInclude Include="common_priv.h" />
-    <ClInclude Include="compat.h" />
     <ClInclude Include="device.h" />
     <ClInclude Include="device_priv.h" />
     <ClInclude Include="device_win32_priv.h" />

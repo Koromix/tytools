@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 typedef struct ty_optline_context {
     char **args;
@@ -37,6 +37,6 @@ char *ty_optline_get_option(ty_optline_context *ctx);
 char *ty_optline_get_value(ty_optline_context *ctx);
 char *ty_optline_consume_non_option(ty_optline_context *ctx);
 
-TY_C_END
+_HS_END_C
 
 #endif

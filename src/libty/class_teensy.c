@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "../libhs/device.h"
 #include "../libhs/hid.h"
 #include "../libhs/serial.h"
@@ -206,7 +206,7 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
             if (serial_value != 12345)
                 iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UNIQUE;
 
-            r = asprintf(&serial_number, "%"PRIu64, serial_value);
+            r = _hs_asprintf(&serial_number, "%"PRIu64, serial_value);
             if (r < 0) {
                 r = ty_error(TY_ERROR_MEMORY, NULL);
                 goto error;
@@ -263,11 +263,11 @@ static int teensy_update_board(ty_board_interface *iface, ty_board *board, bool 
     // Update board unique identifier
     if (!board->id || serial_number) {
         if (board->secondary > 0) {
-            r = asprintf(&id, "%s-%s@%d", serial_number ? serial_number : "?",
-                         ty_models[TY_MODEL_TEENSY].name, board->secondary);
+            r = _hs_asprintf(&id, "%s-%s@%d", serial_number ? serial_number : "?",
+                             ty_models[TY_MODEL_TEENSY].name, board->secondary);
         } else {
-            r = asprintf(&id, "%s-%s", serial_number ? serial_number : "?",
-                         ty_models[TY_MODEL_TEENSY].name);
+            r = _hs_asprintf(&id, "%s-%s", serial_number ? serial_number : "?",
+                             ty_models[TY_MODEL_TEENSY].name);
         }
         if (r < 0) {
             r = ty_error(TY_ERROR_MEMORY, NULL);
@@ -519,7 +519,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
             /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so
                no binary transfers. */
             for (size_t i = 0; i < size;) {
-                size_t block_size = TY_MIN(SEREMU_TX_SIZE, size - i);
+                size_t block_size = _HS_MIN(SEREMU_TX_SIZE, size - i);
 
                 memset(report, 0, sizeof(report));
                 memcpy(report + 1, buf + i, block_size);

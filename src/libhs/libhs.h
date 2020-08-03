@@ -48,13 +48,11 @@
         #pragma comment(lib, "hid.lib")
     #endif
 
-    #include "compat_priv.h"
     #include "common_priv.h"
     #include "device_priv.h"
     #include "match_priv.h"
 
     #include "common.c"
-    #include "compat.c"
     #include "array.c"
     #include "device.c"
     #include "match.c"

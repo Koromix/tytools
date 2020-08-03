@@ -16,7 +16,7 @@
     #include <pthread.h>
 #endif
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 #ifdef _WIN32
 typedef unsigned long ty_thread_id; // DWORD
@@ -98,6 +98,6 @@ void ty_cond_broadcast(ty_cond *cond);
 
 bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout);
 
-TY_C_END
+_HS_END_C
 
 #endif

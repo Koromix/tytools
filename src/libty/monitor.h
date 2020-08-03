@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 struct ty_board;
 
@@ -45,6 +45,6 @@ int ty_monitor_wait(ty_monitor *monitor, ty_monitor_wait_func *f, void *udata, i
 
 int ty_monitor_list(ty_monitor *monitor, ty_monitor_callback_func *f, void *udata);
 
-TY_C_END
+_HS_END_C
 
 #endif

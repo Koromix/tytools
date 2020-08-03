@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include <time.h>
 #include "system.h"
 #include "thread.h"
@@ -62,7 +62,7 @@ int ty_thread_join(ty_thread *thread)
     assert(thread->init);
 
     void *retval;
-    int r TY_POSSIBLY_UNUSED;
+    int r _HS_POSSIBLY_UNUSED;
 
     r = pthread_join(thread->thread_id, &retval);
     assert(!r);
@@ -120,14 +120,14 @@ void ty_mutex_unlock(ty_mutex *mutex)
 
 int ty_cond_init(ty_cond *cond)
 {
-#ifndef _TY_HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+#ifndef __APPLE__
     pthread_condattr_t attr;
 #endif
     int r;
 
     cond->init = false;
 
-#ifdef _TY_HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+#ifdef __APPLE__
     r = pthread_cond_init(&cond->cond, NULL);
 #else
     r = pthread_condattr_init(&attr);
@@ -169,7 +169,7 @@ bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout)
     int r;
 
     if (timeout >= 0) {
-#ifdef _TY_HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP
+#ifdef __APPLE__
         struct timespec ts;
 
         ts.tv_sec = (time_t)(timeout / 1000);

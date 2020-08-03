@@ -38,7 +38,7 @@ static void print_list_usage(FILE *f)
 
 static int print_interface_info_plain(ty_board_interface *iface, void *udata)
 {
-    TY_UNUSED(udata);
+    _HS_UNUSED(udata);
 
     printf("    %s: %s\n", ty_board_interface_get_name(iface),
                            ty_board_interface_get_path(iface));
@@ -191,7 +191,7 @@ static int print_event_json(ty_board *board, ty_monitor_event event, bool *comma
 
 static int list_callback(ty_board *board, ty_monitor_event event, void *udata)
 {
-    TY_UNUSED(udata);
+    _HS_UNUSED(udata);
 
     switch (list_output) {
         case OUTPUT_PLAIN: { return print_event_plain(board, event); } break;

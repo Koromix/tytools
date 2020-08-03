@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "class_priv.h"
 #include "../libhs/device.h"
 
@@ -40,4 +40,4 @@ static const hs_match_spec default_match_specs[] = {
 };
 
 const hs_match_spec *_ty_class_match_specs = default_match_specs;
-unsigned int _ty_class_match_specs_count = TY_COUNTOF(default_match_specs);
+unsigned int _ty_class_match_specs_count = _HS_COUNTOF(default_match_specs);

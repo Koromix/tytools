@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "../libhs/array.h"
 #include "system.h"
 #include "task.h"
@@ -29,7 +29,7 @@ struct ty_pool {
 };
 
 static ty_pool *default_pool;
-static TY_THREAD_LOCAL ty_task *current_task;
+static _HS_THREAD_LOCAL ty_task *current_task;
 
 int ty_pool_new(ty_pool **rpool)
 {

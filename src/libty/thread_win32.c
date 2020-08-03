@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <process.h>
@@ -80,7 +80,7 @@ int ty_thread_join(ty_thread *thread)
     assert(thread->h);
 
     union { DWORD dw; int i; } code;
-    DWORD ret TY_POSSIBLY_UNUSED;
+    DWORD ret _HS_POSSIBLY_UNUSED;
 
     ret = WaitForSingleObject(thread->h, INFINITE);
     assert(ret == WAIT_OBJECT_0);

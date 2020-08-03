@@ -14,7 +14,7 @@
 #include "common.h"
 #include "class.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 #define TY_FIRMWARE_MAX_SEGMENTS 16
 #define TY_FIRMWARE_MAX_SEGMENT_SIZE (2 * 1024 * 1024)
@@ -72,6 +72,6 @@ int ty_firmware_expand_segment(ty_firmware *fw, ty_firmware_segment *segment, si
 unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
                                   unsigned int max_models);
 
-TY_C_END
+_HS_END_C
 
 #endif

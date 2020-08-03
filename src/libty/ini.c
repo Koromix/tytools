@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "ini.h"
 
 #define MAX_LINE_SIZE 1024

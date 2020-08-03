@@ -14,7 +14,7 @@
 #include "common.h"
 #include "htable.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 /**
  * @defgroup device Device handling
@@ -242,6 +242,6 @@ hs_device *hs_port_get_device(const hs_port *port);
  */
 hs_handle hs_port_get_poll_handle(const hs_port *port);
 
-HS_END_C
+_HS_END_C
 
 #endif

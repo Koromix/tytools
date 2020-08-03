@@ -11,7 +11,7 @@
 #ifndef TY_BOARD_PRIV_H
 #define TY_BOARD_PRIV_H
 
-#include "common_priv.h"
+#include "common.h"
 #include "board.h"
 #include "class_priv.h"
 #include "../libhs/array.h"
@@ -20,7 +20,7 @@
 #include "task.h"
 #include "thread.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 struct ty_board_interface {
     const struct _ty_class_vtable *class_vtable;
@@ -67,6 +67,6 @@ struct ty_board {
     ty_task *current_task;
 };
 
-TY_C_END
+_HS_END_C
 
 #endif

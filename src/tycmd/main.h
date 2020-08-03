@@ -17,7 +17,7 @@
 #include "../libty/monitor.h"
 #include "../libty/optline.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 extern const char *tycmd_executable_name;
 
@@ -27,6 +27,6 @@ bool parse_common_option(ty_optline_context *optl, char *arg);
 int get_monitor(ty_monitor **rmonitor);
 int get_board(ty_board **rboard);
 
-TY_C_END
+_HS_END_C
 
 #endif

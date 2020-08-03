@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>

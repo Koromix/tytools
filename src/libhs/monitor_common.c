@@ -30,7 +30,7 @@ int hs_find(const hs_match_spec *matches, unsigned int count, hs_device **rdev)
 void _hs_monitor_clear_devices(_hs_htable *devices)
 {
     _hs_htable_foreach(cur, devices) {
-        hs_device *dev = _hs_container_of(cur, hs_device, hnode);
+        hs_device *dev = _HS_CONTAINER_OF(cur, hs_device, hnode);
         hs_device_unref(dev);
     }
     _hs_htable_clear(devices);
@@ -39,7 +39,7 @@ void _hs_monitor_clear_devices(_hs_htable *devices)
 bool _hs_monitor_has_device(_hs_htable *devices, const char *key, uint8_t iface)
 {
     _hs_htable_foreach_hash(cur, devices, _hs_htable_hash_str(key)) {
-        hs_device *dev = _hs_container_of(cur, hs_device, hnode);
+        hs_device *dev = _HS_CONTAINER_OF(cur, hs_device, hnode);
 
         if (strcmp(dev->key, key) == 0 && dev->iface_number == iface)
             return true;
@@ -69,7 +69,7 @@ void _hs_monitor_remove(_hs_htable *devices, const char *key, hs_enumerate_func 
                         void *udata)
 {
     _hs_htable_foreach_hash(cur, devices, _hs_htable_hash_str(key)) {
-        hs_device *dev = _hs_container_of(cur, hs_device, hnode);
+        hs_device *dev = _HS_CONTAINER_OF(cur, hs_device, hnode);
 
         if (strcmp(dev->key, key) == 0) {
             dev->status = HS_DEVICE_STATUS_DISCONNECTED;
@@ -88,7 +88,7 @@ void _hs_monitor_remove(_hs_htable *devices, const char *key, hs_enumerate_func 
 int _hs_monitor_list(_hs_htable *devices, hs_enumerate_func *f, void *udata)
 {
     _hs_htable_foreach(cur, devices) {
-        hs_device *dev = _hs_container_of(cur, hs_device, hnode);
+        hs_device *dev = _HS_CONTAINER_OF(cur, hs_device, hnode);
         int r;
 
         r = (*f)(dev, udata);

@@ -13,7 +13,7 @@
 
 #include "../../src/libty/common.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 #define ASSERT(pred) \
     report_test((pred), __FILE__, __LINE__, __func__, "'%s'", #pred)
@@ -28,8 +28,8 @@ TY_C_BEGIN
     } while (0)
 
 void report_test(bool pred, const char *file, unsigned int line, const char *fn,
-                 const char *pred_fmt, ...) TY_PRINTF_FORMAT(5, 6);
+                 const char *pred_fmt, ...) _HS_PRINTF_FORMAT(5, 6);
 
-TY_C_END
+_HS_END_C
 
 #endif

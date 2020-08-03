@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "class_priv.h"
 #include "../libhs/array.h"
 #include "../libhs/device.h"
@@ -33,7 +33,7 @@ static const ty_model_info default_models[] = {
     {1, "Teensy 4.1", "imxrt_t41"},
 };
 const ty_model_info *ty_models = default_models;
-const unsigned int ty_models_count = TY_COUNTOF(default_models);
+const unsigned int ty_models_count = _HS_COUNTOF(default_models);
 
 extern const struct _ty_class_vtable _ty_teensy_class_vtable;
 extern const struct _ty_class_vtable _ty_generic_class_vtable;
@@ -41,7 +41,7 @@ const struct _ty_class _ty_classes[] = {
     {"Generic", &_ty_generic_class_vtable},
     {"Teensy", &_ty_teensy_class_vtable}
 };
-const unsigned int _ty_classes_count = TY_COUNTOF(_ty_classes);
+const unsigned int _ty_classes_count = _HS_COUNTOF(_ty_classes);
 
 static bool data_is_patched = false;
 
@@ -145,16 +145,16 @@ int ty_models_load_patch(const char *filename)
         unsigned int patches_count = 0;
 
         dirs_count += ty_standard_get_paths(TY_PATH_CONFIG_DIRECTORY, "TyTools", dirs + dirs_count,
-                                            (unsigned int)(TY_COUNTOF(dirs) - dirs_count));
+                                            (unsigned int)(_HS_COUNTOF(dirs) - dirs_count));
         dirs_count += ty_standard_get_paths(TY_PATH_EXECUTABLE_DIRECTORY, NULL, dirs + dirs_count,
-                                            (unsigned int)(TY_COUNTOF(dirs) - dirs_count));
+                                            (unsigned int)(_HS_COUNTOF(dirs) - dirs_count));
 
         for (unsigned int i = dirs_count; i-- > 0;) {
             size_t directory_len = strlen(dirs[i]);
 
             r = TY_ERROR_NOT_FOUND;
             ty_error_mask(TY_ERROR_NOT_FOUND);
-            for (unsigned int j = 0; r == TY_ERROR_NOT_FOUND && j < TY_COUNTOF(default_names); j++) {
+            for (unsigned int j = 0; r == TY_ERROR_NOT_FOUND && j < _HS_COUNTOF(default_names); j++) {
                 snprintf(dirs[i] + directory_len, sizeof(dirs[i]) - directory_len,
                          "/%s", default_names[j]);
                 r = ty_ini_walk(dirs[i], patch_ini_callback, &ctx);

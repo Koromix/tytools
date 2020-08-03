@@ -13,13 +13,13 @@
 
 #include "common.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 typedef int ty_ini_callback_func(const char *section, char *key, char *value, void *udata);
 
 int ty_ini_walk_fp(FILE *fp, const char *path, ty_ini_callback_func *f, void *udata);
 int ty_ini_walk(const char *path, ty_ini_callback_func *f, void *udata);
 
-TY_C_END
+_HS_END_C
 
 #endif

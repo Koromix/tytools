@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 /**
  * @defgroup serial Serial device I/O
@@ -241,6 +241,6 @@ ssize_t hs_serial_read(hs_port *port, uint8_t *buf, size_t size, int timeout);
  */
 ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int timeout);
 
-HS_END_C
+_HS_END_C
 
 #endif

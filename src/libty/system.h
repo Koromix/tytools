@@ -14,7 +14,7 @@
 #include "common.h"
 #include <sys/types.h>
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 #ifdef _WIN32
     #define TY_PATH_SEPARATORS "\\/"
@@ -88,6 +88,6 @@ bool ty_compare_paths(const char *path1, const char *path2);
 int ty_terminal_setup(int flags);
 void ty_terminal_restore(void);
 
-TY_C_END
+_HS_END_C
 
 #endif

@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #ifndef _WIN32
     #include <sys/stat.h>
 #endif
@@ -254,7 +254,7 @@ int ty_board_list_interfaces(ty_board *board, ty_board_list_interfaces_func *f, 
 int ty_board_open_interface(ty_board *board, ty_board_capability cap, ty_board_interface **riface)
 {
     assert(board);
-    assert((int)cap < (int)TY_COUNTOF(board->cap2iface));
+    assert((int)cap < (int)_HS_COUNTOF(board->cap2iface));
     assert(riface);
 
     ty_board_interface *iface;
@@ -287,7 +287,7 @@ struct wait_for_context {
 
 static int wait_for_callback(ty_monitor *monitor, void *udata)
 {
-    TY_UNUSED(monitor);
+    _HS_UNUSED(monitor);
 
     struct wait_for_context *ctx = udata;
     ty_board *board = ctx->board;
@@ -560,7 +560,7 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
     unsigned int fw_models_count = 0;
 
     for (unsigned int i = 0; i < fws_count; i++) {
-        fw_models_count = ty_firmware_identify(fws[i], fw_models, TY_COUNTOF(fw_models));
+        fw_models_count = ty_firmware_identify(fws[i], fw_models, _HS_COUNTOF(fw_models));
 
         for (unsigned int j = 0; j < fw_models_count; j++) {
             if (fw_models[j] == board->model) {
@@ -593,8 +593,8 @@ static int select_compatible_firmware(ty_board *board, ty_firmware **fws, unsign
 static int upload_progress_callback(const ty_board *board, const ty_firmware *fw,
                                     size_t uploaded_size, size_t flash_size, void *udata)
 {
-    TY_UNUSED(board);
-    TY_UNUSED(udata);
+    _HS_UNUSED(board);
+    _HS_UNUSED(udata);
 
     if (!uploaded_size) {
         ty_log(TY_LOG_INFO, "Firmware: %s", fw->name);
@@ -868,7 +868,7 @@ static int run_send(ty_task *task)
 
         ty_progress("Sending", written, size);
 
-        block_size = TY_MIN(1024, size - written);
+        block_size = _HS_MIN(1024, size - written);
         r = ty_board_serial_write(board, buf + written, block_size);
         if (r < 0)
             return (int)r;

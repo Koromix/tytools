@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "timer.h"
@@ -78,7 +78,7 @@ void ty_timer_get_descriptors(const ty_timer *timer, ty_descriptor_set *set, int
 
 static void __stdcall timer_callback(void *udata, BOOLEAN timer_or_wait)
 {
-    TY_UNUSED(timer_or_wait);
+    _HS_UNUSED(timer_or_wait);
 
     ty_timer *timer = udata;
 

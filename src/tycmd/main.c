@@ -84,7 +84,7 @@ static inline unsigned int get_board_priority(ty_board *board)
 
 static int board_callback(ty_board *board, ty_monitor_event event, void *udata)
 {
-    TY_UNUSED(udata);
+    _HS_UNUSED(udata);
 
     switch (event) {
         case TY_MONITOR_EVENT_ADDED: {

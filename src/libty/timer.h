@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-TY_C_BEGIN
+_HS_BEGIN_C
 
 struct ty_descriptor_set;
 
@@ -31,6 +31,6 @@ void ty_timer_get_descriptors(const ty_timer *timer, struct ty_descriptor_set *s
 int ty_timer_set(ty_timer *timer, int value, int flags);
 uint64_t ty_timer_rearm(ty_timer *timer);
 
-TY_C_END
+_HS_END_C
 
 #endif

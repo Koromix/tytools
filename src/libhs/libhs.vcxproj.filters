@@ -30,9 +30,6 @@
     <ClCompile Include="htable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="compat.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="platform.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -57,9 +54,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="common_priv.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="compat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="device.h">

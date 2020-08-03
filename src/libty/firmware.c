@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "../libhs/array.h"
 #include "class_priv.h"
 #include "firmware.h"
@@ -18,7 +18,7 @@ const ty_firmware_format ty_firmware_formats[] = {
     {"elf",  ".elf", ty_firmware_load_elf},
     {"ihex", ".hex", ty_firmware_load_ihex}
 };
-const unsigned int ty_firmware_formats_count = TY_COUNTOF(ty_firmware_formats);
+const unsigned int ty_firmware_formats_count = _HS_COUNTOF(ty_firmware_formats);
 
 static const char *get_basename(const char *filename)
 {
@@ -270,13 +270,13 @@ size_t ty_firmware_extract(const ty_firmware *fw, uint32_t address, uint8_t *buf
 
         if (address >= segment->address && address < segment->address + segment->size) {
             size_t delta = address - segment->address;
-            size_t len = TY_MIN(segment->size - delta, size);
+            size_t len = _HS_MIN(segment->size - delta, size);
 
             memcpy(buf, segment->data + delta, len);
             total_len += len;
         } else if (address < segment->address && address + size > segment->address) {
             size_t delta = segment->address - address;
-            size_t len = TY_MIN(segment->size, size - delta);
+            size_t len = _HS_MIN(segment->size, size - delta);
 
             memcpy(buf + delta, segment->data, len);
             total_len += len;
@@ -353,7 +353,7 @@ unsigned int ty_firmware_identify(const ty_firmware *fw, ty_model *rmodels,
             continue;
 
         partial_count = (*_ty_classes[i].vtable->identify_models)(fw, partial_guesses,
-                                                                  TY_COUNTOF(partial_guesses));
+                                                                  _HS_COUNTOF(partial_guesses));
 
         for (unsigned int j = 0; j < partial_count; j++) {
             if (rmodels && guesses_count < max_models)

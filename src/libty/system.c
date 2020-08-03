@@ -8,7 +8,7 @@
 
    See the LICENSE file for more details. */
 
-#include "common_priv.h"
+#include "common.h"
 #include "system.h"
 
 int ty_adjust_timeout(int timeout, uint64_t start)
@@ -33,7 +33,7 @@ void ty_descriptor_set_clear(ty_descriptor_set *set)
 void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id)
 {
     assert(set);
-    assert(set->count < TY_COUNTOF(set->desc));
+    assert(set->count < _HS_COUNTOF(set->desc));
 #ifdef _WIN32
     assert(desc);
 #else

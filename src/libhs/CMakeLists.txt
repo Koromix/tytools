@@ -26,9 +26,7 @@ elseif(LINUX)
 endif()
 
 include(CheckSymbolExists)
-check_symbol_exists(stpcpy string.h _HS_HAVE_STPCPY)
-check_symbol_exists(asprintf stdio.h _HS_HAVE_ASPRINTF)
-configure_file(config.h.in config.h)
+check_symbol_exists(asprintf stdio.h HAVE_ASPRINTF)
 
 find_package(Threads)
 list(APPEND LIBHS_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
@@ -38,8 +36,6 @@ set(LIBHS_SOURCES array.c
                   common.c
                   common.h
                   common_priv.h
-                  compat.c
-                  compat_priv.h
                   device.c
                   device.h
                   device_priv.h
@@ -80,9 +76,9 @@ endif()
 add_library(libhs STATIC ${LIBHS_SOURCES})
 set_target_properties(libhs PROPERTIES OUTPUT_NAME hs)
 target_link_libraries(libhs ${LIBHS_LINK_LIBRARIES})
-# We need that for auto-generated file config.h
-target_include_directories(libhs PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_compile_definitions(libhs PUBLIC _HS_HAVE_CONFIG_H)
+if(HAVE_ASPRINTF)
+    target_compile_definitions(libhs PRIVATE HAVE_ASPRINTF)
+endif()
 enable_unity_build(libhs)
 
 add_amalgamated_file(libhs "${CMAKE_BINARY_DIR}/libhs.h" libhs.h)

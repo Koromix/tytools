@@ -13,7 +13,7 @@
 
 #include "common.h"
 
-HS_BEGIN_C
+_HS_BEGIN_C
 
 /**
  * @defgroup monitor Device discovery
@@ -199,6 +199,6 @@ int hs_monitor_refresh(hs_monitor *monitor, hs_enumerate_func *f, void *udata);
  */
 int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata);
 
-HS_END_C
+_HS_END_C
 
 #endif
