@@ -85,7 +85,3 @@ target_link_libraries(libty PRIVATE ${LIBTY_LINK_LIBRARIES})
 target_include_directories(libty PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(libty PUBLIC _TY_HAVE_CONFIG_H)
 enable_unity_build(libty)
-
-configure_file(libty.h.in libty.h.in)
-add_amalgamated_file(libty "${CMAKE_BINARY_DIR}/libty.h" "${CMAKE_CURRENT_BINARY_DIR}/libty.h.in"
-                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
