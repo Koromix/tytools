@@ -15,9 +15,6 @@
 
 typedef LONG NTAPI RtlGetVersion_func(OSVERSIONINFOW *info);
 
-static LONG NTAPI RtlGetVersion_resolve(OSVERSIONINFOW *info);
-static RtlGetVersion_func *RtlGetVersion_ = RtlGetVersion_resolve;
-
 uint64_t hs_millis(void)
 {
     return GetTickCount64();
@@ -78,13 +75,6 @@ const char *hs_win32_strerror(DWORD err)
     return buf;
 }
 
-static LONG NTAPI RtlGetVersion_resolve(OSVERSIONINFOW *info)
-{
-    RtlGetVersion_ = (RtlGetVersion_func *)GetProcAddress(GetModuleHandle("ntdll.dll"),
-                                                          "RtlGetVersion");
-    return RtlGetVersion_(info);
-}
-
 uint32_t hs_win32_version(void)
 {
     static uint32_t version;
@@ -94,7 +84,10 @@ uint32_t hs_win32_version(void)
 
         // Windows 8.1 broke GetVersionEx, so bypass the intermediary
         info.dwOSVersionInfoSize = sizeof(info);
-        RtlGetVersion_(&info);
+
+        RtlGetVersion_func *RtlGetVersion =
+            (RtlGetVersion_func *)GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlGetVersion");
+        RtlGetVersion(&info);
 
         version = info.dwMajorVersion * 100 + info.dwMinorVersion;
     }
