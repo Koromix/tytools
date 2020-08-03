@@ -87,22 +87,12 @@ int hs_port_open(hs_device *dev, hs_port_mode mode, hs_port **rport)
     if (dev->status != HS_DEVICE_STATUS_ONLINE)
         return hs_error(HS_ERROR_NOT_FOUND, "Device '%s' is not connected", dev->path);
 
-    switch (dev->type) {
-        case HS_DEVICE_TYPE_HID: {
 #ifdef __APPLE__
-            return _hs_darwin_open_hid_port(dev, mode, rport);
-#else
-            return _hs_open_file_port(dev, mode, rport);
+    if (dev->type == HS_DEVICE_TYPE_HID)
+        return _hs_darwin_open_hid_port(dev, mode, rport);
 #endif
-        } break;
 
-        case HS_DEVICE_TYPE_SERIAL: {
-            return _hs_open_file_port(dev, mode, rport);
-        } break;
-    }
-
-    assert(false);
-    return 0;
+    return _hs_open_file_port(dev, mode, rport);
 }
 
 void hs_port_close(hs_port *port)
@@ -110,23 +100,14 @@ void hs_port_close(hs_port *port)
     if (!port)
         return;
 
-    switch (port->type) {
-        case HS_DEVICE_TYPE_HID: {
 #ifdef __APPLE__
-            _hs_darwin_close_hid_port(port);
-#else
-            _hs_close_file_port(port);
-#endif
-            return;
-        } break;
-
-        case HS_DEVICE_TYPE_SERIAL: {
-            _hs_close_file_port(port);
-            return;
-        } break;
+    if (dev->type == HS_DEVICE_TYPE_HID) {
+        _hs_darwin_close_hid_port(dev, mode, rport);
+        return;
     }
+#endif
 
-    assert(false);
+    _hs_close_file_port(port);
 }
 
 hs_device *hs_port_get_device(const hs_port *port)
@@ -139,20 +120,10 @@ hs_handle hs_port_get_poll_handle(const hs_port *port)
 {
     assert(port);
 
-    switch (port->type) {
-        case HS_DEVICE_TYPE_HID: {
 #ifdef __APPLE__
-            return _hs_darwin_get_hid_port_poll_handle(port);
-#else
-            return _hs_get_file_port_poll_handle(port);
+    if (dev->type == HS_DEVICE_TYPE_HID)
+        return _hs_darwin_get_hid_port_poll_handle(port);
 #endif
-        } break;
 
-        case HS_DEVICE_TYPE_SERIAL: {
-            return _hs_get_file_port_poll_handle(port);
-        } break;
-    }
-
-    assert(false);
-    return 0;
+    return _hs_get_file_port_poll_handle(port);
 }
