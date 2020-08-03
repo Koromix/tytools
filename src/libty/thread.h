@@ -33,25 +33,12 @@ typedef struct ty_thread {
 #endif
 } ty_thread;
 
-/* Define correctly-sized dummy types to get CRITICAL_SECTION and CONDITION_VARIABLE
-   without including windows.h. */
-#if defined(_MSC_VER) && defined(_WIN64)
-typedef __declspec(align(8)) struct { char dummy[40]; } TY_WIN32_CRITICAL_SECTION;
-typedef __declspec(align(8)) struct { char dummy[8]; } TY_WIN32_CONDITION_VARIABLE;
-#elif defined(_MSC_VER)
-typedef __declspec(align(4)) struct { char dummy[24]; } TY_WIN32_CRITICAL_SECTION;
-typedef __declspec(align(4)) struct { char dummy[4]; } TY_WIN32_CONDITION_VARIABLE;
-#elif defined(_WIN64)
-typedef struct { char dummy[40]; } __attribute__((__aligned__(8))) TY_WIN32_CRITICAL_SECTION;
-typedef struct { char dummy[8]; } __attribute__((__aligned__(8))) TY_WIN32_CONDITION_VARIABLE;
-#elif defined(_WIN32)
-typedef struct { char dummy[24]; } __attribute__((__aligned__(4))) TY_WIN32_CRITICAL_SECTION;
-typedef struct { char dummy[4]; } __attribute__((__aligned__(4))) TY_WIN32_CONDITION_VARIABLE;
-#endif
-
 typedef struct ty_mutex {
-#ifdef _WIN32
-    TY_WIN32_CRITICAL_SECTION mutex;
+    // We don't want to include windows.h in public headers!
+#if defined(_WIN64)
+    struct { uint64_t dummy[5]; } mutex; // CRITICAL_SECTION
+#elif defined(_WIN32)
+    struct { uint32_t dummy[6]; } mutex; // CRITICAL_SECTION
 #else
     pthread_mutex_t mutex;
 #endif
@@ -60,7 +47,7 @@ typedef struct ty_mutex {
 
 typedef struct ty_cond {
 #ifdef _WIN32
-    TY_WIN32_CONDITION_VARIABLE cv;
+    uintptr_t cv; // CONDITION_VARIABLE
 #else
     pthread_cond_t cond;
 #endif
