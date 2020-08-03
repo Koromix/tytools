@@ -60,16 +60,7 @@ typedef struct ty_mutex {
 
 typedef struct ty_cond {
 #ifdef _WIN32
-    union {
-        TY_WIN32_CONDITION_VARIABLE cv;
-        struct {
-            void *ev; // HANDLE
-
-            TY_WIN32_CRITICAL_SECTION mutex;
-            unsigned int waiting;
-            unsigned int wakeup;
-        } xp;
-    };
+    TY_WIN32_CONDITION_VARIABLE cv;
 #else
     pthread_cond_t cond;
 #endif
