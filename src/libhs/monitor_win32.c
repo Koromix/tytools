@@ -1175,7 +1175,7 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
             if (!r) {
                 UINT_PTR timer;
 
-                timer = SetTimer(monitor->thread_hwnd, 1, 100, NULL);
+                timer = SetTimer(hwnd, 1, 100, NULL);
                 if (!timer)
                     r = hs_error(HS_ERROR_SYSTEM, "SetTimer() failed: %s", hs_win32_strerror(0));
             }
