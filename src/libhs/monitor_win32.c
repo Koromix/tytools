@@ -1156,19 +1156,19 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
 
     switch (msg) {
         case WM_DEVICECHANGE: {
-            DEV_BROADCAST_DEVICEINTERFACE *msg = (DEV_BROADCAST_DEVICEINTERFACE *)lparam;
+            DEV_BROADCAST_DEVICEINTERFACE *msg2 = (DEV_BROADCAST_DEVICEINTERFACE *)lparam;
 
-            if (msg->dbcc_devicetype != DBT_DEVTYP_DEVICEINTERFACE)
+            if (msg2->dbcc_devicetype != DBT_DEVTYP_DEVICEINTERFACE)
                 break;
 
             r = 0;
             switch (wparam) {
                 case DBT_DEVICEARRIVAL: {
-                    r = post_event(monitor, DEVICE_EVENT_ADDED, msg->dbcc_name);
+                    r = post_event(monitor, DEVICE_EVENT_ADDED, msg2->dbcc_name);
                 } break;
 
                 case DBT_DEVICEREMOVECOMPLETE: {
-                    r = post_event(monitor, DEVICE_EVENT_REMOVED, msg->dbcc_name);
+                    r = post_event(monitor, DEVICE_EVENT_REMOVED, msg2->dbcc_name);
                 } break;
             }
 
