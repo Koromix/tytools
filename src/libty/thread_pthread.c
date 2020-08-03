@@ -180,7 +180,7 @@ bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout)
         struct timespec ts;
         uint64_t end;
 
-        end = ty_millis() + (uint64_t)timeout;
+        end = hs_millis() + (uint64_t)timeout;
         ts.tv_sec = (time_t)(end / 1000);
         ts.tv_nsec = (long)(end % 1000 * 1000000);
 

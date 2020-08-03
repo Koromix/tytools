@@ -46,14 +46,14 @@ int ty_thread_create(ty_thread *thread, ty_thread_func *f, void *udata)
 
     ctx.ev = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (!ctx.ev) {
-        r = ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", ty_win32_strerror(0));
+        r = ty_error(TY_ERROR_SYSTEM, "CreateEvent() failed: %s", hs_win32_strerror(0));
         goto cleanup;
     }
 
     thread->h = (HANDLE)_beginthreadex(NULL, 0, thread_proc, &ctx, 0,
                                        (unsigned int *)&thread->thread_id);
     if (!thread->h) {
-        r = ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", ty_win32_strerror(0));
+        r = ty_error(TY_ERROR_SYSTEM, "_beginthreadex() failed: %s", hs_win32_strerror(0));
         goto cleanup;
     }
 

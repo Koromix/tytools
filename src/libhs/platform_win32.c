@@ -23,6 +23,11 @@ uint64_t hs_millis(void)
     return GetTickCount64();
 }
 
+void hs_delay(unsigned int ms)
+{
+    Sleep(ms);
+}
+
 int hs_poll(hs_poll_source *sources, unsigned int count, int timeout)
 {
     assert(sources);

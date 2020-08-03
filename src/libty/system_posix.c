@@ -33,60 +33,6 @@ struct child_report {
 static struct termios orig_termios;
 static bool saved_termios;
 
-#ifdef __APPLE__
-
-uint64_t ty_millis(void)
-{
-    static mach_timebase_info_data_t tb;
-    if (!tb.numer)
-        mach_timebase_info(&tb);
-
-    return (uint64_t)mach_absolute_time() * tb.numer / tb.denom / 1000000;
-}
-
-#else
-
-uint64_t ty_millis(void)
-{
-    struct timespec ts;
-    int r;
-
-#ifdef CLOCK_MONOTONIC_RAW
-    r = clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-#else
-    r = clock_gettime(CLOCK_MONOTONIC, &ts);
-#endif
-    if (r < 0) {
-        ty_log(TY_LOG_WARNING, "clock_gettime() failed: %s", strerror(errno));
-        return 0;
-    }
-
-    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 10000000;
-}
-
-#endif
-
-void ty_delay(unsigned int ms)
-{
-    struct timespec t, rem;
-    int r;
-
-    t.tv_sec = (int)(ms / 1000);
-    t.tv_nsec = (int)((ms % 1000) * 1000000);
-
-    do {
-        r = nanosleep(&t, &rem);
-        if (r < 0) {
-            if (errno != EINTR) {
-                ty_error(TY_ERROR_SYSTEM, "nanosleep() failed: %s", strerror(errno));
-                return;
-            }
-
-            t = rem;
-        }
-    } while (r);
-}
-
 unsigned int ty_descriptor_get_modes(ty_descriptor desc)
 {
     struct stat sb;
@@ -181,6 +127,49 @@ overflow:
     return 0;
 }
 
+int ty_poll(const ty_descriptor_set *set, int timeout)
+{
+    assert(set);
+    assert(set->count);
+    assert(set->count <= 64);
+
+    fd_set fds;
+    uint64_t start;
+    struct timeval tv;
+    int r;
+
+    FD_ZERO(&fds);
+    for (unsigned int i = 0; i < set->count; i++)
+        FD_SET(set->desc[i], &fds);
+
+    start = hs_millis();
+restart:
+    if (timeout >= 0) {
+        int adjusted_timeout = hs_adjust_timeout(timeout, start);
+        tv.tv_sec = adjusted_timeout / 1000;
+        tv.tv_usec = (adjusted_timeout % 1000) * 1000;
+        r = select(FD_SETSIZE, &fds, NULL, NULL, &tv);
+    } else {
+        r = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+    }
+    if (r < 0) {
+        if (errno == EINTR)
+            goto restart;
+
+        return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
+    }
+    if (!r)
+        return 0;
+
+    for (unsigned int i = 0; i < set->count; i++) {
+        if (FD_ISSET(set->desc[i], &fds))
+            return set->id[i];
+    }
+
+    assert(false);
+    __builtin_unreachable();
+}
+
 #else
 
 unsigned int ty_standard_get_paths(ty_standard_path std_path, const char *suffix,
@@ -261,55 +250,6 @@ overflow:
     return 0;
 }
 
-#endif
-
-#ifdef __APPLE__
-
-int ty_poll(const ty_descriptor_set *set, int timeout)
-{
-    assert(set);
-    assert(set->count);
-    assert(set->count <= 64);
-
-    fd_set fds;
-    uint64_t start;
-    struct timeval tv;
-    int r;
-
-    FD_ZERO(&fds);
-    for (unsigned int i = 0; i < set->count; i++)
-        FD_SET(set->desc[i], &fds);
-
-    start = ty_millis();
-restart:
-    if (timeout >= 0) {
-        int adjusted_timeout = ty_adjust_timeout(timeout, start);
-        tv.tv_sec = adjusted_timeout / 1000;
-        tv.tv_usec = (adjusted_timeout % 1000) * 1000;
-        r = select(FD_SETSIZE, &fds, NULL, NULL, &tv);
-    } else {
-        r = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
-    }
-    if (r < 0) {
-        if (errno == EINTR)
-            goto restart;
-
-        return ty_error(TY_ERROR_SYSTEM, "poll() failed: %s", strerror(errno));
-    }
-    if (!r)
-        return 0;
-
-    for (unsigned int i = 0; i < set->count; i++) {
-        if (FD_ISSET(set->desc[i], &fds))
-            return set->id[i];
-    }
-
-    assert(false);
-    __builtin_unreachable();
-}
-
-#else
-
 int ty_poll(const ty_descriptor_set *set, int timeout)
 {
     assert(set);
@@ -328,9 +268,9 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     if (timeout < 0)
         timeout = -1;
 
-    start = ty_millis();
+    start = hs_millis();
 restart:
-    r = poll(pfd, (nfds_t)set->count, ty_adjust_timeout(timeout, start));
+    r = poll(pfd, (nfds_t)set->count, hs_adjust_timeout(timeout, start));
     if (r < 0) {
         if (errno == EINTR)
             goto restart;

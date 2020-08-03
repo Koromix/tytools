@@ -81,6 +81,15 @@ uint64_t hs_millis(void);
 
 /**
  * @ingroup misc
+ * @brief Suspend execution of calling thread until specified time has passed.
+ *
+ * @param ms Wait time in milliseconds.
+ *
+ */
+void hs_delay(unsigned int ms);
+
+/**
+ * @ingroup misc
  * @brief Adjust a timeout over a time period.
  *
  * This function returns -1 if the timeout is negative. Otherwise, it decreases the timeout

@@ -19,41 +19,6 @@
 static DWORD orig_console_mode;
 static bool saved_console_mode;
 
-char *ty_win32_strerror(DWORD err)
-{
-    static char buf[2048];
-    char *ptr;
-    DWORD ret;
-
-    if (!err)
-        err = GetLastError();
-
-    ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-                      err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, sizeof(buf), NULL);
-
-    if (ret) {
-        ptr = buf + strlen(buf);
-        // FormatMessage adds newlines, remove them
-        while (ptr > buf && (ptr[-1] == '\n' || ptr[-1] == '\r'))
-            ptr--;
-        *ptr = 0;
-    } else {
-        strcpy(buf, "(unknown)");
-    }
-
-    return buf;
-}
-
-uint64_t ty_millis(void)
-{
-    return GetTickCount64();
-}
-
-void ty_delay(unsigned int ms)
-{
-    Sleep(ms);
-}
-
 bool ty_compare_paths(const char *path1, const char *path2)
 {
     assert(path1);
@@ -171,7 +136,7 @@ int ty_poll(const ty_descriptor_set *set, int timeout)
     switch (ret) {
         case WAIT_FAILED: {
             return ty_error(TY_ERROR_SYSTEM, "WaitForMultipleObjects() failed: %s",
-                            ty_win32_strerror(0));
+                            hs_win32_strerror(0));
         } break;
         case WAIT_TIMEOUT: {
             return 0;
@@ -196,7 +161,7 @@ int ty_terminal_setup(int flags)
         if (GetLastError() == ERROR_INVALID_HANDLE)
             return ty_error(TY_ERROR_UNSUPPORTED, "Not a terminal");
         return ty_error(TY_ERROR_SYSTEM, "GetConsoleMode(STD_INPUT_HANDLE) failed: %s",
-                        ty_win32_strerror(0));
+                        hs_win32_strerror(0));
     }
 
     if (!saved_console_mode) {
@@ -217,7 +182,7 @@ int ty_terminal_setup(int flags)
     success = SetConsoleMode(handle, mode);
     if (!success)
         return ty_error(TY_ERROR_SYSTEM, "SetConsoleMode(STD_INPUT_HANDLE) failed: %s",
-                        ty_win32_strerror(0));
+                        hs_win32_strerror(0));
 
     return 0;
 }

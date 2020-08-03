@@ -55,10 +55,10 @@ static int change_board_status(ty_board *board, ty_board_status status, ty_monit
     // Set new board status, engage drop timer if needed
     if (status == TY_BOARD_STATUS_MISSING && status != board->status) {
         board->status = TY_BOARD_STATUS_MISSING;
-        board->missing_since = ty_millis();
+        board->missing_since = hs_millis();
 
         if (!monitor->timer_running) {
-            int timer_delay = ty_adjust_timeout(monitor->drop_delay, board->missing_since);
+            int timer_delay = hs_adjust_timeout(monitor->drop_delay, board->missing_since);
             r = ty_timer_set(monitor->timer, timer_delay, TY_TIMER_ONESHOT);
             if (r < 0)
                 return r;
@@ -618,7 +618,7 @@ int ty_monitor_refresh(ty_monitor *monitor)
             ty_board *board_it = monitor->boards.values[i];
 
             if (board_it->status == TY_BOARD_STATUS_MISSING) {
-                int board_timeout = ty_adjust_timeout(monitor->drop_delay, board_it->missing_since);
+                int board_timeout = hs_adjust_timeout(monitor->drop_delay, board_it->missing_since);
 
                 /* Drop boards that are about to expire (< 20 ms) to deal with limited timer
                    resolution (e.g. TickCount64() on Windows). */
@@ -666,12 +666,12 @@ int ty_monitor_wait(ty_monitor *monitor, ty_monitor_wait_func *f, void *udata, i
     uint64_t start;
     int r;
 
-    start = ty_millis();
+    start = hs_millis();
     if (monitor->main_thread_id != ty_thread_get_self_id()) {
         ty_mutex_lock(&monitor->refresh_mutex);
         while (!(r = (*f)(monitor, udata))) {
             r = ty_cond_wait(&monitor->refresh_cond, &monitor->refresh_mutex,
-                             ty_adjust_timeout(timeout, start));
+                             hs_adjust_timeout(timeout, start));
             if (!r)
                 break;
         }
@@ -692,7 +692,7 @@ int ty_monitor_wait(ty_monitor *monitor, ty_monitor_wait_func *f, void *udata, i
                     return r;
             }
 
-            r = ty_poll(&set, ty_adjust_timeout(timeout, start));
+            r = ty_poll(&set, hs_adjust_timeout(timeout, start));
         } while (r > 0);
         return r;
     }

@@ -589,12 +589,12 @@ static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t bloc
 
     /* We may get errors along the way (while the bootloader works) so try again
        until timeout expires. */
-    start = ty_millis();
+    start = hs_millis();
     hs_error_mask(HS_ERROR_IO);
 restart:
     r = hs_hid_write(port, buf, size);
-    if (r == HS_ERROR_IO && ty_millis() - start < timeout) {
-        ty_delay(20);
+    if (r == HS_ERROR_IO && hs_millis() - start < timeout) {
+        hs_delay(20);
         goto restart;
     }
     hs_error_unmask();
@@ -607,7 +607,7 @@ restart:
     /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
        first write takes longer because it triggers a complete erase of all blocks. */
     if (!addr)
-        ty_delay(200);
+        hs_delay(200);
 
     return 0;
 }

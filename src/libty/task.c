@@ -291,7 +291,7 @@ static int worker_thread_main(void *udata)
         pool->busy_workers--;
 
         run = true;
-        start = ty_millis();
+        start = hs_millis();
         while (true) {
             if (pool->worker_threads.count > pool->max_threads)
                 goto timeout;
@@ -304,7 +304,7 @@ static int worker_thread_main(void *udata)
                 goto timeout;
 
             run = ty_cond_wait(&pool->pending_cond, &pool->mutex,
-                               ty_adjust_timeout(pool->unused_timeout, start));
+                               hs_adjust_timeout(pool->unused_timeout, start));
         }
 
         pool->busy_workers++;
@@ -434,9 +434,9 @@ int ty_task_wait(ty_task *task, ty_task_status status, int timeout)
     }
 
     ty_mutex_lock(&task->mutex);
-    start = ty_millis();
+    start = hs_millis();
     while (task->status < status) {
-        if (!ty_cond_wait(&task->cond, &task->mutex, ty_adjust_timeout(timeout, start)))
+        if (!ty_cond_wait(&task->cond, &task->mutex, hs_adjust_timeout(timeout, start)))
             break;
     }
     r = task->status >= status;

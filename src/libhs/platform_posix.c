@@ -29,6 +29,27 @@ uint64_t hs_millis(void)
     return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 10000000;
 }
 
+void hs_delay(unsigned int ms)
+{
+    struct timespec t, rem;
+    int r;
+
+    t.tv_sec = (int)(ms / 1000);
+    t.tv_nsec = (int)((ms % 1000) * 1000000);
+
+    do {
+        r = nanosleep(&t, &rem);
+        if (r < 0) {
+            if (errno != EINTR) {
+                ty_error(TY_ERROR_SYSTEM, "nanosleep() failed: %s", strerror(errno));
+                return;
+            }
+
+            t = rem;
+        }
+    } while (r);
+}
+
 int hs_poll(hs_poll_source *sources, unsigned int count, int timeout)
 {
     assert(sources);

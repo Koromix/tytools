@@ -12,6 +12,7 @@
 #define TY_SYSTEM_H
 
 #include "common.h"
+#include "../libhs/platform.h"
 #include <sys/types.h>
 
 _HS_BEGIN_C
@@ -57,15 +58,6 @@ enum {
     TY_TERMINAL_RAW = 0x1,
     TY_TERMINAL_SILENT = 0x2
 };
-
-#ifdef _WIN32
-char *ty_win32_strerror(unsigned long err);
-#endif
-
-uint64_t ty_millis(void);
-void ty_delay(unsigned int ms);
-
-int ty_adjust_timeout(int timeout, uint64_t start);
 
 void ty_descriptor_set_clear(ty_descriptor_set *set);
 void ty_descriptor_set_add(ty_descriptor_set *set, ty_descriptor desc, int id);
