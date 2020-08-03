@@ -16,12 +16,6 @@
 #include <shlobj.h>
 #include "system.h"
 
-typedef ULONGLONG WINAPI GetTickCount64_func(void);
-
-static ULONGLONG WINAPI GetTickCount64_resolve(void);
-
-static GetTickCount64_func *GetTickCount64_ = GetTickCount64_resolve;
-
 static DWORD orig_console_mode;
 static bool saved_console_mode;
 
@@ -50,34 +44,9 @@ char *ty_win32_strerror(DWORD err)
     return buf;
 }
 
-static ULONGLONG WINAPI GetTickCount64_fallback(void)
-{
-    static LARGE_INTEGER freq;
-    LARGE_INTEGER now;
-    BOOL success _HS_POSSIBLY_UNUSED;
-
-    if (!freq.QuadPart) {
-        success = QueryPerformanceFrequency(&freq);
-        assert(success);
-    }
-    success = QueryPerformanceCounter(&now);
-    assert(success);
-
-    return (ULONGLONG)now.QuadPart * 1000 / (ULONGLONG)freq.QuadPart;
-}
-
-static ULONGLONG WINAPI GetTickCount64_resolve(void)
-{
-    GetTickCount64_ = (GetTickCount64_func *)GetProcAddress(GetModuleHandle("kernel32.dll"), "GetTickCount64");
-    if (!GetTickCount64_)
-        GetTickCount64_ = GetTickCount64_fallback;
-
-    return GetTickCount64_();
-}
-
 uint64_t ty_millis(void)
 {
-    return GetTickCount64_();
+    return GetTickCount64();
 }
 
 void ty_delay(unsigned int ms)
