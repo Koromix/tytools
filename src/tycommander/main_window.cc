@@ -314,7 +314,7 @@ void MainWindow::selectNextBoard()
         return;
 
     auto indexes = boardList->selectionModel()->selectedIndexes();
-    qSort(indexes);
+    std::sort(indexes.begin(), indexes.end());
 
     QModelIndex new_index;
     if (indexes.isEmpty()) {
@@ -345,7 +345,7 @@ void MainWindow::selectPreviousBoard()
         return;
 
     auto indexes = boardList->selectionModel()->selectedIndexes();
-    qSort(indexes);
+    std::sort(indexes.begin(), indexes.end());
 
     QModelIndex new_index;
     if (indexes.isEmpty()) {
@@ -863,7 +863,8 @@ void MainWindow::selectionChanged(const QItemSelection &newsel, const QItemSelec
     current_board_ = nullptr;
 
     auto indexes = boardList->selectionModel()->selectedIndexes();
-    qSort(indexes);
+    std::sort(indexes.begin(), indexes.end());
+
     for (auto &idx: indexes) {
         if (idx.column() == 0)
             selected_boards_.push_back(Monitor::boardFromModel(monitor_, idx));

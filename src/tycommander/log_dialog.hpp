@@ -17,7 +17,7 @@ class LogDialog: public QDialog, private Ui::LogDialog {
     Q_OBJECT
 
 public:
-    LogDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
+    LogDialog(QWidget *parent = nullptr, Qt::WindowFlags f = {});
 
 public slots:
     void appendError(const QString &msg, const QString &ctx);

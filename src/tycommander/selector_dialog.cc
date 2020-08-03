@@ -70,7 +70,7 @@ QVariant SelectorDialogModel::data(const QModelIndex &index, int role) const
 Qt::ItemFlags SelectorDialogModel::flags(const QModelIndex &index) const
 {
     auto board = QIdentityProxyModel::data(index, Monitor::ROLE_BOARD).value<Board *>();
-    return board->secondary() ? 0 : QIdentityProxyModel::flags(index);
+    return board->secondary() ? Qt::ItemFlags() : QIdentityProxyModel::flags(index);
 }
 
 QSize SelectorDialogItemDelegate::sizeHint(const QStyleOptionViewItem &option,
@@ -125,8 +125,10 @@ void SelectorDialog::setAction(const QString &action)
 void SelectorDialog::updateSelection()
 {
     selected_boards_.clear();
+
     auto indexes = tree->selectionModel()->selectedIndexes();
-    qSort(indexes);
+    std::sort(indexes.begin(), indexes.end());
+
     for (auto &idx: indexes) {
         if (idx.column() == 0)
             selected_boards_.push_back(Monitor::boardFromModel(monitor_model_, idx));

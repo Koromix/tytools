@@ -21,7 +21,7 @@ class ArduinoDialog: public QDialog, private Ui::ArduinoDialog {
     bool background_process_ = false;
 
 public:
-    ArduinoDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
+    ArduinoDialog(QWidget *parent = nullptr, Qt::WindowFlags f = {});
 
     void keyPressEvent(QKeyEvent *ev) override;
 

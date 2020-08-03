@@ -18,7 +18,7 @@ class AboutDialog: public QDialog, private Ui::AboutDialog {
     Q_OBJECT
 
 public:
-    AboutDialog(QWidget *parent = nullptr, Qt::WindowFlags f = 0);
+    AboutDialog(QWidget *parent = nullptr, Qt::WindowFlags f = {});
 
 public slots:
     static void openWebsite();
