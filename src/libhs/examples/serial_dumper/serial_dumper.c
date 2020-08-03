@@ -75,7 +75,7 @@ static int add_serial_source(hs_device *dev)
         goto error;
     }
 
-    sprintf(src->out_name, "dump%u.txt", dump_count++);
+    sprintf(src->out_name, "dump_%05u.txt", ++dump_count);
     src->out = fopen(src->out_name, "wb");
     if (!src->out) {
         r = hs_error(HS_ERROR_SYSTEM, "Failed to open '%s'", src->out_name);
