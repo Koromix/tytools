@@ -767,7 +767,7 @@ static int get_device_comport(DEVINST inst, char **rnode)
 {
     HKEY key;
     char buf[32];
-    DWORD type, len;
+    DWORD len;
     char *node;
     CONFIGRET cret;
     LONG ret;
@@ -779,19 +779,15 @@ static int get_device_comport(DEVINST inst, char **rnode)
         return 0;
     }
 
-    len = (DWORD)sizeof(buf) - 1;
-    ret = RegQueryValueEx(key, "PortName", NULL, &type, (BYTE *)buf, &len);
+    len = (DWORD)sizeof(buf);
+    ret = RegGetValue(key, "", "PortName", RRF_RT_REG_SZ, NULL, (BYTE *)buf, &len);
     RegCloseKey(key);
     if (ret != ERROR_SUCCESS) {
         if (ret != ERROR_FILE_NOT_FOUND)
             hs_log(HS_LOG_WARNING, "RegQueryValue() failed: %ld", ret);
         return 0;
     }
-
-    /* If the string is stored without a terminating NUL, the buffer won't have it either.
-       Microsoft fixed it with RegGetValue(), but this function requires Vista. */
-    if (buf[--len])
-        buf[len + 1] = 0;
+    len--;
 
     // You need the \\.\ prefix to open COM ports beyond COM9
     r = _hs_asprintf(&node, "%s%s", len > 4 ? "\\\\.\\" : "", buf);
