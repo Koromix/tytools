@@ -41,7 +41,7 @@ void hs_delay(unsigned int ms)
         r = nanosleep(&t, &rem);
         if (r < 0) {
             if (errno != EINTR) {
-                ty_error(TY_ERROR_SYSTEM, "nanosleep() failed: %s", strerror(errno));
+                hs_error(HS_ERROR_SYSTEM, "nanosleep() failed: %s", strerror(errno));
                 return;
             }
 
