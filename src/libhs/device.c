@@ -101,8 +101,8 @@ void hs_port_close(hs_port *port)
         return;
 
 #ifdef __APPLE__
-    if (dev->type == HS_DEVICE_TYPE_HID) {
-        _hs_darwin_close_hid_port(dev, mode, rport);
+    if (port->type == HS_DEVICE_TYPE_HID) {
+        _hs_darwin_close_hid_port(port);
         return;
     }
 #endif
@@ -121,7 +121,7 @@ hs_handle hs_port_get_poll_handle(const hs_port *port)
     assert(port);
 
 #ifdef __APPLE__
-    if (dev->type == HS_DEVICE_TYPE_HID)
+    if (port->type == HS_DEVICE_TYPE_HID)
         return _hs_darwin_get_hid_port_poll_handle(port);
 #endif
 
