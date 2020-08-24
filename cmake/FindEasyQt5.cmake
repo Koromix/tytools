@@ -51,7 +51,7 @@ if(NOT Qt5_FOUND)
             COMPONENTS Widgets Network PrintSupport
             HINTS "${CMAKE_SOURCE_DIR}/lib/qt5/${HOST}"
                   "${CMAKE_SOURCE_DIR}/qt5/${HOST}"
-		  "/usr/local/opt/qt5")
+                  "/usr/local/opt/qt5")
     endif()
 endif()
 
