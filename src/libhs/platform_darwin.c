@@ -12,6 +12,7 @@
 #include <mach/mach_time.h>
 #include <sys/select.h>
 #include <sys/utsname.h>
+#include <time.h>
 #include "platform.h"
 
 uint64_t hs_millis(void)
