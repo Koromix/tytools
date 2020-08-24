@@ -2,12 +2,12 @@
 
 ## MSVC 20xx 32-bit with static MSVCRT
 
-These instructions have been tested with *Qt 5.12.2*, they will probably **not work for
-Qt versions < 5.12**. Even if they work, you may not be able to link TyTools correctly.
+These instructions have been tested with *Qt 5.12.9*, they will probably **not work for
+Qt versions < or > 5.12**. Even if they work, you may not be able to link TyTools correctly.
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.2/submodules/qtbase-everywhere-src-5.12.2.zip
+Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.9/submodules/qtbase-everywhere-src-5.12.9.zip
 
-Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.2" to
+Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.9" to
 "i686-win32-msvc-mt". Open the "VS20xx x86 Native Tools Command Prompt" and cd to
 this directory.
 
@@ -39,12 +39,12 @@ if you move your project.
 
 ## MSVC 20xx 64-bit with static MSVCRT
 
-These instructions have been tested with *Qt 5.12.2*, they will probably **not work for
-Qt versions < 5.12**. Even if they work, you may not be able to link TyTools correctly.
+These instructions have been tested with *Qt 5.12.9*, they will probably **not work for
+Qt versions < or > 5.12**. Even if they work, you may not be able to link TyTools correctly.
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.2/submodules/qtbase-everywhere-src-5.12.2.zip
+Download qtbase source from http://download.qt.io/official_releases/qt/5.12/5.12.9/submodules/qtbase-everywhere-src-5.12.9.zip
 
-Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.2" to
+Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-everywhere-src-5.12.9" to
 "x86_64-win32-msvc-mt". Open the "VS20xx x64 Native Tools Command Prompt" and cd to
 this directory.
 
@@ -76,12 +76,12 @@ if you move your project.
 
 # Mac OS X / Clang 64-bit
 
-These instructions have been tested with *Qt 5.9.7*, they will probably **not work for
+These instructions have been tested with *Qt 5.9.9*, they will probably **not work for
 Qt versions < or > 5.9**. Even if they work, you may not be able to link TyTools correctly.
 
 A recent version of XCode must be installed.
 
-Download qtbase source from http://download.qt.io/official_releases/qt/5.9/5.9.8/submodules/qtbase-opensource-src-5.9.8.tar.xz
+Download qtbase source from http://download.qt.io/official_releases/qt/5.9/5.9.9/submodules/qtbase-opensource-src-5.9.9.tar.xz
 
 Extract the directory inside it to "tytools/lib/qt5" and rename "qtbase-opensource-src-5.9.8" to
 "x86_64-darwin-clang". Open a command prompt and go to that directory.
