@@ -39,7 +39,7 @@ if(NOT Qt5_FOUND)
     endif()
 
     if (CMAKE_CROSSCOMPILING)
-        find_package(Qt5 REQUIRED
+        find_package(Qt5
             COMPONENTS Widgets Network PrintSupport
             HINTS "${CMAKE_SOURCE_DIR}/lib/qt5/${HOST}"
                   "${CMAKE_SOURCE_DIR}/qt5/${HOST}"
@@ -47,7 +47,7 @@ if(NOT Qt5_FOUND)
             NO_CMAKE_SYSTEM_PATH
             NO_CMAKE_SYSTEM_PACKAGE_REGISTRY)
     else()
-        find_package(Qt5 REQUIRED
+        find_package(Qt5
             COMPONENTS Widgets Network PrintSupport
             HINTS "${CMAKE_SOURCE_DIR}/lib/qt5/${HOST}"
                   "${CMAKE_SOURCE_DIR}/qt5/${HOST}"
