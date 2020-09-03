@@ -543,10 +543,9 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
 }
 
 static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t block_size,
-                        size_t addr, const void *data, size_t size, unsigned int timeout)
+                        size_t addr, const void *data, size_t size, unsigned int tries)
 {
     uint8_t buf[2048] = {0};
-    uint64_t start;
 
     ssize_t r;
 
@@ -589,11 +588,10 @@ static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t bloc
 
     /* We may get errors along the way (while the bootloader works) so try again
        until timeout expires. */
-    start = hs_millis();
     hs_error_mask(HS_ERROR_IO);
 restart:
     r = hs_hid_write(port, buf, size);
-    if (r == HS_ERROR_IO && hs_millis() - start < timeout) {
+    if (r == HS_ERROR_IO && --tries) {
         hs_delay(20);
         goto restart;
     }
@@ -727,7 +725,7 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
         buf_len = ty_firmware_extract(fw, (uint32_t)address, buf, block_size);
 
         if (buf_len) {
-            r = halfkay_send(iface->port, halfkay_version, block_size, address, buf, buf_len, 3000);
+            r = halfkay_send(iface->port, halfkay_version, block_size, address, buf, buf_len, 150);
             if (r < 0)
                 return r;
             uploaded_len += buf_len;
@@ -752,7 +750,7 @@ static int teensy_reset(ty_board_interface *iface)
     if (r < 0)
         return r;
 
-    return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 250);
+    return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 25);
 }
 
 static int teensy_reboot(ty_board_interface *iface)
