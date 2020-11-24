@@ -866,6 +866,27 @@ static int process_win32_device(DEVINST inst, hs_device **rdev)
 
     hs_log(HS_LOG_DEBUG, "Examining device node '%s'", dev_cursor.id);
 
+    // Ignore composite devices
+    {
+        char class[512];
+        DWORD class_len;
+        CONFIGRET cret;
+
+        class_len = sizeof(class);
+        cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_CLASSGUID, NULL, class, &class_len, 0);
+        if (cret != CR_SUCCESS) {
+            hs_log(HS_LOG_WARNING, "Failed to get device class GUID: 0x%lx", cret);
+            r = 0;
+            goto cleanup;
+        }
+
+        if (!strcasecmp(class, "{36fc9e60-c465-11cf-8056-444553540000}")) {
+            hs_log(HS_LOG_DEBUG, "Ignoring composite device");
+            r = 0;
+            goto cleanup;
+        }
+    }
+
     r = find_device_node(dev, &dev_cursor);
     if (r <= 0)
         goto cleanup;
