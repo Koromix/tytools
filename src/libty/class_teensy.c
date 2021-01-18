@@ -131,6 +131,8 @@ static int teensy_load_interface(ty_board_interface *iface)
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
                     }
+                    if (iface->model == TY_MODEL_TEENSY_40 || iface->model == TY_MODEL_TEENSY_41)
+                        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RTC;
                 } break;
 
                 case TEENSY_USAGE_PAGE_RAWHID: {
@@ -787,6 +789,37 @@ static int teensy_reboot(ty_board_interface *iface)
     return r;
 }
 
+static int teensy_set_rtc(ty_board_interface *iface, int64_t time)
+{
+    unsigned int halfkay_version;
+    size_t min_address, max_address, block_size;
+
+    int r = get_halfkay_settings(iface->model, &halfkay_version, &min_address, &max_address, &block_size);
+    if (r < 0)
+        return r;
+
+    uint8_t buf[12];
+    {
+        unsigned long hi = (unsigned long)(time >> 17);
+        unsigned long lo = (unsigned long)(time << 15);
+
+        buf[0] = 0xB7;
+        buf[1] = 0x31;
+        buf[2] = 0xC2;
+        buf[3] = 0x89;
+        buf[4] = lo & 0xFF;
+        buf[5] = (lo >> 8) & 0xFF;
+        buf[6] = (lo >> 16) & 0xFF;
+        buf[7] = (lo >> 24) & 0xFF;
+        buf[8] = hi & 0xFF;
+        buf[9] = (hi >> 8) & 0xFF;
+        buf[10] = (hi >> 16) & 0xFF;
+        buf[11] = (hi >> 24) & 0xFF;
+    }
+
+    return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, buf, sizeof(buf), 25);
+}
+
 const struct _ty_class_vtable _ty_teensy_class_vtable = {
     .load_interface = teensy_load_interface,
     .update_board = teensy_update_board,
@@ -798,5 +831,6 @@ const struct _ty_class_vtable _ty_teensy_class_vtable = {
     .serial_write = teensy_serial_write,
     .upload = teensy_upload,
     .reset = teensy_reset,
-    .reboot = teensy_reboot
+    .reboot = teensy_reboot,
+    .set_rtc = teensy_set_rtc
 };

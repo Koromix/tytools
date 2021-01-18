@@ -12,6 +12,7 @@
 #ifndef _WIN32
     #include <sys/stat.h>
 #endif
+#include <time.h>
 #include "../libhs/device.h"
 #include "board_priv.h"
 #include "class_priv.h"
@@ -419,6 +420,25 @@ int ty_board_reboot(ty_board *board)
     return r;
 }
 
+int ty_board_set_rtc(ty_board *board, int64_t time)
+{
+    assert(board);
+
+    ty_board_interface *iface;
+    int r;
+
+    r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_RTC, &iface);
+    if (r < 0)
+        return r;
+    if (!r)
+        return ty_error(TY_ERROR_MODE, "Cannot set RTC on board '%s'", board->tag);
+
+    r = (*iface->class_vtable->set_rtc)(iface, time);
+
+    ty_board_interface_close(iface);
+    return r;
+}
+
 ty_board_interface *ty_board_interface_ref(ty_board_interface *iface)
 {
     assert(iface);
@@ -651,7 +671,7 @@ static int run_upload(ty_task *task)
 
 wait:
     r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_UPLOAD,
-                           flags & TY_UPLOAD_WAIT ? -1 : MANUAL_REBOOT_DELAY);
+                          flags & TY_UPLOAD_WAIT ? -1 : MANUAL_REBOOT_DELAY);
     if (r < 0)
         return r;
     if (!r) {
@@ -669,6 +689,30 @@ wait:
 
     if (!(flags & TY_UPLOAD_DELEGATE)) {
         r = ty_board_upload(board, fw, upload_progress_callback, NULL);
+        if (r < 0)
+            return r;
+    }
+
+    if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_RTC) && !(flags & TY_UPLOAD_NORTC)) {
+#ifdef _WIN32
+        __time64_t now = 0;
+        struct tm ti1 = {0};
+        struct tm ti2 = {0};
+
+        _time64(&now);
+        _gmtime64_s(&ti1, &now);
+        _localtime64_s(&ti2, &now);
+        now += _mktime64(&ti2) - _mktime64(&ti1);
+#else
+        time_t now = 0;
+        struct tm ti = {0};
+
+        now = time(NULL);
+        localtime_r(&now, &ti);
+        now += ti.tm_gmtoff;
+#endif
+
+        r = ty_board_set_rtc(board, (int64_t)now);
         if (r < 0)
             return r;
     }
