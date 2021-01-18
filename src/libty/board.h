@@ -97,9 +97,8 @@ ssize_t ty_board_serial_read(ty_board *board, char *buf, size_t size, int timeou
 ssize_t ty_board_serial_write(ty_board *board, const char *buf, size_t size);
 
 int ty_board_upload(ty_board *board, struct ty_firmware *fw, ty_board_upload_progress_func *pf, void *udata);
-int ty_board_reset(ty_board *board);
+int ty_board_reset(ty_board *board, int64_t rtc);
 int ty_board_reboot(ty_board *board);
-int ty_board_set_rtc(ty_board *board, int64_t time);
 
 ty_board_interface *ty_board_interface_ref(ty_board_interface *iface);
 void ty_board_interface_unref(ty_board_interface *iface);

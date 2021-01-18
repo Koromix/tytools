@@ -382,7 +382,7 @@ cleanup:
     return r;
 }
 
-int ty_board_reset(ty_board *board)
+int ty_board_reset(ty_board *board, int64_t rtc)
 {
     assert(board);
 
@@ -395,7 +395,7 @@ int ty_board_reset(ty_board *board)
     if (!r)
         return ty_error(TY_ERROR_MODE, "Cannot reset board '%s'", board->tag);
 
-    r = (*iface->class_vtable->reset)(iface);
+    r = (*iface->class_vtable->reset)(iface, rtc);
 
     ty_board_interface_close(iface);
     return r;
@@ -415,25 +415,6 @@ int ty_board_reboot(ty_board *board)
         return ty_error(TY_ERROR_MODE, "Cannot reboot board '%s'", board->tag);
 
     r = (*iface->class_vtable->reboot)(iface);
-
-    ty_board_interface_close(iface);
-    return r;
-}
-
-int ty_board_set_rtc(ty_board *board, int64_t time)
-{
-    assert(board);
-
-    ty_board_interface *iface;
-    int r;
-
-    r = ty_board_open_interface(board, TY_BOARD_CAPABILITY_RTC, &iface);
-    if (r < 0)
-        return r;
-    if (!r)
-        return ty_error(TY_ERROR_MODE, "Cannot set RTC on board '%s'", board->tag);
-
-    r = (*iface->class_vtable->set_rtc)(iface, time);
 
     ty_board_interface_close(iface);
     return r;
@@ -638,6 +619,29 @@ static void unref_upload_firmware(void *ptr)
     ty_firmware_unref(ptr);
 }
 
+static int64_t get_local_time()
+{
+#ifdef _WIN32
+    __time64_t now = 0;
+    struct tm ti1 = {0};
+    struct tm ti2 = {0};
+
+    _time64(&now);
+    _gmtime64_s(&ti1, &now);
+    _localtime64_s(&ti2, &now);
+    now += _mktime64(&ti2) - _mktime64(&ti1);
+#else
+    time_t now = 0;
+    struct tm ti = {0};
+
+    now = time(NULL);
+    localtime_r(&now, &ti);
+    now += ti.tm_gmtoff;
+#endif
+
+    return (int64_t)now;
+}
+
 static int run_upload(ty_task *task)
 {
     ty_board *board = task->u.upload.board;
@@ -693,38 +697,22 @@ wait:
             return r;
     }
 
-    if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_RTC) && !(flags & TY_UPLOAD_NORTC)) {
-#ifdef _WIN32
-        __time64_t now = 0;
-        struct tm ti1 = {0};
-        struct tm ti2 = {0};
-
-        _time64(&now);
-        _gmtime64_s(&ti1, &now);
-        _localtime64_s(&ti2, &now);
-        now += _mktime64(&ti2) - _mktime64(&ti1);
-#else
-        time_t now = 0;
-        struct tm ti = {0};
-
-        now = time(NULL);
-        localtime_r(&now, &ti);
-        now += ti.tm_gmtoff;
-#endif
-
-        r = ty_board_set_rtc(board, (int64_t)now);
-        if (r < 0)
-            return r;
-    }
-
     if (!(flags & TY_UPLOAD_NORESET)) {
         if (flags & TY_UPLOAD_DELEGATE) {
             ty_log(TY_LOG_INFO, "Waiting for Teensy Loader");
         } else {
-            ty_log(TY_LOG_INFO, "Sending reset command");
-            r = ty_board_reset(board);
+            if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_RTC) && !(flags & TY_UPLOAD_NORTC)) {
+                int64_t now = get_local_time();
+
+                ty_log(TY_LOG_INFO, "Sending reset command (with RTC)");
+                r = ty_board_reset(board, now);
+            } else {
+                ty_log(TY_LOG_INFO, "Sending reset command");
+                r = ty_board_reset(board, -1);
+            }
             if (r < 0)
                 return r;
+
         }
 
         r = ty_board_wait_for(board, TY_BOARD_CAPABILITY_RUN, FINAL_TASK_TIMEOUT);
@@ -813,7 +801,7 @@ static int run_reset(ty_task *task)
     }
 
     ty_log(TY_LOG_INFO, "Sending reset command");
-    r = ty_board_reset(board);
+    r = ty_board_reset(board, -1);
     if (r < 0)
         return r;
 

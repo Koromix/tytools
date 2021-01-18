@@ -30,9 +30,8 @@ struct _ty_class_vtable {
     ssize_t (*serial_write)(ty_board_interface *iface, const char *buf, size_t size);
     int (*upload)(ty_board_interface *iface, struct ty_firmware *fw,
                   ty_board_upload_progress_func *pf, void *udata);
-    int (*reset)(ty_board_interface *iface);
+    int (*reset)(ty_board_interface *iface, int64_t rtc_time);
     int (*reboot)(ty_board_interface *iface);
-    int (*set_rtc)(ty_board_interface *iface, int64_t time);
 };
 
 struct _ty_class {
