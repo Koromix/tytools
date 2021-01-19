@@ -27,6 +27,7 @@ static const char *capability_names[] = {
     "run",
     "upload",
     "reset",
+    "rtc",
     "reboot",
     "serial"
 };
