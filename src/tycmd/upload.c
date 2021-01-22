@@ -26,6 +26,7 @@ static void print_upload_usage(FILE *f)
                "   -w, --wait               Wait for the bootloader instead of rebooting\n\n"
                "       --nocheck            Force upload even if the board is not compatible\n"
                "       --noreset            Do not reset the device once the upload is finished\n"
+               "       --rtc <MODE>         Set RTC if supported: local (default), utc, none\n"
                "       --delegate           Reboot the board and let Teensy Loader do the rest\n\n"
                "   -f, --format <format>    Firmware file format (autodetected by default)\n\n"
                "You can pass multiple firmwares, and the first compatible one will be used.\n\n"
@@ -59,6 +60,26 @@ int upload(int argc, char *argv[])
             upload_flags |= TY_UPLOAD_NOCHECK;
         } else if (strcmp(opt, "--noreset") == 0) {
             upload_flags |= TY_UPLOAD_NORESET;
+        } else if (strcmp(opt, "--rtc") == 0) {
+            const char *value = ty_optline_get_value(&optl);
+            if (!value) {
+                ty_log(TY_LOG_ERROR, "Option '--rtc' takes an argument");
+                print_upload_usage(stderr);
+                return EXIT_FAILURE;
+            }
+
+            if (strcmp(value, "local") == 0) {
+                upload_flags &= ~TY_UPLOAD_NORTC;
+            } else if (strcmp(value, "utc") == 0) {
+                upload_flags &= ~TY_UPLOAD_NORTC;
+                upload_flags |= TY_UPLOAD_RTC_UTC;
+            } else if (strcmp(value, "none") == 0) {
+                upload_flags |= TY_UPLOAD_NORTC;
+            } else {
+                ty_log(TY_LOG_ERROR, "--rtc must be one of: local, utc or none");
+                print_upload_usage(stderr);
+                return EXIT_FAILURE;
+            }
         } else if (strcmp(opt, "--delegate") == 0) {
             upload_flags |= TY_UPLOAD_DELEGATE;
         } else if (strcmp(opt, "--format") == 0 || strcmp(opt, "-f") == 0) {
