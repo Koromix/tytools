@@ -620,7 +620,7 @@ static void unref_upload_firmware(void *ptr)
     ty_firmware_unref(ptr);
 }
 
-static int64_t get_local_time()
+static int64_t get_time(bool local)
 {
 #ifdef _WIN32
     __time64_t now = 0;
@@ -628,16 +628,20 @@ static int64_t get_local_time()
     struct tm ti2 = {0};
 
     _time64(&now);
-    _gmtime64_s(&ti1, &now);
-    _localtime64_s(&ti2, &now);
-    now += _mktime64(&ti2) - _mktime64(&ti1);
+    if (local) {
+        _gmtime64_s(&ti1, &now);
+        _localtime64_s(&ti2, &now);
+        now += _mktime64(&ti2) - _mktime64(&ti1);
+    }
 #else
     time_t now = 0;
     struct tm ti = {0};
 
     now = time(NULL);
-    localtime_r(&now, &ti);
-    now += ti.tm_gmtoff;
+    if (local) {
+        localtime_r(&now, &ti);
+        now += ti.tm_gmtoff;
+    }
 #endif
 
     return (int64_t)now;
@@ -703,7 +707,8 @@ wait:
             ty_log(TY_LOG_INFO, "Waiting for Teensy Loader");
         } else {
             if (ty_board_has_capability(board, TY_BOARD_CAPABILITY_RTC) && !(flags & TY_UPLOAD_NORTC)) {
-                int64_t now = get_local_time();
+                bool utc = flags & TY_UPLOAD_RTC_UTC;
+                int64_t now = get_time(!utc);
 
                 ty_log(TY_LOG_INFO, "Sending reset command (with RTC)");
                 r = ty_board_reset(board, now);
