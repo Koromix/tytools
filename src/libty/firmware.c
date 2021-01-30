@@ -123,6 +123,7 @@ int ty_firmware_load_file(const char *filename, FILE *fp, const char *format_nam
         goto cleanup;
 
     if (!fp) {
+restart:
 #ifdef _WIN32
         fp = fopen(filename, "rb");
 #else
@@ -130,6 +131,10 @@ int ty_firmware_load_file(const char *filename, FILE *fp, const char *format_nam
 #endif
         if (!fp) {
             switch (errno) {
+                case EINTR: {
+                    goto restart;
+                } break;
+
                 case EACCES: {
                     r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
                 } break;

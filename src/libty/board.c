@@ -1017,6 +1017,7 @@ int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
     task->u.send_file.board = ty_board_ref(board);
     task->task_finalize = finalize_send_file;
 
+restart:
 #ifdef _WIN32
     task->u.send_file.fp = fopen(filename, "rb");
 #else
@@ -1024,6 +1025,10 @@ int ty_send_file(ty_board *board, const char *filename, ty_task **rtask)
 #endif
     if (!task->u.send_file.fp) {
         switch (errno) {
+            case EINTR: {
+                goto restart;
+            } break;
+
             case EACCES: {
                 r = ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
             } break;

@@ -115,6 +115,7 @@ int ty_ini_walk(const char *filename, ty_ini_callback_func *f, void *udata)
     FILE *fp;
     int r;
 
+restart:
 #ifdef _WIN32
     fp = fopen(filename, "rb");
 #else
@@ -122,6 +123,10 @@ int ty_ini_walk(const char *filename, ty_ini_callback_func *f, void *udata)
 #endif
     if (!fp) {
         switch (errno) {
+            case EINTR: {
+                goto restart;
+            } break;
+
             case EACCES: {
                 return ty_error(TY_ERROR_ACCESS, "Permission denied for '%s'", filename);
             } break;
