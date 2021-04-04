@@ -31,6 +31,7 @@ static const ty_model_info default_models[] = {
     {1, "Teensy 4.0 (beta 1)", "imxrt_b1"},
     {1, "Teensy 4.0", "imxrt"},
     {1, "Teensy 4.1", "imxrt_t41"},
+    {1, "Teensy MicroMod", "imxrt_mm"},
 };
 const ty_model_info *ty_models = default_models;
 const unsigned int ty_models_count = _HS_COUNTOF(default_models);
