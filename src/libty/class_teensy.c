@@ -41,6 +41,7 @@ static ty_model identify_model_bcd(uint16_t bcd_device)
         case 0x278: { model = TY_MODEL_TEENSY_40_BETA1; } break;
         case 0x279: { model = TY_MODEL_TEENSY_40; } break;
         case 0x280: { model = TY_MODEL_TEENSY_41; } break;
+        case 0x281: { model = TY_MODEL_TEENSY_MM; } break;
     }
 
     if (model != 0) {
@@ -70,6 +71,7 @@ static ty_model identify_model_halfkay(uint16_t usage)
         case 0x23: { model = TY_MODEL_TEENSY_40_BETA1; } break;
         case 0x24: { model = TY_MODEL_TEENSY_40; } break;
         case 0x25: { model = TY_MODEL_TEENSY_41; } break;
+        case 0x26: { model = TY_MODEL_TEENSY_MM; } break;
     }
 
     if (model != 0) {
@@ -131,7 +133,8 @@ static int teensy_load_interface(ty_board_interface *iface)
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
                     }
-                    if (iface->model == TY_MODEL_TEENSY_40 || iface->model == TY_MODEL_TEENSY_41)
+                    if (iface->model == TY_MODEL_TEENSY_40 || iface->model == TY_MODEL_TEENSY_41 ||
+                            iface->model == TY_MODEL_TEENSY_MM)
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RTC;
                 } break;
 
@@ -371,6 +374,9 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
                 if (flash_size == 0x00800000) {
                     rmodels[0] = TY_MODEL_TEENSY_41;
+                    return 1;
+                } else if (flash_size == 0x1000000) {
+                    rmodels[0] = TY_MODEL_TEENSY_MM;
                     return 1;
                 }
             }
@@ -685,6 +691,12 @@ static int get_halfkay_settings(ty_model model, unsigned int *rhalfkay_version,
             *rhalfkay_version = 3;
             *rmin_address = 0x60000000;
             *rmax_address = 0x607C0000;
+            *rblock_size = 1024;
+        } break;
+        case TY_MODEL_TEENSY_MM: {
+            *rhalfkay_version = 3;
+            *rmin_address = 0x60000000;
+            *rmax_address = 0x60FC0000;
             *rblock_size = 1024;
         } break;
 
