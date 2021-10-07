@@ -86,7 +86,7 @@ meaning tycmd will wait for you to press the button on your board.
 (/dev/ttyACM*) or through the HID serial emulation (SEREMU) in other USB modes. tycmd uses the
 correct mode automatically.
 
-You can use the `--reconnect` option to detect I/O errors (such as a reset, or after ab rerief
+You can use the `--reconnect` option to detect I/O errors (such as a reset, or after a brief
 unplugging) and reconnect immediately. Other errors will exit the program.
 
 The `--raw` option will disable line-buffering/editing and immediately send everything you type in
