@@ -101,7 +101,7 @@ static bool make_device_cursor(DEVINST inst, struct device_cursor *new_cursor)
     CONFIGRET cret;
 
     new_cursor->inst = inst;
-    cret = CM_Get_Device_ID(inst, new_cursor->id, sizeof(new_cursor->id), 0);
+    cret = CM_Get_Device_IDA(inst, new_cursor->id, sizeof(new_cursor->id), 0);
     if (cret != CR_SUCCESS) {
         hs_log(HS_LOG_WARNING, "CM_Get_Device_ID() failed for instance 0x%lx: 0x%lx", inst, cret);
         return false;
@@ -340,7 +340,7 @@ static int find_device_port_ioctl(const char *hub_id, const char *child_key)
     if (r < 0)
         goto cleanup;
 
-    h = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    h = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (h == INVALID_HANDLE_VALUE) {
         hs_log(HS_LOG_DEBUG, "Failed to open USB hub '%s': %s", path, hs_win32_strerror(0));
         r = 0;
@@ -537,7 +537,7 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
     HANDLE h = NULL;
     int r;
 
-    h = CreateFile(dev->path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    h = CreateFileA(dev->path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (h == INVALID_HANDLE_VALUE) {
         hs_log(HS_LOG_WARNING, "Cannot open HID device '%s': %s", dev->path, hs_win32_strerror(0));
         r = 0;
@@ -704,7 +704,7 @@ static int read_device_properties(hs_device *dev, const struct device_cursor *de
     if (r < 0)
         goto cleanup;
 
-    hub = CreateFile(path, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    hub = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
     if (hub == INVALID_HANDLE_VALUE) {
         hs_log(HS_LOG_DEBUG, "Cannot open parent hub device at '%s', ignoring device properties for '%s'",
                path, dev_cursor->id);
@@ -780,7 +780,7 @@ static int get_device_comport(DEVINST inst, char **rnode)
     }
 
     len = (DWORD)sizeof(buf);
-    ret = RegGetValue(key, "", "PortName", RRF_RT_REG_SZ, NULL, (BYTE *)buf, &len);
+    ret = RegGetValueA(key, "", "PortName", RRF_RT_REG_SZ, NULL, (BYTE *)buf, &len);
     RegCloseKey(key);
     if (ret != ERROR_SUCCESS) {
         if (ret != ERROR_FILE_NOT_FOUND)
@@ -836,7 +836,7 @@ static int find_device_node(hs_device *dev, const struct device_cursor *dev_curs
 static int process_win32_device(DEVINST inst, hs_device **rdev)
 {
     struct device_cursor dev_cursor;
-    hs_device *dev;
+    hs_device *dev = NULL;
     uint8_t ports[MAX_USB_DEPTH];
     unsigned int depth;
     int r;
@@ -1044,8 +1044,8 @@ int enumerate(_hs_match_helper *match_helper, hs_enumerate_func *f, void *udata)
             DWORD guids_count;
             BOOL success;
 
-            success = SetupDiClassGuidsFromName(setup_classes[i].name, guids, _HS_COUNTOF(guids),
-                                                &guids_count);
+            success = SetupDiClassGuidsFromNameA(setup_classes[i].name, guids, _HS_COUNTOF(guids),
+                                                 &guids_count);
             if (!success)
                 return hs_error(HS_ERROR_SYSTEM, "SetupDiClassGuidsFromName('%s') failed: %s",
                                 setup_classes[i].name, hs_win32_strerror(0));
@@ -1173,7 +1173,7 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
 
     switch (msg) {
         case WM_DEVICECHANGE: {
-            DEV_BROADCAST_DEVICEINTERFACE *msg2 = (DEV_BROADCAST_DEVICEINTERFACE *)lparam;
+            DEV_BROADCAST_DEVICEINTERFACE_A *msg2 = (DEV_BROADCAST_DEVICEINTERFACE_A *)lparam;
 
             if (msg2->dbcc_devicetype != DBT_DEVTYP_DEVICEINTERFACE)
                 break;
@@ -1235,7 +1235,7 @@ static LRESULT __stdcall window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
 
 static void unregister_monitor_class(void)
 {
-    UnregisterClass(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
+    UnregisterClassA(MONITOR_CLASS_NAME, GetModuleHandle(NULL));
 }
 
 static unsigned int __stdcall monitor_thread(void *udata)
@@ -1244,9 +1244,9 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     hs_monitor *monitor = (hs_monitor *)udata;
 
-    WNDCLASSEX cls = {0};
+    WNDCLASSEXA cls = {0};
     ATOM cls_atom;
-    DEV_BROADCAST_DEVICEINTERFACE filter = {0};
+    DEV_BROADCAST_DEVICEINTERFACE_A filter = {0};
     HDEVNOTIFY notify_handle = NULL;
     MSG msg;
     int r;
@@ -1258,12 +1258,12 @@ static unsigned int __stdcall monitor_thread(void *udata)
 
     /* If this fails, CreateWindow() will fail too so we can ignore errors here. This
        also takes care of any failure that may result from the class already existing. */
-    cls_atom = RegisterClassEx(&cls);
+    cls_atom = RegisterClassExA(&cls);
     if (cls_atom)
         atexit(unregister_monitor_class);
 
-    monitor->thread_hwnd = CreateWindow(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0,
-                                        HWND_MESSAGE, NULL, NULL, NULL);
+    monitor->thread_hwnd = CreateWindowA(MONITOR_CLASS_NAME, MONITOR_CLASS_NAME, 0, 0, 0, 0, 0,
+                                         HWND_MESSAGE, NULL, NULL, NULL);
     if (!monitor->thread_hwnd) {
         r = hs_error(HS_ERROR_SYSTEM, "CreateWindow() failed: %s", hs_win32_strerror(0));
         goto cleanup;
@@ -1282,8 +1282,8 @@ static unsigned int __stdcall monitor_thread(void *udata)
     /* We monitor everything because I cannot find an interface class to detect
        serial devices within an IAD, and RegisterDeviceNotification() does not
        support device setup class filtering. */
-    notify_handle = RegisterDeviceNotification(monitor->thread_hwnd, &filter,
-                                               DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
+    notify_handle = RegisterDeviceNotificationA(monitor->thread_hwnd, &filter,
+                                                DEVICE_NOTIFY_WINDOW_HANDLE | DEVICE_NOTIFY_ALL_INTERFACE_CLASSES);
     if (!notify_handle) {
         r = hs_error(HS_ERROR_SYSTEM, "RegisterDeviceNotification() failed: %s", hs_win32_strerror(0));
         goto cleanup;

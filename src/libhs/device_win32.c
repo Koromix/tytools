@@ -42,8 +42,8 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
     }
     assert(access != UINT32_MAX);
 
-    port->u.handle.h = CreateFile(dev->path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                  NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+    port->u.handle.h = CreateFileA(dev->path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                   NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (port->u.handle.h == INVALID_HANDLE_VALUE) {
         switch (GetLastError()) {
             case ERROR_FILE_NOT_FOUND:

@@ -59,8 +59,8 @@ const char *hs_win32_strerror(DWORD err)
     if (!err)
         err = GetLastError();
 
-    r = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-                      err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, sizeof(buf), NULL);
+    r = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+                       err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, sizeof(buf), NULL);
 
     if (r) {
         ptr = buf + strlen(buf);
@@ -86,7 +86,7 @@ uint32_t hs_win32_version(void)
         info.dwOSVersionInfoSize = sizeof(info);
 
         RtlGetVersion_func *RtlGetVersion =
-            (RtlGetVersion_func *)GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlGetVersion");
+            (RtlGetVersion_func *)GetProcAddress(GetModuleHandleA("ntdll.dll"), "RtlGetVersion");
         RtlGetVersion(&info);
 
         version = info.dwMajorVersion * 100 + info.dwMinorVersion;

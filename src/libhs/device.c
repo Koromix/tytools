@@ -21,7 +21,7 @@ hs_device *hs_device_ref(hs_device *dev)
     assert(dev);
 
 #ifdef _MSC_VER
-    InterlockedIncrement(&dev->refcount);
+    InterlockedIncrement((long *)&dev->refcount);
 #else
     __atomic_fetch_add(&dev->refcount, 1, __ATOMIC_RELAXED);
 #endif
@@ -32,7 +32,7 @@ void hs_device_unref(hs_device *dev)
 {
     if (dev) {
 #ifdef _MSC_VER
-        if (InterlockedDecrement(&dev->refcount))
+        if (InterlockedDecrement((long *)&dev->refcount))
             return;
 #else
         if (__atomic_fetch_sub(&dev->refcount, 1, __ATOMIC_RELEASE) > 1)
