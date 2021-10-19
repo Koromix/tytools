@@ -413,8 +413,8 @@ static int resolve_usb_location_ioctl(struct device_cursor usb_cursor, uint8_t p
             return 0;
 
         child_key_len = sizeof(child_key);
-        cret = CM_Get_DevNode_Registry_Property(usb_cursor.inst, CM_DRP_DRIVER, NULL,
-                                                child_key, &child_key_len, 0);
+        cret = CM_Get_DevNode_Registry_PropertyA(usb_cursor.inst, CM_DRP_DRIVER, NULL,
+                                                 child_key, &child_key_len, 0);
         if (cret != CR_SUCCESS) {
             hs_log(HS_LOG_WARNING, "Failed to get device driver key: 0x%lx", cret);
             return 0;
@@ -453,8 +453,8 @@ static int resolve_usb_location_cfgmgr(struct device_cursor usb_cursor, uint8_t 
 
         // Extract port from CM_DRP_LOCATION_INFORMATION (Vista and later versions)
         location_len = sizeof(location_buf);
-        cret = CM_Get_DevNode_Registry_Property(usb_cursor.inst, CM_DRP_LOCATION_INFORMATION,
-                                                NULL, location_buf, &location_len, 0);
+        cret = CM_Get_DevNode_Registry_PropertyA(usb_cursor.inst, CM_DRP_LOCATION_INFORMATION,
+                                                 NULL, location_buf, &location_len, 0);
         if (cret != CR_SUCCESS) {
             hs_log(HS_LOG_DEBUG, "No location information on this device node");
             return 0;
@@ -873,7 +873,7 @@ static int process_win32_device(DEVINST inst, hs_device **rdev)
         CONFIGRET cret;
 
         class_len = sizeof(class);
-        cret = CM_Get_DevNode_Registry_Property(inst, CM_DRP_CLASSGUID, NULL, class, &class_len, 0);
+        cret = CM_Get_DevNode_Registry_PropertyA(inst, CM_DRP_CLASSGUID, NULL, class, &class_len, 0);
         if (cret != CR_SUCCESS) {
             hs_log(HS_LOG_WARNING, "Failed to get device class GUID: 0x%lx", cret);
             r = 0;
@@ -1144,7 +1144,7 @@ static int post_event(hs_monitor *monitor, enum event_type event_type, const cha
         DEVINST inst;
         CONFIGRET cret;
 
-        cret = CM_Locate_DevNode(&inst, (DEVINSTID)event->device_key, CM_LOCATE_DEVNODE_NORMAL);
+        cret = CM_Locate_DevNodeA(&inst, (DEVINSTID)event->device_key, CM_LOCATE_DEVNODE_NORMAL);
         if (cret != CR_SUCCESS) {
             hs_log(HS_LOG_DEBUG, "Device node '%s' does not exist: 0x%lx", event->device_key, cret);
             return 0;
@@ -1448,7 +1448,7 @@ static int process_arrival_event(hs_monitor *monitor, const char *key, hs_enumer
     CONFIGRET cret;
     int r;
 
-    cret = CM_Locate_DevNode(&inst, (DEVINSTID)key, CM_LOCATE_DEVNODE_NORMAL);
+    cret = CM_Locate_DevNodeA(&inst, (DEVINSTID)key, CM_LOCATE_DEVNODE_NORMAL);
     if (cret != CR_SUCCESS) {
         hs_log(HS_LOG_DEBUG, "Device node '%s' does not exist: 0x%lx", key, cret);
         return 0;
