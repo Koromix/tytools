@@ -142,6 +142,8 @@ int main(int argc, char *argv[])
     qRegisterMetaType<SessionPeer::CloseReason>("SessionPeer::CloseReason");
     qRegisterMetaType<uint64_t>("uint64_t");
 
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+
     TyCommander app(argc, argv);
 #ifdef _WIN32
     app.setClientConsole(open_tycommanderc_bridge());

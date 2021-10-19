@@ -35,8 +35,6 @@ using namespace std;
 TyUpdater::TyUpdater(int &argc, char *argv[])
     : QApplication(argc, argv)
 {
-    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-
     setOrganizationName("ty");
     setApplicationName(TY_CONFIG_TYUPDATER_NAME);
     setApplicationVersion(ty_version_string());
@@ -112,6 +110,8 @@ int main(int argc, char *argv[])
     qRegisterMetaType<std::shared_ptr<void>>("std::shared_ptr<void>");
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
     qRegisterMetaType<uint64_t>("uint64_t");
+
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     TyUpdater app(argc, argv);
     return app.exec();
