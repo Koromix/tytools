@@ -624,14 +624,19 @@ static int64_t get_time(bool local)
 {
 #ifdef _WIN32
     __time64_t now = 0;
-    struct tm ti1 = {0};
-    struct tm ti2 = {0};
-
     _time64(&now);
+
     if (local) {
+        struct tm ti1 = {0};
+        struct tm ti2 = {0};
+
         _gmtime64_s(&ti1, &now);
         _localtime64_s(&ti2, &now);
+        ti2.tm_isdst = 0;
+
         now += _mktime64(&ti2) - _mktime64(&ti1);
+    } else {
+        ty_log(TY_LOG_DEBUG, "UTC");
     }
 #else
     time_t now = 0;
