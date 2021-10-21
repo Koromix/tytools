@@ -635,8 +635,6 @@ static int64_t get_time(bool local)
         ti2.tm_isdst = 0;
 
         now += _mktime64(&ti2) - _mktime64(&ti1);
-    } else {
-        ty_log(TY_LOG_DEBUG, "UTC");
     }
 #else
     time_t now = 0;
