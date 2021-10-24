@@ -51,7 +51,7 @@ else()
 endif()
 set(CONFIG_TYUPDATER_NAME "TyUpdater" CACHE STRING "Rename TyUpdater application")
 
-set(CONFIG_URL_WEBSITE "https://github.com/Koromix/tytools" CACHE STRING "Project website")
+set(CONFIG_URL_WEBSITE "https://koromix.dev/tytools" CACHE STRING "Project website")
 set(CONFIG_URL_BUGS "https://github.com/Koromix/tytools/issues" CACHE STRING "Project bug report page")
 
 set(CONFIG_PACKAGE_NAME "TyTools" CACHE STRING "Package / installer name")
