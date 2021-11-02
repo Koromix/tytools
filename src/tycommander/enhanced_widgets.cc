@@ -139,9 +139,9 @@ void EnhancedLineInput::keyPressEvent(QKeyEvent *ev)
 
 void EnhancedLineInput::wheelEvent(QWheelEvent *ev)
 {
-    if (ev->delta() > 0) {
+    if (ev->angleDelta().y() > 0) {
         moveInHistory(-1);
-    } else if (ev->delta() < 0) {
+    } else if (ev->angleDelta().y() < 0) {
         moveInHistory(1);
     }
 }

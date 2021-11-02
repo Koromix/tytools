@@ -13,7 +13,7 @@
 #endif
 #include <QCoreApplication>
 #include <QFileDialog>
-#include <QSysInfo>
+#include <QOperatingSystemVersion>
 #include <QWinEventNotifier>
 
 #include "arduino_dialog.hpp"
@@ -152,7 +152,9 @@ void ArduinoDialog::appendMessage(const QString &msg, const QTextCharFormat &fmt
 void ArduinoDialog::executeAsRoot(const QString &command)
 {
 #ifdef _WIN32
-    if (QSysInfo::windowsVersion() >= QSysInfo::WV_VISTA) {
+    auto vista = QOperatingSystemVersion(QOperatingSystemVersion::Windows, 6, 0);
+
+    if (QOperatingSystemVersion::current() >= vista) {
         installWithUAC(command);
         return;
     }

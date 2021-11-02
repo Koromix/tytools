@@ -202,8 +202,11 @@ SessionPeer::SessionPeer(QLocalSocket *socket)
     QObject::connect(socket, &QLocalSocket::disconnected, this, [=]() {
         close(RemoteClose);
     });
-    QObject::connect(socket, static_cast<void(QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error),
-                     this, [=]() {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    QObject::connect(socket, &QLocalSocket::errorOccurred, this, [=]() {
+#else
+    QObject::connect(socket, static_cast<void(QLocalSocket::*)(QLocalSocket::LocalSocketError)>(&QLocalSocket::error), this, [=]() {
+#endif
         close(Error);
     });
 }
