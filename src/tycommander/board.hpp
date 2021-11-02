@@ -42,6 +42,12 @@ struct BoardInterfaceInfo {
     bool open;
 };
 
+enum RtcMode {
+    RTC_LOCALTIME,
+    RTC_UTC,
+    RTC_IGNORE
+};
+
 class Board : public QObject, public std::enable_shared_from_this<Board> {
     Q_OBJECT
 
@@ -71,6 +77,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool enable_serial_;
     QString serial_log_dir_;
     size_t serial_log_size_;
+    RtcMode rtc_mode_;
 
     QString status_text_;
     QString status_icon_name_;
@@ -127,6 +134,7 @@ public:
     bool enableSerial() const { return enable_serial_; }
     size_t serialLogSize() const { return serial_log_size_; }
     QString serialLogFilename() const { return serial_log_file_.fileName(); }
+    RtcMode rtcMode() const { return rtc_mode_; }
 
     bool serialOpen() const { return serial_iface_; }
     bool serialIsSerial() const;
@@ -161,6 +169,7 @@ public slots:
     void setScrollBackLimit(unsigned int limit);
     void setEnableSerial(bool enable, bool persist = true);
     void setSerialLogSize(size_t size);
+    void setRtcMode(RtcMode mode);
 
     TaskInterface startUpload(const QString &filename = QString());
     TaskInterface startUpload(const std::vector<std::shared_ptr<Firmware>> &fws);

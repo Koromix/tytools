@@ -24,6 +24,7 @@ class AboutDialog;
 class ArduinoDialog;
 class Board;
 class Monitor;
+enum RtcMode;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT
@@ -133,6 +134,7 @@ private slots:
     void setScrollBackLimitForSelection(int limit);
     void setEnableSerialForSelection(bool enable);
     void setSerialLogSizeForSelection(int size);
+    void setRtcModeForSelection(RtcMode mode);
 };
 
 #endif

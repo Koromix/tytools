@@ -249,6 +249,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(firmwareBrowseButton, &QToolButton::clicked, this, &MainWindow::browseForFirmware);
     firmwareBrowseButton->setMenu(menuBrowseFirmware);
     connect(resetAfterCheck, &QCheckBox::clicked, this, &MainWindow::setResetAfterForSelection);
+    connect(rtcComboBox, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int idx) {
+        RtcMode mode = (RtcMode)idx;
+        setRtcModeForSelection(mode);
+    });
     connect(rateComboBox, &QComboBox::currentTextChanged, this, [=](const QString &str) {
         unsigned int rate = str.toUInt();
         setSerialRateForSelection(rate);
@@ -972,6 +976,10 @@ void MainWindow::refreshSettings()
 
     firmwarePath->setText(current_board_->firmware());
     resetAfterCheck->setChecked(current_board_->resetAfter());
+    rtcComboBox->setEnabled(current_board_->hasCapability(TY_BOARD_CAPABILITY_RTC));
+    rtcComboBox->blockSignals(true);
+    rtcComboBox->setCurrentIndex((int)current_board_->rtcMode());
+    rtcComboBox->blockSignals(false);
     rateComboBox->blockSignals(true);
     rateComboBox->setCurrentText(QString::number(current_board_->serialRate()));
     rateComboBox->blockSignals(false);
@@ -1115,4 +1123,10 @@ void MainWindow::setSerialLogSizeForSelection(int size)
 {
     for (auto &board: selected_boards_)
         board->setSerialLogSize(size * 1000);
+}
+
+void MainWindow::setRtcModeForSelection(RtcMode mode)
+{
+    for (auto &board: selected_boards_)
+        board->setRtcMode(mode);
 }

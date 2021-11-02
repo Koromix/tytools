@@ -133,9 +133,6 @@ static int teensy_load_interface(ty_board_interface *iface)
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_UPLOAD;
                         iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RESET;
                     }
-                    if (iface->model == TY_MODEL_TEENSY_40 || iface->model == TY_MODEL_TEENSY_41 ||
-                            iface->model == TY_MODEL_TEENSY_MM)
-                        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RTC;
                 } break;
 
                 case TEENSY_USAGE_PAGE_RAWHID: {
@@ -162,6 +159,10 @@ static int teensy_load_interface(ty_board_interface *iface)
         if (!iface->model)
             iface->model = TY_MODEL_TEENSY;
     }
+
+    if (iface->model == TY_MODEL_TEENSY_40 || iface->model == TY_MODEL_TEENSY_41 ||
+            iface->model == TY_MODEL_TEENSY_MM)
+        iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RTC;
 
     iface->class_vtable = &_ty_teensy_class_vtable;
 

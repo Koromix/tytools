@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>558</width>
-    <height>468</height>
+    <height>492</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -327,6 +327,49 @@
                <bool>true</bool>
               </property>
              </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="rtcLayout">
+              <item>
+               <widget class="QLabel" name="label_13">
+                <property name="text">
+                 <string>RTC:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_6">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QComboBox" name="rtcComboBox">
+                <item>
+                 <property name="text">
+                  <string>Local time</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>UTC</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Ignore RTC</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>

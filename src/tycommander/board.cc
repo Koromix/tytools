@@ -102,6 +102,11 @@ void Board::loadSettings(Monitor *monitor)
         "serialLogSize",
         static_cast<quint64>(monitor ? monitor->serialLogSize() : 0)).toULongLong();
     serial_rate_ = db_.get("serialRate", 115200).toUInt();
+    {
+        int mode = db_.get("rtcMode", 0).toInt();
+        if (mode >= 0 && mode <= (int)RTC_IGNORE)
+            rtc_mode_ = (RtcMode)mode;
+    }
 
     /* Even if the user decides to enable persistence for ambiguous identifiers,
        we still don't want to cache the board model. */
@@ -304,7 +309,16 @@ TaskInterface Board::upload(const QString &filename)
 
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws)
 {
-    return upload(fws, reset_after_ ? 0 : TY_UPLOAD_NORESET);
+    int flags = 0;
+
+    flags |= reset_after_ ? 0 : TY_UPLOAD_NORESET;
+    switch (rtc_mode_) {
+    case RTC_LOCALTIME: {} break;
+    case RTC_UTC: { flags |= TY_UPLOAD_RTC_UTC; } break;
+    case RTC_IGNORE: { flags |= TY_UPLOAD_NORTC; } break;
+    }
+
+    return upload(fws, flags);
 }
 
 TaskInterface Board::upload(const vector<shared_ptr<Firmware>> &fws, int flags)
@@ -530,6 +544,17 @@ void Board::setSerialLogSize(size_t size)
     updateSerialLogState(false);
 
     db_.put("serialLogSize", static_cast<quint64>(size));
+    emit settingsChanged();
+}
+
+void Board::setRtcMode(RtcMode mode)
+{
+    if (mode == rtc_mode_)
+        return;
+
+    rtc_mode_ = mode;
+
+    db_.put("rtcMode", static_cast<int>(mode));
     emit settingsChanged();
 }
 

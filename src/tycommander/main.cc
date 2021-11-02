@@ -22,6 +22,7 @@
 #include "../libhs/common.h"
 #include "../libty/class.h"
 #include "tycommander.hpp"
+#include "board.hpp"
 
 #ifdef QT_STATIC
     #include <QtPlugin>
@@ -141,6 +142,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<ty_descriptor>("ty_descriptor");
     qRegisterMetaType<SessionPeer::CloseReason>("SessionPeer::CloseReason");
     qRegisterMetaType<uint64_t>("uint64_t");
+    qRegisterMetaType<RtcMode>("RtcMode");
 
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
