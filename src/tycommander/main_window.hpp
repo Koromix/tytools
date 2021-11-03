@@ -24,7 +24,7 @@ class AboutDialog;
 class ArduinoDialog;
 class Board;
 class Monitor;
-enum RtcMode;
+enum RtcMode : int;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow {
     Q_OBJECT

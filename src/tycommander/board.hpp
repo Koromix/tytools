@@ -42,7 +42,7 @@ struct BoardInterfaceInfo {
     bool open;
 };
 
-enum RtcMode {
+enum RtcMode : int {
     RTC_LOCALTIME,
     RTC_UTC,
     RTC_IGNORE
