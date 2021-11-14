@@ -214,6 +214,8 @@ cleanup:
 static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size)
 {
     unsigned int collection_depth = 0;
+    unsigned int report_size = 0;
+    unsigned int report_count = 0;
 
     unsigned int item_size = 0;
     for (size_t i = 0; i < desc_size; i += item_size + 1) {
@@ -262,7 +264,6 @@ static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size
         }
 
         switch (item_type) {
-            // main items
             case 0xA0: {
                 collection_depth++;
             } break;
@@ -270,22 +271,39 @@ static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size
                 collection_depth--;
             } break;
 
-            // global items
+            case 0x74: {
+                report_size = (unsigned int)item_data;
+            } break;
+            case 0x94: {
+                report_count = (unsigned int)item_data;
+            } break;
+            case 0x80: {
+                dev->u.hid.max_input_len += (size_t)((report_size * report_count) + 7 / 8);
+            } break;
             case 0x84: {
                 dev->u.hid.numbered_reports = true;
             } break;
+            case 0x90: {
+                dev->u.hid.max_output_len += (size_t)((report_size * report_count) + 7 / 8);
+            } break;
+            case 0xB0: {
+                dev->u.hid.max_feature_len += (size_t)((report_size * report_count) + 7 / 8);
+            } break;
+
             case 0x04: {
                 if (!collection_depth)
                     dev->u.hid.usage_page = (uint16_t)item_data;
             } break;
-
-            // local items
             case 0x08: {
                 if (!collection_depth)
                     dev->u.hid.usage = (uint16_t)item_data;
             } break;
         }
     }
+
+    dev->u.hid.max_input_len += !!dev->u.hid.numbered_reports;
+    dev->u.hid.max_output_len += !!dev->u.hid.numbered_reports;
+    dev->u.hid.max_feature_len += !!dev->u.hid.numbered_reports;
 }
 
 static void fill_hid_properties(struct udev_aggregate *agg, hs_device *dev)

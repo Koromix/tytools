@@ -309,6 +309,13 @@ static void fill_hid_properties(struct service_aggregate *agg, hs_device *dev)
     success &= get_ioregistry_value_number(agg->dev_service, CFSTR("PrimaryUsage"),
                                            kCFNumberSInt16Type, &dev->u.hid.usage);
 
+    success &= get_ioregistry_value_number(agg->dev_service, CFSTR("MaxInputReportSize"),
+                                           kCFNumberSInt16Type, &dev->u.hid.max_input_len);
+    success &= get_ioregistry_value_number(agg->dev_service, CFSTR("MaxOutputReportSize"),
+                                           kCFNumberSInt16Type, &dev->u.hid.max_output_len);
+    success &= get_ioregistry_value_number(agg->dev_service, CFSTR("MaxFeatureReportSize"),
+                                           kCFNumberSInt16Type, &dev->u.hid.max_feature_len);
+
     if (!success)
         hs_log(HS_LOG_WARNING, "Invalid HID values for '%s", dev->path);
 }
