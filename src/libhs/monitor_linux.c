@@ -278,16 +278,16 @@ static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size
                 report_count = (unsigned int)item_data;
             } break;
             case 0x80: {
-                dev->u.hid.max_input_len += (size_t)((report_size * report_count) + 7 / 8);
+                dev->u.hid.max_input_len += (size_t)(((report_size * report_count) + 7) / 8);
             } break;
             case 0x84: {
                 dev->u.hid.numbered_reports = true;
             } break;
             case 0x90: {
-                dev->u.hid.max_output_len += (size_t)((report_size * report_count) + 7 / 8);
+                dev->u.hid.max_output_len += (size_t)(((report_size * report_count) + 7) / 8);
             } break;
             case 0xB0: {
-                dev->u.hid.max_feature_len += (size_t)((report_size * report_count) + 7 / 8);
+                dev->u.hid.max_feature_len += (size_t)(((report_size * report_count) + 7) / 8);
             } break;
 
             case 0x04: {
