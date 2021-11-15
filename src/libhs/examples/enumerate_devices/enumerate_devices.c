@@ -31,6 +31,15 @@ static int device_callback(hs_device *dev, void *udata)
     if (dev->serial_number_string)
         printf("  - serial number: %s\n", dev->serial_number_string);
 
+    if (dev->type == HS_DEVICE_TYPE_HID) {
+        printf("  - HID information:\n");
+        printf("    - Primary usage page: 0x%" PRIX16 " (%" PRIu16 ")\n", dev->u.hid.usage_page, dev->u.hid.usage_page);
+        printf("    - Primary usage: 0x%" PRIX16 " (%" PRIu16 ")\n", dev->u.hid.usage, dev->u.hid.usage);
+        printf("    - Maximum input report size: %zu bytes\n", dev->u.hid.max_input_len);
+        printf("    - Maximum output report size: %zu bytes\n", dev->u.hid.max_output_len);
+        printf("    - Maximum feature report size: %zu bytes\n", dev->u.hid.max_feature_len);
+    }
+
     /* If you return a non-zero value, the enumeration is aborted and this value is returned
        from the calling function. */
     return 0;
