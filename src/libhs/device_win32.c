@@ -132,7 +132,7 @@ int _hs_open_file_port(hs_device *dev, hs_port_mode mode, hs_port **rport)
         }
 
         if (dev->type == HS_DEVICE_TYPE_HID) {
-            port->u.handle.read_buf_size = dev->u.hid.max_input_len;
+            port->u.handle.read_buf_size = dev->u.hid.max_input_len + 1;
         } else {
             port->u.handle.read_buf_size = READ_BUFFER_SIZE;
         }

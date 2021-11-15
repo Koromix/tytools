@@ -300,10 +300,6 @@ static void parse_hid_descriptor(hs_device *dev, uint8_t *desc, size_t desc_size
             } break;
         }
     }
-
-    dev->u.hid.max_input_len += !!dev->u.hid.numbered_reports;
-    dev->u.hid.max_output_len += !!dev->u.hid.numbered_reports;
-    dev->u.hid.max_feature_len += !!dev->u.hid.numbered_reports;
 }
 
 static void fill_hid_properties(struct udev_aggregate *agg, hs_device *dev)

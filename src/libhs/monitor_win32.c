@@ -588,9 +588,9 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
 
         dev->u.hid.usage_page = caps.UsagePage;
         dev->u.hid.usage = caps.Usage;
-        dev->u.hid.max_input_len = caps.InputReportByteLength;
-        dev->u.hid.max_output_len = caps.OutputReportByteLength;
-        dev->u.hid.max_feature_len = caps.FeatureReportByteLength;
+        dev->u.hid.max_input_len = caps.InputReportByteLength ? (caps.InputReportByteLength - 1) : 0;
+        dev->u.hid.max_output_len = caps.OutputReportByteLength ? (caps.OutputReportByteLength - 1) : 0;
+        dev->u.hid.max_feature_len = caps.FeatureReportByteLength ? (caps.FeatureReportByteLength - 1) : 0;
     }
 
     r = 1;
