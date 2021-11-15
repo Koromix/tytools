@@ -18,9 +18,6 @@
 #include "firmware.h"
 #include "system.h"
 
-#define SEREMU_TX_SIZE 32
-#define SEREMU_RX_SIZE 64
-
 enum {
     TEENSY_USAGE_PAGE_BOOTLOADER = 0xFF9C,
     TEENSY_USAGE_PAGE_RAWHID = 0xFFAB,
@@ -145,6 +142,9 @@ static int teensy_load_interface(ty_board_interface *iface)
                     iface->capabilities |= 1 << TY_BOARD_CAPABILITY_RUN;
                     iface->capabilities |= 1 << TY_BOARD_CAPABILITY_SERIAL;
                     iface->capabilities |= 1 << TY_BOARD_CAPABILITY_REBOOT;
+
+                    ty_log(TY_LOG_DEBUG, "SEREMU input report size: %zu bytes", dev->u.hid.max_input_len);
+                    ty_log(TY_LOG_DEBUG, "SEREMU output report size: %zu bytes", dev->u.hid.max_output_len);
                 } break;
 
                 default: {
@@ -480,7 +480,7 @@ static unsigned int teensy_identify_models(const ty_firmware *fw, ty_model *rmod
 
 static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t size, int timeout)
 {
-    uint8_t hid_buf[SEREMU_RX_SIZE + 1];
+    uint8_t hid_buf[2048];
     ssize_t r;
 
     switch (iface->dev->type) {
@@ -492,7 +492,9 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
         } break;
 
         case HS_DEVICE_TYPE_HID: {
-            r = hs_hid_read(iface->port, hid_buf, sizeof(hid_buf), timeout);
+            size_t rx_size = _HS_MIN(sizeof(hid_buf), iface->dev->u.hid.max_input_len);
+
+            r = hs_hid_read(iface->port, hid_buf, rx_size, timeout);
             if (r < 0)
                 return ty_libhs_translate_error((int)r);
             if (r < 2)
@@ -510,7 +512,7 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
 
 static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, size_t size)
 {
-    uint8_t report[SEREMU_TX_SIZE + 1];
+    uint8_t report[2048];
     size_t total = 0;
     ssize_t r;
 
@@ -525,15 +527,17 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
         } break;
 
         case HS_DEVICE_TYPE_HID: {
-            /* SEREMU expects packets of 32 bytes. The terminating NUL marks the end, so
-               no binary transfers. */
-            for (size_t i = 0; i < size;) {
-                size_t block_size = _HS_MIN(SEREMU_TX_SIZE, size - i);
+            size_t tx_size = _HS_MIN(sizeof(report), iface->dev->u.hid.max_output_len);
 
-                memset(report, 0, sizeof(report));
+            /* SEREMU expects specifically sized packets. The terminating NUL marks the end,
+               so no binary transfers. */
+            for (size_t i = 0; i < size;) {
+                size_t block_size = _HS_MIN(tx_size - 1, size - i);
+
+                memset(report, 0, tx_size);
                 memcpy(report + 1, buf + i, block_size);
 
-                r = hs_hid_write(iface->port, report, sizeof(report));
+                r = hs_hid_write(iface->port, report, tx_size);
                 if (r < 0)
                     return ty_libhs_translate_error((int)r);
                 if (!r)
