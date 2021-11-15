@@ -775,14 +775,14 @@ static int teensy_reset(ty_board_interface *iface, int64_t rtc)
             buf[1] = 0x31;
             buf[2] = 0xC2;
             buf[3] = 0x89;
-            buf[4] = lo & 0xFF;
-            buf[5] = (lo >> 8) & 0xFF;
-            buf[6] = (lo >> 16) & 0xFF;
-            buf[7] = (lo >> 24) & 0xFF;
-            buf[8] = hi & 0xFF;
-            buf[9] = (hi >> 8) & 0xFF;
-            buf[10] = (hi >> 16) & 0xFF;
-            buf[11] = (hi >> 24) & 0xFF;
+            buf[4] = (uint8_t)(lo & 0xFF);
+            buf[5] = (uint8_t)((lo >> 8) & 0xFF);
+            buf[6] = (uint8_t)((lo >> 16) & 0xFF);
+            buf[7] = (uint8_t)((lo >> 24) & 0xFF);
+            buf[8] = (uint8_t)(hi & 0xFF);
+            buf[9] = (uint8_t)((hi >> 8) & 0xFF);
+            buf[10] = (uint8_t)((hi >> 16) & 0xFF);
+            buf[11] = (uint8_t)((hi >> 24) & 0xFF);
         }
 
         return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, buf, sizeof(buf), 25);
