@@ -492,7 +492,7 @@ static ssize_t teensy_serial_read(ty_board_interface *iface, char *buf, size_t s
         } break;
 
         case HS_DEVICE_TYPE_HID: {
-            size_t rx_size = _HS_MIN(sizeof(hid_buf), iface->dev->u.hid.max_input_len);
+            size_t rx_size = _HS_MIN(sizeof(hid_buf), iface->dev->u.hid.max_input_len + 1);
 
             r = hs_hid_read(iface->port, hid_buf, rx_size, timeout);
             if (r < 0)
@@ -527,7 +527,7 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
         } break;
 
         case HS_DEVICE_TYPE_HID: {
-            size_t tx_size = _HS_MIN(sizeof(report), iface->dev->u.hid.max_output_len);
+            size_t tx_size = _HS_MIN(sizeof(report), iface->dev->u.hid.max_output_len + 1);
 
             /* SEREMU expects specifically sized packets. The terminating NUL marks the end,
                so no binary transfers. */
