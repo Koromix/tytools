@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef _WIN32
+
 #include "common.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -154,3 +156,5 @@ bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout)
                                     (CRITICAL_SECTION *)&mutex->mutex,
                                     timeout >= 0 ? (DWORD)timeout : INFINITE);
 }
+
+#endif

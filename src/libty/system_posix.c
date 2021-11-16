@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifndef _WIN32
+
 #include "common.h"
 #include <fcntl.h>
 #include <sys/types.h>
@@ -362,3 +364,5 @@ void ty_terminal_restore(void)
 
     tcsetattr(STDIN_FILENO, TCSADRAIN, &orig_termios);
 }
+
+#endif

@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifndef _WIN32
+
 #include "common.h"
 #include <time.h>
 #include "system.h"
@@ -193,3 +195,5 @@ bool ty_cond_wait(ty_cond *cond, ty_mutex *mutex, int timeout)
 
     return !r;
 }
+
+#endif

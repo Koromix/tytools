@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef _WIN32
+
 #include "common.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -178,3 +180,5 @@ uint64_t ty_timer_rearm(ty_timer *timer)
 
     return ticks;
 }
+
+#endif

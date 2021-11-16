@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __linux__
+
 #include "common.h"
 #include <sys/timerfd.h>
 #include <unistd.h>
@@ -100,3 +102,5 @@ uint64_t ty_timer_rearm(ty_timer *timer)
 
     return ticks;
 }
+
+#endif

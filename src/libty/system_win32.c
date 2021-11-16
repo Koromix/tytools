@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef _WIN32
+
 #include "common.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -194,3 +196,5 @@ void ty_terminal_restore(void)
 
     SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_console_mode);
 }
+
+#endif

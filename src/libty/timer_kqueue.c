@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __APPLE__
+
 #include "common.h"
 #include <sys/types.h>
 #include <sys/event.h>
@@ -109,3 +111,5 @@ uint64_t ty_timer_rearm(ty_timer *timer)
     assert(false);
     __builtin_unreachable();
 }
+
+#endif

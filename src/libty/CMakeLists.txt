@@ -30,16 +30,19 @@ set(LIBTY_SOURCES board.c
                   optline.c
                   optline.h
                   system.c
+                  system_posix.c
+                  system_win32.c
                   system.h
                   task.c
                   task.h
+                  thread_pthread.c
+                  thread_win32.c
                   thread.h
+                  timer_kqueue.c
+                  timer_linux.c
+                  timer_win32.c
                   timer.h)
 if(LINUX)
-    list(APPEND LIBTY_SOURCES system_posix.c
-                              thread_pthread.c
-                              timer_linux.c)
-
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GNU_SOURCE")
 
@@ -48,20 +51,10 @@ if(LINUX)
 
     include_directories(${LIBUDEV_INCLUDE_DIRS})
     list(APPEND LIBTY_LINK_LIBRARIES ${LIBUDEV_LIBRARIES})
-elseif(WIN32)
-    list(APPEND LIBTY_SOURCES system_win32.c
-                              thread_win32.c
-                              timer_win32.c)
 elseif(APPLE)
-    list(APPEND LIBTY_SOURCES system_posix.c
-                              thread_pthread.c
-                              timer_kqueue.c)
-
     find_library(COREFOUNDATION_LIBRARIES CoreFoundation)
     find_library(IOKIT_LIBRARIES IOKit)
     list(APPEND LIBTY_LINK_LIBRARIES ${COREFOUNDATION_LIBRARIES} ${IOKIT_LIBRARIES})
-else()
-    message(FATAL_ERROR "Unsupported platform")
 endif()
 
 if(CONFIG_VARIANT)
