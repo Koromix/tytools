@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef _WIN32
+
 #include "common_priv.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -270,3 +272,5 @@ ssize_t _hs_win32_write_sync(hs_port *port, const uint8_t *buf, size_t size, int
 
     return (ssize_t)len;
 }
+
+#endif

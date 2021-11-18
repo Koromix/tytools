@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __linux__
+
 #include "common_priv.h"
 #include <fcntl.h>
 #include <linux/hidraw.h>
@@ -682,3 +684,5 @@ int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 {
     return _hs_monitor_list(&monitor->devices, f, udata);
 }
+
+#endif

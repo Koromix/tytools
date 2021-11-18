@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __APPLE__
+
 #include "common_priv.h"
 #include <CoreFoundation/CFRunLoop.h>
 #include <IOKit/IOCFPlugIn.h>
@@ -727,3 +729,5 @@ int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 {
     return _hs_monitor_list(&monitor->devices, f, udata);
 }
+
+#endif

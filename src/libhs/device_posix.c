@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifndef _WIN32
+
 #include "common_priv.h"
 #include <fcntl.h>
 #include <termios.h>
@@ -156,3 +158,5 @@ hs_handle _hs_get_file_port_poll_handle(const hs_port *port)
 {
     return port->u.file.fd;
 }
+
+#endif

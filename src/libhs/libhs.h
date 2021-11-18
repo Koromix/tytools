@@ -41,13 +41,6 @@
 #endif
 
 #ifdef HS_IMPLEMENTATION
-    #if defined(_MSC_VER)
-        #pragma comment(lib, "user32.lib")
-        #pragma comment(lib, "advapi32.lib")
-        #pragma comment(lib, "setupapi.lib")
-        #pragma comment(lib, "hid.lib")
-    #endif
-
     #include "common_priv.h"
     #include "device_priv.h"
     #include "match_priv.h"
@@ -55,30 +48,21 @@
     #include "common.c"
     #include "array.c"
     #include "device.c"
+    #include "device_posix.c"
+    #include "device_win32.c"
     #include "match.c"
+    #include "hid_darwin.c"
+    #include "hid_linux.c"
+    #include "hid_win32.c"
     #include "htable.c"
     #include "monitor_common.c"
+    #include "monitor_linux.c"
+    #include "monitor_win32.c"
+    #include "monitor_darwin.c"
     #include "platform.c"
-
-    #if defined(_WIN32)
-        #include "device_win32.c"
-        #include "hid_win32.c"
-        #include "monitor_win32.c"
-        #include "platform_win32.c"
-        #include "serial_win32.c"
-    #elif defined(__APPLE__)
-        #include "device_posix.c"
-        #include "hid_darwin.c"
-        #include "monitor_darwin.c"
-        #include "platform_darwin.c"
-        #include "serial_posix.c"
-    #elif defined(__linux__)
-        #include "device_posix.c"
-        #include "hid_linux.c"
-        #include "monitor_linux.c"
-        #include "platform_posix.c"
-        #include "serial_posix.c"
-    #else
-        #error "Platform not supported"
-    #endif
+    #include "platform_darwin.c"
+    #include "platform_linux.c"
+    #include "platform_win32.c"
+    #include "serial_posix.c"
+    #include "serial_win32.c"
 #endif

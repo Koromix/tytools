@@ -37,41 +37,32 @@ set(LIBHS_SOURCES array.c
                   common.h
                   common_priv.h
                   device.c
+                  device_posix.c
+                  device_win32.c
                   device.h
                   device_priv.h
+                  hid_darwin.c
+                  hid_linux.c
+                  hid_win32.c
                   hid.h
                   htable.c
                   match.c
                   match.h
                   match_priv.h
-                  monitor.h
                   monitor_common.c
+                  monitor_darwin.c
+                  monitor_linux.c
+                  monitor_win32.c
+                  monitor.h
                   monitor_priv.h
                   platform.c
+                  platform_darwin.c
+                  platform_linux.c
+                  platform_win32.c
                   platform.h
+                  serial_posix.c
+                  serial_win32.c
                   serial.h)
-if(WIN32)
-    list(APPEND LIBHS_SOURCES device_win32.c
-                              hid_win32.c
-                              monitor_win32.c
-                              platform_win32.c
-                              serial_win32.c)
-else()
-    list(APPEND LIBHS_SOURCES device_posix.c
-                              serial_posix.c)
-
-    if(LINUX)
-        list(APPEND LIBHS_SOURCES hid_linux.c
-                                  monitor_linux.c
-                                  platform_posix.c)
-    elseif(APPLE)
-        list(APPEND LIBHS_SOURCES hid_darwin.c
-                                  monitor_darwin.c
-                                  platform_darwin.c)
-    else()
-        message(FATAL_ERROR "Unsupported platform")
-    endif()
-endif()
 
 add_library(libhs STATIC ${LIBHS_SOURCES})
 set_target_properties(libhs PROPERTIES OUTPUT_NAME hs)

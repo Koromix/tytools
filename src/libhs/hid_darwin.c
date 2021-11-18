@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __APPLE__
+
 #include "common_priv.h"
 #include <CoreFoundation/CFRunLoop.h>
 #include <IOKit/IOCFPlugIn.h>
@@ -492,3 +494,5 @@ ssize_t hs_hid_send_feature_report(hs_port *port, const uint8_t *buf, size_t siz
 
     return send_report(port, kIOHIDReportTypeFeature, buf, size);
 }
+
+#endif

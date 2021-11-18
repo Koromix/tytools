@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __APPLE__
+
 #include "common_priv.h"
 #include <mach/mach_time.h>
 #include <sys/select.h>
@@ -117,3 +119,5 @@ uint32_t hs_darwin_version(void)
 
     return version;
 }
+
+#endif

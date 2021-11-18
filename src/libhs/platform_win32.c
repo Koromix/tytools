@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef _WIN32
+
 #include "common_priv.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -94,3 +96,5 @@ uint32_t hs_win32_version(void)
 
     return version;
 }
+
+#endif

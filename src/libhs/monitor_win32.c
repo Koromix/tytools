@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef _WIN32
+
 #include "common_priv.h"
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -31,6 +33,13 @@ _HS_END_C
 #include "match_priv.h"
 #include "monitor_priv.h"
 #include "platform.h"
+
+#if defined(_MSC_VER)
+    #pragma comment(lib, "user32.lib")
+    #pragma comment(lib, "advapi32.lib")
+    #pragma comment(lib, "setupapi.lib")
+    #pragma comment(lib, "hid.lib")
+#endif
 
 enum event_type {
     DEVICE_EVENT_ADDED,
@@ -1528,3 +1537,5 @@ int hs_monitor_list(hs_monitor *monitor, hs_enumerate_func *f, void *udata)
 {
     return _hs_monitor_list(&monitor->devices, f, udata);
 }
+
+#endif

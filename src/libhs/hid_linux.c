@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __linux__
+
 #include "common_priv.h"
 #include <fcntl.h>
 #include <linux/hidraw.h>
@@ -178,3 +180,5 @@ restart:
 
     return r;
 }
+
+#endif

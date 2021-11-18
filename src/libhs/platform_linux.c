@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifdef __linux__
+
 #include "common_priv.h"
 #include <poll.h>
 #include <sys/utsname.h>
@@ -83,7 +85,6 @@ restart:
     return r;
 }
 
-#ifdef __linux__
 uint32_t hs_linux_version(void)
 {
     static uint32_t version;
@@ -104,4 +105,5 @@ uint32_t hs_linux_version(void)
 
     return version;
 }
+
 #endif

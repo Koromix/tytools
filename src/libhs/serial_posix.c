@@ -8,6 +8,8 @@
 
    See the LICENSE file for more details. */
 
+#ifndef _WIN32
+
 #include "common_priv.h"
 #include <poll.h>
 #include <sys/ioctl.h>
@@ -360,3 +362,5 @@ ssize_t hs_serial_write(hs_port *port, const uint8_t *buf, size_t size, int time
 
     return (ssize_t)written;
 }
+
+#endif
