@@ -103,7 +103,7 @@ typedef long ssize_t;
     ((type *)((char *)(head) - (size_t)(&((type *)0)->member)))
 
 int _hs_asprintf(char **strp, const char *fmt, ...) _HS_PRINTF_FORMAT(2, 3);
-int _hs_vasprintf(char **strp, const char *fmt, va_list ap);
+int _hs_vasprintf(char **strp, const char *fmt, va_list ap) _HS_PRINTF_FORMAT(2, 0);
 
 #if defined(DOXYGEN)
 /**
