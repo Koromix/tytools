@@ -4,6 +4,7 @@ bin/
 CMakeLists.txt.*
 *.pro.*
 .tags*
+src/libhs/doc/pages
 
 # I like to keep a bunch of test firmwares around
 *.hex

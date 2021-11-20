@@ -77,7 +77,7 @@ struct hs_match_spec {
  * 0123:abcd     | Match devices with VID:PID pair 0x0123:0xABCD
  *
  * @param      str    Human-readable match string.
- * @param[out] rmatch A pointer to the variable that receives the device match specifier,
+ * @param[out] rspec  A pointer to the variable that receives the device match specifier,
  *     it will stay unchanged if the function fails.
  * @return This function returns 0 on success, or a negative @ref hs_error_code value.
  */
