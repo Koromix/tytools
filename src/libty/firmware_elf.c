@@ -59,8 +59,8 @@ typedef struct Elf32_Phdr {
 struct loader_context {
     ty_firmware *fw;
 
-    const uint8_t *mem;
-    size_t len;
+    ty_firmware_read_func *func;
+    void *udata;
 
     Elf32_Ehdr ehdr;
 };
@@ -86,21 +86,31 @@ static inline void reverse_uint32(uint32_t *u)
             | ((*u & 0xFF0000) >> 8) | ((*u & 0xFF000000) >> 24);
 }
 
-static int read_chunk(struct loader_context *ctx, off_t offset, size_t size, void *buf)
+static int read_chunk(struct loader_context *ctx, int64_t offset, void *buf, size_t size)
 {
-    if (offset < 0 || (size_t)offset > ctx->len - size)
-        return ty_error(TY_ERROR_PARSE, "ELF file '%s' is malformed or truncated",
-                        ctx->fw->filename);
+    ssize_t r;
 
-    memcpy(buf, ctx->mem + offset, size);
+    if (offset < 0)
+        goto truncated;
+
+    r = (*ctx->func)(offset, (uint8_t *)buf, size, ctx->udata);
+    if (r < 0)
+        return (int)r;
+    if (r < size)
+        goto truncated;
+
     return 0;
+
+truncated:
+    return ty_error(TY_ERROR_PARSE, "ELF file '%s' is malformed or truncated",
+                    ctx->fw->filename);
 }
 
 static int load_program_header(struct loader_context *ctx, unsigned int i, Elf32_Phdr *rphdr)
 {
     int r;
 
-    r = read_chunk(ctx, (off_t)(ctx->ehdr.e_phoff + i * ctx->ehdr.e_phentsize), sizeof(*rphdr), rphdr);
+    r = read_chunk(ctx, (off_t)(ctx->ehdr.e_phoff + i * ctx->ehdr.e_phentsize), rphdr, sizeof(*rphdr));
     if (r < 0)
         return r;
 
@@ -134,27 +144,26 @@ static int load_segment(struct loader_context *ctx, unsigned int i)
     r = ty_firmware_add_segment(ctx->fw, phdr.p_paddr, phdr.p_filesz, &segment);
     if (r < 0)
         return r;
-    r = read_chunk(ctx, phdr.p_offset, phdr.p_filesz, segment->data);
+    r = read_chunk(ctx, phdr.p_offset, segment->data, phdr.p_filesz);
     if (r < 0)
         return r;
 
     return 1;
 }
 
-int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
+int ty_firmware_load_elf(ty_firmware *fw, ty_firmware_read_func *func, void *udata)
 {
     assert(fw);
     assert(!fw->segments_count && !fw->total_size);
-    assert(mem || !len);
 
     struct loader_context ctx = {0};
     int r;
 
     ctx.fw = fw;
-    ctx.mem = mem;
-    ctx.len = len;
+    ctx.func = func;
+    ctx.udata = udata;
 
-    r = read_chunk(&ctx, 0, sizeof(ctx.ehdr), &ctx.ehdr);
+    r = read_chunk(&ctx, 0, &ctx.ehdr, sizeof(ctx.ehdr));
     if (r < 0)
         return r;
 
@@ -191,7 +200,6 @@ int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len)
 
     for (unsigned int i = 0; i < fw->segments_count; i++) {
         const ty_firmware_segment *segment = &fw->segments[i];
-        fw->total_size += segment->size;
         fw->max_address = _HS_MAX(fw->max_address, segment->address + segment->size);
     }
 

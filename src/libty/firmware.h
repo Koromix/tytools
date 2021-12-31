@@ -17,7 +17,7 @@
 _HS_BEGIN_C
 
 #define TY_FIRMWARE_MAX_SEGMENTS 16
-#define TY_FIRMWARE_MAX_SEGMENT_SIZE (2 * 1024 * 1024)
+#define TY_FIRMWARE_MAX_SIZE (32 * 1024 * 1024)
 
 typedef struct ty_firmware_segment {
     uint8_t *data;
@@ -39,11 +39,13 @@ typedef struct ty_firmware {
     size_t total_size;
 } ty_firmware;
 
+typedef ssize_t ty_firmware_read_func(int64_t offset, uint8_t *buf, size_t len, void *udata);
+
 typedef struct ty_firmware_format {
     const char *name;
     const char *ext;
 
-    int (*load)(ty_firmware *fw, const uint8_t *mem, size_t len);
+    int (*load)(ty_firmware *fw, ty_firmware_read_func *func, void *udata);
 } ty_firmware_format;
 
 extern const ty_firmware_format ty_firmware_formats[];
@@ -55,8 +57,8 @@ int ty_firmware_load_file(const char *filename, FILE *fp, const char *format_nam
 int ty_firmware_load_mem(const char *filename, const uint8_t *mem, size_t len,
                          const char *format_name, ty_firmware **rfw);
 
-int ty_firmware_load_elf(ty_firmware *fw, const uint8_t *mem, size_t len);
-int ty_firmware_load_ihex(ty_firmware *fw, const uint8_t *mem, size_t len);
+int ty_firmware_load_elf(ty_firmware *fw, ty_firmware_read_func *func, void *udata);
+int ty_firmware_load_ihex(ty_firmware *fw, ty_firmware_read_func *func, void *udata);
 
 ty_firmware *ty_firmware_ref(ty_firmware *fw);
 void ty_firmware_unref(ty_firmware *fw);
