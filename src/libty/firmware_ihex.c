@@ -155,7 +155,7 @@ int ty_firmware_load_ihex(ty_firmware *fw, ty_firmware_read_func *func, void *ud
 {
     assert(fw);
     assert(!fw->segments_count && !fw->total_size);
-    assert(mem || !len);
+    assert(func);
 
     struct parser_context ctx = {0};
     _HS_ARRAY(uint8_t) buf = {0};

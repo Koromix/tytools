@@ -96,7 +96,7 @@ static int read_chunk(struct loader_context *ctx, int64_t offset, void *buf, siz
     r = (*ctx->func)(offset, (uint8_t *)buf, size, ctx->udata);
     if (r < 0)
         return (int)r;
-    if (r < size)
+    if ((size_t)r < size)
         goto truncated;
 
     return 0;

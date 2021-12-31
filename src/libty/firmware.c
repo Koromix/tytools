@@ -161,10 +161,10 @@ static ssize_t read_memory(int64_t offset, uint8_t *buf, size_t len, void *udata
 
     if (offset < 0)
         offset = ctx->offset;
-    if (offset > ctx->len)
+    if ((size_t)offset > ctx->len)
         return ty_error(TY_ERROR_RANGE, "Cannot seek beyond end of file '%s'", ctx->filename);
 
-    size_t copy_len = _HS_MIN(ctx->len - offset, len);
+    size_t copy_len = _HS_MIN((size_t)ctx->len - (size_t)offset, (size_t)len);
     memcpy(buf, ctx->mem + offset, copy_len);
     ctx->offset += (int64_t)copy_len;
 
