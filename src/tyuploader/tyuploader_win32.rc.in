@@ -2,5 +2,5 @@
    PlatformToolset (e.g. v140_xp) with a cryptic error message. */
 
 // CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST
-1 24 "tyupdater_win32.manifest"
-IDR_MAINFRAME ICON "@TYUPDATER_ICON_FILE_PREFIX@.ico"
+1 24 "tyuploader_win32.manifest"
+IDR_MAINFRAME ICON "@TYUPLOADER_ICON_FILE_PREFIX@.ico"

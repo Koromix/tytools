@@ -15,12 +15,12 @@
 #include "../tycommander/board.hpp"
 #include "../tycommander/monitor.hpp"
 #include "../tycommander/task.hpp"
-#include "tyupdater.hpp"
-#include "updater_window.hpp"
+#include "tyuploader.hpp"
+#include "uploader_window.hpp"
 
 using namespace std;
 
-QVariant UpdaterWindowModelFilter::data(const QModelIndex &index, int role) const
+QVariant UploaderWindowModelFilter::data(const QModelIndex &index, int role) const
 {
     if (index.column() == Monitor::COLUMN_BOARD && role == Qt::DisplayRole) {
         auto board = Monitor::boardFromModel(this, index);
@@ -30,8 +30,8 @@ QVariant UpdaterWindowModelFilter::data(const QModelIndex &index, int role) cons
     return QIdentityProxyModel::data(index, role);
 }
 
-UpdaterWindow::UpdaterWindow(QWidget *parent)
-    : QMainWindow(parent), monitor_(tyUpdater->monitor())
+UploaderWindow::UploaderWindow(QWidget *parent)
+    : QMainWindow(parent), monitor_(tyUploader->monitor())
 {
     setupUi(this);
     setWindowTitle(QApplication::applicationName());
@@ -40,37 +40,37 @@ UpdaterWindow::UpdaterWindow(QWidget *parent)
         logoLabel->setPixmap(QPixmap(":/logo"));
     resize(0, 0);
 
-    connect(actionUpload, &QAction::triggered, this, &UpdaterWindow::uploadNewToCurrent);
-    connect(actionReset, &QAction::triggered, this, &UpdaterWindow::resetCurrent);
-    connect(actionQuit, &QAction::triggered, this, &TyUpdater::quit);
+    connect(actionUpload, &QAction::triggered, this, &UploaderWindow::uploadNewToCurrent);
+    connect(actionReset, &QAction::triggered, this, &UploaderWindow::resetCurrent);
+    connect(actionQuit, &QAction::triggered, this, &TyUploader::quit);
 
-    connect(actionOpenLog, &QAction::triggered, tyUpdater, &TyUpdater::showLogWindow);
+    connect(actionOpenLog, &QAction::triggered, tyUploader, &TyUploader::showLogWindow);
     if (TY_CONFIG_URL_WEBSITE[0]) {
-        connect(actionWebsite, &QAction::triggered, this, &UpdaterWindow::openWebsite);
+        connect(actionWebsite, &QAction::triggered, this, &UploaderWindow::openWebsite);
     } else {
         actionWebsite->setVisible(false);
     }
     if (TY_CONFIG_URL_BUGS[0]) {
-        connect(actionReportBug, &QAction::triggered, this, &UpdaterWindow::openBugReports);
+        connect(actionReportBug, &QAction::triggered, this, &UploaderWindow::openBugReports);
     } else {
         actionReportBug->setVisible(false);
     }
 
     connect(boardComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-            this, &UpdaterWindow::currentChanged);
+            this, &UploaderWindow::currentChanged);
     monitor_model_.setSourceModel(monitor_);
     boardComboBox->setModel(&monitor_model_);
-    connect(uploadButton, &QToolButton::clicked, this, &UpdaterWindow::uploadNewToCurrent);
-    connect(resetButton, &QToolButton::clicked, this, &UpdaterWindow::resetCurrent);
+    connect(uploadButton, &QToolButton::clicked, this, &UploaderWindow::uploadNewToCurrent);
+    connect(resetButton, &QToolButton::clicked, this, &UploaderWindow::resetCurrent);
 
     // Error messages
-    connect(tyUpdater, &TyUpdater::globalError, this, &UpdaterWindow::showErrorMessage);
+    connect(tyUploader, &TyUploader::globalError, this, &UploaderWindow::showErrorMessage);
 
     if (!current_board_)
         changeCurrentBoard(nullptr);
 }
 
-bool UpdaterWindow::event(QEvent *ev)
+bool UploaderWindow::event(QEvent *ev)
 {
     if (ev->type() == QEvent::StatusTip)
         return true;
@@ -78,12 +78,12 @@ bool UpdaterWindow::event(QEvent *ev)
     return QMainWindow::event(ev);
 }
 
-void UpdaterWindow::showErrorMessage(const QString &msg)
+void UploaderWindow::showErrorMessage(const QString &msg)
 {
     statusBar()->showMessage(msg, TY_SHOW_ERROR_TIMEOUT);
 }
 
-void UpdaterWindow::uploadNewToCurrent()
+void UploaderWindow::uploadNewToCurrent()
 {
     if (!current_board_)
         return;
@@ -96,7 +96,7 @@ void UpdaterWindow::uploadNewToCurrent()
     current_board_->startUpload(filename);
 }
 
-void UpdaterWindow::resetCurrent()
+void UploaderWindow::resetCurrent()
 {
     if (!current_board_)
         return;
@@ -104,17 +104,17 @@ void UpdaterWindow::resetCurrent()
     current_board_->startReset();
 }
 
-void UpdaterWindow::openWebsite()
+void UploaderWindow::openWebsite()
 {
     QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_WEBSITE));
 }
 
-void UpdaterWindow::openBugReports()
+void UploaderWindow::openBugReports()
 {
     QDesktopServices::openUrl(QUrl(TY_CONFIG_URL_BUGS));
 }
 
-void UpdaterWindow::changeCurrentBoard(Board *board)
+void UploaderWindow::changeCurrentBoard(Board *board)
 {
     if (current_board_) {
         current_board_->disconnect(this);
@@ -124,16 +124,16 @@ void UpdaterWindow::changeCurrentBoard(Board *board)
     if (board) {
         current_board_ = board->shared_from_this();
 
-        connect(board, &Board::interfacesChanged, this, &UpdaterWindow::refreshActions);
-        connect(board, &Board::statusChanged, this, &UpdaterWindow::refreshActions);
-        connect(board, &Board::statusChanged, this, &UpdaterWindow::refreshProgress);
-        connect(board, &Board::progressChanged, this, &UpdaterWindow::refreshProgress);
+        connect(board, &Board::interfacesChanged, this, &UploaderWindow::refreshActions);
+        connect(board, &Board::statusChanged, this, &UploaderWindow::refreshActions);
+        connect(board, &Board::statusChanged, this, &UploaderWindow::refreshProgress);
+        connect(board, &Board::progressChanged, this, &UploaderWindow::refreshProgress);
     }
 
     refreshActions();
 }
 
-void UpdaterWindow::refreshActions()
+void UploaderWindow::refreshActions()
 {
     bool upload = false, reset = false;
 
@@ -154,7 +154,7 @@ void UpdaterWindow::refreshActions()
     actionReset->setEnabled(reset);
 }
 
-void UpdaterWindow::refreshProgress()
+void UploaderWindow::refreshProgress()
 {
     auto task = current_board_->task();
 
@@ -167,7 +167,7 @@ void UpdaterWindow::refreshProgress()
     }
 }
 
-QString UpdaterWindow::browseFirmwareFilter() const
+QString UploaderWindow::browseFirmwareFilter() const
 {
     QString exts;
     for (unsigned int i = 0; i < ty_firmware_formats_count; i++)
@@ -177,7 +177,7 @@ QString UpdaterWindow::browseFirmwareFilter() const
     return tr("Binary Files (%1);;All Files (*)").arg(exts);
 }
 
-void UpdaterWindow::currentChanged(int index)
+void UploaderWindow::currentChanged(int index)
 {
     changeCurrentBoard(Monitor::boardFromModel(&monitor_model_, index).get());
 }

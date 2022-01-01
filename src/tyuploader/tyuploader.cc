@@ -17,8 +17,8 @@
 #include "../libty/class.h"
 #include "../tycommander/log_dialog.hpp"
 #include "../tycommander/monitor.hpp"
-#include "tyupdater.hpp"
-#include "updater_window.hpp"
+#include "tyuploader.hpp"
+#include "uploader_window.hpp"
 
 #ifdef QT_STATIC
     #include <QtPlugin>
@@ -32,11 +32,11 @@
 
 using namespace std;
 
-TyUpdater::TyUpdater(int &argc, char *argv[])
+TyUploader::TyUploader(int &argc, char *argv[])
     : QApplication(argc, argv)
 {
     setOrganizationName("ty");
-    setApplicationName(TY_CONFIG_TYUPDATER_NAME);
+    setApplicationName(TY_CONFIG_TYUPLOADER_NAME);
     setApplicationVersion(ty_version_string());
 
     ty_message_redirect([](const ty_message_data *msg, void *) {
@@ -44,46 +44,46 @@ TyUpdater::TyUpdater(int &argc, char *argv[])
 
         if (msg->type == TY_MESSAGE_LOG) {
             if (msg->u.log.level <= TY_LOG_WARNING) {
-                tyUpdater->reportError(msg->u.log.msg, msg->ctx);
+                tyUploader->reportError(msg->u.log.msg, msg->ctx);
             } else {
-                tyUpdater->reportDebug(msg->u.log.msg, msg->ctx);
+                tyUploader->reportDebug(msg->u.log.msg, msg->ctx);
             }
         }
     }, nullptr);
 
     log_dialog_ = unique_ptr<LogDialog>(new LogDialog());
     log_dialog_->setAttribute(Qt::WA_QuitOnClose, false);
-    log_dialog_->setWindowIcon(QIcon(":/tyupdater"));
-    connect(this, &TyUpdater::globalError, log_dialog_.get(), &LogDialog::appendError);
-    connect(this, &TyUpdater::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
+    log_dialog_->setWindowIcon(QIcon(":/tyuploader"));
+    connect(this, &TyUploader::globalError, log_dialog_.get(), &LogDialog::appendError);
+    connect(this, &TyUploader::globalDebug, log_dialog_.get(), &LogDialog::appendDebug);
 }
 
-TyUpdater::~TyUpdater()
+TyUploader::~TyUploader()
 {
     ty_message_redirect(ty_message_default_handler, nullptr);
 }
 
-void TyUpdater::showLogWindow()
+void TyUploader::showLogWindow()
 {
     log_dialog_->show();
 }
 
-void TyUpdater::reportError(const QString &msg, const QString &ctx)
+void TyUploader::reportError(const QString &msg, const QString &ctx)
 {
     emit globalError(msg, ctx);
 }
 
-void TyUpdater::reportDebug(const QString &msg, const QString &ctx)
+void TyUploader::reportDebug(const QString &msg, const QString &ctx)
 {
     emit globalDebug(msg, ctx);
 }
 
-int TyUpdater::exec()
+int TyUploader::exec()
 {
-    return tyUpdater->run();
+    return tyUploader->run();
 }
 
-int TyUpdater::run()
+int TyUploader::run()
 {
     monitor_.reset(new Monitor());
     monitor_->setIgnoreGeneric(true);
@@ -96,7 +96,7 @@ int TyUpdater::run()
         return EXIT_FAILURE;
     }
 
-    UpdaterWindow win;
+    UploaderWindow win;
     win.show();
 
     return QApplication::exec();
@@ -113,6 +113,6 @@ int main(int argc, char *argv[])
 
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-    TyUpdater app(argc, argv);
+    TyUploader app(argc, argv);
     return app.exec();
 }

@@ -59,7 +59,7 @@ if(CONFIG_VARIANT)
         set(TYCOMMANDER_ICON_FILE_PREFIX "{CONFIG_VARIANT_PATH}/tycommander")
     endif()
     if(EXISTS "${CONFIG_VARIANT_PATH}/resources.qrc")
-        set(TYUPDATER_RESOURCES "${CONFIG_VARIANT_PATH}/resources.qrc")
+        set(TYUPLOADER_RESOURCES "${CONFIG_VARIANT_PATH}/resources.qrc")
     endif()
 endif()
 

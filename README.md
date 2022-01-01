@@ -8,7 +8,7 @@ any of them. The Qt-based GUI tools are statically compiled to make that possibl
 Tool        | Type                      | Description
 ----------- | ------------------------- | ----------------------------------------------------
 TyCommander | Qt GUI (static)           | Upload, monitor and communicate with multiple boards
-TyUpdater   | Qt GUI (static)           | Simple firmware / sketch uploader
+TyUploader  | Qt GUI (static)           | Simple firmware / sketch uploader
 tycmd       | Command-line<br>_No Qt !_ | Command-line tool to manage Teensy boards
 
 Download the [latest release from GitHub](https://github.com/Koromix/tytools/releases). You can

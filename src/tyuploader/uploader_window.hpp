@@ -8,8 +8,8 @@
 
    See the LICENSE file for more details. */
 
-#ifndef UPDATER_WINDOW_HH
-#define UPDATER_WINDOW_HH
+#ifndef uploader_window_HH
+#define uploader_window_HH
 
 #include <QIdentityProxyModel>
 #include <QProgressBar>
@@ -17,31 +17,31 @@
 #include <memory>
 
 #include "../libty/common.h"
-#include "ui_updater_window.h"
+#include "ui_uploader_window.h"
 
 class Board;
 class Monitor;
 
-class UpdaterWindowModelFilter: public QIdentityProxyModel {
+class UploaderWindowModelFilter: public QIdentityProxyModel {
     Q_OBJECT
 
 public:
-    UpdaterWindowModelFilter(QObject *parent = nullptr)
+    UploaderWindowModelFilter(QObject *parent = nullptr)
         : QIdentityProxyModel(parent) {}
 
     QVariant data(const QModelIndex &index, int role) const override;
 };
 
-class UpdaterWindow : public QMainWindow, private Ui::UpdaterWindow {
+class UploaderWindow : public QMainWindow, private Ui::UploaderWindow {
     Q_OBJECT
 
     Monitor *monitor_;
-    UpdaterWindowModelFilter monitor_model_;
+    UploaderWindowModelFilter monitor_model_;
 
     std::shared_ptr<Board> current_board_;
 
 public:
-    UpdaterWindow(QWidget *parent = nullptr);
+    UploaderWindow(QWidget *parent = nullptr);
 
     bool event(QEvent *ev) override;
 

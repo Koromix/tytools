@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>UpdaterWindow</class>
- <widget class="QMainWindow" name="UpdaterWindow">
+ <class>UploaderWindow</class>
+ <widget class="QMainWindow" name="UploaderWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,11 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>TyUpdater</string>
+   <string>TyUploader</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../../resources/resources.qrc">
-    <normaloff>:/tyupdater</normaloff>:/tyupdater</iconset>
+    <normaloff>:/tyuploader</normaloff>:/tyuploader</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">

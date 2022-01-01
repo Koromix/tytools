@@ -8,31 +8,31 @@
 
    See the LICENSE file for more details. */
 
-#ifndef TYUPDATER_HH
-#define TYUPDATER_HH
+#ifndef TYUPLOADER_HH
+#define TYUPLOADER_HH
 
 #include <QApplication>
 
 #include <memory>
 
-#define tyUpdater (TyUpdater::instance())
+#define tyUploader (TyUploader::instance())
 
 class LogDialog;
 class Monitor;
 
-class TyUpdater: public QApplication {
+class TyUploader: public QApplication {
     Q_OBJECT
 
     std::unique_ptr<Monitor> monitor_;
     std::unique_ptr<LogDialog> log_dialog_;
 
 public:
-    TyUpdater(int &argc, char *argv[]);
-    virtual ~TyUpdater();
+    TyUploader(int &argc, char *argv[]);
+    virtual ~TyUploader();
 
     static int exec();
 
-    static TyUpdater *instance() { return qobject_cast<TyUpdater *>(QCoreApplication::instance()); }
+    static TyUploader *instance() { return qobject_cast<TyUploader *>(QCoreApplication::instance()); }
     Monitor *monitor() { return monitor_.get(); }
 
     int run();

@@ -1,6 +1,6 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="tyupdater">tyupdater.png</file>
+        <file alias="tyuploader">tyuploader.png</file>
 
         <file alias="board_attached">../../resources/images/board_attached.png</file>
         <file alias="board_detached">../../resources/images/board_detached.png</file>
@@ -14,6 +14,6 @@
         <file alias="reboot">../../resources/images/reboot.png</file>
         <file alias="monitor">../../resources/images/monitor.png</file>
 
-        <file alias="logo">tyupdater_logo.png</file>
+        <file alias="logo">tyuploader_logo.png</file>
     </qresource>
 </RCC>
