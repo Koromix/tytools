@@ -123,9 +123,9 @@ static ssize_t read_file(int64_t offset, uint8_t *buf, size_t len, void *udata)
     struct read_file_context *ctx = (struct read_file_context *)udata;
     ssize_t r;
 
-    if (offset < 0)
+    if (offset < 0) {
         offset = ctx->offset;
-    if (offset != ctx->offset) {
+    } else if (offset != ctx->offset) {
 #ifdef _WIN32
         r = _fseeki64(ctx->fp, offset, SEEK_SET);
 #else
@@ -140,6 +140,8 @@ static ssize_t read_file(int64_t offset, uint8_t *buf, size_t len, void *udata)
                 return ty_error(TY_ERROR_SYSTEM, "fseek('%s') failed: %s", ctx->filename, strerror(errno));
             }
         }
+
+        ctx->offset = offset;
     }
 
     r = (ssize_t)fread(buf, 1, len, ctx->fp);
@@ -166,7 +168,7 @@ static ssize_t read_memory(int64_t offset, uint8_t *buf, size_t len, void *udata
 
     size_t copy_len = _HS_MIN((size_t)ctx->len - (size_t)offset, (size_t)len);
     memcpy(buf, ctx->mem + offset, copy_len);
-    ctx->offset += (int64_t)copy_len;
+    ctx->offset = offset + (int64_t)copy_len;
 
     return (ssize_t)copy_len;
 }
