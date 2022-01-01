@@ -33,11 +33,11 @@ static const char *capability_names[] = {
 };
 
 #ifdef _WIN32
-    #define MANUAL_REBOOT_DELAY 15000
+    #define MANUAL_REBOOT_DELAY 16000
 #else
     #define MANUAL_REBOOT_DELAY 8000
 #endif
-#define FINAL_TASK_TIMEOUT 8000
+#define FINAL_TASK_TIMEOUT 16000
 
 const char *ty_board_capability_get_name(ty_board_capability cap)
 {
