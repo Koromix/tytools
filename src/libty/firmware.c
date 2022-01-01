@@ -132,12 +132,17 @@ static ssize_t read_file(int64_t offset, uint8_t *buf, size_t len, void *udata)
         r = fseeko(ctx->fp, (off_t)offset, SEEK_SET);
 #endif
         if (r < 0) {
-            if (errno == ESPIPE) {
-                return ty_error(TY_ERROR_IO, "Trying to seek in non-seekable file '%s'", ctx->filename);
-            } else if (errno == EINVAL) {
-                return ty_error(TY_ERROR_RANGE, "Cannot seek beyond end of file '%s'", ctx->filename);
-            } else {
-                return ty_error(TY_ERROR_SYSTEM, "fseek('%s') failed: %s", ctx->filename, strerror(errno));
+            switch (errno) {
+                case ESPIPE: {
+                    return ty_error(TY_ERROR_IO, "Trying to seek in non-seekable file '%s'", ctx->filename);
+                } break;
+                case EINVAL: {
+                    return ty_error(TY_ERROR_RANGE, "Cannot seek beyond end of file '%s'", ctx->filename);
+                } break;
+
+                default: {
+                    return ty_error(TY_ERROR_SYSTEM, "fseek('%s') failed: %s", ctx->filename, strerror(errno));
+                } break;
             }
         }
 
@@ -146,11 +151,9 @@ static ssize_t read_file(int64_t offset, uint8_t *buf, size_t len, void *udata)
 
     r = (ssize_t)fread(buf, 1, len, ctx->fp);
     if (ferror(ctx->fp)) {
-        if (errno == EIO) {
+        if (errno == EIO)
             return ty_error(TY_ERROR_IO, "I/O error while reading from '%s'", ctx->filename);
-        } else {
-            return ty_error(TY_ERROR_SYSTEM, "fread('%s') failed: %s", ctx->filename, strerror(errno));
-        }
+        return ty_error(TY_ERROR_SYSTEM, "fread('%s') failed: %s", ctx->filename, strerror(errno));
     }
     ctx->offset += (int64_t)r;
 
