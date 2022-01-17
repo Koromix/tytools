@@ -322,11 +322,23 @@ static int teensy_open_interface(ty_board_interface *iface)
     if (r < 0)
         return ty_libhs_translate_error(r);
 
-    /* Restore sane baudrate, because some systems (such as Linux) may keep tty settings
-       around and reuse them. The device will keep rebooting if 134 is what stays around,
-       so try to break the loop here. */
-    if (iface->dev->type == HS_DEVICE_TYPE_SERIAL)
-        change_baudrate(iface->port, 115200);
+    switch (iface->dev->type) {
+        case HS_DEVICE_TYPE_SERIAL: {
+            /* Restore sane baudrate, because some systems (such as Linux) may keep
+               tty settings around and reuse them. The device will keep rebooting if
+               134 is what stays around, so try to break the loop here. */
+            change_baudrate(iface->port, 115200);
+        } break;
+
+        case HS_DEVICE_TYPE_HID: {
+            static const unsigned char seremu_magic[] = {0, 0xAB, 0xBA, 0xCD, 0xDC};
+
+            r = (int)hs_hid_send_feature_report(iface->port, seremu_magic, sizeof(seremu_magic));
+            if (r < 0)
+                return ty_libhs_translate_error(r);
+            assert(r == sizeof(seremu_magic));
+        } break;
+    }
 
     return 0;
 }
