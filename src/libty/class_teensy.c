@@ -331,13 +331,15 @@ static int teensy_open_interface(ty_board_interface *iface)
         } break;
 
         case HS_DEVICE_TYPE_HID: {
-            static const unsigned char seremu_magic[] = {0, 0xAB, 0xBA, 0xCD, 0xDC};
+            if (iface->capabilities & (1 << TY_BOARD_CAPABILITY_SERIAL)) {
+                static const unsigned char seremu_magic[] = {0, 0xAB, 0xBA, 0xCD, 0xDC};
 
-            /* Signal SEREMU readiness to the Teensy */
-            r = (int)hs_hid_send_feature_report(iface->port, seremu_magic, sizeof(seremu_magic));
-            if (r < 0)
-                return ty_libhs_translate_error(r);
-            assert(r == sizeof(seremu_magic));
+                /* Signal SEREMU readiness to the Teensy */
+                r = (int)hs_hid_send_feature_report(iface->port, seremu_magic, sizeof(seremu_magic));
+                if (r < 0)
+                    return ty_libhs_translate_error(r);
+                assert(r == sizeof(seremu_magic));
+            }
         } break;
     }
 
