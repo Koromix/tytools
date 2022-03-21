@@ -541,9 +541,71 @@ static int find_device_location(const struct device_cursor *dev_cursor, uint8_t 
     return depth;
 }
 
+static bool analyze_button_caps(hs_device *dev, PHIDP_PREPARSED_DATA pp, HIDP_REPORT_TYPE type, uint16_t count)
+{
+    if (!count)
+        return false;
+
+    HIDP_BUTTON_CAPS *buttons = NULL;
+    bool use_id = false;
+    LONG ret;
+
+    buttons = (HIDP_BUTTON_CAPS *)calloc(count, sizeof(HIDP_BUTTON_CAPS));
+
+    ret = HidP_GetButtonCaps(type, buttons, &count, pp);
+    if (ret != HIDP_STATUS_SUCCESS) {
+        hs_log(HS_LOG_WARNING, "HidP_GetButtonCaps() failed on '%s", dev->path);
+        goto cleanup;
+    }
+
+    for (unsigned int i = 0; i < count; i++) {
+        if (buttons[i].ReportID) {
+            use_id = true;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    free(buttons);
+    return use_id;
+}
+
+static bool analyze_value_caps(hs_device *dev, PHIDP_PREPARSED_DATA pp, HIDP_REPORT_TYPE type, uint16_t count)
+{
+    if (!count)
+        return false;
+
+    HIDP_VALUE_CAPS *values = NULL;
+    bool use_id = false;
+    LONG ret;
+
+    values = (HIDP_VALUE_CAPS *)calloc(count, sizeof(HIDP_VALUE_CAPS));
+
+    ret = HidP_GetValueCaps(type, values, &count, pp);
+    if (ret != HIDP_STATUS_SUCCESS) {
+        hs_log(HS_LOG_WARNING, "HidP_GetValueCaps() failed on '%s", dev->path);
+        goto cleanup;
+    }
+
+    for (unsigned int i = 0; i < count; i++) {
+        if (values[i].ReportID) {
+            use_id = true;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    free(values);
+    return use_id;
+}
+
 static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc)
 {
+    // Semi-hidden Hungarian pointers? Really, Microsoft?
     HANDLE h = NULL;
+    PHIDP_PREPARSED_DATA pp = NULL;
+    HIDP_CAPS caps;
+    LONG ret;
     int r;
 
     h = CreateFileA(dev->path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -575,35 +637,46 @@ static int read_hid_properties(hs_device *dev, const USB_DEVICE_DESCRIPTOR *desc
 
 #undef READ_HID_PROPERTY
 
-    {
-        // semi-hidden Hungarian pointers? Really , Microsoft?
-        PHIDP_PREPARSED_DATA pp;
-        HIDP_CAPS caps;
-        LONG lret;
-
-        lret = HidD_GetPreparsedData(h, &pp);
-        if (!lret) {
-            hs_log(HS_LOG_WARNING, "HidD_GetPreparsedData() failed on '%s", dev->path);
-            r = 0;
-            goto cleanup;
-        }
-        lret = HidP_GetCaps(pp, &caps);
-        HidD_FreePreparsedData(pp);
-        if (lret != HIDP_STATUS_SUCCESS) {
-            hs_log(HS_LOG_WARNING, "Invalid HID descriptor from '%s", dev->path);
-            r = 0;
-            goto cleanup;
-        }
-
-        dev->u.hid.usage_page = caps.UsagePage;
-        dev->u.hid.usage = caps.Usage;
-        dev->u.hid.max_input_len = caps.InputReportByteLength ? (caps.InputReportByteLength - 1) : 0;
-        dev->u.hid.max_output_len = caps.OutputReportByteLength ? (caps.OutputReportByteLength - 1) : 0;
-        dev->u.hid.max_feature_len = caps.FeatureReportByteLength ? (caps.FeatureReportByteLength - 1) : 0;
+    ret = HidD_GetPreparsedData(h, &pp);
+    if (!ret) {
+        hs_log(HS_LOG_WARNING, "HidD_GetPreparsedData() failed on '%s", dev->path);
+        r = 0;
+        goto cleanup;
     }
+
+    ret = HidP_GetCaps(pp, &caps);
+    if (ret != HIDP_STATUS_SUCCESS) {
+        hs_log(HS_LOG_WARNING, "Invalid HID descriptor from '%s", dev->path);
+        r = 0;
+        goto cleanup;
+    }
+
+    dev->u.hid.usage_page = caps.UsagePage;
+    dev->u.hid.usage = caps.Usage;
+    dev->u.hid.max_input_len = caps.InputReportByteLength;
+    dev->u.hid.max_output_len = caps.OutputReportByteLength;
+    dev->u.hid.max_feature_len = caps.FeatureReportByteLength;
+
+    // The length reported can be off by 1 depending on the use of report IDs...
+    // Well that's how it looks anyway. This was made through trial and error, it is probably wrong.
+    {
+        bool fix_len = !analyze_button_caps(dev, pp, HidP_Input, caps.NumberInputButtonCaps) &&
+                       !analyze_value_caps(dev, pp, HidP_Input, caps.NumberInputValueCaps) &&
+                       !analyze_button_caps(dev, pp, HidP_Output, caps.NumberOutputButtonCaps) &&
+                       !analyze_value_caps(dev, pp, HidP_Output, caps.NumberOutputValueCaps) &&
+                       !analyze_button_caps(dev, pp, HidP_Feature, caps.NumberFeatureButtonCaps) &&
+                       !analyze_value_caps(dev, pp, HidP_Feature, caps.NumberFeatureValueCaps);
+
+        dev->u.hid.max_input_len = dev->u.hid.max_input_len ? (dev->u.hid.max_input_len - fix_len) : 0;
+        dev->u.hid.max_output_len = dev->u.hid.max_output_len ? (dev->u.hid.max_output_len - fix_len) : 0;
+        dev->u.hid.max_feature_len = dev->u.hid.max_feature_len ? (dev->u.hid.max_feature_len - fix_len) : 0;
+    }
+
 
     r = 1;
 cleanup:
+    if (pp)
+        HidD_FreePreparsedData(pp);
     if (h)
         CloseHandle(h);
     return r;
