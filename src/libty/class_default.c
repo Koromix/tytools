@@ -34,6 +34,7 @@ static const hs_match_spec default_match_specs[] = {
     HS_MATCH_VID_PID(0x16C0, 0x04D2, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x04D3, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x04D4, (void *)&_ty_teensy_class_vtable),
+    HS_MATCH_VID_PID(0x16C0, 0x04D5, (void *)&_ty_teensy_class_vtable),
     HS_MATCH_VID_PID(0x16C0, 0x04D9, (void *)&_ty_teensy_class_vtable),
 
     HS_MATCH_TYPE(HS_DEVICE_TYPE_SERIAL, (void *)&_ty_generic_class_vtable)
