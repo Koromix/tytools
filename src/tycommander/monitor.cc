@@ -58,7 +58,7 @@ void Monitor::loadSettings()
     ignore_generic_ = db_.get("ignoreGeneric", false).toBool();
     ignore_secondary_ = db_.get("ignoreSecondary", false).toBool();
     default_serial_ = db_.get("serialByDefault", true).toBool();
-    serial_log_size_ = db_.get("serialLogSize", 20000000ull).toULongLong();
+    serial_log_size_ = db_.get("serialLogLen", 20000000ll).toLongLong();
     serial_log_dir_ = db_.get("serialLogDir", "").toString();
 
     emit settingsChanged();
@@ -157,24 +157,29 @@ void Monitor::setSerialByDefault(bool default_serial)
     emit settingsChanged();
 }
 
-void Monitor::setSerialLogSize(size_t default_size)
+void Monitor::setSerialLogSize(ssize_t default_size)
 {
     if (default_size == serial_log_size_)
         return;
 
+    if (default_size < 0)
+        default_size = -1;
     serial_log_size_ = default_size;
 
     for (auto &board: boards_) {
         auto db = board->database();
 
-        if (!db.get("serialLogSize").isValid()) {
+        if (!db.get("serialLogLen").isValid()) {
             board->setSerialLogSize(default_size);
             board->updateSerialLogState(false);
-            db.remove("serialLogSize");
+            db.remove("serialLogLen");
         }
     }
 
-    db_.put("serialLogSize", static_cast<qulonglong>(default_size));
+    // Remove obsolete setting
+    db_.remove("serialLogSize");
+
+    db_.put("serialLogLen", static_cast<qint64>(default_size));
     emit settingsChanged();
 }
 

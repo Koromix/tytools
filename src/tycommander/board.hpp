@@ -76,7 +76,7 @@ class Board : public QObject, public std::enable_shared_from_this<Board> {
     bool clear_on_reset_;
     bool enable_serial_;
     QString serial_log_dir_;
-    size_t serial_log_size_;
+    ssize_t serial_log_size_;
     RtcMode rtc_mode_;
 
     QString status_text_;
@@ -132,7 +132,7 @@ public:
     bool clearOnReset() const { return clear_on_reset_; }
     unsigned int scrollBackLimit() const { return serial_document_.maximumBlockCount(); }
     bool enableSerial() const { return enable_serial_; }
-    size_t serialLogSize() const { return serial_log_size_; }
+    ssize_t serialLogSize() const { return serial_log_size_; }
     QString serialLogFilename() const { return serial_log_file_.fileName(); }
     RtcMode rtcMode() const { return rtc_mode_; }
 
@@ -168,7 +168,7 @@ public slots:
     void setClearOnReset(bool clear_on_reset);
     void setScrollBackLimit(unsigned int limit);
     void setEnableSerial(bool enable, bool persist = true);
-    void setSerialLogSize(size_t size);
+    void setSerialLogSize(ssize_t size);
     void setRtcMode(RtcMode mode);
 
     TaskInterface startUpload(const QString &filename = QString());

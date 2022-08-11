@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>558</width>
-    <height>492</height>
+    <width>591</width>
+    <height>562</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -654,6 +654,9 @@
                 <property name="suffix">
                  <string> kB</string>
                 </property>
+                <property name="minimum">
+                 <number>-1</number>
+                </property>
                 <property name="maximum">
                  <number>999999</number>
                 </property>
@@ -663,6 +666,21 @@
                </widget>
               </item>
              </layout>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_14">
+              <property name="font">
+               <font>
+                <italic>true</italic>
+               </font>
+              </property>
+              <property name="text">
+               <string>Use 0 for infinite log size without wraparound, and -1 to disable.</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -745,8 +763,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>558</width>
-     <height>20</height>
+     <width>591</width>
+     <height>22</height>
     </rect>
    </property>
    <property name="contextMenuPolicy">

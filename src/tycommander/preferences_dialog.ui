@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>426</width>
-    <height>399</height>
+    <height>444</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -91,6 +91,9 @@
           <property name="suffix">
            <string> kB</string>
           </property>
+          <property name="minimum">
+           <number>-1</number>
+          </property>
           <property name="maximum">
            <number>999999</number>
           </property>
@@ -100,6 +103,21 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="font">
+         <font>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>Use 0 for infinite log size without wraparound, and -1 to disable.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_3">

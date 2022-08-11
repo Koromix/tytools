@@ -99,8 +99,8 @@ void Board::loadSettings(Monitor *monitor)
         enable_serial_ = db_.get("enableSerial", default_serial).toBool();
     }
     serial_log_size_ = db_.get(
-        "serialLogSize",
-        static_cast<quint64>(monitor ? monitor->serialLogSize() : 0)).toULongLong();
+        "serialLogLen",
+        static_cast<qint64>(monitor ? monitor->serialLogSize() : -1)).toLongLong();
     serial_rate_ = db_.get("serialRate", 115200).toUInt();
     {
         int mode = db_.get("rtcMode", 0).toInt();
@@ -535,15 +535,20 @@ void Board::setEnableSerial(bool enable, bool persist)
     emit settingsChanged();
 }
 
-void Board::setSerialLogSize(size_t size)
+void Board::setSerialLogSize(ssize_t size)
 {
     if (size == serial_log_size_)
         return;
 
+    if (size < 0)
+        size = -1;
     serial_log_size_ = size;
     updateSerialLogState(false);
 
-    db_.put("serialLogSize", static_cast<quint64>(size));
+    // Remove obsolete setting
+    db_.remove("serialLogSize");
+
+    db_.put("serialLogLen", static_cast<qint64>(size));
     emit settingsChanged();
 }
 
@@ -669,24 +674,28 @@ void Board::writeToSerialLog(const char *buf, size_t len)
 {
     serial_log_file_.unsetError();
 
-    qint64 pos = serial_log_file_.pos();
-    if (pos + len > serial_log_size_) {
-        auto part_len = serial_log_size_ - pos;
-        serial_log_file_.write(buf, part_len);
-        serial_log_file_.seek(0);
-        serial_log_file_.write(buf + part_len, len - part_len);
-    } else {
-        serial_log_file_.write(buf, len);
-    }
+    if (serial_log_size_ > 0) {
+        qint64 pos = serial_log_file_.pos();
 
-    if (!serial_log_file_.atEnd()) {
-        pos = serial_log_file_.pos();
-        if (pos + sizeof(SERIAL_LOG_DELIMITER) >= serial_log_size_) {
-            serial_log_file_.resize(pos);
+        if (pos + len > (size_t)serial_log_size_) {
+            auto part_len = serial_log_size_ - pos;
+            serial_log_file_.write(buf, part_len);
             serial_log_file_.seek(0);
+            serial_log_file_.write(buf + part_len, len - part_len);
         } else {
-            serial_log_file_.write(SERIAL_LOG_DELIMITER);
-            serial_log_file_.seek(pos);
+            serial_log_file_.write(buf, len);
+        }
+
+        if (!serial_log_file_.atEnd()) {
+            pos = serial_log_file_.pos();
+
+            if (pos + sizeof(SERIAL_LOG_DELIMITER) >= (size_t)serial_log_size_) {
+                serial_log_file_.resize(pos);
+                serial_log_file_.seek(0);
+            } else {
+                serial_log_file_.write(SERIAL_LOG_DELIMITER);
+                serial_log_file_.seek(pos);
+            }
         }
     }
 
@@ -815,7 +824,7 @@ void Board::updateSerialLogState(bool new_file)
         serial_log_file_.setFileName(findLogFilename(id(), 4));
     }
 
-    if (serial_log_size_) {
+    if (serial_log_size_ >= 0) {
         if (!serial_log_file_.isOpen()) {
             if (!serial_log_file_.open(QIODevice::WriteOnly)) {
                 ty_log(TY_LOG_ERROR, "Cannot open board log '%s' for writing",
@@ -823,7 +832,8 @@ void Board::updateSerialLogState(bool new_file)
             }
         }
         if (serial_log_file_.isOpen() &&
-                static_cast<size_t>(serial_log_file_.size()) > serial_log_size_)
+                serial_log_size_ > 0 &&
+                static_cast<ssize_t>(serial_log_file_.size()) > serial_log_size_)
             serial_log_file_.resize(serial_log_size_);
     } else {
         serial_log_file_.close();

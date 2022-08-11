@@ -992,7 +992,11 @@ void MainWindow::refreshSettings()
     scrollBackLimitSpin->blockSignals(false);
     updateSerialLogLink();
     serialLogSizeSpin->blockSignals(true);
-    serialLogSizeSpin->setValue(static_cast<int>(current_board_->serialLogSize() / 1000));
+    if (current_board_->serialLogSize() >= 0) {
+        serialLogSizeSpin->setValue(static_cast<int>(current_board_->serialLogSize() / 1000));
+    } else {
+        serialLogSizeSpin->setValue(-1);
+    }
     serialLogSizeSpin->blockSignals(false);
 
     updateFirmwareMenus();

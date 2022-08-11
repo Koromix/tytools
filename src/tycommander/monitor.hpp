@@ -42,7 +42,7 @@ class Monitor : public QAbstractListModel {
     bool ignore_secondary_;
 
     bool default_serial_;
-    size_t serial_log_size_;
+    ssize_t serial_log_size_;
     QString serial_log_dir_;
 
     std::vector<std::shared_ptr<Board>> boards_;
@@ -81,7 +81,7 @@ public:
     bool ignoreSecondary() const {return ignore_secondary_; }
 
     bool serialByDefault() const { return default_serial_; }
-    size_t serialLogSize() const { return serial_log_size_; }
+    ssize_t serialLogSize() const { return serial_log_size_; }
     QString serialLogDir() const { return serial_log_dir_; }
 
     bool start();
@@ -120,7 +120,7 @@ public slots:
     void setIgnoreGeneric(bool ignore_generic);
     void setIgnoreSecondary(bool ignore_secondary);
     void setSerialByDefault(bool default_serial);
-    void setSerialLogSize(size_t default_size);
+    void setSerialLogSize(ssize_t default_size);
     void setSerialLogDir(const QString &dir);
 
 signals:
