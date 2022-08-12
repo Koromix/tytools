@@ -14,7 +14,7 @@
    <string>TyCommander Preferences</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../resources/resources.qrc">
+   <iconset>
     <normaloff>:/tycommander</normaloff>:/tycommander</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -85,6 +85,9 @@
         </item>
         <item>
          <widget class="QSpinBox" name="serialLogSizeDefaultSpin">
+          <property name="specialValueText">
+           <string>Désactivé</string>
+          </property>
           <property name="accelerated">
            <bool>true</bool>
           </property>
@@ -98,7 +101,7 @@
            <number>999999</number>
           </property>
           <property name="singleStep">
-           <number>100</number>
+           <number>1</number>
           </property>
          </widget>
         </item>
@@ -230,8 +233,6 @@
    </item>
   </layout>
  </widget>
- <resources>
-  <include location="../../resources/resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

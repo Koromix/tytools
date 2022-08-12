@@ -17,7 +17,7 @@
    <string>TyCommander</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../resources/resources.qrc">
+   <iconset>
     <normaloff>:/tycommander</normaloff>:/tycommander</iconset>
   </property>
   <property name="unifiedTitleAndToolBarOnMac">
@@ -648,6 +648,9 @@
               </item>
               <item>
                <widget class="QSpinBox" name="serialLogSizeSpin">
+                <property name="specialValueText">
+                 <string>Désactivé</string>
+                </property>
                 <property name="accelerated">
                  <bool>true</bool>
                 </property>
@@ -661,7 +664,7 @@
                  <number>999999</number>
                 </property>
                 <property name="singleStep">
-                 <number>100</number>
+                 <number>1</number>
                 </property>
                </widget>
               </item>
@@ -902,7 +905,7 @@
   </widget>
   <action name="actionUpload">
    <property name="icon">
-    <iconset resource="../../resources/resources.qrc">
+    <iconset>
      <normaloff>:/upload</normaloff>:/upload</iconset>
    </property>
    <property name="text">
@@ -914,7 +917,7 @@
   </action>
   <action name="actionReset">
    <property name="icon">
-    <iconset resource="../../resources/resources.qrc">
+    <iconset>
      <normaloff>:/reset</normaloff>:/reset</iconset>
    </property>
    <property name="text">
@@ -939,7 +942,7 @@
   </action>
   <action name="actionReboot">
    <property name="icon">
-    <iconset resource="../../resources/resources.qrc">
+    <iconset>
      <normaloff>:/reboot</normaloff>:/reboot</iconset>
    </property>
    <property name="text">
@@ -1010,7 +1013,7 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../../resources/resources.qrc">
+    <iconset>
      <normaloff>:/monitor</normaloff>:/monitor</iconset>
    </property>
    <property name="text">
@@ -1115,8 +1118,6 @@
   <tabstop>scrollBackLimitSpin</tabstop>
   <tabstop>serialLogSizeSpin</tabstop>
  </tabstops>
- <resources>
-  <include location="../../resources/resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
