@@ -26,6 +26,7 @@ private:
     void refresh();
 
 private slots:
+    void toggleSerialLog(bool enable);
     void browseForSerialLogDir();
 };
 

@@ -261,6 +261,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(clearOnResetCheck, &QCheckBox::clicked, this, &MainWindow::setClearOnResetForSelection);
     connect(scrollBackLimitSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setScrollBackLimitForSelection);
+    connect(logSerialCheck, &QCheckBox::clicked, this, &MainWindow::setLogSerialForSelection);
     connect(serialLogSizeSpin, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
             this, &MainWindow::setSerialLogSizeForSelection);
 
@@ -805,7 +806,7 @@ void MainWindow::updateFirmwareMenus()
 void MainWindow::updateSerialLogLink()
 {
     QString log_filename;
-    if (current_board_ && current_board_->serialLogSize())
+    if (current_board_ && current_board_->serialLogSize() >= 0)
         log_filename = current_board_->serialLogFilename();
 
     QFont link_font = serialLogFileLabel->font();
@@ -821,7 +822,7 @@ void MainWindow::updateSerialLogLink()
         serialLogFileLabel->setToolTip(QDir::toNativeSeparators(log_filename));
         link_font.setItalic(false);
     } else {
-        serialLogDirLabel->setText(tr("No serial log available"));
+        serialLogDirLabel->setText(tr("Serial log is not available"));
         serialLogDirLabel->setToolTip("");
         serialLogFileLabel->setText("");
         serialLogFileLabel->setToolTip("");
@@ -993,9 +994,12 @@ void MainWindow::refreshSettings()
     updateSerialLogLink();
     serialLogSizeSpin->blockSignals(true);
     if (current_board_->serialLogSize() >= 0) {
+        logSerialCheck->setChecked(true);
+        serialLogSizeSpin->setEnabled(true);
         serialLogSizeSpin->setValue(static_cast<int>(current_board_->serialLogSize() / 1000));
     } else {
-        serialLogSizeSpin->setValue(-1);
+        logSerialCheck->setChecked(false);
+        serialLogSizeSpin->setEnabled(false);
     }
     serialLogSizeSpin->blockSignals(false);
 
@@ -1121,6 +1125,14 @@ void MainWindow::setEnableSerialForSelection(bool enable)
 {
     for (auto &board: selected_boards_)
         board->setEnableSerial(enable);
+}
+
+void MainWindow::setLogSerialForSelection(bool enable)
+{
+    int size = enable ? serialLogSizeSpin->value() : -1;
+
+    for (auto &board: selected_boards_)
+        board->setSerialLogSize(size * 1000);
 }
 
 void MainWindow::setSerialLogSizeForSelection(int size)

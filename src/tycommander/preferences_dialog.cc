@@ -31,6 +31,7 @@ PreferencesDialog::PreferencesDialog(QWidget *parent)
     connect(buttonBox->button(QDialogButtonBox::Reset), &QAbstractButton::clicked,
             this, &PreferencesDialog::reset);
 
+    connect(logSerialCheck, &QCheckBox::clicked, this, &PreferencesDialog::toggleSerialLog);
     connect(serialLogDirButton, &QToolButton::clicked, this,
             &PreferencesDialog::browseForSerialLogDir);
 
@@ -52,8 +53,12 @@ void PreferencesDialog::apply()
     auto monitor = tyCommander->monitor();
     monitor->setIgnoreGeneric(ignoreGenericCheck->isChecked());
     monitor->setSerialByDefault(serialByDefaultCheck->isChecked());
-    monitor->setSerialLogSize(serialLogSizeDefaultSpin->value() * 1000);
     monitor->setSerialLogDir(serialLogDir->text());
+    if (logSerialCheck->isChecked()) {
+        monitor->setSerialLogSize(serialLogSizeDefaultSpin->value() * 1000);
+    } else {
+        monitor->setSerialLogSize(-1);
+    }
     monitor->setMaxTasks(maxTasksSpin->value());
 }
 
@@ -77,13 +82,21 @@ void PreferencesDialog::refresh()
     auto monitor = tyCommander->monitor();
     ignoreGenericCheck->setChecked(monitor->ignoreGeneric());
     serialByDefaultCheck->setChecked(monitor->serialByDefault());
+    serialLogDir->setText(monitor->serialLogDir());
     if (monitor->serialLogSize() >= 0) {
+        logSerialCheck->setChecked(true);
+        serialLogSizeDefaultSpin->setEnabled(true);
         serialLogSizeDefaultSpin->setValue(static_cast<int>(monitor->serialLogSize() / 1000));
     } else {
-        serialLogSizeDefaultSpin->setValue(-1);
+        logSerialCheck->setChecked(false);
+        serialLogSizeDefaultSpin->setEnabled(false);
     }
-    serialLogDir->setText(monitor->serialLogDir());
     maxTasksSpin->setValue(monitor->maxTasks());
+}
+
+void PreferencesDialog::toggleSerialLog(bool enable)
+{
+    serialLogSizeDefaultSpin->setEnabled(enable);
 }
 
 void PreferencesDialog::browseForSerialLogDir()
