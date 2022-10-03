@@ -620,7 +620,10 @@ static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t bloc
 restart:
     r = hs_hid_write(port, buf, size);
     if (r == HS_ERROR_IO && --tries) {
-        hs_delay(20);
+        /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
+           first write takes longer because it triggers a complete erase of all blocks. */
+
+        hs_delay(addr ? 20 : 100);
         goto restart;
     }
     hs_error_unmask();
@@ -629,11 +632,6 @@ restart:
             return ty_error(TY_ERROR_IO, "%s", hs_error_last_message());
         return ty_libhs_translate_error((int)r);
     }
-
-    /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
-       first write takes longer because it triggers a complete erase of all blocks. */
-    if (!addr)
-        hs_delay(200);
 
     return 0;
 }
