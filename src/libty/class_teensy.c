@@ -571,7 +571,8 @@ static ssize_t teensy_serial_write(ty_board_interface *iface, const char *buf, s
 }
 
 static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t block_size,
-                        size_t addr, const void *data, size_t size, unsigned int tries)
+                        size_t addr, const void *data, size_t size,
+                        unsigned int tries, unsigned int delay)
 {
     uint8_t buf[2048] = {0};
 
@@ -620,10 +621,9 @@ static int halfkay_send(hs_port *port, unsigned int halfkay_version, size_t bloc
 restart:
     r = hs_hid_write(port, buf, size);
     if (r == HS_ERROR_IO && --tries) {
-        /* HalfKay generates STALL if you go too fast (translates to EPIPE on Linux), and the
-           first write takes longer because it triggers a complete erase of all blocks. */
+        // HalfKay generates STALL if you go too fast (translates to EPIPE on Linux)
+        hs_delay(delay);
 
-        hs_delay(addr ? 20 : 100);
         goto restart;
     }
     hs_error_unmask();
@@ -757,10 +757,17 @@ static int teensy_upload(ty_board_interface *iface, ty_firmware *fw,
         buf_len = ty_firmware_extract(fw, (uint32_t)address, buf, block_size);
 
         if (buf_len) {
-            r = halfkay_send(iface->port, halfkay_version, block_size, address, buf, buf_len, 150);
+            // The first write takes longer because it triggers a complete erase of all blocks.
+            bool first = (address == min_address);
+
+            r = halfkay_send(iface->port, halfkay_version, block_size, address, buf, buf_len,
+                             250, first ? 100 : 20);
             if (r < 0)
                 return r;
             uploaded_len += buf_len;
+
+            if (first)
+                hs_delay(500);
 
             if (pf) {
                 r = (*pf)(iface->board, fw, uploaded_len, max_address - min_address, udata);
@@ -802,9 +809,9 @@ static int teensy_reset(ty_board_interface *iface, int64_t rtc)
             buf[11] = (uint8_t)((hi >> 24) & 0xFF);
         }
 
-        return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, buf, sizeof(buf), 25);
+        return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, buf, sizeof(buf), 25, 20);
     } else {
-        return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 25);
+        return halfkay_send(iface->port, halfkay_version, block_size, 0xFFFFFF, NULL, 0, 25, 20);
     }
 }
 
