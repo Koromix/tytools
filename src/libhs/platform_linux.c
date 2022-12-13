@@ -21,11 +21,7 @@ uint64_t hs_millis(void)
     struct timespec ts;
     int r _HS_POSSIBLY_UNUSED;
 
-#ifdef CLOCK_MONOTONIC_RAW
-    r = clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-#else
     r = clock_gettime(CLOCK_MONOTONIC, &ts);
-#endif
     assert(!r);
 
     return (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 10000000;
