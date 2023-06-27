@@ -19,6 +19,7 @@ install -D -m0644 bin/Debian/usr/share/applications/tycommander.desktop $PACKAGE
 install -D -m0644 bin/Debian/usr/share/applications/tyuploader.desktop $PACKAGE_DIR/pkg/tyuploader.desktop
 install -D -m0644 resources/images/tycommander.png $PACKAGE_DIR/pkg/tycommander.png
 install -D -m0644 resources/images/tyuploader.png $PACKAGE_DIR/pkg/tyuploader.png
+install -D -m0644 contrib/debian/teensy.rules $PACKAGE_DIR/pkg/00-teensy.rules
 
 install -D -m0755 contrib/debian/rules $PACKAGE_DIR/pkg/debian/rules
 install -D -m0644 contrib/debian/compat $PACKAGE_DIR/pkg/debian/compat

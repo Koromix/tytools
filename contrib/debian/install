@@ -5,3 +5,4 @@ tycommander.desktop usr/share/applications
 tyuploader.desktop usr/share/applications
 tycommander.png usr/share/icons/hicolor/512x512/apps
 tyuploader.png usr/share/icons/hicolor/512x512/apps
+00-teensy.rules usr/lib/udev/rules.d
