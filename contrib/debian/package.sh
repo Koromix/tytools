@@ -3,7 +3,7 @@
 cd "$(dirname $0)/../.."
 
 VERSION=$(git describe --tags | cut -c 2- | awk -F '-' '{print $1}')
-DATE=$(git describe --tags | sed -e 's/.*-g//' | xargs -n1 git show -s --format=%ci | LANG=C xargs -0 -n1 date "+%a, %d %b %Y %H:%M:%S %z" -d)
+DATE=$(git describe --tags | sed -e 's/.*-g//' | xargs -n1 git show -s --format=%ci | LANG=en_US xargs -0 -n1 date "+%a, %d %b %Y %H:%M:%S %z" -d)
 PACKAGE_DIR=bin/Debian
 
 rm -rf $PACKAGE_DIR/pkg
