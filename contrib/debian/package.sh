@@ -36,8 +36,7 @@ Rules-Requires-Root: no
 
 Package: tytools
 Architecture: any
-Depends: libudev1
-Recommends: \${shlibs:Depends}, \${misc:Depends}
+Depends: \${shlibs:Depends}, \${misc:Depends}
 Description: GUI and command-line tools to manage Teensy devices
 " > $PACKAGE_DIR/pkg/debian/control
 echo "\
