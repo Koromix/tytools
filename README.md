@@ -104,129 +104,15 @@ without programming anything.
 You can also use `tycmd reset -b` to start the bootloader. This is the same as pushing the button on
 your Teensy.
 
-# Hacking TyTools
+# Source code
 
-## Build on Windows
+This repository does not contain the code of TyTools but only exists as a front. For pratical reasons, I've started using a single repository for all my projects in 2018 because it is easier to manage.
 
-You can use MSVC (≥ 2015) or MinGW-w64. I have not tested Clang on Windows yet. The historical
-MinGW toolchain is not supported.
+The source code is available here: https://github.com/Koromix/rygel/ (in the *src/meestic* subdirectory).
 
-You need to install [CMake](http://www.cmake.org/) to build the project files before you can
-use Visual Studio or MinGW.
+Monorepositories have two killer features for me:
 
-If **you don't have Qt, only the libraries and command-line tools** will be compiled. There
-are two options to enable Qt in TyTools:
+- Cross-project refactoring
+- Simplified dependency management
 
-- _dynamic Qt build_: Easiest option, you only need to install the pre-built Qt DLLs for
-  your compiler with the official Qt installer. The binaries need the Qt DLLs to work.
-- _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the
-  [lib/qt5 directory](https://github.com/Koromix/tytools/tree/master/lib/qt5) for instructions.
-
-To build TyTools with MSVC 2015 32-bit, launch _VS2015 x86 Native Tools Command Prompt_,
-navigate to the project directory and execute CMake:
-
-```batch
-REM You can of course use another build directory if you prefer.
-mkdir build
-mkdir build/win32
-cd build/win32
-cmake ../..
-```
-
-This will create Visual Studio project and solution files in _build/win32_. You can then open
-the _solution TyTools.sln_.
-
-To build 64-bit binaries, you should use _VS2015 x64 Native Tools Command Prompt_ instead.
-
-## Build on Mac OS X
-
-Install Xcode, the developer command-line tools and [CMake](http://www.cmake.org/). The native
-Clang compiler can build TyTools.
-
-If **you don't have Qt, only the libraries and command-line tools** will be compiled. There
-are two options to enable Qt in TyTools:
-
-- _dynamic Qt build_: Easiest option, you only need to install the pre-built Qt DLLs for
-  your compiler with the official Qt installer. The binaries need the Qt DLLs to work.
-- _static Qt build_: Harder, but will produce autonomous binaries. Read the README in the
-  [lib/qt5 directory](https://github.com/Koromix/tytools/tree/master/lib/qt5) for instructions.
-
-After Qt is ready, you can build TyTools by executing the following commands in the
-project directory:
-
-```bash
-# You can of course use another directory if you prefer.
-mkdir -p build/darwin && cd build/darwin
-cd build/darwin
-cmake ../..
-```
-
-If you want to build debug binaries instead, you should specify the build type:
-
-```bash
-cmake -DCMAKE_BUILD_TYPE=Debug ../..
-```
-
-## Build on Linux
-
-TyTools can be built with GCC or Clang.
-
-### Prerequisites
-
-To install the dependencies on Debian or Ubuntu execute:
-
-```bash
-sudo apt-get install build-essential cmake libudev-dev qtbase5-dev pkg-config
-```
-
-On Arch Linux you can do so (as root):
-
-```bash
-pacman -S --needed base-devel cmake udev qt5-base
-```
-
-### Compilation
-
-Open the project directory in a terminal and execute:
-
-```bash
-# You can of course use another directory if you prefer.
-mkdir -p build/linux && cd build/linux
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local ../..
-make
-```
-
-If you want to build debug binaries instead, you should specify the build type:
-
-```bash
-cmake -DCMAKE_BUILD_TYPE=Debug ../..
-```
-
-The compiled binaries can be used directly from the build directory. Follow through the
-next section if you want to install the application.
-
-### Installation
-
-You can deploy TyTools to your system with the following commands:
-
-```bash
-sudo make install
-```
-
-By default this will copy the files to `/usr/local`. To change this directory you need
-to change the `CMAKE_INSTALL_PREFIX` value in the Compilation section above.
-
-## Customized builds
-
-A number of customized builds are available in the [variants directory](https://github.com/Koromix/tytools/tree/master/variants).
-
-In order to activate a customized build, you need to specify it when running cmake.
-For example, in order to build the morningstar variant, run the following commands from the
-project directory:
-
-```batch
-mkdir build
-mkdir build/morningstar
-cd build/morningstar
-cmake -DCONFIG_VARIANT=morningstar ../..
-```
+You can find a more detailed rationale here: https://danluu.com/monorepo/
