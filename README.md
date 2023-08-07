@@ -108,7 +108,7 @@ your Teensy.
 
 This repository does not contain the code of TyTools but only exists as a front. For pratical reasons, I've started using a single repository for all my projects in 2018 because it is easier to manage.
 
-The source code is available here: https://github.com/Koromix/rygel/ (in the *src/meestic* subdirectory).
+The source code is available here: https://github.com/Koromix/rygel/ (in the *src/tytools* subdirectory).
 
 Monorepositories have two killer features for me:
 
