@@ -22,6 +22,13 @@ Use the following links for more information:
 - Documentation: https://koromix.dev/tytools
 - Changelog: https://github.com/Koromix/rygel/blob/master/src/tytools/CHANGELOG.md
 
+Up-to-date binaries are available here:
+
+- [Windows](https://download.koromix.dev/windows/)
+- [macOS](https://download.koromix.dev/macos/)
+- [Linux (Debian)](https://koromix.dev/tytools#linux-debian)
+- [Linux (RPM)](https://koromix.dev/tytools#linux-rpm)
+
 # Source code
 
 This repository does not contain the code of TyTools but only exists as a front. For pratical reasons, I've started using a single repository for all my projects in 2018 because it is easier to manage.
