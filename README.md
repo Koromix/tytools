@@ -13,7 +13,7 @@ Tool        | Type                      | Description
 ----------- | ------------------------- | ----------------------------------------------------
 TyCommander | Qt GUI (static)           | Upload, monitor and communicate with multiple boards
 TyUploader  | Qt GUI (static)           | Simple firmware / sketch uploader
-tycmd       | Command-line<br>_No Qt !_ | Command-line tool to manage Teensy boards
+tycmd       | Command-line<br>_No Qt!_ | Command-line tool to manage Teensy boards
 
 Download the [latest release from GitHub](https://github.com/Koromix/tytools/releases). You can
 find [development builds on koromix.dev](https://koromix.dev/files/tytools/).
@@ -35,7 +35,7 @@ Up-to-date binaries are available here:
 
 # Source code
 
-This repository does not contain the code of TyTools but only exists as a front. For pratical reasons, I've started using a single repository for all my projects in 2018 because it is easier to manage.
+This repository does not contain the code of TyTools but only exists as a front. For practical reasons, I've started using a single repository for all my projects in 2018 because it is easier to manage.
 
 The source code is available here: https://github.com/Koromix/rygel/ (in the *src/tytools* subdirectory).
 
